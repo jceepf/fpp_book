@@ -15,6 +15,8 @@ ECHO on
 rem cls
 @type intro.txt
 @ECHO off
+@mkdir object_files
+@mkdir executables
 @cd book_examples
 dir /B /D *
 @cd ..
