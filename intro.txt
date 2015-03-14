@@ -1,0 +1,23 @@
+                       Instructions
+                       ^^^^^^^^^^^^
+
+Below is a list of main programs in the "examples" directory.
+
+ 1) With the right bottom select MARK (in English system) to select the file.
+    DO NOT INCLUDE THE ".f90"
+
+ 2) Carefully select the file and then hit the RETURN key
+
+ 3) With the right button select PASTE and then hit the RETURN key
+
+ 4) Now type 
+              a) FULL to recompile all 
+              b) MAIN for main program only 
+              c) LINK to link only (somewhat useless option ...)
+              d) Hit the return key to ABORT
+
+ 5) A folder named after your main program will be created with the executable
+    in the folder example_executable
+
+    N.B. Drag and drop works in DOS Terminals. Also the up and down arrows.
+
