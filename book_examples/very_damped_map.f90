@@ -87,7 +87,7 @@ write(mf,*) z
  z(1)=rad0*cos(twopi*i/ns)   ! naive result 
  z(2)=rad0*sin(twopi*i/ns)
 write(mf1,*) z
-enddo
+enddo     
 close(mf)
 close(mf1)
 end program very_damped_map

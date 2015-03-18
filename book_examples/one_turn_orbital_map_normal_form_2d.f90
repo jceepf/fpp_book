@@ -69,27 +69,27 @@ call print(one_turn_map,6,prec)                                      ! (7b)
 call  c_normal(one_turn_map,normal_form)                             ! (8)
 
 write(6,*) " "
-write(6,*) " tune = ",normal_form%tune(1)                            ! (8.a)
+write(6,*) " tune = ",normal_form%tune(1)                            ! (8a)
 
 write(6,*) " ";write(6,*) "  Constant part of the map";
- write(6,'(a16,6(1x,g12.5))') " closed orbit = ",closed_orbit(1:6)   ! (8.b)
+ write(6,'(a16,6(1x,g12.5))') " closed orbit = ",closed_orbit(1:6)   ! (8b)
 
 mat=one_turn_map
 write(6,*) " ";write(6,*) " One-turn Map ";
 do i=1,c_%nd2
- write(6,'(a5,i1,a5,6(1x,g12.5))') " row ",i," --> ",mat(i,1:c_%nd2) ! (8.c)
+ write(6,'(a5,i1,a5,6(1x,g12.5))') " row ",i," --> ",mat(i,1:c_%nd2) ! (8c)
 enddo
 
 a=normal_form%a_t
 write(6,*) " ";write(6,*) "  Canonical transformation A";
 do i=1,c_%nd2
- write(6,'(a5,i1,a5,6(1x,g12.5))') " row ",i," --> ",a(i,1:c_%nd2)  ! (8.d)
+ write(6,'(a5,i1,a5,6(1x,g12.5))') " row ",i," --> ",a(i,1:c_%nd2)  ! (8d)
 enddo
 
 mat=normal_form%a_t**(-1)*one_turn_map*normal_form%a_t
 write(6,*) " ";write(6,*) "  Normal Form ";
 do i=1,c_%nd2
- write(6,'(a5,i1,a5,6(1x,g12.5))') " row ",i," --> ",mat(i,1:c_%nd2) ! (8.e)
+ write(6,'(a5,i1,a5,6(1x,g12.5))') " row ",i," --> ",mat(i,1:c_%nd2) ! (8e)
 enddo
 
 z1=1.e0_dp.cmono.'10'                                                ! (9a)
