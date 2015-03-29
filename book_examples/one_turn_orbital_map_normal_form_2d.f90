@@ -128,6 +128,6 @@ enddo
  
 
  
-call ptc_end(graphics_maybe=.true.,flat_file=.false.)
+call ptc_end
 
 end program one_turn_orbital_map_normal_form_2d

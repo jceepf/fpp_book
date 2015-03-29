@@ -252,7 +252,7 @@ call print(h3t,mf,prec)
 close(mf)
 
 
-call ptc_end(graphics_maybe=.true.,flat_file=.false.)
+call ptc_end
 
 end program one_resonance_map
 

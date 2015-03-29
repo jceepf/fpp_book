@@ -66,6 +66,6 @@ do i=1,6
  write(6,'(a5,i1,a5,6(1x,g12.5))') " row ",i," --> ",mat(i,1:6)
 enddo
 
-call ptc_end(graphics_maybe=.true.,flat_file=.false.)
+call ptc_end
 
 end program program_one_turn_map

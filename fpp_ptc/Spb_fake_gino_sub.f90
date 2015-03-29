@@ -11,11 +11,3 @@ subroutine call_gino(GINO_COMMAND)
   Write(6,*) "  Etienne Forest at jceepf@hushmail.com  "
   Write(6,*) "  "
 End subroutine call_gino
-
-subroutine open_gino_graphics
-  implicit none
-End subroutine open_gino_graphics
-
-subroutine close_gino_graphics
-  implicit none
-End subroutine close_gino_graphics

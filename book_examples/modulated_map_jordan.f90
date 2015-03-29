@@ -155,7 +155,7 @@ call kill(normal_form)
 call kill(ray)
  
  close(mfmap)
-call ptc_end(graphics_maybe=.true.,flat_file=.false.)
+ call ptc_end
 
 end program modulated_map
 

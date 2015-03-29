@@ -216,7 +216,7 @@ close(mf)
 ! enddo
 !close(mf)
 
-call ptc_end(graphics_maybe=.true.,flat_file=.false.)
+call ptc_end
 
 end program Guignard_normal_form
 

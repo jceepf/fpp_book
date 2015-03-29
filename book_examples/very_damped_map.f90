@@ -78,9 +78,9 @@ call kanalnummer(mf,"plot.dat")
 call kanalnummer(mf1,"naive.dat")
 ns=1000
 do i=1,ns
-m%v(1)=radius*cos(twopi*i/ns)   ! results of perturbation theory            ! (9a)
-m%v(2)=radius*sin(twopi*i/ns)
-m=n%a_t.o.m !A_t(z) where z=(radius*cos(twopi*i/ns),radius*sin(twopi*i/ns)) ! (9b)
+ m%v(1)=radius*cos(twopi*i/ns)   ! results of perturbation theory              ! (9a)
+ m%v(2)=radius*sin(twopi*i/ns)
+ m=n%a_t.o.m ! A_t(z) where z=(radius*cos(twopi*i/ns),radius*sin(twopi*i/ns)). ! (9b)
 z(1)=m%v(1).sub.'0'
 z(2)=m%v(2).sub.'0'
 write(mf,*) z
@@ -90,5 +90,4 @@ write(mf1,*) z
 enddo     
 close(mf)
 close(mf1)
-call ptc_end 
 end program very_damped_map

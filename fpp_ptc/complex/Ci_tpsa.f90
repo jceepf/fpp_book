@@ -1315,7 +1315,6 @@ end subroutine c_get_indices
     call alloc(s1%a1)
     call alloc(s1%a_t)
     call alloc(s1%AS)
-    s1%as=1
     s1%nres=0
     s1%positive=.true.
     s1%m=0  ! orbital resonance
@@ -7970,16 +7969,14 @@ end subroutine c_canonise
     logical(lp) removeit,rad_in
     complex(dp) v,lam,egspin(3)
     complex(dp), allocatable :: eg(:)
-    real(dp) prec,norm
+    real(dp) prec
     logical(lp), optional :: dospin
-    logical dospinr
     type(c_spinor) n0,nr
 
     not=no
     if(present(no_used)) not=no_used  ! sometimes only linear stuff is needed
 
-    dospinr=.false.
-    if(present(dospin)) dospinr=dospin
+
     call alloc(m1);call alloc(nonl);call alloc(a1);call alloc(a2);call alloc(ri);
  
        allocate(je(nv))    
@@ -8105,18 +8102,8 @@ end subroutine c_canonise
             endif
        endif
 
-
-       if(dospinr) then
-        
-        call c_full_norm_spin(m1%s,k,norm)   
-
-        if(abs(k)==1) then
-         dospinr=.false.
-         write(6,*) " no spin in map: dospin command ignored "
-        endif
-       endif
-
-       if(dospinr) then
+      if(present(dospin)) then
+       if(dospin) then
         call alloc(n0) 
         call alloc(nr)
         call alloc(mt) 
@@ -8186,7 +8173,7 @@ end subroutine c_canonise
         call kill(n0) 
         call kill(nr) 
        endif
-      
+      endif
 
         n%n=c_simil(from_phasor(),m1,1)
 

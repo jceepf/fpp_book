@@ -179,7 +179,7 @@ call kill(ray)
 close(mfmap)
 close(mf)
 
-call ptc_end(graphics_maybe=.true.)
+ call ptc_end
 
 end program modulated_map
 

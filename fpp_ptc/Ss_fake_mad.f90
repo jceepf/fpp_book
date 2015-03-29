@@ -38,29 +38,10 @@ contains
     call point_m_u(m_u,m_t)
   END subroutine ptc_ini_no_append
 
-  subroutine ptc_end(graphics_maybe,flat_file)
+  subroutine ptc_end()
     implicit none
-    integer i,i_layout
-    character(120) filename
-    logical, optional :: graphics_maybe,flat_file
-    type(layout), pointer :: mring
-    if(present(flat_file)) then
-      if(flat_file) then
-             mring=>m_u%start
-       do i=1,m_u%n
-        write(filename,*) "flat",i,".txt"
-        call context(filename)
-          call print_new_flat(mring,filename)
-          mring=>mring%next
-       enddo
-      endif
-    endif
-    if(present(graphics_maybe)) then
-      call open_gino_graphics
-    endif
-    if(present(graphics_maybe)) then
-     call close_gino_graphics
-    endif
+    integer i
+
     call kill_universe(m_t)
     call kill_universe(m_u)
     call kill_tpsa

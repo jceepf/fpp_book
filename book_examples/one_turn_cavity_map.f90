@@ -303,7 +303,7 @@ call kill(z_ij,ave_FLOQUET)
 close(mf)
  enddo ! cas
 
-call ptc_end(graphics_maybe=.true.,flat_file=.false.)
+100 call ptc_end
 
 end program one_turn_cavity_map
 
