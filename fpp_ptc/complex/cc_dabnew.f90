@@ -5232,6 +5232,7 @@ subroutine c_dafun(cf,ina,inc)
        do i=ipoa,ipoa+ilma-1
           if(cm.gt.0.0_dp) then
              c_cc(i) = bran(xran)+(0.0_dp,1.0_dp)*bran(xran)
+             c_cc(i) =c_cc(i)/abs(c_cc(i)) 
              if(abs(c_cc(i)).gt.cm) c_cc(i) = 0.0_dp
           elseif(cm.lt.0.0_dp) then
              c_cc(i) = int(1+10*bran(xran))
@@ -5253,6 +5254,7 @@ subroutine c_dafun(cf,ina,inc)
     do i=1,c_nmmax
        if(cm.gt.0.0_dp) then
           c_cc(i) =  bran(xran)+(0.0_dp,1.0_dp)*bran(xran)
+             c_cc(i) =c_cc(i)/abs(c_cc(i)) 
           if(abs(c_cc(i)).gt.cm) c_cc(i) = 0.0_dp
        elseif(cm.lt.0.0_dp) then
           c_cc(i) = int(1+10*bran(xran))
