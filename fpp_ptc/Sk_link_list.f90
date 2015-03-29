@@ -20,7 +20,7 @@ MODULE S_FIBRE_BUNDLE
   private FIND_POS_in_universe,FIND_POS_in_layout,super_dealloc_fibre
   TYPE(LAYOUT), PRIVATE, POINTER:: LC
   logical :: superkill=.false.
-  logical(lp),TARGET :: use_info=.false.
+  logical(lp),TARGET :: use_info=.true.
   integer, target :: nsize_info = 70
   private zero_fibre
   INTEGER :: INDEX_0=0, INDEX_1=0

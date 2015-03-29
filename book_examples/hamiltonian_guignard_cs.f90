@@ -313,7 +313,7 @@ if(.not.used_ds_ave) then
 close(mf)
 endif
 
-call ptc_end
+call ptc_end(graphics_maybe=.true.,flat_file=.false.)
 
 end program Guignard_Hamiltonian_cs
 

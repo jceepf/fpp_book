@@ -300,7 +300,7 @@ endif
  write(mf1,*) " F : nonlinear transformation"
  call print_vector_field_fourier(f,mf1)
 close(mf1)
-call ptc_end
+call ptc_end(graphics_maybe=.true.,flat_file=.false.)
 
 end program Guignard_normal_form_average_x
 

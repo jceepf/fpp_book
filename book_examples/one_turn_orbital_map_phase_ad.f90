@@ -135,6 +135,6 @@ endif
 call print(phase(1),6,prec)                                          ! (21)
 
 
-call ptc_end
+call ptc_end(graphics_maybe=.true.,flat_file=.false.)
 
 end program one_turn_orbital_map_phase_ad

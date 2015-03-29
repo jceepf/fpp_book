@@ -336,7 +336,7 @@ close(mfisf)
 close(mft)
 if(thin) close(mfa)
 
- call ptc_end
+call ptc_end(graphics_maybe=.true.,flat_file=.false.)
 
 end program spin_phase_advance_isf
 

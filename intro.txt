@@ -21,3 +21,5 @@ Below is a list of main programs in the "examples" directory.
 
     N.B. Drag and drop works in DOS Terminals. Also the up and down arrows.
 
+Everything should work as is if you have installed gfortran.
+

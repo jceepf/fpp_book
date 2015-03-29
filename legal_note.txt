@@ -1,0 +1,2 @@
+Legal Note: All the sample programs in the folder book_examples are distributed under Creative Commons Attribution Licence
+
