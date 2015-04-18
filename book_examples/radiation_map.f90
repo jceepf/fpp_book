@@ -228,7 +228,7 @@ enddo
 
 close(mf)
 
- call ptc_end
+call ptc_end(graphics_maybe=1,flat_file=.false.)
 
 end program radiation_map
 

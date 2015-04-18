@@ -3382,7 +3382,7 @@ write(mf,*) un%n, "trackable Layouts"
 
 
 do i=1,un%n
-
+write(mf,'(a120)') r%name
 p0=>r%start
 p=>p0
 call locate_in_universe(p,i0,j0)
@@ -3438,7 +3438,7 @@ type(element),pointer :: m,m0
 character(*) filename
 integer i,j,i0,MF,n,n_u,k(3),mypause,ipause
 integer pos
-character(120) line
+character(120) line,name1
 logical(lp) doneit
 character(nlp) name
 
@@ -3456,7 +3456,7 @@ read(mf,*)n_u
 
 
 do i=1,n_u
-
+   read(mf,'(a120)') name1 
    read(mf,*) i0,n 
 
   read(mf,'(a120)') line
@@ -3465,8 +3465,9 @@ do i=1,n_u
 
 call append_empty_layout(un) 
 !call set_up(un%end)  !
-
+ 
        R => un%end
+r%name=name1
 
  do j=1,n 
   !     read(mf,'(1x,i4,1x,i8,1x,i2,1x,a24)' ) k    ,name

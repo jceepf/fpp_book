@@ -126,8 +126,6 @@ do i=1,c_%nd2
  write(6,'(a5,i1,a5,6(1x,g12.5,1x,g12.5))') " row ",i," --> ",ac(i,1:c_%nd2)
 enddo
  
-
- 
-call ptc_end
+call ptc_end(graphics_maybe=1,flat_file=.false.)
 
 end program one_turn_orbital_map_normal_form_2d

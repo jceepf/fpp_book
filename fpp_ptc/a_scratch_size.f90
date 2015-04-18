@@ -629,6 +629,88 @@ contains
 
   END FUNCTION LOGE_lielib
 
+ subroutine dofma(nt,dt,xlist,pxlist,q0,qmean,qvar)
+! demin's Laskar routine
+! nt number of turns (periods) nt=2048
+! time winows in units of turns   dt=512   max dt=nt/2
+! xlist(1:nt), pxlist(1:nt) one-plane data usually x-px
+! q0 closed orbit tune in x-px plane in revolutions
+! output qmean average tune in nt window
+! qvar = variance of measured tune
+!
+      implicit none
+      
+      ! Input parameters
+      integer nt, dt
+      real(dp) :: xlist(1:nt), pxlist(1:nt)
+      real(dp) q0 
+      
+      ! Output
+      real(dp) qmean, qvar
+      
+      ! Local
+      real(dp) qmin, qmax, afind, bfind, stepfind, find, findnu, xnu
+      real(dp) sumr, sumi, tw, rr, sumnorm
+      real(dp), allocatable :: nulist(:)
+      integer np, nwindow, iw, ik, ik1, i
+      
+      ! Preparations
+      qmin = floor(q0*2.0)/2.0+0.001
+      qmax = qmin + 0.498
+      np = nt/2
+      nwindow = (nt-np)/dt + 1
+      allocate(nulist(1:nwindow))
+      qmean = 0.0
+      qvar = 0.0
+      
+      ! FMA calculation, Ref. D. Shatilov, Phys. Rev. ST Accel. Beams 14, 014001 (2011)
+      do iw = 0, nwindow-1
+        afind = qmax
+        bfind = qmin
+        stepfind = 0.002
+        do while(stepfind>1.0e-12)
+          find = 0.0
+          findnu = 0.0
+          xnu = afind
+          do while(xnu .ge. bfind)
+            sumr = 0.0
+            sumi = 0.0
+            ik = 0
+            do while(ik .le. np)
+              tw = 2.0 * dble(ik) / np - 1.0
+              rr = twopi * ik * xnu
+              ik1 = ik + iw * dt + 1
+              sumr = sumr + (xlist(ik1) * cos(rr) + pxlist(ik1) * sin(rr)) * (1.0 + cos(pi*tw))
+              sumi = sumi + (-xlist(ik1) * sin(rr) + pxlist(ik1) * cos(rr)) * (1.0 + cos(pi*tw))
+              ik = ik + 1
+            enddo
+            sumnorm = sqrt((sumr*sumr+sumi*sumi)/np)
+            if(find < sumnorm) then
+              find = sumnorm
+              findnu = xnu  
+            end if
+            xnu = xnu - stepfind
+          enddo
+          afind = findnu + stepfind
+          bfind = findnu - stepfind
+          stepfind = stepfind / 10.0
+        enddo
+        nulist(iw+1) = findnu
+      enddo
+      
+      do i = 1, nwindow
+        qmean = qmean + nulist(i)
+      enddo
+      qmean = qmean/nwindow
+      
+      do i = 1, nwindow
+        qvar = qvar + (nulist(i)-qmean) * (nulist(i)-qmean)
+      enddo
+      qvar = sqrt(qvar/nwindow)
+
+      return
+      
+  end
 end module precision_constants
 
 

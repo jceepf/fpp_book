@@ -13,7 +13,7 @@ module ptc_spin
  !,GETMULB_TEAPOT
   private B_PANCAkEr,B_PANCAkEp,B_PANCAkE
   PRIVATE DIRECTION_VR,DIRECTION_VP,DIRECTION_V
-  PRIVATE  B_PARA_PERP_r,B_PARA_PERP_p,B_PARA_PERP
+  PRIVATE  B_PARA_PERPr,B_PARA_PERPp,B_PARA_PERP
   PRIVATE get_omega_spinR,get_omega_spinP ,get_omega_spin
   PRIVATE PUSH_SPINR,PUSH_SPINP !,PUSH_SPIN
   PRIVATE TRACK_FRINGE_spin_R,TRACK_FRINGE_spin_P,TRACK_FRINGE_spin
@@ -205,8 +205,8 @@ module ptc_spin
   END INTERFACE
 
   INTERFACE B_PARA_PERP
-     MODULE PROCEDURE B_PARA_PERP_r
-     MODULE PROCEDURE B_PARA_PERP_p
+     MODULE PROCEDURE B_PARA_PERPr
+     MODULE PROCEDURE B_PARA_PERPp
   END INTERFACE
 
   INTERFACE DIRECTION_V
@@ -937,7 +937,7 @@ contains
     TYPE(MAGNET_CHART), POINTER::P
     INTEGER,OPTIONAL,INTENT(IN) ::POS
     REAL(DP),INTENT(INOUT) :: X(6),OM(3),B2,XP(2),DLDS
-    REAL(DP)  B(3),E(3),BPA(3),BPE(3),D1,D2,GAMMA,EB(3),beta,ed(3)
+    REAL(DP)  B(3),E(3),BPA(3),BPE(3),D1,D2,GAMMA,EB(3),EFD(3),beta,ed(3)
     REAL(DP) BETA0,GAMMA0I,XPA(2)
     INTEGER I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
@@ -959,6 +959,7 @@ contains
     BPE=0.0_dp
     B=0.0_dp
     E=0.0_dp
+    EFD=0.0_dp
 
     xp(1)=x(2)
     xp(2)=x(4)   !  to prevent a crash in monitors, etc... CERN june 2010
@@ -976,7 +977,7 @@ contains
 
        if(pos>=0) OM(2)=P%b0   ! not fake fringe
     case(KIND4) ! CAVITY
-       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,E,EB,pos=POS)
+       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
        IF(k%TIME) THEN
           DLDS=1.0_dp/root(1.0_dp+2.0_dp*X(5)/P%BETA0+X(5)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
        ELSE
@@ -1031,15 +1032,20 @@ contains
     OM(1)=-DLDS*( (1.0_dp+p%AG*GAMMA)*BPE(1) + (1.0_dp+p%AG)*BPA(1) )
     OM(2)=-DLDS*( (1.0_dp+p%AG*GAMMA)*BPE(2) + (1.0_dp+p%AG)*BPA(2) )+OM(2)
     OM(3)=-DLDS*( (1.0_dp+p%AG*GAMMA)*BPE(3) + (1.0_dp+p%AG)*BPA(3) )
-    
-    beta=(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)   !/(one/beta0+x(5))   beta*(one/beta0+x(5))
-    om(1)=-DLDS*0.5_dp*e_muon*beta*(ed(2)*BPE(3)-ed(3)*BPE(2))/P%GAMMA0I +  om(1)
-    om(2)=-DLDS*0.5_dp*e_muon*beta*(ed(3)*BPE(1)-ed(1)*BPE(3))/P%GAMMA0I +  om(2)
-    om(3)=-DLDS*0.5_dp*e_muon*beta*(ed(1)*BPE(2)-ed(2)*BPE(1))/P%GAMMA0I +  om(3)
-    
+
     DO I=1,3
-       OM(I)=OM(I)-DLDS*(p%AG*GAMMA+GAMMA/(1.0_dp+GAMMA))*EB(I)
+       OM(I)=OM(I)-DLDS*beta*(p%AG+GAMMA/(1.0_dp+GAMMA))*EB(I)
     ENDDO
+    
+    beta=sqrt(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)*P%BETA0/P%GAMMA0I  
+    om(1)=-DLDS*0.5_dp*e_muon*beta*(ed(2)*BPE(3)-ed(3)*BPE(2)) +  om(1)
+    om(2)=-DLDS*0.5_dp*e_muon*beta*(ed(3)*BPE(1)-ed(1)*BPE(3)) +  om(2)
+    om(3)=-DLDS*0.5_dp*e_muon*beta*(ed(1)*BPE(2)-ed(2)*BPE(1)) +  om(3)
+
+    DO I=1,3
+       OM(I)=OM(I)-DLDS*0.5_dp*e_muon*(GAMMA*E(I)+(1-GAMMA)*EFD(I))
+    ENDDO
+
     if((k%radiation.or.k%envelope)) then
        !      if(P%RADIATION) then
        B2=BPE(1)**2+BPE(2)**2+BPE(3)**2
@@ -1055,7 +1061,7 @@ contains
     TYPE(MAGNET_CHART), POINTER::P
     INTEGER,OPTIONAL,INTENT(IN) ::POS
     TYPE(REAL_8), INTENT(INOUT) :: X(6),OM(3),B2,XP(2)
-    TYPE(REAL_8)  B(3),E(3),BPA(3),BPE(3),DLDS,D1,D2,GAMMA,EB(3),XPA(2),ed(3),beta
+    TYPE(REAL_8)  B(3),E(3),BPA(3),BPE(3),DLDS,D1,D2,GAMMA,EB(3),efd(3),XPA(2),ed(3),beta
     REAL(DP) BETA0,GAMMA0I
     INTEGER I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
@@ -1077,6 +1083,7 @@ contains
     CALL ALLOC(B,3)
     CALL ALLOC(E,3)
     CALL ALLOC(Ed,3)
+    CALL ALLOC(efd,3)
     CALL ALLOC(beta)
     CALL ALLOC(EB,3)
     CALL ALLOC(BPA,3)
@@ -1110,7 +1117,7 @@ contains
        ENDIF
        if(pos>=0) OM(2)=P%b0   ! not fake fringe
     case(KIND4) ! CAVITY
-       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,E,EB,pos=POS)
+       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
        IF(k%TIME) THEN
           DLDS=1.0_dp/SQRT(1.0_dp+2.0_dp*X(5)/P%BETA0+X(5)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
        ELSE
@@ -1176,12 +1183,26 @@ contains
     OM(1)=-DLDS*a_spin_scale*( (1.0_dp+p%AG*GAMMA)*BPE(1) + (1.0_dp+p%AG)*BPA(1) )
     OM(2)=-DLDS*a_spin_scale*( (1.0_dp+p%AG*GAMMA)*BPE(2) + (1.0_dp+p%AG)*BPA(2) )+OM(2)
     OM(3)=-DLDS*a_spin_scale*( (1.0_dp+p%AG*GAMMA)*BPE(3) + (1.0_dp+p%AG)*BPA(3) )
-    beta=(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)   !/(one/beta0+x(5))   beta*(one/beta0+x(5))
+
+    DO I=1,3
+       OM(I)=OM(I)-DLDS*beta*(p%AG+GAMMA/(1.0_dp+GAMMA))*EB(I)
+    ENDDO
 
     e_muon_scale%r=e_muon
-    om(1)=-DLDS*0.5_dp*e_muon_scale*(ed(2)*BPE(3)-ed(3)*BPE(2))/P%GAMMA0I +  om(1)
-    om(2)=-DLDS*0.5_dp*e_muon_scale*beta*(ed(3)*BPE(1)-ed(1)*BPE(3))/P%GAMMA0I +  om(2)
-    om(3)=-DLDS*0.5_dp*e_muon_scale*beta*(ed(1)*BPE(2)-ed(2)*BPE(1))/P%GAMMA0I +  om(3)
+    beta=sqrt(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)*P%BETA0/P%GAMMA0I  
+    om(1)=-DLDS*0.5_dp*e_muon_scale*beta*(ed(2)*BPE(3)-ed(3)*BPE(2)) +  om(1)
+    om(2)=-DLDS*0.5_dp*e_muon_scale*beta*(ed(3)*BPE(1)-ed(1)*BPE(3)) +  om(2)
+    om(3)=-DLDS*0.5_dp*e_muon_scale*beta*(ed(1)*BPE(2)-ed(2)*BPE(1)) +  om(3)
+
+    DO I=1,3
+       OM(I)=OM(I)-DLDS*0.5_dp*e_muon_scale*(GAMMA*E(I)+(1-GAMMA)*EFD(I))
+    ENDDO
+
+    if((k%radiation.or.k%envelope)) then
+       !      if(P%RADIATION) then
+       B2=BPE(1)**2+BPE(2)**2+BPE(3)**2
+       !        B2=-CRADF(EL%P)*(one+X(5))**3*B2*DLDS
+    ENDIF
 
    !     write(16,*) " bpe "
     !     do i=1,3
@@ -1198,15 +1219,6 @@ contains
     !       call print(bpe(i),30)
     !       call print(bpa(i),30)
     !     enddo
-    DO I=1,3
-       OM(I)=OM(I)-DLDS*(p%AG*GAMMA+GAMMA/(1.0_dp+GAMMA))*EB(I)
-    ENDDO
-    if((k%radiation.or.k%envelope)) then
-       !      if(P%RADIATION) then
-       B2=BPE(1)**2+BPE(2)**2+BPE(3)**2
-       !        B2=-CRADF(EL%P)*(one+X(5))**3*B2*DLDS
-    ENDIF
-
     !    WRITE(24,*) C%PARENT_FIBRE%MAG%NAME
     !    WRITE(24,*) C%POS, C%S(1)
     !    WRITE(24,*) " B FIELD "
@@ -1231,6 +1243,7 @@ contains
     CALL KILL(D1,D2,GAMMA)
     CALL KILL(XPA,2)
     CALL KILL(Ed,3)
+    CALL KILL(efd,3)
     CALL KILL(beta)
 
     !  TESTBUG SATEESH
@@ -1815,13 +1828,13 @@ contains
 
   END subroutine B_PANCAkEp
 
-  subroutine B_PARA_PERP_R(k,EL,TEAPOT_LIKE,X,B,BPA,BPE,XP,XPA,e,EF,EFB,POS)
+  subroutine B_PARA_PERPr(k,EL,TEAPOT_LIKE,X,B,BPA,BPE,XP,XPA,e,EF,EFB,EFD,POS)
     IMPLICIT NONE
     REAL(DP),  INTENT(INout) :: X(6)
     TYPE(ELEMENT),  pointer :: EL
     TYPE(MAGNET_CHART),  pointer :: P
     REAL(DP),  INTENT(INout) :: B(3),BPA(3),BPE(3),XP(2),XPA(2),e(3)
-    REAL(DP),  OPTIONAL ::EF(3),EFB(3)
+    REAL(DP),  OPTIONAL ::EF(3),EFB(3),EFD(3)
     integer, optional,intent(in) :: pos
     INTEGER TEAPOT_LIKE,i
     REAL(DP) be
@@ -1843,22 +1856,24 @@ contains
     enddo
 
     IF(PRESENT(EF)) THEN
-       BE=ROOT(1.0_dp+2.0_dp*X(5)+X(5)**2)/(1.0_dp/P%BETA0+X(5)) !  BUGGGGGGG CHECK
-       E=BE*E
-       EFB(1)=EF(2)*E(3)-EF(3)*E(2)      ! BETA * E X e = Beta * E_perp
+
+       EFB(1)=EF(2)*E(3)-EF(3)*E(2)      
        EFB(2)=EF(3)*E(1)-EF(1)*E(3)
        EFB(3)=EF(1)*E(2)-EF(2)*E(1)
-    ENDIF
+       be=EF(1)*e(1)+EF(2)*e(2)+EF(3)*e(3)
+       do i=1,3
+         EFD(i)=be*e(i)
+        enddo
+    endif
+  END subroutine B_PARA_PERPr
 
-  END subroutine B_PARA_PERP_R
-
-  subroutine B_PARA_PERP_p(k,EL,TEAPOT_LIKE,X,B,BPA,BPE,XP,XPA,e,EF,EFB,pos)
+  subroutine B_PARA_PERPp(k,EL,TEAPOT_LIKE,X,B,BPA,BPE,XP,XPA,e,EF,EFB,EFD,pos)
     IMPLICIT NONE
     type(real_8),  INTENT(INout) :: X(6)
     TYPE(ELEMENTP),  pointer :: EL
     TYPE(MAGNET_CHART),  pointer :: P
     type(real_8),  INTENT(INout) :: B(3),BPA(3),BPE(3),XP(2),XPA(2),e(3)
-    type(real_8),  OPTIONAL ::EF(3),EFB(3)
+    type(real_8),  OPTIONAL ::EF(3),EFB(3),EFD(3)
     INTEGER TEAPOT_LIKE,i
     type(real_8) be
     type(internal_state) k
@@ -1880,16 +1895,18 @@ contains
     enddo
 
     IF(PRESENT(EF)) THEN
-       BE=SQRT(1.0_dp+2.0_dp*X(5)+X(5)**2)/(1.0_dp/P%BETA0+X(5))
-       E(1)=BE*E(1);E(2)=BE*E(2);E(3)=BE*E(3);
        EFB(1)=EF(2)*E(3)-EF(3)*E(2)
        EFB(2)=EF(3)*E(1)-EF(1)*E(3)
        EFB(3)=EF(1)*E(2)-EF(2)*E(1)
+       be=EF(1)*e(1)+EF(2)*e(2)+EF(3)*e(3)
+       do i=1,3
+         EFD(i)=be*e(i)
+        enddo
     ENDIF
 
      call kill(be);
 
-  END subroutine B_PARA_PERP_p
+  END subroutine B_PARA_PERPp
 
 
   subroutine DIRECTION_VR(k,EL,TEAPOT_LIKE,X,E,XP,XPA,POS)

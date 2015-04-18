@@ -8107,14 +8107,15 @@ end subroutine c_canonise
 
 
        if(dospinr) then
-        
+
         call c_full_norm_spin(m1%s,k,norm)   
 
-        if(abs(k)==1) then
+        if(k>=0) then
          dospinr=.false.
          write(6,*) " no spin in map: dospin command ignored "
         endif
        endif
+
 
        if(dospinr) then
         call alloc(n0) 

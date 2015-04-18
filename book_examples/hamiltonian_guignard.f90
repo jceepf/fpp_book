@@ -301,7 +301,7 @@ call print(u_c,mf,prec)
 
 close(mf)
 
-call ptc_end
+call ptc_end(graphics_maybe=1,flat_file=.false.)
 
 end program Guignard_Hamiltonian
 

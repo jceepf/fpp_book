@@ -42,24 +42,38 @@ contains
     implicit none
     integer i,i_layout
     character(120) filename
-    logical, optional :: graphics_maybe,flat_file
+    logical, optional :: flat_file
+    integer, optional :: graphics_maybe
     type(layout), pointer :: mring
+    character(48) command_gino
+   
+    if(present(graphics_maybe)) then
+        if(graphics_maybe>=1) call open_gino_graphics
+      do i=2,graphics_maybe
+        command_gino="MINI"                                                                                                                                                                                                                                          
+        call call_gino(command_gino)  
+      enddo
+    endif
+    if(present(graphics_maybe)) then
+     if(graphics_maybe>0) call close_gino_graphics
+    endif
     if(present(flat_file)) then
       if(flat_file) then
+        if(associated(m_t%start)) then  ! two universes
+           write(6,*) "printing the universes ",' m_u.txt and m_t.txt '
+           call print_universe(m_u,'m_u.txt')
+           call print_universe_pointed(m_u,m_t,'m_t.txt')
+        else
              mring=>m_u%start
        do i=1,m_u%n
         write(filename,*) "flat",i,".txt"
         call context(filename)
+        write(6,*) "printing flat file ",filename(1:len_trim(filename))
           call print_new_flat(mring,filename)
           mring=>mring%next
        enddo
+       endif
       endif
-    endif
-    if(present(graphics_maybe)) then
-      call open_gino_graphics
-    endif
-    if(present(graphics_maybe)) then
-     call close_gino_graphics
     endif
     call kill_universe(m_t)
     call kill_universe(m_u)

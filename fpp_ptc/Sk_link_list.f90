@@ -1247,7 +1247,7 @@ CONTAINS
     ENDDO
  
     IF(NORM>=PREC) THEN
-       Write(6,'(a20,1x,3(1x,g12.5))') " Patch Translations ",d
+       if(global_verbose)  Write(6,'(a20,1x,3(1x,g12.5))') " Patch Translations ",d
        D=0.0_dp
        PATCH_NEEDED=PATCH_NEEDED+1
     ENDIF
@@ -1257,14 +1257,15 @@ CONTAINS
     ENDDO
     ene=(NORM<=PREC.and.(A_XZ==1.and.A_YZ==1)).or.(NORM<=PREC.and.(A_XZ==-1.and.A_YZ==-1))
     IF(.not.ene) THEN
-        Write(6,'(a20,1x,3(1x,g12.5))') "  Patch rotations  ",ang
+        if(global_verbose) Write(6,'(a20,1x,3(1x,g12.5))') "  Patch rotations  ",ang
         ANG=0.0_dp
        PATCH_NEEDED=PATCH_NEEDED+10
     ENDIF
 
 
     if(ABS((EL2%MAG%P%P0C-EL1%MAG%P%P0C)/EL1%MAG%P%P0C)>PREC) then
-     Write(6,'(a20,1x,1(1x,g12.5))') "  Patch Energy      ",ABS((EL2%MAG%P%P0C-EL1%MAG%P%P0C)/EL1%MAG%P%P0C)
+     if(global_verbose) Write(6,'(a20,1x,1(1x,g12.5))') "  Patch Energy      ", &
+      ABS((EL2%MAG%P%P0C-EL1%MAG%P%P0C)/EL1%MAG%P%P0C)
      PATCH_NEEDED=PATCH_NEEDED+100
     endif
 

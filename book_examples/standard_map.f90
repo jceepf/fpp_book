@@ -340,5 +340,5 @@ write(6,*); write(6,*) "Second Case ";write(6,*);
 write(6,*); write(6,*) "Third Case ";write(6,*);  
 extra_terms_log=.true.
           vf=log(M) 
-
+call ptc_end 
     end program standard_map
