@@ -80,7 +80,7 @@ module precision_constants
   real(dp),parameter::A_MUON=1.16592069e-3_dp         !frs NIST CODATA 2006
   real(dp),parameter::A_PROTON=1.79284735e-0_dp       !frs (approx) NIST CODATA 2006
   real(dp),parameter:: pmaMUON = 105.6583668E-3_DP    !frs NIST CODATA 2006
-  real(dp) :: e_muon = 0.d0
+  real(dp) :: e_muon = 0.d0, volt_c=1.0e-3_dp, volt_i=1.0_dp
  !  real(dp),parameter:: pmadt = 1.875612793e0_dp    ! sateesh
   !  real(dp),parameter:: pmah3 = 2.808391e0_dp    ! sateesh
   !  real(dp),parameter:: A_dt = -0.142987272e0_dp    ! sateesh
@@ -195,9 +195,9 @@ module precision_constants
   logical(lp) :: printdainfo=my_false
   integer   lielib_print(12)
   DATA lielib_print /0,0,0,0,0,0,0,0,0,0,0,1/
-  INTEGER,TARGET :: SECTOR_NMUL_MAX=10
-  INTEGER, target :: SECTOR_NMUL = 10
-  integer, parameter :: no_e=5  !  electric 
+!   INTEGER,TARGET :: SECTOR_NMUL_MAX=20
+  INTEGER, target :: SECTOR_NMUL = 11
+!  integer, parameter :: no_e=5  !  electric 
   logical(lp) :: use_complex_in_ptc=.false.
   logical(lp) :: change_sector=my_true
   real(dp) :: xlost(6)=0.0_dp
@@ -425,20 +425,20 @@ contains
 
     !    if(.not.change_sector) return
 
-    t1=(SECTOR_NMUL_MAX/=se1)
+    t1=(SECTOR_NMUL/=se1)
     t2=(SECTOR_NMUL/=se2)
 
     ttt=t1.or.t2
 
     if(ttt) then
        if(change_sector) then
-          write(6,*) " SECTOR_NMUL_MAX is changed from ",SECTOR_NMUL_MAX," to ",se1
+  !        write(6,*) " SECTOR_NMUL_MAX is changed from ",SECTOR_NMUL_MAX," to ",se1
           write(6,*) " SECTOR_NMUL is changed from ",SECTOR_NMUL," to ",se2
           write(6,*) " GLOBAL VARIABLES that can no longer be changed"
-          SECTOR_NMUL_MAX=se1
+!          SECTOR_NMUL_MAX=se1
           SECTOR_NMUL=se2
        else
-          if(t1) write(6,*) " sector_nmul_max CANNOT be changed from ",SECTOR_NMUL_MAX," to ",se1
+ !         if(t1) write(6,*) " sector_nmul_max CANNOT be changed from ",SECTOR_NMUL_MAX," to ",se1
           if(t2) write(6,*) " sector_nmul CANNOT be changed from ",SECTOR_NMUL," to ",se2
           write(6,*) " Watch out : The are GLOBAL VARIABLES "
        endif

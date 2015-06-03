@@ -73,11 +73,13 @@ logical(lp) :: time_symplectic_choice=my_false,courant_snyder_teng_edwards=my_tr
 private equal_real8_cmap,equal_cmap_real8,EQUAL_c_map_RAY8,EQUAL_RAY8_c_map,c_add_vf,real_mul_vec
 private c_IdentityEQUALfactored,c_log_spinmatrix,c_concat_c_ray,equalc_ray_r6,equalc_r6_ray
 private dotc_spinor,c_spinor_spinor,c_read_spinmatrix,c_read_map,c_concat_spinmatrix_ray
+private GETORDER_par,GETORDERMAP_par,GETORDERSPINMATRIX_par
 integer,private,parameter::ndd=6
 private c_concat_vector_field_ray,CUTORDERVEC,kill_c_vector_field_fourier,alloc_c_vector_field_fourier
 private complex_mul_vec,equal_c_vector_field_fourier,c_IdentityEQUALVECfourier
 integer :: n_fourier=12,n_extra=0
 logical :: remove_tune_shift=.false.
+
   INTERFACE assignment (=)
      MODULE PROCEDURE EQUAL
  
@@ -299,6 +301,12 @@ logical :: remove_tune_shift=.false.
      MODULE PROCEDURE GETint
      MODULE PROCEDURE GETORDERMAP  ! with negative integer map.sub.i the spin is handled with iabs(i)-1
      MODULE PROCEDURE GETORDERSPINMATRIX ! FOR SPIN MATRICES
+  END INTERFACE
+
+  INTERFACE OPERATOR (.harmonic.)
+     MODULE PROCEDURE GETORDER_par
+     MODULE PROCEDURE GETORDERMAP_par
+     MODULE PROCEDURE GETORDERSPINMATRIX_par
   END INTERFACE
 
   INTERFACE OPERATOR (.PAR.)
@@ -2663,7 +2671,113 @@ FUNCTION cpbbra( S1, S2 )
 
   END FUNCTION GETORDERSPINMATRIX
 
+!!!!!!!!!!!!!!   programming extraction of nth order with parameters   !!!!!!!!!!!!!
 
+ FUNCTION GETORDER_par( S1, S2 )
+    implicit none
+    TYPE (c_taylor) GETORDER_par
+    TYPE (c_taylor), INTENT (IN) :: S1
+    TYPE (c_taylor) g
+    INTEGER, INTENT (IN) ::  S2
+    integer localmaster,j,k,t
+    integer, allocatable :: je(:)
+    complex(dp) v
+    IF(.NOT.C_STABLE_DA) then
+     GETORDER_par%i=0
+     RETURN
+    endif
+    localmaster=c_master
+
+
+    !    call check(s1)
+    call ass(GETORDER_par)
+    call alloc(g)
+    allocate(je(nv))
+    je=0
+    j=1
+    g=0.0_dp
+        do while(.true.) 
+
+          call  c_cycle(s1,j,v ,je); if(j==0) exit;
+          k=check_harmonic_order(je)
+           if(k==s2) then
+             g=g+(v.cmono.je)
+           endif
+
+       enddo
+     GETORDER_par=g
+    call kill(g)
+    deallocate(je)
+
+    c_master=localmaster
+
+  END FUNCTION GETORDER_par
+
+  FUNCTION GETORDERMAP_par( S1, S2 )
+    implicit none
+    TYPE (c_damap) GETORDERMAP_par
+    TYPE (c_damap), INTENT (IN) :: S1
+    INTEGER, INTENT (IN) :: S2
+    INTEGER I,J,s22
+    integer localmaster
+    IF(.NOT.C_STABLE_DA) then
+     GETORDERMAP_par%v%i=0
+     RETURN
+    endif
+    localmaster=c_master
+
+    s22=iabs(s2)
+    GETORDERMAP_par%n=s1%n
+    call c_assmap(GETORDERMAP_par)
+    GETORDERMAP_par=s1
+    DO I=1,s1%n
+ !     if(i/=ndptb.or.ndpt==0.or.s2>1) then
+       GETORDERMAP_par%V(I)=(GETORDERMAP_par%V(I)).harmonic.S22
+       if(i==ndpt) GETORDERMAP_par%V(I)=GETORDERMAP_par%V(I)+(1.0_dp.cmono.ndpt)
+       if(i==ndptb) GETORDERMAP_par%V(I)=GETORDERMAP_par%V(I)+(1.0_dp.cmono.ndptb)
+ !     else
+ !       if(s2==1) then
+ !                GETORDERMAP_par%V(I)=((GETORDERMAP_par%V(I)).harmonic.1)+((GETORDERMAP_par%V(I)).harmonic.2)
+ !                GETORDERMAP_par%V(I)=GETORDERMAP_par%V(I)+(1.0_dp.cmono.i)
+ !       endif
+ !     endif
+    ENDDO
+    
+    if(s2<0) s22=s22-1
+    GETORDERMAP_par%s=GETORDERMAP_par%s.harmonic.S22
+
+    c_master=localmaster
+
+  END FUNCTION GETORDERMAP_par
+
+  FUNCTION GETORDERSPINMATRIX_par( S1, S2 ) ! spin routine function
+    implicit none
+    TYPE (c_spinmatrix) GETORDERSPINMATRIX_par
+    TYPE (c_spinmatrix), INTENT (IN) :: S1
+    INTEGER, INTENT (IN) :: S2
+    INTEGER I,J
+    integer localmaster
+    IF(.NOT.C_STABLE_DA) then
+     GETORDERSPINMATRIX_par%s%i=0
+     RETURN
+    endif
+    localmaster=c_master
+    call c_ass_spinmatrix(GETORDERSPINMATRIX_par)
+
+
+
+ 
+ 
+    DO I=1,3
+    DO j=1,3
+       GETORDERSPINMATRIX_par%s(I,j)=(S1%s(I,j)).harmonic.S2
+    ENDDO
+    ENDDO
+
+    c_master=localmaster
+
+  END FUNCTION GETORDERSPINMATRIX_par
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   FUNCTION from_phasor(k)
     implicit none
@@ -5032,7 +5146,19 @@ cgetvectorfield=0
     enddo
   end function check_j
 
+  function check_harmonic_order(j)
+    implicit none
+    integer check_harmonic_order
+    integer i
+    integer,dimension(:)::j
 
+    check_harmonic_order=0
+    !do i=1,nd2+ndel
+    do i=1,nd2t
+       check_harmonic_order=check_harmonic_order+j(i)
+    enddo
+
+  end  function check_harmonic_order
 
   function filter(j)
     implicit none
@@ -7934,7 +8060,9 @@ implicit none
 
     t=m
 
-    l=t.sub.1
+!    l=t.sub.1
+     l=t.harmonic.1
+
 
     if(dir==1) then  ! Dragt-Finn direction 
      t=t*l**(-1)

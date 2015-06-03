@@ -75,6 +75,8 @@ namelist / sol50name / sol50
 
   TYPE tp10_list
    logical(lp) DRIFTKICK
+	real(dp) ae(nmul_max)  
+	real(dp) be(nmul_max)  
   END TYPE tp10_list
 type(tp10_list) tp100
 namelist / tp100name / tp100

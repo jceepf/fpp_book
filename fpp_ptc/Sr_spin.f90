@@ -938,7 +938,7 @@ contains
     INTEGER,OPTIONAL,INTENT(IN) ::POS
     REAL(DP),INTENT(INOUT) :: X(6),OM(3),B2,XP(2),DLDS
     REAL(DP)  B(3),E(3),BPA(3),BPE(3),D1,D2,GAMMA,EB(3),EFD(3),beta,ed(3)
-    REAL(DP) BETA0,GAMMA0I,XPA(2)
+    REAL(DP) BETA0,GAMMA0I,XPA(2),phi,del
     INTEGER I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
@@ -960,11 +960,12 @@ contains
     B=0.0_dp
     E=0.0_dp
     EFD=0.0_dp
+    phi=0.0_dp
 
     xp(1)=x(2)
     xp(2)=x(4)   !  to prevent a crash in monitors, etc... CERN june 2010
     dlds=0.0_dp
-    CALL get_field(EL,B,E,X,k,POS)
+    CALL get_field(EL,B,E,phi,X,k,POS)
 
     SELECT CASE(EL%KIND)
     case(KIND2,kind5:kind7,kindwiggler) ! Straight for all practical purposes
@@ -992,11 +993,13 @@ contains
        ENDIF
     case(kind10)     ! TEAPOT real curvilinear
        CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+           DEL=x(5)-phi*EL%P%CHARGE
        IF(k%TIME) THEN
-          DLDS=1.0_dp/root(1.0_dp+2.0_dp*X(5)/P%BETA0+X(5)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+          DLDS=1.0_dp/root(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
        ELSE
-          DLDS=1.0_dp/root((1.0_dp+X(5))**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+          DLDS=1.0_dp/root((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
        ENDIF
+
        if(pos>=0) OM(2)=P%b0   ! not fake fringe
     case(KINDPA)     ! fitted field for real magnet
        STOP 123   !  PATCH PROBLEMS???? CONVERTING TO PX ????
@@ -1061,7 +1064,7 @@ contains
     TYPE(MAGNET_CHART), POINTER::P
     INTEGER,OPTIONAL,INTENT(IN) ::POS
     TYPE(REAL_8), INTENT(INOUT) :: X(6),OM(3),B2,XP(2)
-    TYPE(REAL_8)  B(3),E(3),BPA(3),BPE(3),DLDS,D1,D2,GAMMA,EB(3),efd(3),XPA(2),ed(3),beta
+    TYPE(REAL_8)  B(3),E(3),BPA(3),BPE(3),DLDS,D1,D2,GAMMA,EB(3),efd(3),XPA(2),ed(3),beta,phi,del
     REAL(DP) BETA0,GAMMA0I
     INTEGER I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
@@ -1084,12 +1087,12 @@ contains
     CALL ALLOC(E,3)
     CALL ALLOC(Ed,3)
     CALL ALLOC(efd,3)
-    CALL ALLOC(beta)
+    CALL ALLOC(beta,del)
     CALL ALLOC(EB,3)
     CALL ALLOC(BPA,3)
     CALL ALLOC(BPE,3)
     CALL ALLOC(XPA,2)
-    CALL ALLOC(D1,D2,GAMMA)
+    CALL ALLOC(D1,D2,GAMMA,phi)
 
     el=>c%parent_fibre%magp
     P=>EL%P
@@ -1106,7 +1109,7 @@ contains
     xp(2)=x(4)   !  to prevent a crash in monitors, etc... CERN june 2010
     dlds=0.0_dp
 
-    CALL get_field(EL,B,E,X,k,POS)
+    CALL get_field(EL,B,E,phi,X,k,POS)
     SELECT CASE(EL%KIND)
     case(KIND2,kind5:kind7,kindwiggler) ! Straight for all practical purposes
        CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
@@ -1144,10 +1147,12 @@ contains
        !        call print(bpe(i),6)
        !        pause 12
        !       enddo
+
+           DEL=x(5)-phi*EL%P%CHARGE
        IF(k%TIME) THEN
-          DLDS=1.0_dp/SQRT(1.0_dp+2.0_dp*X(5)/P%BETA0+X(5)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+          DLDS=1.0_dp/SQRT(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
        ELSE
-          DLDS=1.0_dp/SQRT((1.0_dp+X(5))**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+          DLDS=1.0_dp/SQRT((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
        ENDIF
        if(pos>=0) OM(2)=P%b0   ! not fake fringe
     case(KINDPA)     ! fitted field for real magnet
@@ -1240,11 +1245,11 @@ contains
     CALL KILL(EB,3)
     CALL KILL(BPA,3)
     CALL KILL(BPE,3)
-    CALL KILL(D1,D2,GAMMA)
+    CALL KILL(D1,D2,GAMMA,phi)
     CALL KILL(XPA,2)
     CALL KILL(Ed,3)
     CALL KILL(efd,3)
-    CALL KILL(beta)
+    CALL KILL(beta,del)
 
     !  TESTBUG SATEESH
     !    CALL KILL(XS)
@@ -1252,18 +1257,18 @@ contains
 
   end subroutine get_omega_spinp
 
-  subroutine get_fieldr(EL,B,E,X,k,POS)
+  subroutine get_fieldr(EL,B,E,phi,X,k,POS)
     implicit none
     TYPE(ELEMENT), POINTER::EL
     INTEGER,OPTIONAL,INTENT(IN) ::POS
-    REAL(DP),INTENT(INOUT) :: B(3),E(3)
+    REAL(DP),INTENT(INOUT) :: B(3),E(3),phi
     REAL(DP),INTENT(INOUT) :: X(6)
-    REAL(DP) Z
+    REAL(DP) Z,VM
     INTEGER I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     B=0.0_dp
     E=0.0_dp
-
+    phi=0.0_dp
     SELECT CASE(EL%KIND)
     case(KIND2,kind5:kind7,KIND16:kind17,KIND20) ! Straight for all practical purposes
        if(present(pos)) then
@@ -1280,10 +1285,18 @@ contains
           IF(POS<0) THEN
              call get_Bfield_fringe(EL,B,X,pos,k)   ! fringe effect
           ELSE
-             CALL GETMULB_TEAPOT(EL%TP10,B,X)
+             if(EL%TP10%electric) then
+              call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.d0;
+             else
+              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
+             endif
           ENDIF
        else
-          CALL GETMULB_TEAPOT(EL%TP10,B,X)
+             if(EL%TP10%electric) then
+              call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.d0;
+             else
+              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
+             endif
        endif
     case(KINDPA)     ! fitted field for real magnet
        CALL B_PANCAkE(EL%PA,B,X,POS)
@@ -1318,21 +1331,23 @@ contains
 
   end subroutine get_fieldr
 
-  subroutine get_fieldp(EL,B,E,X,k,POS)
+  subroutine get_fieldp(EL,B,E,phi,X,k,POS)
     implicit none
     TYPE(ELEMENTP), POINTER::EL
     INTEGER,OPTIONAL,INTENT(IN) ::POS
-    TYPE(REAL_8),INTENT(INOUT) :: B(3),E(3)
+    TYPE(REAL_8),INTENT(INOUT) :: B(3),E(3),phi
     TYPE(REAL_8), INTENT(INOUT) :: X(6)
     INTEGER I
-    TYPE(REAL_8) z
+    TYPE(REAL_8) z,VM
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    
+    CALL alloc(VM,Z)
 
     DO I=1,3
        B(I)=0.0_dp
        E(I)=0.0_dp
     ENDDO
-
+    phi=0.0_dp
     SELECT CASE(EL%KIND)
     case(KIND2,kind5:kind7,KIND16:kind17,KIND20) ! Straight for all practical purposes
        if(present(pos)) then
@@ -1349,18 +1364,25 @@ contains
           IF(POS<0) THEN
              call get_Bfield_fringe(EL,B,X,pos,k)   ! fringe effect
           ELSE
-             CALL GETMULB_TEAPOT(EL%TP10,B,X)
+             if(EL%TP10%electric) then
+              call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.d0;
+             else
+              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
+             endif
           ENDIF
        else
-          CALL GETMULB_TEAPOT(EL%TP10,B,X)
+             if(EL%TP10%electric) then
+              call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.d0;
+             else
+              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
+             endif
        endif
+
     case(KINDPA)     ! fitted field for real magnet
        CALL B_PANCAkE(EL%PA,B,X,POS)
     case(KINDWIGGLER)
-       call alloc(z)
        CALL get_z_wi(EL%wi,POS,z)
        CALL B_FIELD(EL%wi,Z,X,B)
-       call kill(z)
     CASE(KIND4)      ! Pill box cavity
        CALL GET_BE_CAV(EL%C4,B,E,X,k)
     CASE(KIND21)     ! travelling wave cavity
@@ -1379,6 +1401,8 @@ contains
        B(I)=B(I)*EL%P%CHARGE
        E(I)=E(I)*EL%P%CHARGE
     ENDDO
+
+    CALL KILL(VM,Z)
 
   end subroutine get_fieldp
 
@@ -1618,7 +1642,7 @@ contains
     IF(k%NOCAVITY) RETURN
 
     O=twopi*EL%freq/CLIGHT
-    VL=EL%volt*1e-3_dp/EL%P%P0C
+    VL=EL%volt*volt_c/EL%P%P0C
     do ko=1,el%nf
 
        DF=0.0_dp
@@ -1710,7 +1734,7 @@ contains
     CALL ALLOC(BBYTWT,BBXTW,BBYTW,x1,x3)
 
     O=twopi*EL%freq/CLIGHT
-    VL=EL%volt*1e-3_dp/EL%P%P0C
+    VL=EL%volt*volt_c/EL%P%P0C
     do ko=1,el%nf
 
        DF=0.0_dp

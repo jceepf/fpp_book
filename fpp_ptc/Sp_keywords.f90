@@ -495,9 +495,9 @@ nmark=0
 !     write(MF,*) phase0,compute_stoch_kick,l%start%charge, " PHASE0, compute_stoch_kick, CHARGE"
     write(MF,*) CAVITY_TOTALPATH,ALWAYS_EXACTMIS,ALWAYS_EXACT_PATCHING, &
          "CAVITY_TOTALPATH,ALWAYS_EXACTMIS,ALWAYS_EXACT_PATCHING"
-    write(line,*) SECTOR_NMUL_MAX,SECTOR_NMUL,&
+    write(line,*) SECTOR_NMUL,sector_nmul_max,&
          OLD_IMPLEMENTATION_OF_SIXTRACK,HIGHEST_FRINGE,&
-         " SECTOR_NMUL_MAX,SECTOR_NMUL,OLD_IMPLEMENTATION_OF_SIXTRACK,HIGHEST_FRINGE"
+         " SECTOR_NMUL,SECTOR_NMUL_MAX,OLD_IMPLEMENTATION_OF_SIXTRACK,HIGHEST_FRINGE"
     write(mf,'(a255)')line
     write(line,*) wedge_coeff,valishev, " wedge_coeff", " Valishev Multipole "
     write(mf,'(a255)')line
@@ -594,10 +594,10 @@ nmark=0
     read(MF,*) MAD8_WEDGE
     read(MF,'(a255)') line
     original=default
-    if(allocated(s_b)) then
+  !  if(allocated(s_b)) then
        firsttime_coef=my_true
-       deallocate(s_b)
-    endif
+  !     deallocate(s_b)
+  !  endif
     !    L%MASS=MASSF
     MASSF=MASSF/pmae
     CALL MAKE_STATES(MASSF)
@@ -1795,10 +1795,10 @@ ffl=(index(LINEt,"FFL")/=0).or.(index(LINEt,"TFL")/=0).or. &
     read(MF,'(a120)') line
     original=default
     call input_sector(se2,se1)
-    if(allocated(s_b)) then
+!    if(allocated(s_b)) then
        firsttime_coef=my_true
-       deallocate(s_b)
-    endif
+!       deallocate(s_b)
+!    endif
     !    L%MASS=MASSF
     MASSF=MASSF/pmae
     CALL MAKE_STATES(MASSF)
@@ -2056,7 +2056,7 @@ open(unit=mf,file=filename,position=comt) !comt could be append for a complex un
    write(mf,*) highest_fringe  , " highest fringe "
    write(mf,*) lmax, " Maximum Length for Orbit "
    write(MF,*) ALWAYS_EXACTMIS,ALWAYS_EXACT_PATCHING  , "ALWAYS_EXACTMIS,ALWAYS_EXACT_PATCHING "
-   write(mf,*) SECTOR_NMUL_MAX,SECTOR_NMUL , " SECTOR_NMUL_MAX,SECTOR_NMUL "
+   write(mf,*) SECTOR_NMUL,SECTOR_NMUL_MAX , " SECTOR_NMUL,SECTOR_NMUL_MAX "
     
  write(mf,*) " $$$$$$$$$$$$$$$$$ START OF LAYOUT $$$$$$$$$$$$$$$$$"
 
@@ -2465,7 +2465,7 @@ character(120) line
 type(fibre),pointer :: s22
 type(element),pointer :: s2
 type(elementp), pointer :: s2p
-
+!integer SECTOR_NMUL_MAX
 
 integer mf,n
 
@@ -2488,7 +2488,7 @@ surv=my_true
    read(mf,*) highest_fringe  
    read(mf,*) lmax  
    read(MF,*) ALWAYS_EXACTMIS,ALWAYS_EXACT_PATCHING  
-   read(mf,*) SECTOR_NMUL_MAX,SECTOR_NMUL  
+   read(mf,*) SECTOR_NMUL , SECTOR_NMUL_MAX
  
 call make_states(my_false)
 call set_mad(energy=2.0d0)
@@ -2565,7 +2565,7 @@ if(ele0%slowac_recut_even_electric_MIS(5)) read(mf,NML=CHARTname)  ! reading mis
  
 
     call print_ElementLIST(s2,my_false)
- 
+
     s2p=0   
  
  !pause 665
@@ -2941,7 +2941,7 @@ endif
  f%even = ele0%slowac_recut_even_electric_MIS(3)
  f%electric = ele0%slowac_recut_even_electric_MIS(4)
  f%MIS = ele0%slowac_recut_even_electric_MIS(5)
-
+ solve_electric=f%electric
    F%L=ele0%L
 
    
@@ -3228,13 +3228,20 @@ implicit none
 type(element), target :: f
 logical(lp),optional ::  dir
 integer,optional :: mf
+ 
 
 if(present(dir)) then
 if(dir) then   !BETA0,GAMMA0I,GAMBET,MASS ,AG
 
-    
-
+ tp100%ae=0.0_dp
+ tp100%be=0.0_dp
+ 
  tp100%DRIFTKICK=F%tp10%DRIFTKICK
+ if(f%electric) then
+  tp100%ae(1:size(F%tp10%ae))=F%tp10%ae
+  tp100%be(1:size(F%tp10%be))=F%tp10%be
+ endif
+
      if(present(mf)) then
      write(mf,NML=tp100name)
     endif   
@@ -3243,8 +3250,12 @@ if(dir) then   !BETA0,GAMMA0I,GAMBET,MASS ,AG
     if(present(mf)) then
      read(mf,NML=tp100name)
     endif   
-
-
+   CALL SETFAMILY(f)
+ if(f%electric) then
+  F%tp10%ae=tp100%ae(1:sector_nmul_max) 
+  F%tp10%be=tp100%be(1:sector_nmul_max)
+  call GETAEBE(f%TP10)
+ endif
 
  F%tp10%DRIFTKICK=tp100%DRIFTKICK
 endif
@@ -3365,6 +3376,9 @@ character(*) filename
 integer i,j,i0,j0,i1,j1,jb,MF
 character (6) comt
 logical(lp) before,just
+logical, allocatable :: dna(:)
+
+allocate(dna(ud%n))
 
 comt='REWIND'
 if(present(com)) comt=com
@@ -3378,21 +3392,24 @@ call TIE_MAD_UNIVERSE(ud)
 
 r=>un%start
 
-write(mf,*) un%n, "trackable Layouts"
+write(mf,*) un%n, ud%n," trackable and DNA Layouts"
 
 
 do i=1,un%n
+dna=.false.
 write(mf,'(a120)') r%name
 p0=>r%start
 p=>p0
 call locate_in_universe(p,i0,j0)
 jb=j0
 j1=j0
-   write(mf,*) i,r%n," New "
+!   write(mf,*) i,r%n," New "
+   write(mf,*)  r%n," Number elements in pointed layout "
 
+dna(i0)=.true.
 
   call Print_initial_chart(p,mf)
-  write(mf,'(1x,i4,1x,i8,1x,i2,1x,a24)') i0,p%dir*j0,p%patch%patch,p%mag%name
+  write(mf,'(1x,i4,1x,i8,1x,i2,1x,a24,1x,i8)') i0,p%dir*j0,p%patch%patch,p%mag%name, 1
   call fib_fib0(p,my_true,mf)
   before=my_false
   just=my_false
@@ -3402,8 +3419,8 @@ j1=j0
   p=>p%next
     jb=j1
    call locate_in_universe(p,i1,j1)
-    write(mf,*) i1,p%dir*j1,p%patch%patch,p%mag%name
-       
+ write(mf,'(1x,i4,1x,i8,1x,i2,1x,a24,1x,i8)') i1,p%dir*j1,p%patch%patch,p%mag%name, j
+    dna(i1)=my_true      
        just=my_false
        if(before) then 
         call fib_fib0(p,my_true,mf)
@@ -3416,7 +3433,10 @@ j1=j0
        before=my_true   
     endif
  enddo
-
+ write(mf,*) " DNA SUMMARY "
+do i0=1,ud%n
+ write(mf,*) i0,dna(i0)
+enddo
 write(mf,*) " !!!!!!! End of Pointed Layout !!!!!!!"
 
  r=>r%next
@@ -3425,6 +3445,7 @@ enddo
 
 close(mf)
 
+deallocate(dna)
 
 end subroutine  print_universe_pointed
 
@@ -3436,12 +3457,12 @@ type(layout),pointer :: r,rd
 type(fibre),pointer :: p,p0,ps
 type(element),pointer :: m,m0
 character(*) filename
-integer i,j,i0,MF,n,n_u,k(3),mypause,ipause
+integer i,j,i0,MF,n,n_u,k(3),mypause,ipause,n_d,size_dna
 integer pos
 character(120) line,name1
-logical(lp) doneit
+logical(lp) doneit,first
 character(nlp) name
-
+logical, allocatable :: dna(:)
  
 call kanalnummer(mf)
 open(unit=mf,file=filename)
@@ -3450,14 +3471,14 @@ open(unit=mf,file=filename)
 call TIE_MAD_UNIVERSE(ud)
 
 
+read(mf,*)n_u,n_d
 
-
-read(mf,*)n_u
-
+allocate(dna(n_d))
 
 do i=1,n_u
    read(mf,'(a120)') name1 
-   read(mf,*) i0,n 
+!   read(mf,*) i0,n 
+   read(mf,*)  n 
 
   read(mf,'(a120)') line
  call read_initial_chart(mf)
@@ -3525,7 +3546,32 @@ endif
   p%chart%f%b=b_
   p%chart%f%exi=exi_
 call survey(r)
-read(mf,'(a10)') line(1:10)
+
+read(mf,'(a120)') line
+
+size_dna=0
+do j=1,n_d
+ read(mf,*) i0,dna(j)
+ if(dna(j)) size_dna=size_dna+1
+enddo
+
+ read(mf,'(a10)') line(1:10)
+
+! Setting up the dna
+ allocate(r%dna(size_dna))
+
+  i0=0
+ do j=1,n_d
+  if(dna(j))  then
+      i0=i0+1
+      call MOVE_TO_LAYOUT_I( ud,rd,j )    
+     r%dna(i0)%L=>rd
+  endif
+ enddo 
+ if(i0/=size_dna) then
+  write(6,*) i0,size_dna, "error in read_universe_pointed " 
+  stop 567
+ endif
 
 enddo
 
@@ -3533,6 +3579,7 @@ enddo
 
 close(mf)
 
+deallocate(dna)
 
 end subroutine  read_universe_pointed
 

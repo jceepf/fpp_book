@@ -265,8 +265,8 @@ TYPE TEAPOT
    real(dp),   POINTER:: VA,VS         !valishev-like multipole
    !!  electric info
    real(dp),  DIMENSION(:), POINTER :: AE,BE  ! an,bn for electric stuff
-   real(dp),  DIMENSION(:,:,:), POINTER :: As,Bs
-   real(dp),  POINTER :: e_x,e_y,PHI
+   real(dp),  DIMENSION(:),  POINTER :: e_x,e_y,PHI,vm
+   LOGICAL(LP), POINTER :: ELECTRIC
 END TYPE TEAPOT
 
 TYPE TEAPOTP
@@ -281,9 +281,9 @@ TYPE TEAPOTP
    integer, pointer :: f
    TYPE(REAL_8),   POINTER:: VA,VS         !valishev-like multipole
    !!  electric info
-   TYPE(REAL_8),  DIMENSION(:), POINTER :: AE,BE ! an,bn for electric stuff
-   real(dp),  DIMENSION(:,:,:), POINTER :: As,Bs
-   TYPE(REAL_8),  POINTER :: e_x,e_y,PHI
+   TYPE(REAL_8),  DIMENSION(:), POINTER :: AE,BE  ! an,bn for electric stuff
+   TYPE(REAL_8),  DIMENSION(:),  POINTER :: e_x,e_y,PHI,vm
+   LOGICAL(LP), POINTER :: ELECTRIC
 END TYPE TEAPOTP
 
 TYPE MON

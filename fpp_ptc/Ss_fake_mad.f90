@@ -38,7 +38,7 @@ contains
     call point_m_u(m_u,m_t)
   END subroutine ptc_ini_no_append
 
-  subroutine ptc_end(graphics_maybe,flat_file)
+  subroutine ptc_end(graphics_maybe,flat_file,file_m_u,file_m_t)
     implicit none
     integer i,i_layout
     character(120) filename
@@ -46,6 +46,7 @@ contains
     integer, optional :: graphics_maybe
     type(layout), pointer :: mring
     character(48) command_gino
+    character(*), optional :: file_m_u,file_m_t
    
     if(present(graphics_maybe)) then
         if(graphics_maybe>=1) call open_gino_graphics
@@ -60,9 +61,17 @@ contains
     if(present(flat_file)) then
       if(flat_file) then
         if(associated(m_t%start)) then  ! two universes
+           if(present(file_m_u).and.present(file_m_t)) then
+            write(6,*) "printing the universes in", file_m_u(1:len_trim(file_m_u)), &
+             file_m_t(1:len_trim(file_m_t))
+            call print_universe(m_u,file_m_u)
+            call print_universe_pointed(m_u,m_t,file_m_t)
+
+           else
            write(6,*) "printing the universes ",' m_u.txt and m_t.txt '
-           call print_universe(m_u,'m_u.txt')
-           call print_universe_pointed(m_u,m_t,'m_t.txt')
+            call print_universe(m_u,'m_u.txt')
+            call print_universe_pointed(m_u,m_t,'m_t.txt')
+           endif
         else
              mring=>m_u%start
        do i=1,m_u%n
@@ -79,10 +88,11 @@ contains
     call kill_universe(m_u)
     call kill_tpsa
     call kill(bmadl)
-    do i=1,size(s_b)
-       call nul_coef(s_b(i))
-    enddo
-    deallocate(s_b)
+!    do i=1,size(s_b)
+       call nul_coef(s_E)
+       call nul_coef(S_B_FROM_V)
+  !  enddo
+  !  deallocate(s_b)
 
 
 

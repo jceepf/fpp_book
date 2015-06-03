@@ -21,7 +21,7 @@ MODULE S_DEF_ELEMENT
   private ZERO_EL,ZERO_ELP
   !  PRIVATE MAGPSTATE,MAGSTATE
   PRIVATE SETFAMILYR,SETFAMILYP
-  PRIVATE ADDR_ANBN,ADDP_ANBN,bL_0,EL_BL,ELp_BL,COPY_BL,UNARYP_BL
+  PRIVATE ADD_ANBNR,ADD_ANBNP,bL_0,EL_BL,ELp_BL,COPY_BL,UNARYP_BL
   PRIVATE ELp_POL,bLPOL_0
   PRIVATE work_0,work_r,ELp_WORK,EL_WORK,WORK_EL,WORK_ELP,BL_EL,BL_ELP,unaryw_w
   PRIVATE ZERO_ANBN,ZERO_ANBN_R,ZERO_ANBN_P
@@ -59,8 +59,8 @@ MODULE S_DEF_ELEMENT
   end  INTERFACE
 
   INTERFACE ADD
-     MODULE PROCEDURE ADDR_ANBN
-     MODULE PROCEDURE ADDP_ANBN
+     MODULE PROCEDURE ADD_ANBNR
+     MODULE PROCEDURE ADD_ANBNP
   end  INTERFACE
 
   INTERFACE ZERO_ANBN
@@ -1308,7 +1308,7 @@ CONTAINS
        ENDIF
        EL%TP10%P=>EL%P
        EL%TP10%L=>EL%L
-       IF(EL%P%NMUL==0.OR.EL%P%NMUL>SECTOR_NMUL_MAX)       THEN
+       IF(EL%P%NMUL==0.OR.EL%P%NMUL>SECTOR_NMUL)       THEN
           w_p=0
           w_p%nc=2
           w_p%fc='((1X,A72,/,1X,A72))'
@@ -1324,31 +1324,44 @@ CONTAINS
        EL%TP10%H2=>EL%H2
        EL%TP10%VA=>EL%VA
        EL%TP10%VS=>EL%VS
-       NULLIFY(EL%TP10%BF_X);ALLOCATE(EL%TP10%BF_X(S_B(SECTOR_NMUL)%N_MONO))
-       NULLIFY(EL%TP10%BF_Y);ALLOCATE(EL%TP10%BF_Y(S_B(SECTOR_NMUL)%N_MONO))
-!       NULLIFY(EL%TP10%BF_X);ALLOCATE(EL%TP10%BF_X(S_B0%N_MONO))
-!       NULLIFY(EL%TP10%BF_Y);ALLOCATE(EL%TP10%BF_Y(S_B0%N_MONO))
-       !       NULLIFY(EL%TP10%BF_X);ALLOCATE(EL%TP10%BF_X(S_B(EL%P%NMUL)%N_MONO))
-       !       NULLIFY(EL%TP10%BF_Y);ALLOCATE(EL%TP10%BF_Y(S_B(EL%P%NMUL)%N_MONO))
+
+
+       NULLIFY(EL%TP10%BF_X);
+       NULLIFY(EL%TP10%BF_Y);
+
+       EL%TP10%ELECTRIC=>EL%ELECTRIC
+
+        ALLOCATE(EL%TP10%BF_X(S_E%N_MONO))
+        ALLOCATE(EL%TP10%BF_Y(S_E%N_MONO))
+ 
+
+        NULLIFY(EL%TP10%VM);ALLOCATE(EL%TP10%VM(S_E%N_MONO))
+
+        EL%TP10%VM=0.0_dp
+        EL%TP10%BF_X=0.0_dp
+        EL%TP10%BF_Y=0.0_dp
+
        NULLIFY(EL%TP10%DRIFTKICK);ALLOCATE(EL%TP10%DRIFTKICK);EL%TP10%DRIFTKICK=.true.;
        if(EL%ELECTRIC) then
-        NULLIFY(EL%TP10%E_X);ALLOCATE(EL%TP10%E_X)
-        NULLIFY(EL%TP10%E_Y);ALLOCATE(EL%TP10%E_Y)
-        NULLIFY(EL%TP10%PHI);ALLOCATE(EL%TP10%PHI)
-        NULLIFY(EL%TP10%AE);ALLOCATE(EL%TP10%AE(NO_E))
-        NULLIFY(EL%TP10%BE);ALLOCATE(EL%TP10%BE(NO_E))
-        NULLIFY(EL%TP10%AS);ALLOCATE(EL%TP10%AS(NO_E,0:NO_E,0:NO_E))
-        NULLIFY(EL%TP10%BS);ALLOCATE(EL%TP10%BS(NO_E,0:NO_E,0:NO_E))
-        EL%TP10%AS=0.0_dp
-        EL%TP10%BS=0.0_dp
-        EL%TP10%AE=0.0_dp
-        EL%TP10%BE=0.0_dp
+        NULLIFY(EL%TP10%E_X);ALLOCATE(EL%TP10%E_X(S_E%N_MONO))
+        NULLIFY(EL%TP10%E_Y);ALLOCATE(EL%TP10%E_Y(S_E%N_MONO))
+        NULLIFY(EL%TP10%PHI);ALLOCATE(EL%TP10%PHI(S_E%N_MONO))
+
+        NULLIFY(EL%TP10%AE);ALLOCATE(EL%TP10%AE(SECTOR_NMUL_max));
+        NULLIFY(EL%TP10%BE);ALLOCATE(EL%TP10%BE(SECTOR_NMUL_max));
+
+
         EL%TP10%E_X=0.0_dp
         EL%TP10%E_Y=0.0_dp
         EL%TP10%PHI=0.0_dp
-        call invert_electric_teapot(EL%TP10%AS,EL%TP10%BS)
+
+        EL%TP10%AE=0.0_DP;
+        EL%TP10%BE=0.0_DP;
+ !       call GETAEBE(EL%TP10) ! not efective here because ae=be=0
+       ELSE
+        call GETANBN(EL%TP10)  
        endif
-       call GETANBN(EL%TP10)
+
        NULLIFY(EL%TP10%F);ALLOCATE(EL%TP10%F);EL%TP10%F=1;
     CASE(KIND11:KIND14)
        if(.not.ASSOCIATED(EL%MON14)) THEN
@@ -1761,7 +1774,7 @@ CONTAINS
        ENDIF
        EL%TP10%P=>EL%P
        EL%TP10%L=>EL%L
-       IF(EL%P%NMUL==0.OR.EL%P%NMUL>SECTOR_NMUL_MAX)       THEN
+       IF(EL%P%NMUL==0.OR.EL%P%NMUL>SECTOR_NMUL)       THEN
           w_p=0
           w_p%nc=2
           w_p%fc='((1X,A72,/,1X,A72))'
@@ -1777,31 +1790,32 @@ CONTAINS
        EL%TP10%H2=>EL%H2
        EL%TP10%VA=>EL%VA
        EL%TP10%VS=>EL%VS
-       NULLIFY(EL%TP10%BF_X);ALLOCATE(EL%TP10%BF_X(S_B(SECTOR_NMUL)%N_MONO))
-       NULLIFY(EL%TP10%BF_Y);ALLOCATE(EL%TP10%BF_Y(S_B(SECTOR_NMUL)%N_MONO))
-!       NULLIFY(EL%TP10%BF_X);ALLOCATE(EL%TP10%BF_X(S_B0%N_MONO))
-!       NULLIFY(EL%TP10%BF_Y);ALLOCATE(EL%TP10%BF_Y(S_B0%N_MONO))
-       !       NULLIFY(EL%TP10%BF_X);ALLOCATE(EL%TP10%BF_X(S_B(EL%P%NMUL)%N_MONO))
-       !       NULLIFY(EL%TP10%BF_Y);ALLOCATE(EL%TP10%BF_Y(S_B(EL%P%NMUL)%N_MONO))
+       NULLIFY(EL%TP10%BF_X); 
+       NULLIFY(EL%TP10%BF_Y);
+       EL%TP10%ELECTRIC=>EL%ELECTRIC
+        ALLOCATE(EL%TP10%BF_X(S_B_FROM_V%N_MONO))
+        ALLOCATE(EL%TP10%BF_Y(S_B_FROM_V%N_MONO))
        NULLIFY(EL%TP10%DRIFTKICK);ALLOCATE(EL%TP10%DRIFTKICK);EL%TP10%DRIFTKICK=.true.;
-       CALL ALLOC(EL%TP10)
+  !     CALL ALLOC(EL%TP10)
+
+        NULLIFY(EL%TP10%VM);ALLOCATE(EL%TP10%VM(S_E%N_MONO))
+
+
        if(EL%ELECTRIC) then
-        NULLIFY(EL%TP10%E_X);ALLOCATE(EL%TP10%E_X)
-        NULLIFY(EL%TP10%E_Y);ALLOCATE(EL%TP10%E_Y)
-        NULLIFY(EL%TP10%PHI);ALLOCATE(EL%TP10%PHI)
-        NULLIFY(EL%TP10%AE);ALLOCATE(EL%TP10%AE(NO_E))
-        NULLIFY(EL%TP10%BE);ALLOCATE(EL%TP10%BE(NO_E))
-        call alloc(EL%TP10%E_X,EL%TP10%E_Y,EL%TP10%PHI)
-        call alloc(EL%TP10%AE,NO_E)
-        call alloc(EL%TP10%BE,NO_E)
-        NULLIFY(EL%TP10%AS);ALLOCATE(EL%TP10%AS(NO_E,0:NO_E,0:NO_E))
-        NULLIFY(EL%TP10%BS);ALLOCATE(EL%TP10%BS(NO_E,0:NO_E,0:NO_E))
-        EL%TP10%AS=0.0_dp
-        EL%TP10%BS=0.0_dp
-        call invert_electric_teapot(EL%TP10%AS,EL%TP10%BS)
-              !  write(6,*) " electric polymorph"
+        NULLIFY(EL%TP10%E_X);ALLOCATE(EL%TP10%E_X(S_E%N_MONO))
+        NULLIFY(EL%TP10%E_Y);ALLOCATE(EL%TP10%E_Y(S_E%N_MONO))
+        NULLIFY(EL%TP10%PHI);ALLOCATE(EL%TP10%PHI(S_E%N_MONO))
+
+        NULLIFY(EL%TP10%AE);ALLOCATE(EL%TP10%AE(SECTOR_NMUL_max)); 
+        NULLIFY(EL%TP10%BE);ALLOCATE(EL%TP10%BE(SECTOR_NMUL_max)); 
+
+        call alloc(EL%TP10)
+ !       call GETAEBE(EL%TP10) ! not efective here because ae=be=0
+       ELSE
+        call alloc(EL%TP10)
+        call GETANBN(EL%TP10)
        endif
-       call GETANBN(EL%TP10)
+
        NULLIFY(EL%TP10%F);ALLOCATE(EL%TP10%F);EL%TP10%F=1;
     CASE(KIND11:KIND14)
        if(.not.ASSOCIATED(EL%MON14)) THEN
@@ -2160,13 +2174,37 @@ CONTAINS
   END SUBROUTINE force_restore_ANBN
 
 
-  SUBROUTINE ADDR_ANBN(EL,NM,F,V)
+  SUBROUTINE ADD_ANBNR(EL,NM,F,V,electric)
     IMPLICIT NONE
     TYPE(ELEMENT), INTENT(INOUT) ::EL
     real(dp), INTENT(IN) ::V
     INTEGER, INTENT(IN) ::NM,F
     INTEGER I,N
     real(dp), ALLOCATABLE,dimension(:)::AN,BN
+    logical(lp), optional :: electric
+    logical(lp) elec
+    elec=my_false
+    if(present(electric)) elec=electric
+    if(elec.and.(.not.EL%KIND==kind10)) return
+
+if(elec) then
+    N=NM
+    IF(NM<0) N=-N
+    if(N>SECTOR_NMUL_max) THEN
+     WRITE(6,*) " ADD_ANBNR NOT PERMITTED N>SECTOR_NMUL  " ,N,SECTOR_NMUL_max
+     STOP
+    ENDIF
+    ! ALREADY THERE
+       IF(NM>0) THEN
+          EL%TP10%BE(N)= F*EL%TP10%BE(N)+V*volt_i
+       ELSE
+          EL%TP10%AE(N)= F*EL%TP10%AE(N)+V*volt_i
+       ENDIF
+       if(el%kind==kind10) then
+          call GETAEBE(EL%TP10)
+       endif
+else
+
     if(EL%KIND==kind1) return
     N=NM
     IF(NM<0) N=-N
@@ -2178,7 +2216,11 @@ CONTAINS
           EL%AN(N)= F*EL%AN(N)+V
        ENDIF
        if(el%kind==kind10) then
-          call GETANBN(EL%TP10)
+        if(el%electric) then
+        call GETAEBE(EL%TP10)
+        else
+         call GETANBN(EL%TP10)
+        endif
        endif
        if(el%kind==kind7) then
           call GETMAT7(EL%T7)
@@ -2243,7 +2285,11 @@ CONTAINS
     CASE(KIND10)
        EL%TP10%AN=>EL%AN
        EL%TP10%BN=>EL%BN
-       call GETANBN(EL%TP10)
+       if(el%electric) then
+        call GETAEBE(EL%TP10)
+       else
+        call GETANBN(EL%TP10)
+       endif
     CASE(KIND16,KIND20)
        EL%K16%AN=>EL%AN
        EL%K16%BN=>EL%BN
@@ -2269,7 +2315,7 @@ CONTAINS
        write(w_p%c(1),'(A13,A24,A27)')" THIS MAGNET ", MYTYPE(EL%KIND), " CANNOT ACCEPT ANs AND BNs "
        ! call !write_e(988)
     END SELECT
-
+endif
 
     !    if(el%kind==kind10) then
     !    call GETANBN(EL%TP10)
@@ -2278,15 +2324,38 @@ CONTAINS
     !       call GETMAT7(EL%T7)
     !    endif
 
-  END SUBROUTINE ADDR_ANBN
+  END SUBROUTINE ADD_ANBNR
 
-  SUBROUTINE ADDP_ANBN(EL,NM,F,V)
+  SUBROUTINE ADD_ANBNP(EL,NM,F,V,electric)
     IMPLICIT NONE
     TYPE(ELEMENTP), INTENT(INOUT) ::EL
     real(dp), INTENT(IN) ::V
     INTEGER, INTENT(IN) ::NM,F
     INTEGER I,N
     TYPE(REAL_8), ALLOCATABLE,dimension(:)::AN,BN
+    logical(lp), optional :: electric
+    logical(lp) elec
+    elec=my_false
+    if(present(electric)) elec=electric
+    if(elec.and.(.not.EL%KIND==kind10)) return
+if(elec) then
+    N=NM
+    IF(NM<0) N=-N
+    if(N>SECTOR_NMUL_max) THEN
+     WRITE(6,*) " ADD_ANBNP NOT PERMITTED N>SECTOR_NMUL  " ,N,SECTOR_NMUL_max
+     STOP
+    ENDIF
+    ! ALREADY THERE
+       IF(NM>0) THEN
+          EL%TP10%BE(N)= F*EL%TP10%BE(N)+V
+       ELSE
+          EL%TP10%AE(N)= F*EL%TP10%AE(N)+V
+       ENDIF
+       if(el%kind==kind10) then
+          call GETAEBE(EL%TP10)
+       endif
+else
+
     if(EL%KIND==kind1) return
 
     N=NM
@@ -2294,12 +2363,16 @@ CONTAINS
     ! ALREADY THERE
     IF(EL%P%NMUL>=N) THEN
        IF(NM>0) THEN
-          EL%BN(N)= F*EL%BN(N)+V
+          EL%BN(N)= F*EL%BN(N)+V*volt_i
        ELSE
-          EL%AN(N)= F*EL%AN(N)+V
+          EL%AN(N)= F*EL%AN(N)+V*volt_i
        ENDIF
        if(el%kind==kind10) then
-          call GETANBN(EL%TP10)
+        if(el%electric) then
+        call GETAEBE(EL%TP10)
+        else
+         call GETANBN(EL%TP10)
+        endif
        endif
        if(el%kind==kind7) then
           call GETMAT7(EL%T7)     !etienne
@@ -2362,7 +2435,11 @@ CONTAINS
     CASE(KIND10)
        EL%TP10%AN=>EL%AN
        EL%TP10%BN=>EL%BN
-       call GETANBN(EL%TP10)
+        if(el%electric) then
+        call GETAEBE(EL%TP10)
+        else
+         call GETANBN(EL%TP10)
+        endif
     CASE(KIND16,KIND20)
        EL%K16%AN=>EL%AN
        EL%K16%BN=>EL%BN
@@ -2388,7 +2465,7 @@ CONTAINS
        write(w_p%c(1),'(A13,A24,A27)')" THIS MAGNET ", MYTYPE(EL%KIND), " CANNOT ACCEPT ANs AND BNs "
        ! call !write_e(987)
     END SELECT
-
+ENDIF
     !if(el%kind==kind10) then
     !call GETANBN(EL%TP10)
     !endif
@@ -2396,7 +2473,7 @@ CONTAINS
     !   call GETMAT7(EL%T7)
     !endif
 
-  END SUBROUTINE ADDP_ANBN
+  END SUBROUTINE ADD_ANBNP
 
 
 
@@ -3261,13 +3338,19 @@ CONTAINS
        ELP%TP10%DRIFTKICK=EL%TP10%DRIFTKICK
        ELP%TP10%F=EL%TP10%F
        IF(EL%ELECTRIC) THEN
-        ELP%TP10%E_X=EL%TP10%E_X
-        ELP%TP10%E_Y=EL%TP10%E_Y
-        ELP%TP10%PHI=EL%TP10%PHI
-        DO I=1,NO_E
+ !     do i=1,S_E%N_MONO
+ !       ELP%TP10%E_X(I)=EL%TP10%E_X(i)
+ !       ELP%TP10%E_Y(I)=EL%TP10%E_Y(I)
+ !     enddo
+ !     do i=1,S_E%N_MONO
+ !       ELP%TP10%PHI(I)=EL%TP10%PHI(I)
+ !     enddo
+
+        DO I=1,SECTOR_NMUL_max     
          ELP%TP10%AE(I)=EL%TP10%AE(I)     
          ELP%TP10%BE(I)=EL%TP10%BE(I)     
-        enddo        
+        enddo   
+        call GETAEBE(ELP%TP10)     
        ENDIF
     ENDIF
 
@@ -3601,13 +3684,19 @@ CONTAINS
        ELP%TP10%DRIFTKICK=EL%TP10%DRIFTKICK
        ELP%TP10%F=EL%TP10%F
        IF(EL%ELECTRIC) THEN
-        ELP%TP10%E_X=EL%TP10%E_X
-        ELP%TP10%E_Y=EL%TP10%E_Y
-        ELP%TP10%PHI=EL%TP10%PHI
-        DO I=1,NO_E
+ !     do i=1,S_E%N_MONO
+ !       ELP%TP10%E_X(I)=EL%TP10%E_X(i)
+ !       ELP%TP10%E_Y(I)=EL%TP10%E_Y(I)
+ !     enddo
+ !     do i=1,S_E%N_MONO
+ !       ELP%TP10%PHI(I)=EL%TP10%PHI(I)
+ !     enddo
+
+        DO I=1,SECTOR_NMUL_max     
          ELP%TP10%AE(I)=EL%TP10%AE(I)     
          ELP%TP10%BE(I)=EL%TP10%BE(I)     
-        enddo        
+        enddo 
+        call GETAEBE(ELP%TP10)         
        ENDIF
        
     ENDIF
@@ -3941,13 +4030,19 @@ CONTAINS
        ELP%TP10%DRIFTKICK=EL%TP10%DRIFTKICK
        ELP%TP10%F=EL%TP10%F
        IF(EL%ELECTRIC) THEN
-        ELP%TP10%E_X=EL%TP10%E_X
-        ELP%TP10%E_Y=EL%TP10%E_Y
-        ELP%TP10%PHI=EL%TP10%PHI
-        DO I=1,NO_E
+ !     do i=1,S_E%N_MONO
+ !       ELP%TP10%E_X(I)=EL%TP10%E_X(i)
+ !       ELP%TP10%E_Y(I)=EL%TP10%E_Y(I)
+ !     enddo
+ !     do i=1,S_E%N_MONO
+ !       ELP%TP10%PHI(I)=EL%TP10%PHI(I)
+ !     enddo
+
+        DO I=1,SECTOR_NMUL_max     
          ELP%TP10%AE(I)=EL%TP10%AE(I)     
          ELP%TP10%BE(I)=EL%TP10%BE(I)     
-        enddo        
+        enddo  
+        call GETAEBE(ELP%TP10)         
        ENDIF
     ENDIF
 
@@ -4043,6 +4138,14 @@ CONTAINS
        ENDDO
     ENDIF
 
+    IF(ELP%KIND==KIND10) THEN
+        IF(ELP%ELECTRIC) THEN
+           DO I=1,SIZE(ELP%tp10%BE)
+              CALL resetpoly_R31(ELP%tp10%AE(I))
+              CALL resetpoly_R31(ELP%tp10%BE(I))
+           ENDDO
+        ENDIF
+    ENDIF
 
     IF(ELP%KIND==KIND4) THEN
        CALL resetpoly_R31(ELP%VOLT)
