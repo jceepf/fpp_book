@@ -9135,7 +9135,7 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
     logical(lp), optional :: kick
     logical(lp) kic
     INTEGER J,M,A,K
-
+!VM is the scalar potential of the magnetic field!!!!! 
     kic=my_false
     if(present(kick)) kic=kick
 
@@ -10296,7 +10296,7 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
 
 
     X(2)=X(2)+YL*DIR*B(1)
-    X(4)=X(4)+YL*DIR**B(2)
+    X(4)=X(4)+YL*DIR*B(2)
     IF(.NOT.EL%DRIFTKICK) THEN
        X(2)=X(2)+YL*DIR*EL%BN(1)*(1.0_dp+X(1)*EL%P%B0)
     ENDIF
