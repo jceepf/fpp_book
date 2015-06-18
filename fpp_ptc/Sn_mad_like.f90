@@ -71,6 +71,7 @@ module Mad_like
      LOGICAL(LP) KILL_ENT_FRINGE,KILL_EXI_FRINGE,BEND_FRINGE
      integer PERMFRINGE
      REAL(DP) DPHAS,PSI,dvds
+     logical(lp) usethin
      INTEGER N_BESSEL
      !     logical(lp) in,out
   END TYPE EL_LIST
@@ -709,6 +710,7 @@ CONTAINS
        s2%PSI=0.0_dp
        s2%dvds=0.0_dp
        s2%N_BESSEL=0
+       s2%usethin=my_true
 
     ENDIF
   END SUBROUTINE EL_0
@@ -998,7 +1000,7 @@ CONTAINS
     HKICKTILT%L=L1
     HKICKTILT%LD=L1
     HKICKTILT%LC=L1
-    IF(L1==0.0_dp) THEN
+    IF(L1==0.0_dp.and.HKICKTILT%usethin) THEN
        HKICKTILT%K(1)=-K11        ! MAD convention K1>0 means px > 0
        HKICKTILT%KIND=MADKIND3N
        HKICKTILT%nmul=1
@@ -1046,7 +1048,7 @@ CONTAINS
     VKICKTILT%L=L1
     VKICKTILT%LD=L1
     VKICKTILT%LC=L1
-    IF(L1==0.0_dp) THEN
+    IF(L1==0.0_dp.and.VKICKTILT%usethin) THEN
        VKICKTILT%KS(1)=K11        ! MAD convention K1>0 means px > 0
        VKICKTILT%KIND=MADKIND3S
        VKICKTILT%nmul=1
@@ -1106,7 +1108,7 @@ CONTAINS
     GKICKTILT%L=L1
     GKICKTILT%LD=L1
     GKICKTILT%LC=L1
-    IF(L1==0.0_dp) THEN
+    IF(L1==0.0_dp.and.GKICKTILT%usethin) THEN
        GKICKTILT%K(1)=-K11        ! MAD convention K1>0 means px > 0
        GKICKTILT%KS(1)=K21        ! MAD convention K1>0 means px > 0
        GKICKTILT%KIND=KIND3
@@ -1163,7 +1165,7 @@ CONTAINS
     QUADTILT%LD=L1
     QUADTILT%LC=L1
     QUADTILT%K(2)=K11
-    IF(L1==0.0_dp) THEN
+    IF(L1==0.0_dp.and.QUADTILT%usethin) THEN
        QUADTILT%K(2)=K11
        QUADTILT%KIND=MADKIND3N
     ELSE
@@ -1207,7 +1209,7 @@ CONTAINS
     multipoleTILT%L=L1
     multipoleTILT%LD=L1
     multipoleTILT%LC=L1
-    IF(L1==0.0_dp) THEN
+    IF(L1==0.0_dp.and.multipoleTILT%usethin) THEN
        multipoleTILT%KIND=MADKIND3N
     ELSE
        multipoleTILT%KIND=MADKIND2
@@ -1319,7 +1321,7 @@ CONTAINS
     SOLTILT%LC=L1
     SOLTILT%BSOL=K11
     SOLTILT%nmul=2
-    IF(L1==0.0_dp) THEN
+    IF(L1==0.0_dp.and.SOLTILT%usethin) THEN
        SOLTILT%KIND=KIND3    ! used to be kind0
     ELSE
        SOLTILT%K(2)=KQ !/FAC(2)    ! MAD FACTOR
@@ -1373,7 +1375,7 @@ CONTAINS
     SEXTTILT%L=L1
     SEXTTILT%LD=L1
     SEXTTILT%LC=L1
-    IF(L1==0.0_dp) THEN
+    IF(L1==0.0_dp.and.SEXTTILT%usethin) THEN
        SEXTTILT%K(3)=K11  !/FAC(3)    ! MAD FACTOR
        SEXTTILT%KIND=MADKIND3N
     ELSE
@@ -1425,7 +1427,7 @@ CONTAINS
     OCTUTILT%L=L1
     OCTUTILT%LD=L1
     OCTUTILT%LC=L1
-    IF(L1==0.0_dp) THEN
+    IF(L1==0.0_dp.and.OCTUTILT%usethin) THEN
        OCTUTILT%K(4)=K11 !/FAC(4)         ! MAD FACTOR
        OCTUTILT%KIND=MADKIND3N
     ELSE
