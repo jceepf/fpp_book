@@ -1357,7 +1357,7 @@ CONTAINS
 
         EL%TP10%AE=0.0_DP;
         EL%TP10%BE=0.0_DP;
- !       call GETAEBE(EL%TP10) ! not efective here because ae=be=0
+        call GETAEBE(EL%TP10) ! not efective here because ae=be=0 but need on magnetic field
        ELSE
         call GETANBN(EL%TP10)  
        endif
@@ -1810,7 +1810,7 @@ CONTAINS
         NULLIFY(EL%TP10%BE);ALLOCATE(EL%TP10%BE(SECTOR_NMUL_max)); 
 
         call alloc(EL%TP10)
- !       call GETAEBE(EL%TP10) ! not efective here because ae=be=0
+        call GETAEBE(EL%TP10) ! not efective here because ae=be=0 but need on magnetic field
        ELSE
         call alloc(EL%TP10)
         call GETANBN(EL%TP10)
