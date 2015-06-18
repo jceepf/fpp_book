@@ -148,6 +148,7 @@ MODULE S_DEF_KIND
   private rk2bmad_cavr,rk2bmad_cavp,rk4bmad_cavr,rk4bmad_cavp,rk6bmad_cavr,rk6bmad_cavp
   private track_slice4r,track_slice4p,PATCH_driftR,PATCH_driftp
   private  ZEROr_sol5,ZEROp_sol5
+  logical(lp) :: tpsa_quad_sad=my_false
 
   INTERFACE TRACK_SLICE
 !     MODULE PROCEDURE INTER_CAV4
@@ -3936,10 +3937,12 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
 
     IF(K1==1.AND.EL%KILL_ENT_FRINGE) RETURN
     IF(K1==2.AND.EL%KILL_EXI_FRINGE) RETURN
+    if(.not. tpsa_quad_sad) then
     if(a2%kind/=1.or.b2%kind/=1) then
      write(6,*) " quadrupole strengths cannot be Taylors in FRINGE2QUADP "
      stop
     endif 
+    endif
 
     call alloc(PZ,TIME_FAC,f1,f2)
 
@@ -3958,8 +3961,11 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
        I=-EL%CHARGE
     ENDIF
 
-    
-    b=sqrt(b2%r**2+a2%r**2)
+    if(tpsa_quad_sad) then
+     b=sqrt(b2**2+a2**2)
+    else
+     b=sqrt(b2%r**2+a2%r**2)
+    endif
 
     f1=-i*fint*abs(fint)*b/pz/24.0_dp
     f2=hgap*b/pz

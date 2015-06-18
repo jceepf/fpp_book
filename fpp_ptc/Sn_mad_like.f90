@@ -1000,7 +1000,7 @@ CONTAINS
     HKICKTILT%L=L1
     HKICKTILT%LD=L1
     HKICKTILT%LC=L1
-    IF(L1==0.0_dp.and.HKICKTILT%usethin) THEN
+    IF(L1==0.0_dp) THEN
        HKICKTILT%K(1)=-K11        ! MAD convention K1>0 means px > 0
        HKICKTILT%KIND=MADKIND3N
        HKICKTILT%nmul=1
@@ -1038,6 +1038,7 @@ CONTAINS
     CHARACTER(*), INTENT(IN):: NAME
     real(dp) ,OPTIONAL, INTENT(IN):: L,kick
     real(dp) L1,K11
+
     L1=0.0_dp
     K11=0.0_dp
     IF(PRESENT(L)) L1=L
@@ -1048,7 +1049,7 @@ CONTAINS
     VKICKTILT%L=L1
     VKICKTILT%LD=L1
     VKICKTILT%LC=L1
-    IF(L1==0.0_dp.and.VKICKTILT%usethin) THEN
+    IF(L1==0.0_dp) THEN
        VKICKTILT%KS(1)=K11        ! MAD convention K1>0 means px > 0
        VKICKTILT%KIND=MADKIND3S
        VKICKTILT%nmul=1
@@ -1087,6 +1088,11 @@ CONTAINS
     CHARACTER(*), INTENT(IN):: NAME
     real(dp) ,OPTIONAL, INTENT(IN):: L ,hkick ,vkick
     real(dp) L1,K11,K21
+    logical(lp) usethin
+    usethin=my_true
+    if(present(list)) then
+     usethin=list%usethin
+    endif
     L1=0.0_dp
     K11=0.0_dp
     K21=0.0_dp
@@ -1108,7 +1114,7 @@ CONTAINS
     GKICKTILT%L=L1
     GKICKTILT%LD=L1
     GKICKTILT%LC=L1
-    IF(L1==0.0_dp.and.GKICKTILT%usethin) THEN
+    IF(L1==0.0_dp.and.usethin) THEN
        GKICKTILT%K(1)=-K11        ! MAD convention K1>0 means px > 0
        GKICKTILT%KS(1)=K21        ! MAD convention K1>0 means px > 0
        GKICKTILT%KIND=KIND3
@@ -1150,6 +1156,11 @@ CONTAINS
     CHARACTER(*), INTENT(IN):: NAME
     real(dp) ,optional, INTENT(IN):: L,K1
     real(dp) L1,K11
+    logical(lp) usethin
+    usethin=my_true
+    if(present(list)) then
+     usethin=list%usethin
+    endif
     L1=0.0_dp
     K11=0.0_dp
     IF(PRESENT(L)) L1=L
@@ -1165,7 +1176,7 @@ CONTAINS
     QUADTILT%LD=L1
     QUADTILT%LC=L1
     QUADTILT%K(2)=K11
-    IF(L1==0.0_dp.and.QUADTILT%usethin) THEN
+    IF(L1==0.0_dp.and.usethin) THEN
        QUADTILT%K(2)=K11
        QUADTILT%KIND=MADKIND3N
     ELSE
@@ -1199,8 +1210,13 @@ CONTAINS
     type (EL_LIST), INTENT(IN)::list
     type (TILTING),optional, INTENT(IN):: T
     CHARACTER(*), INTENT(IN):: NAME
-
+    logical(lp) usethin
     real(dp) L1,K11
+
+
+     usethin=list%usethin
+    
+
     L1=0.0_dp
     K11=0.0_dp
     multipoleTILT=list
@@ -1209,7 +1225,7 @@ CONTAINS
     multipoleTILT%L=L1
     multipoleTILT%LD=L1
     multipoleTILT%LC=L1
-    IF(L1==0.0_dp.and.multipoleTILT%usethin) THEN
+    IF(L1==0.0_dp.and.usethin) THEN
        multipoleTILT%KIND=MADKIND3N
     ELSE
        multipoleTILT%KIND=MADKIND2
@@ -1300,6 +1316,12 @@ CONTAINS
     CHARACTER(*), INTENT(IN):: NAME
     real(dp) ,optional, INTENT(IN):: L,KS,K1
     real(dp) L1,K11,kq
+    logical(lp) usethin
+
+    usethin=my_true
+    if(present(list)) then
+     usethin=list%usethin
+    endif
 
     L1=0.0_dp
     K11=0.0_dp
@@ -1321,7 +1343,7 @@ CONTAINS
     SOLTILT%LC=L1
     SOLTILT%BSOL=K11
     SOLTILT%nmul=2
-    IF(L1==0.0_dp.and.SOLTILT%usethin) THEN
+    IF(L1==0.0_dp.and.usethin) THEN
        SOLTILT%KIND=KIND3    ! used to be kind0
     ELSE
        SOLTILT%K(2)=KQ !/FAC(2)    ! MAD FACTOR
@@ -1360,7 +1382,11 @@ CONTAINS
     CHARACTER(*), INTENT(IN):: NAME
     real(dp),optional , INTENT(IN):: L,K2
     real(dp) L1,K11
-
+    logical(lp) usethin
+    usethin=my_true
+    if(present(list)) then
+     usethin=list%usethin
+    endif
     L1=0.0_dp
     K11=0.0_dp
     IF(PRESENT(L)) L1=L
@@ -1375,7 +1401,7 @@ CONTAINS
     SEXTTILT%L=L1
     SEXTTILT%LD=L1
     SEXTTILT%LC=L1
-    IF(L1==0.0_dp.and.SEXTTILT%usethin) THEN
+    IF(L1==0.0_dp.and.usethin) THEN
        SEXTTILT%K(3)=K11  !/FAC(3)    ! MAD FACTOR
        SEXTTILT%KIND=MADKIND3N
     ELSE
@@ -1413,6 +1439,11 @@ CONTAINS
     CHARACTER(*), INTENT(IN):: NAME
     real(dp) ,optional, INTENT(IN):: L,K3
     real(dp) L1,K11
+    logical(lp) usethin
+    usethin=my_true
+    if(present(list)) then
+     usethin=list%usethin
+    endif
     L1=0.0_dp
     K11=0.0_dp
     IF(PRESENT(L)) L1=L
@@ -1427,7 +1458,7 @@ CONTAINS
     OCTUTILT%L=L1
     OCTUTILT%LD=L1
     OCTUTILT%LC=L1
-    IF(L1==0.0_dp.and.OCTUTILT%usethin) THEN
+    IF(L1==0.0_dp.and.usethin) THEN
        OCTUTILT%K(4)=K11 !/FAC(4)         ! MAD FACTOR
        OCTUTILT%KIND=MADKIND3N
     ELSE

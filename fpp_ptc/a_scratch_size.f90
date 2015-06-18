@@ -710,7 +710,7 @@ contains
 
       return
       
-  end
+   end subroutine dofma
 end module precision_constants
 
 
