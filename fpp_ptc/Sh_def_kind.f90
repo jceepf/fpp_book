@@ -144,7 +144,7 @@ MODULE S_DEF_KIND
   logical(lp):: solve_electric=.false.
   !  integer :: nvalishev=100
   PRIVATE feval_teapotr,feval_teapotP
-  PRIVATE Abmad_TRANSR,Abmad_TRANSP,Abmad_TRANS
+  PRIVATE Abmad_TRANSR,Abmad_TRANSP 
   private rk2bmad_cavr,rk2bmad_cavp,rk4bmad_cavr,rk4bmad_cavp,rk6bmad_cavr,rk6bmad_cavp
   private track_slice4r,track_slice4p,PATCH_driftR,PATCH_driftp
   private  ZEROr_sol5,ZEROp_sol5
@@ -1925,12 +1925,13 @@ CALL FRINGECAV(EL,X,k,2)
     call KILL(BBYTWT,BBXTW,BBYTW,x1,x3,O)
   END SUBROUTINE CAVITYP
 !!!!! Saga stuff !!!!!
-  SUBROUTINE Abmad_TRANSR(EL,Z,X,k,A,AD)    ! EXP(-I:(X^2+Y^2)/2*A_TRANS:)
+  SUBROUTINE Abmad_TRANSR(EL,Z,X,k,A,AD,B,E)    ! EXP(-I:(X^2+Y^2)/2*A_TRANS:)
     IMPLICIT NONE
     real(dp),INTENT(INOUT):: X(6)
     real(dp),INTENT(INOUT):: Z,A(3),AD(2)
+    real(dp),optional,INTENT(INOUT)::B(3),E(3)
     TYPE(CAV4),INTENT(INOUT):: EL
-    real(dp) C1,S1,V,O
+    real(dp) C1,S1,V,O,dad1dz
      INTEGER KO
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
@@ -1944,32 +1945,43 @@ CALL FRINGECAV(EL,X,k,2)
 
     A=0.0_dp
     ad=0.0_dp
+    dad1dz=0.0_dp
    do ko=1,el%nf    ! over modes
    
     C1=el%f(ko)*V*sin(ko*O*z)*COS(ko*O*(x(6)+EL%t)+EL%PHAS+EL%phase0+EL%PH(KO))*0.5_dp
     S1=-el%f(ko)*(ko*O)*V*sin(ko*O*z)*SIN(ko*O*(x(6)+EL%t)+EL%PHAS+EL%phase0+EL%PH(KO))/4.0_dp
     AD(1)=-C1+AD(1)
     AD(2)=S1+AD(2)
+    dad1dz=dad1dz-(ko*O)*el%f(ko)*V*cos(ko*O*z)*COS(ko*O*(x(6)+EL%t)+EL%PHAS+EL%phase0+EL%PH(KO))*0.5_dp
 
-    A(1)=AD(1)*X(1)+A(1)
-    A(2)=AD(1)*X(3)+A(2)
 !!!   DA_3/DT FOR KICK IN X(5)    
     A(3)=A(3)-EL%P%DIR*el%f(ko)*V*COS(ko*O*z)*SIN(ko*O*(x(6)+EL%t)+EL%PHAS+EL%PH(KO)+EL%phase0)
    enddo
 
-  !     x(5)=x(5)-el%f(ko)*F*VL*cos(kbmad*ko*O*z)*SIN(ko*O*(x(6)+EL%t)+EL%PHAS+EL%PH(KO)+EL%phase0)
- 
+    A(1)=AD(1)*X(1)  ! A_x
+    A(2)=AD(1)*X(3)  ! A_y
 
+     if(present(b)) then
+     b(1)=-dad1dz*x(3)/EL%P%CHARGE
+     b(2)= dad1dz*x(1)/EL%P%CHARGE
+     b(3)=0.0_dp
+    endif
 
+    if(present(e)) then
+     E(1)=-dad1dz*x(3)/EL%P%CHARGE
+     E(2)= dad1dz*x(1)/EL%P%CHARGE
+     E(3)=A(3)/EL%P%CHARGE
+    endif
 
   END SUBROUTINE Abmad_TRANSR
 
- SUBROUTINE Abmad_TRANSP(EL,Z,X,k,A,AD)    ! EXP(-I:(X^2+Y^2)/2*A_TRANS:)
+ SUBROUTINE Abmad_TRANSP(EL,Z,X,k,A,AD,B,E)    ! EXP(-I:(X^2+Y^2)/2*A_TRANS:)
     IMPLICIT NONE
     TYPE(REAL_8),INTENT(INOUT):: X(6)
     TYPE(REAL_8),INTENT(INOUT):: Z,A(3),AD(2)
     TYPE(CAV4P),INTENT(INOUT):: EL
-    TYPE(REAL_8) C1,S1,V,O
+    TYPE(REAL_8),optional,INTENT(INOUT):: B(3),E(3)
+    TYPE(REAL_8) C1,S1,V,O,dad1dz
      INTEGER KO
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
@@ -1977,7 +1989,7 @@ CALL FRINGECAV(EL,X,k,2)
     IF(k%NOCAVITY.and.(.not.EL%always_on)) RETURN
     IF(EL%THIN) RETURN
     
-    CALL ALLOC(C1,S1,V,O)
+    CALL ALLOC(C1,S1,V,O,dad1dz)
 
     O=EL%freq*twopi/CLIGHT
     V=EL%P%CHARGE*EL%volt*volt_c/EL%P%P0C
@@ -1989,6 +2001,8 @@ CALL FRINGECAV(EL,X,k,2)
      AD(KO)=0.0_dp
     ENDDO
 
+    dad1dz=0.0_dp
+
    do ko=1,el%nf    ! over modes
    
     C1=el%f(ko)*V*sin(ko*O*z)*COS(ko*O*(x(6)+EL%t)+EL%PHAS+EL%phase0+EL%PH(KO))*0.5_dp
@@ -1996,16 +2010,28 @@ CALL FRINGECAV(EL,X,k,2)
     AD(1)=-C1+AD(1)
     AD(2)=S1+AD(2)
 
-    A(1)=AD(1)*X(1)+A(1)
-    A(2)=AD(1)*X(3)+A(2)
+    dad1dz=dad1dz-(ko*O)*el%f(ko)*V*cos(ko*O*z)*COS(ko*O*(x(6)+EL%t)+EL%PHAS+EL%phase0+EL%PH(KO))*0.5_dp
+
 !!!   DA_3/DT FOR KICK IN X(5)    
     A(3)=A(3)-EL%P%DIR*el%f(ko)*V*COS(ko*O*z)*SIN(ko*O*(x(6)+EL%t)+EL%PHAS+EL%PH(KO)+EL%phase0)
    enddo
 
-  !     x(5)=x(5)-el%f(ko)*F*VL*cos(kbmad*ko*O*z)*SIN(ko*O*(x(6)+EL%t)+EL%PHAS+EL%PH(KO)+EL%phase0)
+    A(1)=AD(1)*X(1)
+    A(2)=AD(1)*X(3)
  
+     if(present(b)) then
+     b(1)=-dad1dz*x(3)/EL%P%CHARGE
+     b(2)= dad1dz*x(1)/EL%P%CHARGE
+     b(3)=0.0_dp
+    endif
 
-    CALL KILL(C1,S1,V,O)
+    if(present(e)) then
+     E(1)=-dad1dz*x(3)/EL%P%CHARGE
+     E(2)= dad1dz*x(1)/EL%P%CHARGE
+     E(3)=A(3)/EL%P%CHARGE
+    endif
+
+    CALL KILL(C1,S1,V,O,dad1dz)
 
 
   END SUBROUTINE Abmad_TRANSP
