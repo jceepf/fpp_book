@@ -1031,17 +1031,19 @@ contains
 
     !  MUST ALWAYS COMPUTER GAMMA EVEN IF TIME=FALSE.
     GAMMA=P%BETA0/P%GAMMA0I*( 1.0_dp/P%BETA0 + X(5) )
+    beta=sqrt(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)/(1.0_dp/P%BETA0 + x(5))  ! replaced  
 
     OM(1)=-DLDS*( (1.0_dp+p%AG*GAMMA)*BPE(1) + (1.0_dp+p%AG)*BPA(1) )
     OM(2)=-DLDS*( (1.0_dp+p%AG*GAMMA)*BPE(2) + (1.0_dp+p%AG)*BPA(2) )+OM(2)
     OM(3)=-DLDS*( (1.0_dp+p%AG*GAMMA)*BPE(3) + (1.0_dp+p%AG)*BPA(3) )
 
-    beta=sqrt(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)*P%BETA0/P%GAMMA0I  
+
 
     DO I=1,3
-       OM(I)=OM(I)-DLDS*beta*(p%AG+GAMMA/(1.0_dp+GAMMA))*EB(I)
+       OM(I)=OM(I)+DLDS*beta*gamma*(p%AG+1.0_dp/(1.0_dp+GAMMA))*EB(I)
     ENDDO
     
+   beta=sqrt(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)*P%BETA0/P%GAMMA0I  ! replace  this
 
     om(1)=-DLDS*0.5_dp*e_muon*beta*(ed(2)*BPE(3)-ed(3)*BPE(2)) +  om(1)
     om(2)=-DLDS*0.5_dp*e_muon*beta*(ed(3)*BPE(1)-ed(1)*BPE(3)) +  om(2)
@@ -1191,14 +1193,17 @@ contains
     OM(2)=-DLDS*a_spin_scale*( (1.0_dp+p%AG*GAMMA)*BPE(2) + (1.0_dp+p%AG)*BPA(2) )+OM(2)
     OM(3)=-DLDS*a_spin_scale*( (1.0_dp+p%AG*GAMMA)*BPE(3) + (1.0_dp+p%AG)*BPA(3) )
 
-    beta=sqrt(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)*P%BETA0/P%GAMMA0I 
+
+    beta=sqrt(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)/(1.0_dp/P%BETA0 + x(5))  ! replaced 
+
 
     DO I=1,3
-       OM(I)=OM(I)-DLDS*beta*(p%AG+GAMMA/(1.0_dp+GAMMA))*EB(I)
+       OM(I)=OM(I)+a_spin_scale*DLDS*beta*gamma*(p%AG+1.0_dp/(1.0_dp+GAMMA))*EB(I)
     ENDDO
 
     e_muon_scale%r=e_muon
- 
+    beta=sqrt(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)*P%BETA0/P%GAMMA0I 
+
     om(1)=-DLDS*0.5_dp*e_muon_scale*beta*(ed(2)*BPE(3)-ed(3)*BPE(2)) +  om(1)
     om(2)=-DLDS*0.5_dp*e_muon_scale*beta*(ed(3)*BPE(1)-ed(1)*BPE(3)) +  om(2)
     om(3)=-DLDS*0.5_dp*e_muon_scale*beta*(ed(1)*BPE(2)-ed(2)*BPE(1)) +  om(3)
@@ -1908,13 +1913,14 @@ contains
 
     IF(PRESENT(EF)) THEN
 
-       EFB(1)=EF(2)*E(3)-EF(3)*E(2)      
-       EFB(2)=EF(3)*E(1)-EF(1)*E(3)
-       EFB(3)=EF(1)*E(2)-EF(2)*E(1)
+       EFB(1)=-EF(2)*E(3)+EF(3)*E(2)      ! changed sign txE of Barber
+       EFB(2)=-EF(3)*E(1)+EF(1)*E(3)
+       EFB(3)=-EF(1)*E(2)+EF(2)*E(1)
        be=EF(1)*e(1)+EF(2)*e(2)+EF(3)*e(3)
        do i=1,3
          EFD(i)=be*e(i)
         enddo
+
     endif
   END subroutine B_PARA_PERPr
 
@@ -1946,9 +1952,9 @@ contains
     enddo
 
     IF(PRESENT(EF)) THEN
-       EFB(1)=EF(2)*E(3)-EF(3)*E(2)
-       EFB(2)=EF(3)*E(1)-EF(1)*E(3)
-       EFB(3)=EF(1)*E(2)-EF(2)*E(1)
+       EFB(1)=-EF(2)*E(3)+EF(3)*E(2)      ! changed sign txE of Barber
+       EFB(2)=-EF(3)*E(1)+EF(1)*E(3)
+       EFB(3)=-EF(1)*E(2)+EF(2)*E(1)
        be=EF(1)*e(1)+EF(2)*e(2)+EF(3)*e(3)
        do i=1,3
          EFD(i)=be*e(i)

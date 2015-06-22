@@ -2855,8 +2855,10 @@ if(dir) then   !BETA0,GAMMA0I,GAMBET,MASS ,AG
  ELE0%name_vorname(2)="'"//f%vorname//"' "
  ele0%an=0.0_dp
  ele0%an=0.0_dp
- ele0%an(1:f%p%nmul)=f%an(1:f%p%nmul)
- ele0%bn(1:f%p%nmul)=f%bn(1:f%p%nmul)
+if(f%p%nmul>0) then
+  ele0%an(1:f%p%nmul)=f%an(1:f%p%nmul)
+  ele0%bn(1:f%p%nmul)=f%bn(1:f%p%nmul)
+endif
  ele0%VOLT_FREQ_PHAS=0.0_dp
  ele0%B_SOL=0.0_dp
  
