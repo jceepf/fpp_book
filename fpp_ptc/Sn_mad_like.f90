@@ -1490,13 +1490,13 @@ CONTAINS
     endif
 
     if(present(t))then
-       IF(EXACT_MODEL) THEN                 ! .and.madkind2==kind2
+       IF(EXACT_MODEL.or.solve_electric) THEN                 ! .and.madkind2==kind2
           SBTILT=POTTILT(NAME,L1,ANG1,E11,E22,T,LIST)
        ELSE
           SBTILT=GBEND(NAME,L1,ANG1,E11,E22,T,LIST)
        ENDIF
     else
-       IF(EXACT_MODEL) THEN                 ! .and.madkind2==kind2
+       IF(EXACT_MODEL.or.solve_electric) THEN                 ! .and.madkind2==kind2
           SBTILT=POTTILT(NAME,L1,ANG1,E11,E22)
        ELSE
           SBTILT=GBEND(NAME,L1,ANG1,E11,E22)

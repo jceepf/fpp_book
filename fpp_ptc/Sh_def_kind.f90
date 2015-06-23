@@ -3683,7 +3683,7 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
     !     write(6,*) " Fringer should be called in exact magnets only "
     !     stop 101
     !    endif
-
+    IF(.not.EL%exact) RETURN
     IF(.not.EL%BEND_FRINGE) RETURN
     IF(K1==1.AND.EL%KILL_ENT_FRINGE) RETURN
     IF(K1==2.AND.EL%KILL_EXI_FRINGE) RETURN
@@ -3790,7 +3790,7 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
     !     stop 102
     !    endif
 
-
+    IF(.not.EL%exact) RETURN
     IF(.not.EL%BEND_FRINGE) RETURN
     IF(K1==1.AND.EL%KILL_ENT_FRINGE) RETURN
     IF(K1==2.AND.EL%KILL_EXI_FRINGE) RETURN
@@ -9053,17 +9053,21 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
        DO J=1,S_E%N_MONO
           K=S_E%I(J)+S_E%J(J)
           POW=K+1-I
+  
           IF(K+1>=I) THEN
 
-
+        if(el%p%exact.or.pow==0) then
              EL%E_X(J)=EL%E_X(J)+(EL%AE(I)*S_E%A_X(I,J)+EL%BE(I)*S_E%B_X(I,J))*EL%P%B0**POW
              EL%E_Y(J)=EL%E_Y(J)+(EL%AE(I)*S_E%A_Y(I,J)+EL%BE(I)*S_E%B_Y(I,J))*EL%P%B0**POW
 !             EL%BF_X(J)=EL%BF_X(J)+(EL%AN(I)*S_EB%A_X(I,J)+EL%BN(I)*S_EB%B_X(I,J))*EL%P%B0**POW
 !             EL%BF_Y(J)=EL%BF_Y(J)+(EL%AN(I)*S_EB%A_Y(I,J)+EL%BN(I)*S_EB%B_Y(I,J))*EL%P%B0**POW
              EL%BF_X(J)=EL%BF_X(J)+(EL%AN(I)*S_B_from_V%A_X(I,J)+EL%BN(I)*S_B_from_V%B_X(I,J))*EL%P%B0**POW
              EL%BF_Y(J)=EL%BF_Y(J)+(EL%AN(I)*S_B_from_V%A_Y(I,J)+EL%BN(I)*S_B_from_V%B_Y(I,J))*EL%P%B0**POW
-
-
+        endif
+        if(i==1.and.(.not.el%p%exact).and.pow>0) then
+             EL%BF_X(J)=EL%BF_X(J)+(EL%BN(I)*S_B_from_V%B_X(I,J))*EL%P%B0**POW
+             EL%BF_Y(J)=EL%BF_Y(J)+(EL%BN(I)*S_B_from_V%B_Y(I,J))*EL%P%B0**POW
+        endif
           ENDIF
        ENDDO
     ENDDO
@@ -9079,11 +9083,11 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
           POW=K-I      !+1
           IF(K>=I) THEN   ! changed
 
-
+        if(el%p%exact.or.pow==0) then
              EL%PHI(J)=EL%PHI(J)+(EL%AE(I)*S_E%VA(I,J)+EL%BE(I)*S_E%VB(I,J))*EL%P%B0**POW
 
              EL%VM(J)=EL%VM(J)+(EL%AN(I)*S_B_from_V%VA(I,J)+EL%BN(I)*S_B_from_V%VB(I,J))*EL%P%B0**POW
-
+        endif
 
           ENDIF
        ENDDO
@@ -9115,14 +9119,18 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
           POW=K+1-I
           IF(K+1>=I) THEN
 
-
+        if(el%p%exact.or.pow==0) then
              EL%E_X(J)=EL%E_X(J)+(EL%AE(I)*S_E%A_X(I,J)+EL%BE(I)*S_E%B_X(I,J))*EL%P%B0**POW
              EL%E_Y(J)=EL%E_Y(J)+(EL%AE(I)*S_E%A_Y(I,J)+EL%BE(I)*S_E%B_Y(I,J))*EL%P%B0**POW
 !             EL%BF_X(J)=EL%BF_X(J)+(EL%AN(I)*S_EB%A_X(I,J)+EL%BN(I)*S_EB%B_X(I,J))*EL%P%B0**POW
 !             EL%BF_Y(J)=EL%BF_Y(J)+(EL%AN(I)*S_EB%A_Y(I,J)+EL%BN(I)*S_EB%B_Y(I,J))*EL%P%B0**POW
              EL%BF_X(J)=EL%BF_X(J)+(EL%AN(I)*S_B_from_V%A_X(I,J)+EL%BN(I)*S_B_from_V%B_X(I,J))*EL%P%B0**POW
              EL%BF_Y(J)=EL%BF_Y(J)+(EL%AN(I)*S_B_from_V%A_Y(I,J)+EL%BN(I)*S_B_from_V%B_Y(I,J))*EL%P%B0**POW
-
+        endif
+        if(i==1.and.(.not.el%p%exact).and.pow>0) then
+             EL%BF_X(J)=EL%BF_X(J)+(EL%BN(I)*S_B_from_V%B_X(I,J))*EL%P%B0**POW
+             EL%BF_Y(J)=EL%BF_Y(J)+(EL%BN(I)*S_B_from_V%B_Y(I,J))*EL%P%B0**POW
+        endif
           ENDIF
        ENDDO
     ENDDO
@@ -9138,11 +9146,11 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
           POW=K-I      !+1
           IF(K>=I) THEN   ! changed
 
-
+        if(el%p%exact.or.pow==0) then
              EL%PHI(J)=EL%PHI(J)+(EL%AE(I)*S_E%VA(I,J)+EL%BE(I)*S_E%VB(I,J))*EL%P%B0**POW
 
              EL%VM(J)=EL%VM(J)+(EL%AN(I)*S_B_from_V%VA(I,J)+EL%BN(I)*S_B_from_V%VB(I,J))*EL%P%B0**POW
-
+        endif
 
           ENDIF
        ENDDO
@@ -9250,9 +9258,14 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
  !   endif
 
     if(kic) then
-     B(1)=-BY*(1.0_dp+EL%P%B0*X(1))
-     B(2)=BX*(1.0_dp+EL%P%B0*X(1))
-     B(3)=0.0_dp
+     if(EL%P%exact) then
+      B(1)=-BY*(1.0_dp+EL%P%B0*X(1))
+      B(2)=BX*(1.0_dp+EL%P%B0*X(1))
+    else
+      B(1)=-BY-el%bn(1)*EL%P%B0*X(1) 
+      B(2)=BX 
+    endif
+      B(3)=0.0_dp
     else
      B(1)=BX
      B(2)=BY
@@ -9371,8 +9384,13 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
 !    endif
 
     if(kic) then
-     B(1)=-BY*(1.0_dp+EL%P%B0*X(1))
-     B(2)=BX*(1.0_dp+EL%P%B0*X(1))
+     if(EL%P%exact) then
+      B(1)=-BY*(1.0_dp+EL%P%B0*X(1))
+      B(2)=BX*(1.0_dp+EL%P%B0*X(1))
+    else
+      B(1)=-BY-el%bn(1)*EL%P%B0*X(1)  
+      B(2)=BX 
+    endif
      B(3)=0.0_dp
     else
      B(1)=BX
@@ -9608,10 +9626,25 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
            F(6)=H*(1.0_dp+del)/PZ+(k%TOTALPATH-1) 
         endif
      ELSE
-      STOP 468
-!        if(k%TIME) then
-!        else
-!        endif
+        if(k%TIME) then
+           DEL=x(5)-E(3)*EL%P%CHARGE
+           PZ=ROOT(1.0_dp+2*del/EL%P%BETA0+del**2)
+           F(1)=X(2)/PZ
+           F(3)=X(4)/PZ
+           F(2)=EL%P%B0*(1.0_dp+x(5)/EL%P%BETA0)+dir*B(1)+(1.0_dp/EL%P%BETA0+del)/pz*E(1)*EL%P%CHARGE*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
+           F(4)=dir*B(2)+(1.0_dp/EL%P%BETA0+del)/pz*E(2)*EL%P%CHARGE*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
+           F(5)=0.0_dp
+           F(6)=(1.0_dp/EL%P%BETA0+del)/PZ*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)+(k%TOTALPATH-1)/EL%P%BETA0+EL%P%B0*x(1)/EL%P%BETA0  !! ld=L in sector bend
+        else
+           DEL=x(5)-E(3)*EL%P%CHARGE
+           PZ=1.0_dp+del
+           F(1)=X(2)/PZ
+           F(3)=X(4)/PZ
+           F(2)=EL%P%B0*(1.0_dp+x(5))+dir*B(1)+(1.0_dp+del)/pz*E(1)*EL%P%CHARGE*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
+           F(4)=dir*B(2)+(1.0_dp+del)/pz*E(2)*EL%P%CHARGE*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
+           F(5)=0.0_dp
+           F(6)=(1.0_dp+del)/PZ*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)+(k%TOTALPATH-1)+EL%P%B0*x(1)   !! ld=L in sector bend
+        endif
      ENDIF
      
    END subroutine feval_teapotr
@@ -9655,10 +9688,25 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
            F(6)=H*(1.0_dp+del)/PZ+(k%TOTALPATH-1) 
         endif
      ELSE
-      STOP 468
-!        if(k%TIME) then
-!        else
-!        endif
+        if(k%TIME) then
+           DEL=x(5)-E(3)*EL%P%CHARGE
+           PZ=sqrt(1.0_dp+2*del/EL%P%BETA0+del**2)
+           F(1)=X(2)/PZ
+           F(3)=X(4)/PZ
+           F(2)=EL%P%B0*(1.0_dp+x(5)/EL%P%BETA0)+dir*B(1)+(1.0_dp/EL%P%BETA0+del)/pz*E(1)*EL%P%CHARGE*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
+           F(4)=dir*B(2)+(1.0_dp/EL%P%BETA0+del)/pz*E(2)*EL%P%CHARGE*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
+           F(5)=0.0_dp
+           F(6)=(1.0_dp/EL%P%BETA0+del)/PZ*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)+(k%TOTALPATH-1)/EL%P%BETA0+EL%P%B0*x(1)/EL%P%BETA0  !! ld=L in sector bend
+        else
+           DEL=x(5)-E(3)*EL%P%CHARGE
+           PZ=1.0_dp+del
+           F(1)=X(2)/PZ
+           F(3)=X(4)/PZ
+           F(2)=EL%P%B0*(1.0_dp+x(5))+dir*B(1)+(1.0_dp+del)/pz*E(1)*EL%P%CHARGE*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
+           F(4)=dir*B(2)+(1.0_dp+del)/pz*E(2)*EL%P%CHARGE*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
+           F(5)=0.0_dp
+           F(6)=(1.0_dp+del)/PZ*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)+(k%TOTALPATH-1)+EL%P%B0*x(1)   !! ld=L in sector bend
+        endif
      ENDIF
      call KILL(PZ,DEL,H,B(1),B(2),B(3),VM)
      call KILL(E,3)
