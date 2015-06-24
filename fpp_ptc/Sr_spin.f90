@@ -992,7 +992,7 @@ contains
           DLDS=1.0_dp/root((1.0_dp+X(5))**2-XPA(2)**2-XPA(1)**2)
        ENDIF
     case(kind10)     ! TEAPOT real curvilinear
-       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
            DEL=x(5)-phi*EL%P%CHARGE
        IF(k%TIME) THEN
           DLDS=1.0_dp/root(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
@@ -1138,7 +1138,7 @@ contains
           DLDS=1.0_dp/SQRT((1.0_dp+X(5))**2-XPA(2)**2-XPA(1)**2)
        ENDIF
     case(kind10)     ! TEAPOT real curvilinear
-       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
        !       do i=1,3
        !        call clean_real_8(bpa(i),bpa(i),1.d-8)
        !        call clean_real_8(bpe(i),bpe(i),1.d-8)
@@ -1443,6 +1443,7 @@ contains
     real(dp),INTENT(INOUT):: X(6),B(3)
     TYPE(ELEMENT),INTENT(IN):: EL
     INTEGER pos
+    real(dp) e(3)
     TYPE(INTERNAL_STATE) K
 
 
@@ -1467,8 +1468,8 @@ contains
        b(1)=-TAN(EL%p%EDGE(pos+3)-EL%p%b0*EL%p%LD/2.0_dp)*EL%p%DIR*EL%p%CHARGE*el%BN(1)*X(3)+b(1)
     case(kind16)  ! likemad=false
     end select
-
-    call GET_BZ_fringe(EL,X,B(3),pos,k)
+e=0
+    call GET_BZ_fringe(EL,X,B(3),e(3),pos,k)
 
   END SUBROUTINE get_Bfield_fringe_R
 
@@ -1479,6 +1480,7 @@ contains
     TYPE(ELEMENTP),INTENT(IN):: EL
     INTEGER pos
     TYPE(INTERNAL_STATE) K
+    type(REAL_8) e(3)
 
     IF(ASSOCIATED(EL%B_SOL)) THEN
        B(1)= (2*Pos+3)*EL%B_SOL*0.5_dp*x(1);    ! POS =-2,-1  (ENT, EXIT)
@@ -1501,21 +1503,27 @@ contains
        b(1)=-TAN(EL%p%EDGE(pos+3)-EL%p%b0*EL%p%LD/2.0_dp)*EL%p%DIR*EL%p%CHARGE*el%BN(1)*X(3)+b(1)
     case(kind16)  ! likemad=false
     end select
-
-    call GET_BZ_fringe(EL,X,B(3),pos,k)
+call alloc(e)
+    call GET_BZ_fringe(EL,X,B(3),e(3),pos,k)
+call kill(e)
 
   END SUBROUTINE get_Bfield_fringe_p
 
-  SUBROUTINE GET_BZ_fringeR(EL,X,bz,pos,k)
+  SUBROUTINE GET_BZ_fringeR(EL,X,bz,ez,pos,k)
     IMPLICIT NONE
     TYPE(ELEMENT),INTENT(IN):: EL
     integer, intent(in) :: pos
-    real(dp),INTENT(INOUT):: X(6),Bz
-    real(dp) X1,X3,BBYTW,BBXTW,BBYTWT
+    real(dp),INTENT(INOUT):: X(6),Bz,Ez
+    real(dp) X1,X3,BBYTW,BBXTW,BBYTWT,E(3),phi,B(3),VM
     INTEGER J,jmax
     real(dp), allocatable :: an(:),bn(:)
     TYPE(INTERNAL_STATE) K
-
+    
+    if(el%electric.and.associated(el%tp10)) then
+     call getelectric(EL%tp10,E,phi,B,VM,X)
+            bz=(2*Pos+3)*vm
+            ez=(2*Pos+3)*phi
+    else
     bz=0.0_dp
     IF(EL%P%BEND_FRINGE) then
        bz=-(2*Pos+3)*X(3)*EL%BN(1)
@@ -1553,18 +1561,28 @@ contains
 
     BZ=-(2*Pos+3)*BBYTW+bz
     deallocate(an,bn)
+    endif
   END SUBROUTINE GET_BZ_fringeR
 
-  SUBROUTINE GET_BZ_fringep(EL,X,bz,pos,k)
+  SUBROUTINE GET_BZ_fringep(EL,X,bz,ez,pos,k)
     IMPLICIT NONE
     TYPE(ELEMENTP),INTENT(IN):: EL
     integer, intent(in) :: pos
-    type(real_8),INTENT(INOUT):: X(6),Bz
-    type(real_8) X1,X3,BBYTW,BBXTW,BBYTWT
+    type(real_8),INTENT(INOUT):: X(6),Bz,ez
+    type(real_8) X1,X3,BBYTW,BBXTW,BBYTWT,E(3),phi,B(3),VM
     INTEGER J,jmax
     type(real_8), allocatable :: an(:),bn(:)
     TYPE(INTERNAL_STATE) K
 
+    if(el%electric.and.associated(el%tp10)) then
+     call alloc(phi,VM)
+     call alloc(E);call alloc(b);
+     call getelectric(EL%tp10,E,phi,B,VM,X)
+            bz=(2*Pos+3)*vm
+            ez=(2*Pos+3)*phi
+     call kill(phi,VM)
+     call kill(E);call kill(b);
+    else
     bz=0.0_dp
     IF(EL%P%BEND_FRINGE) then
        bz=-(2*Pos+3)*X(3)*EL%BN(1)
@@ -1612,7 +1630,7 @@ contains
     enddo
     deallocate(an,bn)
     call kill(X1,X3,BBYTW,BBXTW,BBYTWT)
-
+    endif
   END SUBROUTINE GET_BZ_fringep
 
 
