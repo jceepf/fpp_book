@@ -1114,7 +1114,7 @@ contains
     dlds=0.0_dp
 
     CALL get_field(EL,B,E,phi,X,k,POS)
-    SELECT CASE(EL%KIND)
+    SELECT CASE(EL%KIND) 
     case(KIND2,kind5:kind7,kindwiggler) ! Straight for all practical purposes
        CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
        IF(k%TIME) THEN

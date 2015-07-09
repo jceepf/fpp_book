@@ -53,7 +53,10 @@ K=K*a1*from_phasor()                   !(2c)
          a_op=a_op+(v.cmono.ji)                !(3e)
        endif
     enddo
-    
+    if(io==4) then
+      write(6,*); write(6,*) " Eq 3.73 of the book is printed "
+      call print(a_op,6)
+    endif   
        vf=cgetvectorfield( a_op )                  !(4a)
        K=exp(vf,K)                                 !(4b)
 
@@ -130,17 +133,3 @@ write(6,*);
 
     end program pendulum
     
- !          vf=0
- !      write(6,*) ' n '
- !      read(5,*) ns
-
-       
-  !     call c_flofacg(m,vf)
-
-       
-  !     p=getpb(vf)
-  !     pause 888
-  !   p=p/dt
-  !     call print(p,6,prec)
-  !     pause 889 
-  !     call print(K,6,prec)

@@ -85,7 +85,7 @@ call build_lattice_als(ALS,mis,exact=.false.)
   write(mf,*) "select layout"                  
   write(mf,*) "  1  "
   write(mf,*) "L MAX  "
-  write(mf,*) "0.3 "     ! (1) all ds of the order  0.6 metre
+  write(mf,*) "0.3 "     ! (1) all ds of the order  0.3 metre
   write(mf,*) "CUTTING ALGORITHM "   
   write(mf,*) "2 "                ! Drifts are cut as well
   write(mf,*) "LIMIT FOR CUTTING "
@@ -235,7 +235,7 @@ a=exp(-(Gh.cut.2),(U.sub.1))  ! (18)
 do k=1,c_%nd2
  if(abs(full_abs(a%v(k))-1)>1.d-5) then
     call print(a,6)
-    write(6,*);write(6,*) "Log failed at emement ",i, p%mag%name
+    write(6,*);write(6,*) "Log failed at element ",i, p%mag%name
     stop
  endif
 enddo

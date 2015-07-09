@@ -171,7 +171,7 @@ a=exp(-(logN.cut.2),(U.sub.1))  ! (17)
 do km=1,c_%nd2
  if(abs(full_abs(a%v(km))-1)>1.d-5) then
     call print(a,6)
-    write(6,*);write(6,*) "Log failed at emement ",i, p%mag%name
+    write(6,*);write(6,*) "Log failed at element ",i, p%mag%name
     stop
  endif
 enddo

@@ -5,7 +5,7 @@ module madx_ptc_module
   public
   TYPE(INTERNAL_STATE),POINTER :: my_state
   TYPE(layout),POINTER :: my_ring,bmadl
-  type(mad_universe), pointer :: m_u,m_t
+  type(mad_universe), pointer :: m_u=>null(),m_t=>null();
 
 contains
 
@@ -47,7 +47,7 @@ contains
     type(layout), pointer :: mring
     character(48) command_gino
     character(*), optional :: file_m_u,file_m_t
-   
+    if(.not.associated(m_u)) return
     if(present(graphics_maybe)) then
         if(graphics_maybe>=1) call open_gino_graphics
       do i=2,graphics_maybe

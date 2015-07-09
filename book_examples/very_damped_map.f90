@@ -90,5 +90,5 @@ write(mf1,*) z
 enddo     
 close(mf)
 close(mf1)
-call ptc_end 
+ 
 end program very_damped_map

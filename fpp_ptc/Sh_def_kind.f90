@@ -4152,10 +4152,10 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
           X(2)=X(2)+TAN(EL%EDGE(I))*EL%DIR*EL%CHARGE*BN(1)*X(1)   ! SECTOR WEDGE
 
           IF(EL%BEND_FRINGE.and.(.NOT.((I==1.AND.EL%KILL_ENT_FRINGE).OR.(I==2.AND.EL%KILL_EXI_FRINGE)))) THEN
-
+ 
              X(4)=X(4)-TAN(EL%EDGE(I)-EL%DIR*EL%CHARGE*2.0_dp*FINT*HGAP*(1.0_dp+SIN(EL%EDGE(I))**2)*BN(1)/COS(EL%EDGE(I))) &
-                  & *EL%DIR*EL%CHARGE*BN(1)*X(3)   ! SECTOR WEDGE (PROT) + FRINGE
-
+                   & *EL%DIR*EL%CHARGE*BN(1)*X(3)   ! SECTOR WEDGE (PROT) + FRINGE
+ 
 !!! coming to you with sadistic delight
 
                  fsad=0.0_dp
@@ -4164,12 +4164,22 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
                  endif
                  c3=bn(1)**2*fsad 
                  x(4)=x(4)-4*c3*x(3)**3
+
           ENDIF
 
        else
           IF(EL%BEND_FRINGE.and.(.NOT.((I==1.AND.EL%KILL_ENT_FRINGE).OR.(I==2.AND.EL%KILL_EXI_FRINGE)))) THEN
+ 
              CALL FRINGE_dipole(EL,BN,FINT,HGAP,I,X,k)
+ 
+                 fsad=0.0_dp
+                 if(fint*hgap/=0.0_dp) then
+                        fsad=1.d0/(fint*hgap*2)/36.0_dp
+                 endif
+                 c3=bn(1)**2*fsad 
+                 x(4)=x(4)-4*c3*x(3)**3
           endif
+
        endif
 
        IF(EL%DIR==1) THEN
@@ -4193,6 +4203,7 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
     INTEGER, INTENT(IN) :: I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     TYPE(REAL_8) fsad,c3
+integer :: kkk=0
     IF(EL%EXACT) THEN
        IF(EL%DIR==1) THEN
           IF(I==1) then                !doubling entrance angle if first half  (1/2 magnet for designer)
@@ -4232,9 +4243,10 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
           X(2)=X(2)+TAN(EL%EDGE(I))*EL%DIR*EL%CHARGE*BN(1)*X(1)   ! SECTOR WEDGE
 
           IF(EL%BEND_FRINGE.and.(.NOT.((I==1.AND.EL%KILL_ENT_FRINGE).OR.(I==2.AND.EL%KILL_EXI_FRINGE)))) THEN
-
+ 
              X(4)=X(4)-TAN(EL%EDGE(I)-EL%DIR*EL%CHARGE*2.0_dp*FINT*HGAP*(1.0_dp+SIN(EL%EDGE(I))**2)*BN(1)/COS(EL%EDGE(I))) &
-                  & *EL%DIR*EL%CHARGE*BN(1)*X(3)   ! SECTOR WEDGE (PROT) + FRINGE
+                   & *EL%DIR*EL%CHARGE*BN(1)*X(3)   ! SECTOR WEDGE (PROT) + FRINGE
+ 
 !!! coming to you with sadistic delight
             call alloc(fsad,c3)
                  fsad=0.0_dp
@@ -4248,7 +4260,15 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
 
        else
           IF(EL%BEND_FRINGE.and.(.NOT.((I==1.AND.EL%KILL_ENT_FRINGE).OR.(I==2.AND.EL%KILL_EXI_FRINGE)))) THEN
+ 
              CALL FRINGE_dipole(EL,BN,FINT,HGAP,I,X,k)
+ 
+                 fsad=0.0_dp
+                 if(fint*hgap/=0.0_dp) then
+                        fsad=1.d0/(fint*hgap*2)/36.0_dp
+                 endif
+                 c3=bn(1)**2*fsad 
+                 x(4)=x(4)-4*c3*x(3)**3
           endif
        endif
 
@@ -9631,10 +9651,12 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
            PZ=ROOT(1.0_dp+2*del/EL%P%BETA0+del**2)
            F(1)=X(2)/PZ
            F(3)=X(4)/PZ
-           F(2)=EL%P%B0*(1.0_dp+x(5)/EL%P%BETA0)+dir*B(1)+(1.0_dp/EL%P%BETA0+del)/pz*E(1)*EL%P%CHARGE*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
+           F(2)=EL%P%B0*(1.0_dp+x(5)/EL%P%BETA0)+dir*B(1)+(1.0_dp/EL%P%BETA0+del)/pz*E(1)*EL%P%CHARGE* &
+            (1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
            F(4)=dir*B(2)+(1.0_dp/EL%P%BETA0+del)/pz*E(2)*EL%P%CHARGE*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
            F(5)=0.0_dp
-           F(6)=(1.0_dp/EL%P%BETA0+del)/PZ*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)+(k%TOTALPATH-1)/EL%P%BETA0+EL%P%B0*x(1)/EL%P%BETA0  !! ld=L in sector bend
+           F(6)=(1.0_dp/EL%P%BETA0+del)/PZ*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)+(k%TOTALPATH-1)/EL%P%BETA0 &
+           +EL%P%B0*x(1)/EL%P%BETA0  !! ld=L in sector bend
         else
            DEL=x(5)-E(3)*EL%P%CHARGE
            PZ=1.0_dp+del
@@ -9693,10 +9715,12 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
            PZ=sqrt(1.0_dp+2*del/EL%P%BETA0+del**2)
            F(1)=X(2)/PZ
            F(3)=X(4)/PZ
-           F(2)=EL%P%B0*(1.0_dp+x(5)/EL%P%BETA0)+dir*B(1)+(1.0_dp/EL%P%BETA0+del)/pz*E(1)*EL%P%CHARGE*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
+           F(2)=EL%P%B0*(1.0_dp+x(5)/EL%P%BETA0)+dir*B(1)+(1.0_dp/EL%P%BETA0+del)/pz*E(1)*EL%P%CHARGE*  &
+            (1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
            F(4)=dir*B(2)+(1.0_dp/EL%P%BETA0+del)/pz*E(2)*EL%P%CHARGE*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)
            F(5)=0.0_dp
-           F(6)=(1.0_dp/EL%P%BETA0+del)/PZ*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)+(k%TOTALPATH-1)/EL%P%BETA0+EL%P%B0*x(1)/EL%P%BETA0  !! ld=L in sector bend
+           F(6)=(1.0_dp/EL%P%BETA0+del)/PZ*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)+ &
+            (k%TOTALPATH-1)/EL%P%BETA0+EL%P%B0*x(1)/EL%P%BETA0  !! ld=L in sector bend
         else
            DEL=x(5)-E(3)*EL%P%CHARGE
            PZ=1.0_dp+del
