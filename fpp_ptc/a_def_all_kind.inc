@@ -130,6 +130,7 @@ TYPE CAV_TRAV
    real(dp) , POINTER ::L                    !  Storage space for computed
    real(dp), POINTER :: VOLT, FREQ,PHAS,DELTA_E,phase0
    real(dp), POINTER :: PSI,DPHAS,DVDS
+   logical, pointer :: always_on
    integer, POINTER :: CAVITY_TOTALPATH     ! Cavity information
 END  TYPE CAV_TRAV
 
@@ -140,7 +141,8 @@ TYPE CAV_TRAVP
    TYPE(REAL_8) , POINTER ::L                    !  Storage space for computed
    TYPE(REAL_8), POINTER :: VOLT, FREQ,PHAS
    TYPE(REAL_8), POINTER :: PSI,DPHAS,DVDS
-   real(dp), POINTER :: DELTA_E ,phase0                       ! Cavity information
+   real(dp), POINTER :: DELTA_E ,phase0
+   logical, pointer :: always_on
    integer, POINTER :: CAVITY_TOTALPATH     ! Cavity information
 END  TYPE CAV_TRAVP
 

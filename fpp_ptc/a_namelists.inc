@@ -25,7 +25,7 @@ namelist / CHARTname / CHART0
     real(dp) LC_LD_B0_P0(4)   ! LC LD B0 P0C
     real(dp) TILTD_EDGE(3)   ! TILTD EDGE
     LOGICAL(Lp) KIN_KEX_BENDFRINGE_EXACT(4)  ! KILL_ENT_FRINGE, KILL_EXI_FRINGE, bend_fringe,EXACT
-	INTEGER METHOD_NST_NMUL_permfringe(4)   ! METHOD,NST,NMUL,permfringr
+	INTEGER METHOD_NST_NMUL_permfringe_highest(5)   ! METHOD,NST,NMUL,permfringr, highest_fringe
   END TYPE MAGNET_CHARTLIST
 
 type(MAGNET_CHARTLIST) MAGL0
@@ -98,6 +98,7 @@ namelist / k160name / k160
 
   TYPE tcav_list   
    real(dp) PSI_DPHAS_DVDS(3)
+   logical always_on
   END TYPE tcav_list
 type(tcav_list) tcav0
 namelist / tCAVname / tcav0

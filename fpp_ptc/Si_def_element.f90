@@ -1147,6 +1147,7 @@ CONTAINS
        ALLOCATE(EL%CAV21%DPHAS);EL%CAV21%DPHAS=0.0_dp
        ALLOCATE(EL%CAV21%cavity_totalpath);EL%CAV21%cavity_totalpath=cavity_totalpath
        ALLOCATE(EL%CAV21%phase0);EL%CAV21%phase0=phase0
+       ALLOCATE(EL%CAV21%always_on);EL%CAV21%always_on=my_false;
     CASE(KIND22)
        if(.not.ASSOCIATED(EL%HE22)) THEN
           ALLOCATE(EL%HE22)
@@ -1342,7 +1343,7 @@ CONTAINS
         EL%TP10%BF_Y=0.0_dp
 
        NULLIFY(EL%TP10%DRIFTKICK);ALLOCATE(EL%TP10%DRIFTKICK);EL%TP10%DRIFTKICK=.true.;
-       if(EL%ELECTRIC) then
+!       if(EL%ELECTRIC) then
         NULLIFY(EL%TP10%E_X);ALLOCATE(EL%TP10%E_X(S_E%N_MONO))
         NULLIFY(EL%TP10%E_Y);ALLOCATE(EL%TP10%E_Y(S_E%N_MONO))
         NULLIFY(EL%TP10%PHI);ALLOCATE(EL%TP10%PHI(S_E%N_MONO))
@@ -1358,9 +1359,9 @@ CONTAINS
         EL%TP10%AE=0.0_DP;
         EL%TP10%BE=0.0_DP;
         call GETAEBE(EL%TP10) ! not efective here because ae=be=0 but need on magnetic field
-       ELSE
-        call GETANBN(EL%TP10)  
-       endif
+ !      ELSE
+ !       call GETANBN(EL%TP10)  
+ !      endif
 
        NULLIFY(EL%TP10%F);ALLOCATE(EL%TP10%F);EL%TP10%F=1;
     CASE(KIND11:KIND14)
@@ -1611,6 +1612,7 @@ CONTAINS
        ALLOCATE(EL%CAV21%DVDS);CALL ALLOC(EL%CAV21%DVDS);EL%CAV21%DVDS=0.0_dp
        ALLOCATE(EL%CAV21%DPHAS);CALL ALLOC(EL%CAV21%DPHAS);EL%CAV21%DPHAS=0.0_dp
        ALLOCATE(EL%CAV21%cavity_totalpath);EL%CAV21%cavity_totalpath=cavity_totalpath
+       ALLOCATE(EL%CAV21%always_on);EL%CAV21%always_on=my_false;
        ALLOCATE(EL%CAV21%phase0);EL%CAV21%phase0=phase0
     CASE(KIND22)
        if(.not.ASSOCIATED(EL%HE22)) THEN
@@ -1801,7 +1803,7 @@ CONTAINS
         NULLIFY(EL%TP10%VM);ALLOCATE(EL%TP10%VM(S_E%N_MONO))
 
 
-       if(EL%ELECTRIC) then
+ !      if(EL%ELECTRIC) then
         NULLIFY(EL%TP10%E_X);ALLOCATE(EL%TP10%E_X(S_E%N_MONO))
         NULLIFY(EL%TP10%E_Y);ALLOCATE(EL%TP10%E_Y(S_E%N_MONO))
         NULLIFY(EL%TP10%PHI);ALLOCATE(EL%TP10%PHI(S_E%N_MONO))
@@ -1811,10 +1813,10 @@ CONTAINS
 
         call alloc(EL%TP10)
         call GETAEBE(EL%TP10) ! not efective here because ae=be=0 but need on magnetic field
-       ELSE
-        call alloc(EL%TP10)
-        call GETANBN(EL%TP10)
-       endif
+ !      ELSE
+!        call alloc(EL%TP10)
+!        call GETANBN(EL%TP10)
+!       endif
 
        NULLIFY(EL%TP10%F);ALLOCATE(EL%TP10%F);EL%TP10%F=1;
     CASE(KIND11:KIND14)
@@ -3260,6 +3262,7 @@ ENDIF
        ELP%CAV21%DPHAS = EL%CAV21%DPHAS
        ELP%CAV21%cavity_totalpath = EL%CAV21%cavity_totalpath
        ELP%CAV21%phase0 = EL%CAV21%phase0
+       ELP%CAV21%Always_on=EL%CAV21%Always_on
     ENDIF
 
     IF(EL%KIND==KIND22) THEN         !
@@ -3606,6 +3609,7 @@ ENDIF
        ELP%CAV21%DPHAS = EL%CAV21%DPHAS
        ELP%CAV21%cavity_totalpath = EL%CAV21%cavity_totalpath
        ELP%CAV21%phase0 = EL%CAV21%phase0
+       ELP%CAV21%Always_on=EL%CAV21%Always_on
     ENDIF
 
     IF(EL%KIND==KIND22) THEN         !
@@ -3954,6 +3958,7 @@ ENDIF
        ELP%CAV21%DPHAS = EL%CAV21%DPHAS
        ELP%CAV21%cavity_totalpath = EL%CAV21%cavity_totalpath
        ELP%CAV21%phase0 = EL%CAV21%phase0
+       ELP%CAV21%Always_on=EL%CAV21%Always_on
     ENDIF
 
     IF(EL%KIND==KIND22) THEN         !

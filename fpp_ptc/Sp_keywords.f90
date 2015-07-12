@@ -1073,7 +1073,7 @@ nmark=0
  !      WRITE(MF,*) " ECOLLIMATOR HAS AN INTRINSIC APERTURE "
  !      CALL print_aperture(EL%ECOL19%A,mf)
     case(kind21)
-       WRITE(MF,*) el%cav21%PSI,el%cav21%DPHAS,el%cav21%DVDS
+       WRITE(MF,*) el%cav21%PSI,el%cav21%DPHAS,el%cav21%DVDS,el%cav21%always_on
     case(KINDWIGGLER)
        call print_wig(el%wi,mf)
     case(KINDpa)
@@ -1171,7 +1171,7 @@ nmark=0
     !   CALL READ_aperture(EL%ECOL19%A,mf)
     case(kind21)
        CALL SETFAMILY(EL)   ! POINTERS MUST BE ESTABLISHED BETWEEN GENERIC ELEMENT M AND SPECIFIC ELEMENTS
-       read(MF,*) el%cav21%PSI,el%cav21%DPHAS,el%cav21%DVDS
+       read(MF,*) el%cav21%PSI,el%cav21%DPHAS,el%cav21%DVDS,el%cav21%always_on
     case(KINDWIGGLER)
        CALL SETFAMILY(EL)   ! POINTERS MUST BE ESTABLISHED BETWEEN GENERIC ELEMENT M AND SPECIFIC ELEMENTS
        call read_wig(el%wi,mf)
@@ -1232,7 +1232,7 @@ nmark=0
 
   subroutine READ_element(p,m,mf)
     implicit none
-    integer mf,I
+    integer mf,I,nmul
     type(fibre), pointer :: p
     type(element), pointer :: m
     character*255 line
@@ -1304,8 +1304,11 @@ ffl=(index(LINEt,"FFL")/=0).or.(index(LINEt,"TFL")/=0).or. &
        M%B_SOL=B_SOL
     ENDIF
     CALL  READ_magnet_chart(p,m%P,mf)
-
+    nmul = M%P%NMUL
     !     Write(mf,*) f0," Internal Recutting "
+    if(m%kind==kind10) then
+      M%P%NMUL=sector_nmul_max
+    endif
     IF(M%P%NMUL/=0) THEN
        IF(.NOT.ASSOCIATED(M%AN)) THEN
           ALLOCATE(M%AN(M%P%NMUL))
@@ -1322,7 +1325,7 @@ ffl=(index(LINEt,"FFL")/=0).or.(index(LINEt,"TFL")/=0).or. &
        !          READ(MF,'(a120)') LINE
        !     write(6,'(a120)') line
        !     pause 1
-       do i=1,m%p%NMUL
+       do i=1,nmul   !m%p%NMUL
           READ(MF,'(A255)') LINEt
           if(index(LINEt,"%f")==0 ) then
              READ(linet,*) m%bn(i),m%an(i)
@@ -2465,7 +2468,7 @@ character(120) line
 type(fibre),pointer :: s22
 type(element),pointer :: s2
 type(elementp), pointer :: s2p
-!integer SECTOR_NMUL_MAX
+integer se2,se1
 
 integer mf,n
 
@@ -2488,8 +2491,8 @@ surv=my_true
    read(mf,*) highest_fringe  
    read(mf,*) lmax  
    read(MF,*) ALWAYS_EXACTMIS,ALWAYS_EXACT_PATCHING  
-   read(mf,*) SECTOR_NMUL , SECTOR_NMUL_MAX
- 
+   read(mf,*) se2,se1
+     call input_sector(se2,se1)
 call make_states(my_false)
 call set_mad(energy=2.0d0)
 
@@ -2544,7 +2547,7 @@ if(ele0%slowac_recut_even_electric_MIS(5)) read(mf,NML=CHARTname)  ! reading mis
 
     call fib_fib0(s22,my_false)
 
-     S2 = MAGL0%METHOD_NST_NMUL_permfringe(3)    
+     S2 = MAGL0%METHOD_NST_NMUL_permfringe_highest(3)    
      
 
 !write(6,*) associated(s2%p)
@@ -2806,10 +2809,11 @@ if(dir) then   !BETA0,GAMMA0I,GAMBET,MASS ,AG
  MAGL0%KIN_KEX_BENDFRINGE_EXACT(3)=f%bend_fringe
  MAGL0%KIN_KEX_BENDFRINGE_EXACT(4)=f%EXACT
 
- MAGL0%METHOD_NST_NMUL_permfringe(1)=f%METHOD
- MAGL0%METHOD_NST_NMUL_permfringe(2)=f%NST
- MAGL0%METHOD_NST_NMUL_permfringe(3)=f%NMUL
- MAGL0%METHOD_NST_NMUL_permfringe(4)=f%permfringe
+ MAGL0%METHOD_NST_NMUL_permfringe_highest(1)=f%METHOD
+ MAGL0%METHOD_NST_NMUL_permfringe_highest(2)=f%NST
+ MAGL0%METHOD_NST_NMUL_permfringe_highest(3)=f%NMUL
+ MAGL0%METHOD_NST_NMUL_permfringe_highest(4)=f%permfringe
+ MAGL0%METHOD_NST_NMUL_permfringe_highest(5)=f%highest_fringe
 
  if(present(mf)) then
      write(mf,NML=MAGLname)
@@ -2832,10 +2836,11 @@ else
  f%bend_fringe=MAGL0%KIN_KEX_BENDFRINGE_EXACT(3)
  f%EXACT=MAGL0%KIN_KEX_BENDFRINGE_EXACT(4)
 
- f%METHOD=MAGL0%METHOD_NST_NMUL_permFRINGE(1)
- f%NST=MAGL0%METHOD_NST_NMUL_permFRINGE(2)
- f%NMUL=MAGL0%METHOD_NST_NMUL_permFRINGE(3)
- f%permFRINGE=MAGL0%METHOD_NST_NMUL_permFRINGE(4)
+ f%METHOD=MAGL0%METHOD_NST_NMUL_permFRINGE_highest(1)
+ f%NST=MAGL0%METHOD_NST_NMUL_permFRINGE_highest(2)
+ f%NMUL=MAGL0%METHOD_NST_NMUL_permFRINGE_highest(3)
+ f%permFRINGE=MAGL0%METHOD_NST_NMUL_permFRINGE_highest(4)
+ f%highest_fringe=MAGL0%METHOD_NST_NMUL_permFRINGE_highest(5)
 
 endif
 endif
@@ -3114,7 +3119,7 @@ if(dir) then   !BETA0,GAMMA0I,GAMBET,MASS ,AG
  tcav0%PSI_DPHAS_DVDS(1)=F%cav21%psi
  tcav0%PSI_DPHAS_DVDS(2)=F%cav21%dphas
  tcav0%PSI_DPHAS_DVDS(3)=F%cav21%dvds
-
+ tcav0%always_on=F%cav21%always_on
     if(present(mf)) then
      write(mf,NML=tCAVname)
     endif   
@@ -3127,7 +3132,7 @@ if(dir) then   !BETA0,GAMMA0I,GAMBET,MASS ,AG
  F%cav21%psi=tcav0%PSI_DPHAS_DVDS(1)
  F%cav21%dphas=tcav0%PSI_DPHAS_DVDS(2)
  F%cav21%dvds=tcav0%PSI_DPHAS_DVDS(3)
-
+ F%cav21%always_on=tcav0%always_on
 endif
 
 endif

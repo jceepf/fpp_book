@@ -195,7 +195,7 @@ module precision_constants
   logical(lp) :: printdainfo=my_false
   integer   lielib_print(12)
   DATA lielib_print /0,0,0,0,0,0,0,0,0,0,0,1/
-!   INTEGER,TARGET :: SECTOR_NMUL_MAX=20
+  integer :: SECTOR_NMUL_MAX=22
   INTEGER, target :: SECTOR_NMUL = 11
 !  integer, parameter :: no_e=5  !  electric 
   logical(lp) :: use_complex_in_ptc=.false.
@@ -204,6 +204,7 @@ module precision_constants
   integer :: limit_int0(2) =(/4,18/)
   character(255) :: messagelost
   integer, target :: ndpt_bmad = 0, only2d =0, addclock=0
+  integer,TARGET :: HIGHEST_FRINGE=2
   !  logical(lp) :: fixed_found
   !  lielib_print(1)=1   lieinit prints info
   !  lielib_print(2)=1   expflo warning if no convergence
@@ -425,7 +426,7 @@ contains
 
     !    if(.not.change_sector) return
 
-    t1=(SECTOR_NMUL/=se1)
+    t1=(SECTOR_NMUL_MAX/=se1)
     t2=(SECTOR_NMUL/=se2)
 
     ttt=t1.or.t2
@@ -435,7 +436,7 @@ contains
   !        write(6,*) " SECTOR_NMUL_MAX is changed from ",SECTOR_NMUL_MAX," to ",se1
           write(6,*) " SECTOR_NMUL is changed from ",SECTOR_NMUL," to ",se2
           write(6,*) " GLOBAL VARIABLES that can no longer be changed"
-!          SECTOR_NMUL_MAX=se1
+          SECTOR_NMUL_MAX=se1
           SECTOR_NMUL=se2
        else
  !         if(t1) write(6,*) " sector_nmul_max CANNOT be changed from ",SECTOR_NMUL_MAX," to ",se1

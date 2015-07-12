@@ -30,7 +30,7 @@ module ptc_spin
   private radiate_2p,radiate_2r,radiate_2
   private TRACK_NODE_FLAG_probe_R,TRACK_NODE_FLAG_probe_p,TRACK_NODE_LAYOUT_FLAG_spinr_x
   private FIND_ORBIT_LAYOUT_noda,FIND_ORBIT_LAYOUT_noda_object,FIND_ORBIT_LAYOUT_noda_spin_object
-  PRIVATE get_Bfield_fringe_R,get_Bfield_fringe_p,get_Bfield_fringe,TRACK_NODE_LAYOUT_FLAG_spinp_x
+  PRIVATE get_Bfield_fringeR,get_Bfield_fringeP,get_Bfield_fringe,TRACK_NODE_LAYOUT_FLAG_spinp_x
   private TRACK_LAYOUT_FLAG_spin12r_x,TRACK_LAYOUT_FLAG_spin12p_x
   PRIVATE TRACK_LAYOUT_FLAG_probe_spin12R,TRACK_LAYOUT_FLAG_probe_spin12P
   private PUSH_SPIN_fake_fringer,PUSH_SPIN_fake_fringep,PUSH_SPIN_fake_fringe
@@ -230,8 +230,8 @@ module ptc_spin
   END INTERFACE
 
   INTERFACE get_Bfield_fringe
-     MODULE PROCEDURE get_Bfield_fringe_R   ! MID DEFINED AS 1/2 L
-     MODULE PROCEDURE get_Bfield_fringe_p   ! MID DEFINED AS 1/2 L
+     MODULE PROCEDURE get_Bfield_fringeR   ! MID DEFINED AS 1/2 L
+     MODULE PROCEDURE get_Bfield_fringeP   ! MID DEFINED AS 1/2 L
   END INTERFACE
 
   INTERFACE PUSH_SPIN_fake_fringe
@@ -1294,18 +1294,18 @@ contains
           IF(POS<0) THEN
              call get_Bfield_fringe(EL,B,X,pos,k)   ! fringe effect
           ELSE
-             if(EL%TP10%electric) then
+!             if(EL%TP10%electric) then
               call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.d0;
-             else
-              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
-             endif
+!             else
+!              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
+!             endif
           ENDIF
        else
-             if(EL%TP10%electric) then
+!             if(EL%TP10%electric) then
               call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.d0;
-             else
-              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
-             endif
+!             else
+!              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
+!             endif
        endif
     case(KINDPA)     ! fitted field for real magnet
        CALL B_PANCAkE(EL%PA,B,X,POS)
@@ -1383,18 +1383,18 @@ contains
           IF(POS<0) THEN
              call get_Bfield_fringe(EL,B,X,pos,k)   ! fringe effect
           ELSE
-             if(EL%TP10%electric) then
+!             if(EL%TP10%electric) then
               call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.d0;
-             else
-              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
-             endif
+!             else
+!              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
+!             endif
           ENDIF
        else
-             if(EL%TP10%electric) then
+!             if(EL%TP10%electric) then
               call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.d0;
-             else
-              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
-             endif
+!             else
+!              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
+!             endif
        endif
 
     case(KINDPA)     ! fitted field for real magnet
@@ -1438,7 +1438,7 @@ contains
 
   end subroutine get_fieldp
 
-  SUBROUTINE get_Bfield_fringe_R(EL,B,X,pos,k)
+  SUBROUTINE get_Bfield_fringeR(EL,B,X,pos,k)
     IMPLICIT NONE
     real(dp),INTENT(INOUT):: X(6),B(3)
     TYPE(ELEMENT),INTENT(IN):: EL
@@ -1471,10 +1471,10 @@ contains
 e=0
     call GET_BZ_fringe(EL,X,B(3),e(3),pos,k)
 
-  END SUBROUTINE get_Bfield_fringe_R
+  END SUBROUTINE get_Bfield_fringeR
 
 
-  SUBROUTINE get_Bfield_fringe_p(EL,B,X,pos,k)
+  SUBROUTINE get_Bfield_fringeP(EL,B,X,pos,k)
     IMPLICIT NONE
     type(REAL_8),INTENT(INOUT):: X(6),B(3)
     TYPE(ELEMENTP),INTENT(IN):: EL
@@ -1507,7 +1507,7 @@ call alloc(e)
     call GET_BZ_fringe(EL,X,B(3),e(3),pos,k)
 call kill(e)
 
-  END SUBROUTINE get_Bfield_fringe_p
+  END SUBROUTINE get_Bfield_fringeP
 
   SUBROUTINE GET_BZ_fringeR(EL,X,bz,ez,pos,k)
     IMPLICIT NONE
@@ -1534,7 +1534,7 @@ call kill(e)
 
     X1=X(1)
     X3=X(3)
-    jmax=MIN(EL%p%NMUL,HIGHEST_FRINGE)+1
+    jmax=MIN(EL%p%NMUL,el%p%HIGHEST_FRINGE)+1
 
     allocate(an(jmax),bn(jmax))
     an(1)=0.0_dp
@@ -1594,7 +1594,7 @@ call kill(e)
 
     X1=X(1)
     X3=X(3)
-    jmax=MIN(EL%p%NMUL,HIGHEST_FRINGE)+1
+    jmax=MIN(EL%p%NMUL,el%p%HIGHEST_FRINGE)+1
 
     allocate(an(jmax),bn(jmax))
     do j=1,jmax

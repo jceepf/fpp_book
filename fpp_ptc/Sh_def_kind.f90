@@ -119,7 +119,6 @@ MODULE S_DEF_KIND
   PRIVATE DRIFT_INTER,DRIFT_INTEP   ! NEW DRIFTS CUTABLE
   INTEGER,PRIVATE :: NMAXI=10000
   logical(lp) :: SPEED=.TRUE.
-  integer,TARGET :: HIGHEST_FRINGE=2
   logical(lp) ,TARGET :: OLD_IMPLEMENTATION_OF_SIXTRACK=.TRUE.
   real(dp), target :: phase0=-pi
   real(dp), target :: wedge_coeff(2)
@@ -670,8 +669,10 @@ MODULE S_DEF_KIND
 !!!! *************************************************************** !!!!
 
   INTERFACE GETANBN
-     MODULE PROCEDURE GETANBNR
-     MODULE PROCEDURE GETANBNP
+!     MODULE PROCEDURE GETANBNR
+!     MODULE PROCEDURE GETANBNP
+     MODULE PROCEDURE GETAEBER
+     MODULE PROCEDURE GETAEBEP
   END INTERFACE
 
   INTERFACE GETAEBE
@@ -686,10 +687,10 @@ MODULE S_DEF_KIND
      MODULE PROCEDURE electric_field_septump    ! FOR ESEPTUM
   END INTERFACE
 
-  INTERFACE GETMULB_TEAPOT
-     MODULE PROCEDURE GETMULB_TEAPOTR
-     MODULE PROCEDURE GETMULB_TEAPOTP       ! USE TO CREATE OTHER ELEMENTS (INTEGRATION)
-  END INTERFACE
+ ! INTERFACE GETMULB_TEAPOT
+ !    MODULE PROCEDURE GETMULB_TEAPOTR
+ !    MODULE PROCEDURE GETMULB_TEAPOTP       ! USE TO CREATE OTHER ELEMENTS (INTEGRATION)
+ ! END INTERFACE
 
 
   INTERFACE SPROT
@@ -3359,7 +3360,7 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
     !   RX=X(1)
     !   IX=X(3)
 
-    DO J=1,MIN(EL%NMUL,HIGHEST_FRINGE)
+    DO J=1,MIN(EL%NMUL,el%HIGHEST_FRINGE)
        DRX=  RX
        DIX=  IX
        RX =  DRX*X(1)-DIX*X(3)
@@ -3471,7 +3472,7 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
     !   RX=X(1)
     !   IX=X(3)
 
-    DO J=1,MIN(EL%NMUL,HIGHEST_FRINGE)
+    DO J=1,MIN(EL%NMUL,el%HIGHEST_FRINGE)
        DRX=  RX
        DIX=  IX
        RX =  DRX*X(1)-DIX*X(3)
@@ -9427,186 +9428,146 @@ integer :: kkk=0
     CALL KILL(phit,EX,ETX,EY,ETY,VMT)
   END SUBROUTINE GETELECTRICP
 
-  SUBROUTINE GETMULB_TEAPOTR(EL,B,VM,X,kick)
-    IMPLICIT NONE
-    real(dp),INTENT(INOUT):: X(6),B(3),VM
-    TYPE(TEAPOT),INTENT(IN):: EL
-    real(dp) X1,X3,BX,BY,BTX,BTY,BtYT,VMt
-    INTEGER J,M,A,K
-    logical(lp),optional:: kick
-    logical(lp) kic
-
-    kic=my_false
-    if(present(kick)) kic=kick
-    X1=X(1)
-    X3=X(3)
-
-    BX=0.0_dp
-    BY=0.0_dp
-    VM=0.0_dp
-
-    k=0
-    m=EL%P%nmul !-1
-    do a=m,1,-1
-       BTX=0.0_dp
-       BTY=0.0_dp
-       VMT=0.0_dp
-       do j=m-a,1,-1
-          k=k+1
-          !b%i(k)=a
-          !b%j(k)=j
-          BTX= (BTX+EL%BF_X(k))*X3  !x1
-          BTY= (BTY+EL%BF_Y(k))*X3
-          VMT= (VMT+EL%VM(k))*X3
-       enddo
-
-       k=k+1
-       !  b%i(k)=a
-       !  b%j(k)=0
-       BTX= (BTX+EL%BF_X(k))
-       BTY= (BTY+EL%BF_Y(k))
-       VMT= (VMT+EL%VM(k))
-       BX= (BX+BTX)*X1
-       BY= (BY+BTY)*X1
-       VM= (VM+VMT)*X1
-
-    enddo
-    BTX=0.0_dp
-    BTY=0.0_dp
-    VMT=0.0_dp
-    do j=m,1,-1
-       k=k+1
-       !  b%i(k)=0
-       !  b%j(k)=j
-       BTX= (BTX+EL%BF_X(k))*X3
-       BTY= (BTY+EL%BF_Y(k))*X3
-       VMT= (VMT+EL%VM(k))*X3
-    enddo
-    k=k+1
-    !    b%i(k)=0
-    !    b%j(k)=0
-    BX= BX+BTX+EL%BF_X(k)  !+X3
-    BY= BY+BTY+EL%BF_Y(k)  !+X3
-    VM= VM+VMT+EL%VM(k)  !+X3
-
-
-
-!    if(kic) then
-!     B(1)=BX 
-!     B(2)=BY 
-!     B(3)=0.0_dp
-!    else
-!     B(1)=BY/(1.0_dp+EL%P%B0*X(1))
-!     B(2)=-BX/(1.0_dp+EL%P%B0*X(1))
-!     B(3)=0.0_dp
-!    endif
-
-    if(kic) then
-     B(1)=-BY*(1.0_dp+EL%P%B0*X(1))
-     B(2)=BX*(1.0_dp+EL%P%B0*X(1))
-     B(3)=0.0_dp
-    else
-     B(1)=BX
-     B(2)=BY
-     B(3)=0.0_dp
-    endif
-
+!  SUBROUTINE GETMULB_TEAPOTR(EL,B,VM,X,kick)
+!    IMPLICIT NONE
+!    real(dp),INTENT(INOUT):: X(6),B(3),VM
+!    TYPE(TEAPOT),INTENT(IN):: EL
+!    real(dp) X1,X3,BX,BY,BTX,BTY,BtYT,VMt
+!    INTEGER J,M,A,K
+!    logical(lp),optional:: kick
+!    logical(lp) kic
 !
-
-  END SUBROUTINE GETMULB_TEAPOTR
-
-  SUBROUTINE GETMULB_TEAPOTP(EL,B,VM,X,kick)
-    IMPLICIT NONE
-    TYPE(REAL_8),INTENT(INOUT):: X(6),B(3),VM
-    TYPE(TEAPOTP),INTENT(IN):: EL
-    TYPE(REAL_8) X1,X3,BX,BY,BTX,BTY,BtYT,VMT
-    INTEGER J,M,A,K
-    logical(lp),optional:: kick
-    logical(lp) kic
-
-    kic=my_false
-    if(present(kick)) kic=kick
-
-
-    CALL ALLOC(X1,X3,BX,BY,BTX,BTY,BtYT,VMT)
-
-    X1=X(1)
-    X3=X(3)
-
-    BX=0.0_dp
-    BY=0.0_dp
-    VM=0.0_dp
-
-    k=0
-    m=EL%P%nmul !-1
-    do a=m,1,-1
-       BTX=0.0_dp
-       BTY=0.0_dp
-       VMT=0.0_dp
-       do j=m-a,1,-1
-          k=k+1
-          !b%i(k)=a
-          !b%j(k)=j
-          BTX= (BTX+EL%BF_X(k))*X3  !x1
-          BTY= (BTY+EL%BF_Y(k))*X3
-          VMT= (VMT+EL%VM(k))*X3
-       enddo
-
-       k=k+1
-       !  b%i(k)=a
-       !  b%j(k)=0
-       BTX= (BTX+EL%BF_X(k))
-       BTY= (BTY+EL%BF_Y(k))
-       VMT= (VMT+EL%VM(k))
-       BX= (BX+BTX)*X1
-       BY= (BY+BTY)*X1
-       VM= (VM+VMT)*X1
-
-    enddo
-    BTX=0.0_dp
-    BTY=0.0_dp
-    VMT=0.0_dp
-    do j=m,1,-1
-       k=k+1
-       !  b%i(k)=0
-       !  b%j(k)=j
-       BTX= (BTX+EL%BF_X(k))*X3
-       BTY= (BTY+EL%BF_Y(k))*X3
-       VMT= (VMT+EL%VM(k))*X3
-    enddo
-    k=k+1
-    !    b%i(k)=0
-    !    b%j(k)=0
-    BX= BX+BTX+EL%BF_X(k)  !+X3
-    BY= BY+BTY+EL%BF_Y(k)  !+X3
-    VM= VM+VMT+EL%VM(k)  !+X3
-
-
-
+!    kic=my_false
+!    if(present(kick)) kic=kick
+!    X1=X(1)
+!    X3=X(3)
+!
+!    BX=0.0_dp
+!    BY=0.0_dp
+!    VM=0.0_dp
+!
+!    k=0
+!    m=EL%P%nmul !-1
+!    do a=m,1,-1
+!       BTX=0.0_dp
+!       BTY=0.0_dp
+!       VMT=0.0_dp
+!       do j=m-a,1,-1
+!          k=k+1
+!          !b%i(k)=a
+!          !b%j(k)=j
+!          BTX= (BTX+EL%BF_X(k))*X3  !x1
+!          BTY= (BTY+EL%BF_Y(k))*X3
+!          VMT= (VMT+EL%VM(k))*X3
+!       enddo
+!
+!       k=k+1
+! 
+!       BTX= (BTX+EL%BF_X(k))
+!       BTY= (BTY+EL%BF_Y(k))
+!       VMT= (VMT+EL%VM(k))
+!       BX= (BX+BTX)*X1
+!       BY= (BY+BTY)*X1
+!       VM= (VM+VMT)*X1
+!
+!    enddo
+!    BTX=0.0_dp
+!    BTY=0.0_dp
+!    VMT=0.0_dp
+!    do j=m,1,-1
+!       k=k+1
+!       BTX= (BTX+EL%BF_X(k))*X3
+!       BTY= (BTY+EL%BF_Y(k))*X3
+!       VMT= (VMT+EL%VM(k))*X3
+!    enddo
+!    k=k+1
+! 
+!    BX= BX+BTX+EL%BF_X(k)  !+X3
+!    BY= BY+BTY+EL%BF_Y(k)  !+X3
+!    VM= VM+VMT+EL%VM(k)  !+X3
+!
+!
 !    if(kic) then
-!     B(1)=BX 
-!     B(2)=BY 
+!     B(1)=-BY*(1.0_dp+EL%P%B0*X(1))
+!     B(2)=BX*(1.0_dp+EL%P%B0*X(1))
 !     B(3)=0.0_dp
 !    else
-!     B(1)=BY/(1.0_dp+EL%P%B0*X(1))
-!     B(2)=-BX/(1.0_dp+EL%P%B0*X(1))
+!     B(1)=BX
+!     B(2)=BY
 !     B(3)=0.0_dp
 !    endif
+!
+!  END SUBROUTINE GETMULB_TEAPOTR
+!
+!  SUBROUTINE GETMULB_TEAPOTP(EL,B,VM,X,kick)
+!    IMPLICIT NONE
+!    TYPE(REAL_8),INTENT(INOUT):: X(6),B(3),VM
+!    TYPE(TEAPOTP),INTENT(IN):: EL
+!    TYPE(REAL_8) X1,X3,BX,BY,BTX,BTY,BtYT,VMT
+!    INTEGER J,M,A,K
+!    logical(lp),optional:: kick
+!    logical(lp) kic
+!
+!    kic=my_false
+!    if(present(kick)) kic=kick
+!
+!    CALL ALLOC(X1,X3,BX,BY,BTX,BTY,BtYT,VMT)
+!
+!    X1=X(1)
+!    X3=X(3)
+!
+!    BX=0.0_dp
+!    BY=0.0_dp
+!    VM=0.0_dp
+!
+!    k=0
+!    m=EL%P%nmul !-1
+!    do a=m,1,-1
+!       BTX=0.0_dp
+!       BTY=0.0_dp
+!       VMT=0.0_dp
+!       do j=m-a,1,-1
+!          k=k+1
+!          BTX= (BTX+EL%BF_X(k))*X3  !x1
+!          BTY= (BTY+EL%BF_Y(k))*X3
+!          VMT= (VMT+EL%VM(k))*X3
+!       enddo
+!       k=k+1
+!       BTX= (BTX+EL%BF_X(k))
+!       BTY= (BTY+EL%BF_Y(k))
+!       VMT= (VMT+EL%VM(k))
+!       BX= (BX+BTX)*X1
+!       BY= (BY+BTY)*X1
+!       VM= (VM+VMT)*X1
+!    enddo
+!    BTX=0.0_dp
+!    BTY=0.0_dp
+!    VMT=0.0_dp
+!    do j=m,1,-1
+!       k=k+1
+!       BTX= (BTX+EL%BF_X(k))*X3
+!       BTY= (BTY+EL%BF_Y(k))*X3
+!       VMT= (VMT+EL%VM(k))*X3
+!    enddo
+!    k=k+1
+!    BX= BX+BTX+EL%BF_X(k)  !+X3
+!    BY= BY+BTY+EL%BF_Y(k)  !+X3
+!    VM= VM+VMT+EL%VM(k)  !+X3
 
-    if(kic) then
-     B(1)=-BY*(1.0_dp+EL%P%B0*X(1))
-     B(2)=BX*(1.0_dp+EL%P%B0*X(1))
-     B(3)=0.0_dp
-    else
-     B(1)=BX
-     B(2)=BY
-     B(3)=0.0_dp
-    endif
-
-
-    CALL KILL(X1,X3,BX,BY,BTX,BTY,BtYT,VMT)
-
-  END SUBROUTINE GETMULB_TEAPOTP
+!    if(kic) then
+!     B(1)=-BY*(1.0_dp+EL%P%B0*X(1))
+!     B(2)=BX*(1.0_dp+EL%P%B0*X(1))
+!     B(3)=0.0_dp
+!    else
+!     B(1)=BX
+!     B(2)=BY
+!     B(3)=0.0_dp
+!    endif
+!
+!
+!    CALL KILL(X1,X3,BX,BY,BTX,BTY,BtYT,VMT)
+!
+!  END SUBROUTINE GETMULB_TEAPOTP
 
 
   ! cav_trav
@@ -10377,7 +10338,7 @@ integer :: kkk=0
     real(dp),INTENT(INOUT):: X(6)
     real(dp),INTENT(IN):: YL
     TYPE(TEAPOT),INTENT(IN):: EL
-    real(dp) b(3),VM
+    real(dp) b(3),VM,e(3),phi
  
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     real(dp) dir
@@ -10390,8 +10351,8 @@ integer :: kkk=0
 
     DIR=EL%P%DIR*EL%P%CHARGE
 
-    call GETMULB_TEAPOT(EL,B,VM,X,kick=my_true)
-
+!    call GETMULB_TEAPOT(EL,B,VM,X,kick=my_true)
+    call GETELECTRIC(EL,E,phi,B,VM,X,kick=my_true)
 
     X(2)=X(2)+YL*DIR*B(1)
     X(4)=X(4)+YL*DIR*B(2)
@@ -10407,16 +10368,18 @@ integer :: kkk=0
     TYPE(REAL_8),INTENT(INOUT):: X(6)
     TYPE(REAL_8),INTENT(IN):: YL
     TYPE(TEAPOTP),INTENT(IN):: EL
-    TYPE(REAL_8) B(3),VM
+    TYPE(REAL_8) B(3),VM,e(3),phi
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     real(dp) dir
 
     CALL ALLOC(B,3)
     CALL ALLOC(VM)
+    CALL ALLOC(E,3)
+    CALL ALLOC(phi)
     DIR=EL%P%DIR*EL%P%CHARGE
 
-    call GETMULB_TEAPOT(EL,B,VM,X,kick=my_true)
-
+   !call GETMULB_TEAPOT(EL,B,VM,X,kick=my_true)
+    call GETELECTRIC(EL,E,phi,B,VM,X,kick=my_true)
  
 
  
@@ -10430,6 +10393,8 @@ integer :: kkk=0
  
     CALL KILL(B,3)
     CALL KILL(VM)
+    CALL KILL(E,3)
+    CALL KILL(phi)
 
   END SUBROUTINE SKICKP
 
@@ -13019,7 +12984,9 @@ integer :: kkk=0
     real(dp) dv
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
-    IF(k%NOCAVITY) RETURN
+    IF(k%NOCAVITY.and.(.not.EL%always_on)) RETURN
+
+!    IF(k%NOCAVITY) RETURN
 
         IF(I==1.AND.EL%P%KILL_ENT_FRINGE) RETURN
         IF(I==-1.AND.EL%P%KILL_EXI_FRINGE) RETURN
@@ -13060,8 +13027,8 @@ integer :: kkk=0
     integer eps1,eps2
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
-
-    IF(k%NOCAVITY) RETURN
+    IF(k%NOCAVITY.and.(.not.EL%always_on)) RETURN   
+!    IF(k%NOCAVITY) RETURN
 
         IF(I==1.AND.EL%P%KILL_ENT_FRINGE) RETURN
         IF(I==-1.AND.EL%P%KILL_EXI_FRINGE) RETURN
@@ -13157,6 +13124,7 @@ integer :: kkk=0
           deallocate(EL%DVDS)
           deallocate(EL%cavity_totalpath)
           deallocate(EL%phase0)
+          deallocate(EL%always_on)
        endif
     elseif(i==0)       then          ! nullifies
 
@@ -13165,6 +13133,7 @@ integer :: kkk=0
        NULLIFY(EL%PSI)
        NULLIFY(EL%DPHAS)
        NULLIFY(EL%DVDS)
+       NULLIFY(EL%always_on)
     endif
 
   END SUBROUTINE ZEROR_CAV_TRAV
@@ -13184,6 +13153,7 @@ integer :: kkk=0
           deallocate(EL%DVDS)
           deallocate(EL%cavity_totalpath)
           deallocate(EL%phase0)
+          deallocate(EL%always_on)
        endif
     elseif(i==0)       then          ! nullifies
 
@@ -13192,6 +13162,7 @@ integer :: kkk=0
        NULLIFY(EL%PSI)
        NULLIFY(EL%DPHAS)
        NULLIFY(EL%DVDS)
+       NULLIFY(EL%always_on)
     endif
 
   END SUBROUTINE ZEROP_CAV_TRAV
@@ -14572,12 +14543,12 @@ SUBROUTINE ZEROr_teapot(EL,I)
     IMPLICIT NONE
     TYPE(TEAPOTP), INTENT(INOUT)::EL
 
-     IF(EL%ELECTRIC) THEN
+   !  IF(EL%ELECTRIC) THEN
         call alloc(EL%E_X,S_E%N_MONO)
         call alloc(EL%E_Y,S_E%N_MONO)
         call alloc(EL%PHI,S_E%N_MONO)
         call alloc(EL%AE,SECTOR_NMUL_max);call alloc(EL%BE,SECTOR_NMUL_max);
-     endif
+   !  endif
         CALL ALLOC(EL%bf_x,S_B_FROM_V%N_MONO)
         CALL ALLOC(EL%bf_Y,S_B_FROM_V%N_MONO)
         CALL ALLOC(EL%vm,S_B_FROM_V%N_MONO)
@@ -14590,12 +14561,12 @@ SUBROUTINE ZEROr_teapot(EL,I)
     IMPLICIT NONE
     TYPE(TEAPOTP), INTENT(INOUT)::EL
 
-     IF(EL%ELECTRIC) THEN
+   !  IF(EL%ELECTRIC) THEN
         call kill(EL%E_X,S_E%N_MONO)
         call kill(EL%E_Y,S_E%N_MONO)
         call kill(EL%PHI,S_E%N_MONO)
         call kill(EL%AE,SECTOR_NMUL_max);call alloc(EL%BE,SECTOR_NMUL_max);
-     endif
+   !  endif
         CALL kill(EL%bf_x,S_B_FROM_V%N_MONO)
         CALL kill(EL%bf_Y,S_B_FROM_V%N_MONO)
         CALL kill(EL%vm,S_B_FROM_V%N_MONO)
@@ -15561,7 +15532,8 @@ SUBROUTINE ZEROr_teapot(EL,I)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
     !    IF(k%NOCAVITY.OR.(.NOT.k%FRINGE)) RETURN
-    IF(k%NOCAVITY) RETURN
+    IF(k%NOCAVITY.and.(.not.EL%always_on)) RETURN
+!    IF(k%NOCAVITY) RETURN
 
     O=EL%freq*twopi/CLIGHT
     C1=COS(O*(x(6)-Z0)+EL%PHAS+EL%phase0)
@@ -15588,8 +15560,8 @@ SUBROUTINE ZEROr_teapot(EL,I)
     TYPE(REAL_8) C1,S1,C2,S2,V,O
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
-    !    IF(k%NOCAVITY.OR.(.NOT.k%FRINGE)) RETURN
-    IF(k%NOCAVITY) RETURN
+    IF(k%NOCAVITY.OR.(.NOT.k%FRINGE)) RETURN
+!    IF(k%NOCAVITY) RETURN
 
     CALL ALLOC(C1,S1,C2,S2,V,O)
     O=EL%freq*twopi/CLIGHT

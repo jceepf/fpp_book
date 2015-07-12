@@ -69,7 +69,7 @@ module Mad_like
      INTEGER APERTURE_KIND
      REAL(DP) APERTURE_R(2),APERTURE_X,APERTURE_Y
      LOGICAL(LP) KILL_ENT_FRINGE,KILL_EXI_FRINGE,BEND_FRINGE
-     integer PERMFRINGE
+     integer PERMFRINGE,highest_fringe
      REAL(DP) DPHAS,PSI,dvds
      logical(lp) usethin
      INTEGER N_BESSEL
@@ -706,6 +706,7 @@ CONTAINS
        s2%KILL_EXI_FRINGE=my_false
        s2%BEND_FRINGE=my_false
        s2%PERMFRINGE=0
+       s2%highest_fringe=highest_fringe
        s2%DPHAS=0.0_dp
        s2%PSI=0.0_dp
        s2%dvds=0.0_dp
@@ -1901,6 +1902,7 @@ CONTAINS
        rectaETILT%KILL_EXI_FRINGE=list%KILL_EXI_FRINGE
        rectaETILT%BEND_FRINGE=list%BEND_FRINGE
        rectaETILT%PERMFRINGE=list%PERMFRINGE
+       rectaETILT%highest_fringe=list%highest_fringe
     endif
 
 
@@ -2675,6 +2677,7 @@ CONTAINS
 
 !    S2%PERMFRINGE=S1%PERMFRINGE
     S2%p%PERMFRINGE=S1%PERMFRINGE
+    S2%p%highest_fringe=S1%highest_fringe
     S2%P%KILL_EXI_FRINGE=S1%KILL_EXI_FRINGE
     S2%P%KILL_ENT_FRINGE=S1%KILL_ENT_FRINGE
     !    S2%P%BEND_FRINGE=S1%BEND_FRINGE    ! SET ON THE BASIS OF B0

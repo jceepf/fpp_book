@@ -132,7 +132,7 @@ TYPE MAGNET_CHART
    !
    LOGICAL(lp), POINTER :: EXACT
    LOGICAL(lp), POINTER :: KILL_ENT_FRINGE,KILL_EXI_FRINGE, bend_fringe
-   integer, pointer :: permFRINGE                  !
+   integer, pointer :: permFRINGE,highest_fringe                 !
    !
    INTEGER, POINTER :: METHOD,NST                   ! METHOD OF INTEGRATION 2,4,OR 6 YOSHIDA
    INTEGER, POINTER :: NMUL                         ! NUMBER OF MULTIPOLE

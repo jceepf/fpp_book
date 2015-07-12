@@ -135,7 +135,7 @@ module S_status
   type(my_1D_taylor) val_del
   logical(lp) :: ramp=my_false
   logical(lp) :: accelerate=my_false, first_particle=my_false
-  integer :: SECTOR_NMUL_MAX=22
+
   TYPE B_CYL
      integer firsttime
      integer, POINTER ::  nmul,n_mono   !,nmul_e,n_mono_e
@@ -280,7 +280,7 @@ CONTAINS
     nullify(P%EDGE)
     !    nullify(P%TOTALPATH)
     nullify(P%EXACT);  !nullify(P%RADIATION);nullify(P%NOCAVITY);
-    nullify(P%permFRINGE);
+    nullify(P%permFRINGE,p%highest_fringe);
     nullify(P%KILL_ENT_FRINGE);nullify(P%KILL_EXI_FRINGE);nullify(P%bend_fringe);  !nullify(P%TIME);
     nullify(P%METHOD);nullify(P%NST);
     nullify(P%NMUL);  !nullify(P%spin);
@@ -316,13 +316,14 @@ CONTAINS
     ALLOCATE(P%EDGE(2));P%EDGE(1)=0.0_dp;P%EDGE(2)=0.0_dp;
     !    ALLOCATE(P%TOTALPATH); ! PART OF A STATE INITIALIZED BY EL=DEFAULT
     ALLOCATE(P%EXACT);  !ALLOCATE(P%RADIATION);ALLOCATE(P%NOCAVITY);
-        ALLOCATE(P%permFRINGE);
+        ALLOCATE(P%permFRINGE,p%highest_fringe);
     ALLOCATE(P%KILL_ENT_FRINGE);ALLOCATE(P%KILL_EXI_FRINGE);ALLOCATE(P%bend_fringe); !ALLOCATE(P%TIME);
     ALLOCATE(P%METHOD);ALLOCATE(P%NST);P%METHOD=2;P%NST=1;
     ALLOCATE(P%NMUL);P%NMUL=0;
     !    ALLOCATE(P%spin);
     !   ALLOCATE(P%TRACK);P%TRACK=.TRUE.;
     P%permFRINGE=0
+    p%highest_fringe=highest_fringe
     P%KILL_ENT_FRINGE=.FALSE.
     P%KILL_EXI_FRINGE=.FALSE.
     P%bend_fringe=.false.
@@ -365,6 +366,7 @@ CONTAINS
     !DEALLOCATE(P%RADIATION);DEALLOCATE(P%NOCAVITY);
 
     if(associated(p%PERMFRINGE))DEALLOCATE(P%PERMFRINGE);
+    if(associated(p%highest_fringe))DEALLOCATE(p%highest_fringe);
     if(associated(p%KILL_ENT_FRINGE))DEALLOCATE(P%KILL_ENT_FRINGE);
     if(associated(p%KILL_EXI_FRINGE))DEALLOCATE(P%KILL_EXI_FRINGE);
     if(associated(p%bend_fringe))DEALLOCATE(P%bend_fringe); !DEALLOCATE(P%TIME);
@@ -486,6 +488,8 @@ CONTAINS
     !   elp%NOCAVITY=el%NOCAVITY
     !   elp%spin=el%spin
        elp%permFRINGE=el%permFRINGE
+       elp%highest_fringe=el%highest_fringe
+
     elp%KILL_ENT_FRINGE=el%KILL_ENT_FRINGE
     elp%KILL_EXI_FRINGE=el%KILL_EXI_FRINGE
     elp%bend_fringe=el%bend_fringe
@@ -626,6 +630,7 @@ CONTAINS
     IMPLICIT NONE
     LOGICAL(lp) particle
     integer i,lda_old
+    logical :: change_first=.true.
 
     W_P=>W_I
     NULLIFY(ACC);       
@@ -715,7 +720,7 @@ CONTAINS
     enddo
     !  SECTOR_B AND SECTOR_NMUL FOR TYPE TEAPOT
 
-    change_sector=my_false
+!    change_sector=my_false
 
     IF(SECTOR_NMUL>0.and.firsttime_coef) THEN
      call alloc(e_muon_scale)
@@ -730,9 +735,10 @@ CONTAINS
              call set_s_b
              call set_s_e
          else 
-         
-         
-         
+ if(change_first) then  
+  write(6,*) " recomputing with new SECTOR_NMUL and sector_nmul_max ",SECTOR_NMUL,SECTOR_NMUL_max
+ change_first=.false.
+ endif        
 
           lda_old=lda_used
           lda_used=3000
