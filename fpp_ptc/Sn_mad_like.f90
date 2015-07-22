@@ -255,6 +255,9 @@ module Mad_like
      MODULE PROCEDURE BLTILT
   end  INTERFACE
 
+  INTERFACE multipole 
+     MODULE PROCEDURE BLTILT
+  end  INTERFACE
 
   INTERFACE HKICKER
      MODULE PROCEDURE HKICKTILT
@@ -900,13 +903,14 @@ CONTAINS
     ENDIF   !1
   END FUNCTION SMITILT
 
-  FUNCTION  BLTILT(NAME,K,T,LIST)
+  FUNCTION  BLTILT(NAME,k0l,k1l,K,T,LIST)
     implicit none
     type (EL_LIST) BLTILT
     type (EL_LIST),optional, INTENT(IN):: LIST
     CHARACTER(*), INTENT(IN):: NAME
     type (TILTING),optional, INTENT(IN):: T
     TYPE(MUL_BLOCK),OPTIONAL, INTENT(IN):: K
+    real(dp),OPTIONAL, INTENT(IN):: K0l,k1l
     INTEGER I
     LOGICAL(LP) COUNT
     if(present(list)) then   !1
@@ -947,7 +951,7 @@ CONTAINS
           BLTILT%NAME=NAME
        ENDIF
 
-    else   !1
+    elseif(present(k)) then
        BLTILT=0
        BLTILT%L=0.0_dp
        BLTILT%LD=0.0_dp
@@ -981,6 +985,44 @@ CONTAINS
        ELSE
           BLTILT%NAME=NAME
        ENDIF
+    elseif(present(k0l).or.present(k1l)) then
+       BLTILT=0
+       BLTILT%L=0.0_dp
+       BLTILT%LD=0.0_dp
+       BLTILT%LC=0.0_dp
+
+       BLTILT%KIND=kind3
+       BLTILT%nmul=1
+       if(present(k1l)) then
+          BLTILT%nmul=2      
+          BLTILT%K(2)=k1l
+       endif
+       if(present(k0l)) BLTILT%K(1)=k0l
+
+       if(present(t)) then
+          IF(T%NATURAL) THEN
+             BLTILT%tilt=t%tilt(K%NATURAL)
+          ELSE
+             BLTILT%tilt=t%tilt(0)
+          ENDIF
+       endif
+
+
+
+       IF(LEN(NAME)>nlp) THEN
+          w_p=0
+          w_p%nc=2
+          w_p%fc='((1X,a72,/),(1x,a72))'
+          w_p%c(1)=name
+          WRITE(w_p%c(2),'(a17,1x,a16)') ' IS TRUNCATED TO ', NAME(1:16)
+          ! call ! WRITE_I
+          BLTILT%NAME=NAME(1:16)
+       ELSE
+          BLTILT%NAME=NAME
+       ENDIF
+    else
+       write(6,*) "incorrect input in BLTILT"
+       stop 444
     endif    !1
   END FUNCTION BLTILT
 

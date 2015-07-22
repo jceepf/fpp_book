@@ -398,13 +398,13 @@ module definition
   !@3 ---------------------------------------------</br>
   TYPE c_vector_field_fourier  !@1 
       integer :: n=0
-      type (c_vector_field), allocatable :: f(:)                         
+      type (c_vector_field), pointer :: f(:)  =>null()                       
   END TYPE c_vector_field_fourier
   !@3 ---------------------------------------------</br>
   TYPE c_factored_lie
       integer :: n = 0   
       integer :: dir= 0     
-       type (c_vector_field), allocatable :: f(:)                   
+       type (c_vector_field), pointer :: f(:)=>null()                   
   END TYPE c_factored_lie
   !@3 ---------------------------------------------</br>
   TYPE c_normal_form

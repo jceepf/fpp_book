@@ -41,7 +41,7 @@ first=.true.;Lmax = 10.d0;use_info = .true.;prec=1.d-16;thin=.false.
 call ptc_ini_no_append
 call append_empty_layout(m_u)
 ALS=>m_u%start
-
+ 
 call build_lattice_als(ALS,mis,exact=.false.,thin=thin) 
  
 p=>als%start
@@ -336,7 +336,7 @@ close(mfisf)
 close(mft)
 if(thin) close(mfa)
 
-call ptc_end(graphics_maybe=1,flat_file=.false.)
+ call ptc_end(graphics_maybe=1,flat_file=.false.)
 
 end program spin_phase_advance_isf
 

@@ -1272,10 +1272,10 @@ end subroutine c_get_indices
     type (c_factored_lie),INTENT(INOUT) :: S1
     integer,optional :: n
     INTEGER i
-    logical existed
+ !   logical existed
 
-    existed=.false.
-    if(s1%n/=0) existed=.true.
+   ! existed=.false.
+   ! if(s1%n/=0) existed=.true.
 
     if(present(n)) then
      s1%n=n
@@ -1283,7 +1283,11 @@ end subroutine c_get_indices
      s1%n=no
     endif
      
-     if(existed) deallocate(s1%f)
+     if(associated(s1%f) ) then
+      deallocate(s1%f)
+      nullify(s1%f)
+     endif
+
      allocate(s1%f(s1%n))
     do i=1,s1%n
      call alloc(s1%f(i))
@@ -11584,7 +11588,7 @@ end subroutine produce_orthogonal
 
 
  ! spin routine
- SUBROUTINE stroboscopic_average_one_res(orb,n_r,cray,xst,nturn,kp,n,mf)
+ SUBROUTINE stroboscopic_average_one_res(orb,n_r,cray,xst,nturn,kp,n,mff)
     IMPLICIT NONE
  
     type(probe)   xst,xs0
@@ -11593,8 +11597,8 @@ end subroutine produce_orthogonal
     type(c_ray), intent(inout) :: cray
     type(c_damap) e_ly
     integer, intent(inout) :: kp,nturn
-    integer, optional :: mf
-    integer i,k,imax,nd2,mff,j
+    integer, optional :: mff
+    integer i,k,imax,nd2,j
     type(spinor) n
     real(dp) norm,norm0,n0(3),theta0
     logical ord
@@ -11743,10 +11747,10 @@ end SUBROUTINE  equal_c_vector_field_fourier
     type (c_vector_field_fourier),INTENT(INOUT) :: S1
     integer,optional :: n
     INTEGER i
-    logical existed
+   ! logical existed
 
-    existed=.false.
-    if(s1%n/=0) existed=.true.
+   ! existed=.false.
+  !  if(s1%n/=0) existed=.true.
 
    ! if(present(n)) then
    !  s1%n=n
@@ -11754,7 +11758,10 @@ end SUBROUTINE  equal_c_vector_field_fourier
      s1%n=n_fourier
    ! endif
      
-     if(existed) deallocate(s1%f)
+     if(associated(s1%f) ) then
+      deallocate(s1%f)
+      nullify(s1%f)
+     endif
      allocate(s1%f(-s1%n:s1%n))
 
     do i=-s1%n,s1%n

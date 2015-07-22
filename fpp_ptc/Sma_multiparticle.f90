@@ -928,6 +928,7 @@ endif
     !       CALL RESET_APERTURE_FLAG
     !    endif
 
+    x=V%X
     if(abs(x(1))+abs(x(3))>absolute_aperture) then
        messageLOST="exceed absolute_aperture in TRACKV_NODE_SINGLE"
        lost_node=>t
@@ -936,7 +937,7 @@ endif
        CHECK_STABLE=.false.
     endif
 
-    x=V%X
+
     reference_ray=V%reference_ray
 
     CALL TRACK_NODE_SINGLE(T,V%X,K)
