@@ -7936,6 +7936,7 @@ subroutine c_linear_ac_longitudinal(xy,a1,ac)
     enddo
 
     v=v.cut.(order_gofix+1)
+ 
     w=v**(-1)    !  W= (Map-1)**-1   
 
     x=0

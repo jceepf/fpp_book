@@ -1,22 +1,24 @@
 @ECHO off 
 rem SET gf=g95
-SET gf=gfortran 
+SET gf=gfortran
 @echo off
-SET flags= -c -O3
-rem SET flags=-c
+SET flags= -c 
+rem SET flags= -c 
+rem SET flags= -c -g
+rem SET flags=-c -ftrace=full
 SET FPP=..\fpp_ptc
 SET PTC=..\fpp_ptc
 fpp_ptc
 SET main=book_examples
-SET out=executables\
+SET out=executables_%gf%\
 type %g95%
 REM
 ECHO on
 rem cls
 @type intro.txt
 @ECHO off
-@mkdir object_files
-@mkdir executables
+@mkdir object_files_%gf%
+@mkdir executables_%gf%
 @cd book_examples
 dir /B /D *
 @cd ..
@@ -26,7 +28,7 @@ set /p mainprogram=  Write main program name =
 @type blank.txt
 if '%mainprogram%'=='' goto start
 set /p choice= type : full, common, main, link, carriage return to exit = 
-@cd object_files
+@cd object_files_%gf%
 if '%choice%'=='FULL' goto full
 if '%choice%'=='full' goto full
 if '%choice%'=='link' goto link
@@ -96,7 +98,7 @@ ECHO ON
 @cd ..
 @MKDIR %out%%mainprogram%
 @COPY /Y terminal.lnk %out%%mainprogram%\terminal.lnk
-@cd object_files
+@cd object_files_%gf%
 %gf% -o ..\%out%%mainprogram%\%mainprogram% St_pointers.o ^
 a_scratch_size.o b_da_arrays_all.o c_dabnew.o ^
 d_lielib.o h_definition.o ^
