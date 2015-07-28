@@ -62,13 +62,13 @@ contains
       if(flat_file) then
         if(associated(m_t%start)) then  ! two universes
            if(present(file_m_u).and.present(file_m_t)) then
-            write(6,*) "printing the universes in", file_m_u(1:len_trim(file_m_u)), &
+            write(6,*) "printing the universes in ", file_m_u(1:len_trim(file_m_u)), &
              file_m_t(1:len_trim(file_m_t))
             call print_universe(m_u,file_m_u)
             call print_universe_pointed(m_u,m_t,file_m_t)
 
            else
-           write(6,*) "printing the universes ",' m_u.txt and m_t.txt '
+           write(6,*) "printing the universes in ",' m_u.txt and m_t.txt '
             call print_universe(m_u,'m_u.txt')
             call print_universe_pointed(m_u,m_t,'m_t.txt')
            endif

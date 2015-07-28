@@ -11,7 +11,7 @@ module madx_keywords
   logical(lp) :: print_marker =my_true
   type(tree_element), private, allocatable :: t_e(:),t_ax(:),t_ay(:)
   real(dp), private :: a_(3),ent_(3,3), b_(3),exi_(3,3)
-
+  logical :: old_name_vorname = .false.
 
   type keywords
      character*20 magnet
@@ -2082,12 +2082,18 @@ enddo
 
  write(mf,*) "&ELENAME"
 if(fin) then
-! write(mf,*) "ELE0%NAME_VORNAME    = alldone"
+ if(old_name_vorname) then
  write(mf,*)  "ELE0%NAME_VORNAME='alldone','alldone',"
- 
 else
+  write(mf,*)  "ELE0%NAME_VORNAME= alldone , alldone ,"
+endif 
+else
+ if(old_name_vorname) then
  write(mf,*)  "ELE0%NAME_VORNAME='endhere','endhere',"
-! write(mf,*) "ELE0%NAME_VORNAME    = endhere"
+else
+ write(mf,*)  "ELE0%NAME_VORNAME= endhere , endhere ,"
+endif
+ 
 endif 
 write(mf,*) "/"
 
@@ -2856,8 +2862,14 @@ character(nlp+3) nname
 if(present(dir)) then
 if(dir) then   !BETA0,GAMMA0I,GAMBET,MASS ,AG
  ELE0%KIND=F%KIND
- ELE0%name_vorname(1)="'"//f%name//"' "
- ELE0%name_vorname(2)="'"//f%vorname//"' "
+! ELE0%name_vorname(1)="'"//f%name//"' "
+! ELE0%name_vorname(2)="'"//f%vorname//"' "
+ ELE0%name_vorname(1)= f%name 
+ ELE0%name_vorname(2)= f%vorname 
+ if(.not.old_name_vorname) then
+  call context(ELE0%name_vorname(1),dollar=my_true)
+  call context(ELE0%name_vorname(2),dollar=my_true)
+ endif
  ele0%an=0.0_dp
  ele0%an=0.0_dp
 if(f%p%nmul>0) then
@@ -3384,6 +3396,7 @@ integer i,j,i0,j0,i1,j1,jb,MF
 character (6) comt
 logical(lp) before,just
 logical, allocatable :: dna(:)
+character(nlp) name
 
 allocate(dna(ud%n))
 
@@ -3416,7 +3429,11 @@ j1=j0
 dna(i0)=.true.
 
   call Print_initial_chart(p,mf)
-  write(mf,'(1x,i4,1x,i8,1x,i2,1x,a24,1x,i8)') i0,p%dir*j0,p%patch%patch,p%mag%name, 1
+ name=p%mag%name
+ if(.not.old_name_vorname) then
+  call context(name,dollar=my_true)
+ endif
+  write(mf,'(1x,i4,1x,i8,1x,i2,1x,a24,1x,i8)') i0,p%dir*j0,p%patch%patch,name, 1
   call fib_fib0(p,my_true,mf)
   before=my_false
   just=my_false
@@ -3426,7 +3443,11 @@ dna(i0)=.true.
   p=>p%next
     jb=j1
    call locate_in_universe(p,i1,j1)
- write(mf,'(1x,i4,1x,i8,1x,i2,1x,a24,1x,i8)') i1,p%dir*j1,p%patch%patch,p%mag%name, j
+name=p%mag%name
+ if(.not.old_name_vorname) then
+  call context(name,dollar=my_true)
+ endif
+ write(mf,'(1x,i4,1x,i8,1x,i2,1x,a24,1x,i8)') i1,p%dir*j1,p%patch%patch,name, j
     dna(i1)=my_true      
        just=my_false
        if(before) then 

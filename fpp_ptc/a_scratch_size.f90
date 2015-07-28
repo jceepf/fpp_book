@@ -883,18 +883,25 @@ CONTAINS
   END SUBROUTINE ReportOpenFiles
 
 
-  SUBROUTINE CONTEXT( STRING, nb )
+  SUBROUTINE CONTEXT( STRING, nb,dollar )
     IMPLICIT NONE
     CHARACTER(*) STRING
     CHARACTER(1) C1
     integer, optional :: nb
+    logical(lp), optional :: dollar
     integer I,J,K,nb0,count
+     logical(lp) dol
     nb0=0
+    dol=.false.
     if(present(nb)) nb0=1
+    if(present(dollar)) dol=dollar
     J = 0
     count=0
     DO I = 1, LEN (STRING)
        C1 = STRING(I:I)
+       if(dol) then
+        if(c1=='$') c1="_"
+       endif
        STRING(I:I) = ' '
        IF( C1 .NE. ' ' ) THEN
           if(count/=0.and.nb0==1) then

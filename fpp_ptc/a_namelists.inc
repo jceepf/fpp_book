@@ -34,7 +34,8 @@ namelist / MAGLname / MAGL0
   integer, private, parameter :: nmul_max=NMAX
   TYPE ele_list
     INTEGER KIND
-    character(nlp+3) name_vorname(2)  
+!    character(nlp+3) name_vorname(2)  
+    character(nlp) name_vorname(2)  
 	real(dp) L,B_SOL
 	real(dp) an(nmul_max)  
 	real(dp) bn(nmul_max)  

@@ -111,7 +111,7 @@ MODULE S_DEF_KIND
   !  FOR CAV_TRAV
   PRIVATE A_TRANSR,A_TRANSP
   PRIVATE feval_CAVr,feval_CAVP,feval_CAV
-  PRIVATE fevalBMAD_CAVR,fevalBMAD_CAVP
+  PRIVATE feval_CAV_bmadr,feval_CAV_bmadp
   private  FRINGECAVR_TRAV,FRINGECAVP_TRAV !,FRINGECAV_TRAV
   private rk2_cavr,rk2_cavp !,rk2_cav
   private rk4_cavr,rk4_cavp !,rk4_cav
@@ -127,6 +127,11 @@ MODULE S_DEF_KIND
  
   !  logical(lp) :: old_solenoid=.true.
   INTEGER :: N_CAV4_F=1
+  INTEGER :: metcav=0, nstcav=0
+  real(dp) :: xcav(1:6)=0.001d0, symplectic_check=1.d-10
+  logical(lp) :: switch_to_fake=.true.
+  
+  
   ! stochastic radiation in straigth
   PRIVATE computeR_f4,computeP_f4,ZEROR_HE22,ZEROP_HE22
   PRIVATE DRIFTR_HE,DRIFTP_HE
@@ -148,7 +153,7 @@ MODULE S_DEF_KIND
   private track_slice4r,track_slice4p,PATCH_driftR,PATCH_driftp
   private  ZEROr_sol5,ZEROp_sol5
   logical(lp) :: tpsa_quad_sad=my_false
-
+ 
   INTERFACE TRACK_SLICE
 !     MODULE PROCEDURE INTER_CAV4
 !     MODULE PROCEDURE INTEP_CAV4
@@ -323,8 +328,11 @@ MODULE S_DEF_KIND
   INTERFACE feval_CAV
      MODULE PROCEDURE feval_CAVr
      MODULE PROCEDURE feval_CAVp
-     MODULE PROCEDURE fevalBMAD_CAVR 
-     MODULE PROCEDURE fevalBMAD_CAVP
+  END INTERFACE
+
+  INTERFACE feval_CAV_bmad
+     MODULE PROCEDURE feval_CAV_bmadr 
+     MODULE PROCEDURE feval_CAV_bmadp
   END INTERFACE
 
   INTERFACE feval_teapot
@@ -1750,6 +1758,98 @@ endif
 
   END SUBROUTINE CAVER
 
+    SUBROUTINE check_symplectic_bmad_cavity(f,norm,met,nst,turn_off_tpsa)
+    IMPLICIT NONE
+    TYPE(fibre),target:: f
+    TYPE(CAV4P),pointer:: EL
+    logical(lp),optional :: turn_off_tpsa
+     logical(lp) tpsa
+    real(dp) norm
+    integer met,nst,nthin,met0,nst0
+
+!  INTEGER :: metcav=0, nstcav=0
+!  real(dp) :: xcav(1:6)=0.001d0, symplectic_check=1.d-10
+!  logical(lp) :: switch_to_fake=.true.
+  
+    type(damap) m
+    type(real_8) y(6)
+!   integer :: limit_int0(2) =(/4,18/)
+    integer :: nlim(1:6) =(/0,1,0,3,0,7/)  ! multiplicative factors  
+    integer :: nlimit(1:4) , k
+     nlimit=0
+     nlimit(1)=0
+     nlimit(2)=1*limit_int0(1)
+     nlimit(4)=3*limit_int0(2)   
+     
+    EL=>f%magp%c4
+    EL%P%CHARGE=>f%charge
+    EL%P%dir=>f%dir
+    tpsa=my_true
+       if(present(turn_off_tpsa)) tpsa=.not.turn_off_tpsa
+    met0=el%p%method
+    nst0=el%p%nst
+    if(el%n_bessel/=-1) then
+     write(6,*) " this is not a BMAD cavity "
+     stop 
+    endif
+
+     if(tpsa) call init(default0,1,0)
+    norm=1.d38
+    if(nstcav/=0) then
+     met=metcav
+     nst=nstcav
+     else
+     met=2
+     nst=2
+    endif
+     k=0
+    do while(norm>=symplectic_check.and.k<100) 
+    call alloc(m)
+    call alloc(y)
+    m=1
+    y=m+xcav
+     call CAVEP(el,y,default0)
+    m=y
+     call checksymp(m,norm)
+    call kill(m)
+    call kill(y)
+    if(nstcav/=0) then
+     el%p%method=met0
+     el%p%nst=nst0
+     return
+    endif    
+    nst=nst+1
+    nthin=nlim(met)*nst
+    if(nthin>=nlimit(4)) then
+     met=6
+     nst=nst/nlim(met)
+     if(met<=el%p%method.and.nst<=el%p%nst) then
+      nst=el%p%nst+1
+      met=el%p%method
+     endif
+    elseif(nthin>=nlimit(2)) then
+     met=4
+     nst=nst/nlim(met)
+     if(met<=el%p%method.and.nst<=el%p%nst) then
+      nst=el%p%nst+1
+      met=el%p%method
+     endif
+    else
+     met=2
+     if(met<=el%p%method.and.nst<=el%p%nst) then
+      nst=el%p%nst+1
+      met=el%p%method
+     endif
+    endif
+     k=k+1
+     write(6,*) k,norm,met,nst
+    el%p%method=met
+    el%p%nst=nst
+    enddo
+    el%p%method=met0
+    el%p%nst=nst0
+    end SUBROUTINE check_symplectic_bmad_cavity  
+ 
   SUBROUTINE CAVEP(EL,X,k)
     IMPLICIT NONE
     TYPE(REAL_8),INTENT(INOUT):: X(6)
@@ -1950,7 +2050,7 @@ CALL FRINGECAV(EL,X,k,2)
    do ko=1,el%nf    ! over modes
    
     C1=el%f(ko)*V*sin(ko*O*z)*COS(ko*O*(x(6)+EL%t)+EL%PHAS+EL%phase0+EL%PH(KO))*0.5_dp
-    S1=-el%f(ko)*(ko*O)*V*sin(ko*O*z)*SIN(ko*O*(x(6)+EL%t)+EL%PHAS+EL%phase0+EL%PH(KO))/4.0_dp
+    S1=el%f(ko)*(ko*O)*V*sin(ko*O*z)*SIN(ko*O*(x(6)+EL%t)+EL%PHAS+EL%phase0+EL%PH(KO))/2.0_dp
     AD(1)=-C1+AD(1)
     AD(2)=S1+AD(2)
     dad1dz=dad1dz-(ko*O)*el%f(ko)*V*cos(ko*O*z)*COS(ko*O*(x(6)+EL%t)+EL%PHAS+EL%phase0+EL%PH(KO))*0.5_dp
@@ -2007,7 +2107,8 @@ CALL FRINGECAV(EL,X,k,2)
    do ko=1,el%nf    ! over modes
    
     C1=el%f(ko)*V*sin(ko*O*z)*COS(ko*O*(x(6)+EL%t)+EL%PHAS+EL%phase0+EL%PH(KO))*0.5_dp
-    S1=-el%f(ko)*(ko*O)*V*sin(ko*O*z)*SIN(ko*O*(x(6)+EL%t)+EL%PHAS+EL%phase0+EL%PH(KO))/4.0_dp
+    S1=el%f(ko)*(ko*O)*V*sin(ko*O*z)*SIN(ko*O*(x(6)+EL%t)+EL%PHAS+EL%phase0+EL%PH(KO))/2.0_dp
+
     AD(1)=-C1+AD(1)
     AD(2)=S1+AD(2)
 
@@ -2037,7 +2138,7 @@ CALL FRINGECAV(EL,X,k,2)
 
   END SUBROUTINE Abmad_TRANSP
 
-  subroutine fevalBMAD_CAVR(Z0,X,k,f,D)   ! MODELLED BASED ON DRIFT
+  subroutine feval_CAV_bmadr(Z0,X,k,f,D)   ! MODELLED BASED ON DRIFT
     IMPLICIT NONE
     real(dp), INTENT(INout) :: X(6)
     real(dp),INTENT(INOUT):: Z0
@@ -2093,10 +2194,10 @@ CALL FRINGECAV(EL,X,k,2)
     X(2)=X(2)+A(1)
     X(4)=X(4)+A(2)
 
-  END subroutine fevalBMAD_CAVR
+  END subroutine feval_CAV_bmadr
 
 
-  subroutine fevalBMAD_CAVP(Z0,X,k,f,D)   ! MODELLED BASED ON DRIFT
+  subroutine feval_CAV_bmadp(Z0,X,k,f,D)   ! MODELLED BASED ON DRIFT
     IMPLICIT NONE
     TYPE(REAL_8), INTENT(INout) :: X(6)
     TYPE(REAL_8),INTENT(INOUT):: Z0
@@ -2158,7 +2259,7 @@ CALL FRINGECAV(EL,X,k,2)
     call KILL(A,3)
     call KILL(AD,2)
     call KILL(PZ)
-  END subroutine fevalBMAD_CAVP
+  END subroutine feval_CAV_bmadp
 
  subroutine rk2bmad_cavr(ti,h,GR,y,k)
     IMPLICIT none
@@ -2174,7 +2275,7 @@ CALL FRINGECAV(EL,X,k,2)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
 
-    call feval_cav(tI,y,k,f,gr)
+    call feval_CAV_bmad(tI,y,k,f,gr)
     do  j=1,ne
        a(j)=h*f(j)
     enddo
@@ -2183,7 +2284,7 @@ CALL FRINGECAV(EL,X,k,2)
     enddo
 
     tt=tI+h/2.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        b(j)=h*f(j)
     enddo
@@ -2211,7 +2312,7 @@ CALL FRINGECAV(EL,X,k,2)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
 
-    call feval_cav(tI,y,k,f,gr)
+    call feval_CAV_bmad(tI,y,k,f,gr)
     do  j=1,ne
        a(j)=h*f(j)
     enddo
@@ -2220,7 +2321,7 @@ CALL FRINGECAV(EL,X,k,2)
     enddo
 
     tt=tI+h/2.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        b(j)=h*f(j)
     enddo
@@ -2230,7 +2331,7 @@ CALL FRINGECAV(EL,X,k,2)
 
 
     !      tt=tI+1
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        c(j)=h*f(j)
     enddo
@@ -2239,7 +2340,7 @@ CALL FRINGECAV(EL,X,k,2)
     enddo
 
     tt=tI+h
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        d(j)=h*f(j)
     enddo
@@ -2275,7 +2376,7 @@ CALL FRINGECAV(EL,X,k,2)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
 
-    call feval_cav(tI,y,k,f,gr)
+    call feval_CAV_bmad(tI,y,k,f,gr)
     do  j=1,ne
        a(j)=h*f(j)
     enddo
@@ -2283,7 +2384,7 @@ CALL FRINGECAV(EL,X,k,2)
        yt(j)=y(j)+a(j)/9.0_dp
     enddo
     tt=tI+h/9.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        b(j)=h*f(j)
     enddo
@@ -2291,7 +2392,7 @@ CALL FRINGECAV(EL,X,k,2)
        yt(j)=y(j) + (a(j) + 3.0_dp*b(j))/24.0_dp
     enddo
     tt=tI+h/6.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        c(j)=h*f(j)
     enddo
@@ -2301,7 +2402,7 @@ CALL FRINGECAV(EL,X,k,2)
     enddo
 
     tt=tI+h/3.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        d(j)=h*f(j)
     enddo
@@ -2310,7 +2411,7 @@ CALL FRINGECAV(EL,X,k,2)
        yt(j)=y(j) + (-5.0_dp*a(j) + 27.0_dp*b(j) - 24.0_dp*c(j) + 6.0_dp*d(j))/8.0_dp
     enddo
     tt=tI+0.5_dp*h
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        e(j)=h*f(j)
     enddo
@@ -2319,7 +2420,7 @@ CALL FRINGECAV(EL,X,k,2)
        yt(j)=y(j) + (221.0_dp*a(j) - 981.0_dp*b(j) + 867.0_dp*c(j)- 102.0_dp*d(j) + e(j))/9.0_dp
     enddo
     tt = tI+2.0_dp*h/3.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do   j=1,ne
        g(j)=h*f(j)
     enddo
@@ -2327,7 +2428,7 @@ CALL FRINGECAV(EL,X,k,2)
        yt(j) = y(j)+(-183.0_dp*a(j)+678.0_dp*b(j)-472.0_dp*c(j)-66.0_dp*d(j)+80.0_dp*e(j) + 3.0_dp*g(j))/48.0_dp
     enddo
     tt = tI + 5.0_dp*h/6.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        o(j)=h*f(j)
     enddo
@@ -2336,7 +2437,7 @@ CALL FRINGECAV(EL,X,k,2)
     enddo
 
     tt = tI + h
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        p(j)=h*f(j)
     enddo
@@ -2369,7 +2470,7 @@ CALL FRINGECAV(EL,X,k,2)
 
     call alloc(tt)
 
-    call feval_cav(tI,y,k,f,gr)
+    call feval_CAV_bmad(tI,y,k,f,gr)
     do  j=1,ne
        a(j)=h*f(j)
     enddo
@@ -2378,7 +2479,7 @@ CALL FRINGECAV(EL,X,k,2)
     enddo
 
     tt=tI+h/2.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        b(j)=h*f(j)
     enddo
@@ -2419,7 +2520,7 @@ CALL FRINGECAV(EL,X,k,2)
     call alloc(c)
     call alloc(d)
 
-    call feval_cav(tI,y,k,f,gr)
+    call feval_CAV_bmad(tI,y,k,f,gr)
     do  j=1,ne
        a(j)=h*f(j)
     enddo
@@ -2428,7 +2529,7 @@ CALL FRINGECAV(EL,X,k,2)
     enddo
 
     tt=tI+h/2.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        b(j)=h*f(j)
     enddo
@@ -2438,7 +2539,7 @@ CALL FRINGECAV(EL,X,k,2)
 
 
     !      tt=tI+1
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        c(j)=h*f(j)
     enddo
@@ -2447,7 +2548,7 @@ CALL FRINGECAV(EL,X,k,2)
     enddo
 
     tt=tI+h
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        d(j)=h*f(j)
     enddo
@@ -2496,7 +2597,7 @@ CALL FRINGECAV(EL,X,k,2)
     call alloc(p,ne)
     call alloc(tt)
 
-    call feval_cav(tI,y,k,f,gr)
+    call feval_CAV_bmad(tI,y,k,f,gr)
     do  j=1,ne
        a(j)=h*f(j)
     enddo
@@ -2504,7 +2605,7 @@ CALL FRINGECAV(EL,X,k,2)
        yt(j)=y(j)+a(j)/9.0_dp
     enddo
     tt=tI+h/9.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        b(j)=h*f(j)
     enddo
@@ -2512,7 +2613,7 @@ CALL FRINGECAV(EL,X,k,2)
        yt(j)=y(j) + (a(j) + 3.0_dp*b(j))/24.0_dp
     enddo
     tt=tI+h/6.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        c(j)=h*f(j)
     enddo
@@ -2522,7 +2623,7 @@ CALL FRINGECAV(EL,X,k,2)
     enddo
 
     tt=tI+h/3.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        d(j)=h*f(j)
     enddo
@@ -2531,7 +2632,7 @@ CALL FRINGECAV(EL,X,k,2)
        yt(j)=y(j) + (-5.0_dp*a(j) + 27.0_dp*b(j) - 24.0_dp*c(j) + 6.0_dp*d(j))/8.0_dp
     enddo
     tt=tI+0.5_dp*h
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        e(j)=h*f(j)
     enddo
@@ -2540,7 +2641,7 @@ CALL FRINGECAV(EL,X,k,2)
        yt(j)=y(j) + (221.0_dp*a(j) - 981.0_dp*b(j) + 867.0_dp*c(j)- 102.0_dp*d(j) + e(j))/9.0_dp
     enddo
     tt = tI+2.0_dp*h/3.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do   j=1,ne
        g(j)=h*f(j)
     enddo
@@ -2548,7 +2649,7 @@ CALL FRINGECAV(EL,X,k,2)
        yt(j) = y(j)+(-183.0_dp*a(j)+678.0_dp*b(j)-472.0_dp*c(j)-66.0_dp*d(j)+80.0_dp*e(j) + 3.0_dp*g(j))/48.0_dp
     enddo
     tt = tI + 5.0_dp*h/6.0_dp
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        o(j)=h*f(j)
     enddo
@@ -2557,7 +2658,7 @@ CALL FRINGECAV(EL,X,k,2)
     enddo
 
     tt = tI + h
-    call feval_cav(tt,yt,k,f,gr)
+    call feval_CAV_bmad(tt,yt,k,f,gr)
     do  j=1,ne
        p(j)=h*f(j)
     enddo

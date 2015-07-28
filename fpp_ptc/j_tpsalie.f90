@@ -2530,9 +2530,9 @@ contains
           norm1=norm1+abs(xj(i,j))
        enddo
     enddo
-    norm1=norm1-nd2
+    norm1=abs(norm1-nd2)
     if(lielib_print(9)==1.or.nn) write(6,'(a29,(1x,E15.8))')"deviation from symplecticity ", norm1
-    if(present(norm)) norm=norm1
+    if(present(norm)) norm=abs(norm1)
 
   end subroutine checksymp
 
