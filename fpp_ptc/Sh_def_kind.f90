@@ -1758,14 +1758,14 @@ endif
 
   END SUBROUTINE CAVER
 
-    SUBROUTINE check_symplectic_bmad_cavity(f,norm,met,nst,turn_off_tpsa)
+    SUBROUTINE check_symplectic_bmad_cavity(f,norm,met,nst,kmax,turn_off_tpsa)
     IMPLICIT NONE
     TYPE(fibre),target:: f
     TYPE(CAV4P),pointer:: EL
     logical(lp),optional :: turn_off_tpsa
      logical(lp) tpsa
-    real(dp) norm
-    integer met,nst,nthin,met0,nst0
+    real(dp) norm,symplectic_check_l
+    integer met,nst,nthin,met0,nst0,kmax
 
 !  INTEGER :: metcav=0, nstcav=0
 !  real(dp) :: xcav(1:6)=0.001d0, symplectic_check=1.d-10
@@ -1776,6 +1776,20 @@ endif
 !   integer :: limit_int0(2) =(/4,18/)
     integer :: nlim(1:6) =(/0,1,0,3,0,7/)  ! multiplicative factors  
     integer :: nlimit(1:4) , k
+
+
+     if(symplectic_check==0.0_dp) then
+       if(metcav>0.and.nstcav>0) then
+         met=metcav
+         nst=nstcav
+        else
+         met=el%p%method
+         nst=el%p%nst        
+       endif
+       return
+     endif
+     symplectic_check_l=abs(symplectic_check)
+
      nlimit=0
      nlimit(1)=0
      nlimit(2)=1*limit_int0(1)
@@ -1803,7 +1817,7 @@ endif
      nst=2
     endif
      k=0
-    do while(norm>=symplectic_check.and.k<100) 
+    do while(norm>=symplectic_check_l.and.k<kmax) 
     call alloc(m)
     call alloc(y)
     m=1
@@ -1842,7 +1856,7 @@ endif
      endif
     endif
      k=k+1
-     write(6,*) k,norm,met,nst
+     if(symplectic_check<0) write(6,*) k,norm,met,nst
     el%p%method=met
     el%p%nst=nst
     enddo

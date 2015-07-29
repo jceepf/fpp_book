@@ -2082,18 +2082,9 @@ enddo
 
  write(mf,*) "&ELENAME"
 if(fin) then
- if(old_name_vorname) then
  write(mf,*)  "ELE0%NAME_VORNAME='alldone','alldone',"
 else
-  write(mf,*)  "ELE0%NAME_VORNAME= alldone , alldone ,"
-endif 
-else
- if(old_name_vorname) then
  write(mf,*)  "ELE0%NAME_VORNAME='endhere','endhere',"
-else
- write(mf,*)  "ELE0%NAME_VORNAME= endhere , endhere ,"
-endif
- 
 endif 
 write(mf,*) "/"
 
