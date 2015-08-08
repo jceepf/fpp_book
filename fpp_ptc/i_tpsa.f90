@@ -3819,7 +3819,7 @@ endif
     type (TAYLOR),INTENT(INOUT)::S2
     type (TAYLOR), intent(INOUT):: s1
     real(dp) prec
-    INTEGER ipresent,k,n,I,illa
+    INTEGER ipresent,n,I,illa
     real(dp) value
     INTEGER, allocatable :: j(:)
     type (TAYLOR) t
@@ -3898,7 +3898,7 @@ endif
     type (vecresonance),INTENT(INOUT)::S2
     type (vecresonance), intent(INOUT):: s1
     real(dp) prec
-    integer i
+
 
 
        call clean_vecfield(s1%cos,s2%cos,prec)
@@ -3913,7 +3913,7 @@ endif
     type (onelieexponent),INTENT(INOUT)::S2
     type (onelieexponent), intent(INOUT):: s1
     real(dp) prec
-    integer i
+
 
 
        call clean_vecfield(s1%vector,s2%vector,prec)
@@ -3932,8 +3932,8 @@ endif
     type (complextaylor), intent(INOUT):: s1
     real(dp) prec
 
-    call clean_taylor(S1%r,S1%r,prec)
-    call clean_taylor(S1%i,S1%i,prec)
+    call clean_taylor(S1%r,S2%r,prec)
+    call clean_taylor(S1%i,S2%i,prec)
 
 
   END SUBROUTINE clean_complextaylor

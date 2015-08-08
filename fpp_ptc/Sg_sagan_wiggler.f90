@@ -621,14 +621,14 @@ contains
        !  IF POINTED ASSOCIATED DEASSOCIATE
        IF(ASSOCIATED(EL%K))  THEN
           DEALLOCATE(EL%A)
-          DEALLOCATE(EL%F)
+          DEALLOCATE(EL%F,EL%phi_x,EL%phi_y)
           DEALLOCATE(EL%offset)
           DEALLOCATE(EL%FORM)
           DEALLOCATE(EL%K)
        ENDIF
     elseif(i==0)       then
        NULLIFY(EL%A)
-       NULLIFY(EL%F)
+       NULLIFY(EL%F,EL%phi_x,EL%phi_y)
        NULLIFY(EL%offset)
        NULLIFY(EL%FORM)
        NULLIFY(EL%K)
@@ -648,14 +648,14 @@ contains
        IF(ASSOCIATED(EL%K))  THEN
           CALL KILL(EL)              ! FPP DEALLOCATION FIRST OBVIOUSLY
           DEALLOCATE(EL%A)
-          DEALLOCATE(EL%F)
+          DEALLOCATE(EL%F,EL%phi_x,EL%phi_y)
           DEALLOCATE(EL%offset)
           DEALLOCATE(EL%FORM)
           DEALLOCATE(EL%K)
        ENDIF
     elseif(i==0)       then
        NULLIFY(EL%A)
-       NULLIFY(EL%F)
+       NULLIFY(EL%F,EL%phi_x,EL%phi_y)
        NULLIFY(EL%offset)
        NULLIFY(EL%FORM)
        NULLIFY(EL%K)
@@ -737,6 +737,8 @@ contains
        DO I=1,SIZE(EL%A)
           ELP%A(I)    =EL%A(I)
           ELP%F(I)    =EL%F(I)
+          ELP%phi_x(I)    =EL%phi_x(I)
+          ELP%phi_y(I)    =EL%phi_y(I)
           ELP%FORM(I) =EL%FORM(I)
        ENDDO
        ELP%offset   =EL%offset
@@ -761,6 +763,8 @@ contains
        DO I=1,SIZE(EL%A)
           ELP%A(I)    =EL%A(I)
           ELP%F(I)    =EL%F(I)
+          ELP%phi_x(I)    =EL%phi_x(I)
+          ELP%phi_y(I)    =EL%phi_y(I)
           ELP%FORM(I) =EL%FORM(I)
        ENDDO
        ELP%offset   =EL%offset
@@ -784,6 +788,8 @@ contains
        ENDDO
        DO I=1,SIZE(EL%A)
           ELP%A(I)    =EL%A(I)
+          ELP%phi_x(I)    =EL%phi_x(I)
+          ELP%phi_y(I)    =EL%phi_y(I)
           ELP%F(I)    =EL%F(I)
           ELP%FORM(I) =EL%FORM(I)
        ENDDO
@@ -832,11 +838,13 @@ contains
     ENDIF
     EL=0
     ALLOCATE(EL%A(N))
-    ALLOCATE(EL%F(N))
+    ALLOCATE(EL%F(N),EL%phi_x(N),EL%phi_y(N))
     ALLOCATE(EL%offset)
     ALLOCATE(EL%FORM(N))
     ALLOCATE(EL%K(3,N))
     EL%K=0.0_dp
+    EL%phi_x=0.0_dp
+    EL%phi_y=0.0_dp
     EL%A=0.0_dp
     EL%F=0.0_dp
     EL%offset=0.0_dp
@@ -855,7 +863,7 @@ contains
     ENDIF
     EL=0
     ALLOCATE(EL%A(N))
-    ALLOCATE(EL%F(N))
+    ALLOCATE(EL%F(N),EL%phi_x(N),EL%phi_y(N))
     ALLOCATE(EL%offset)
     ALLOCATE(EL%K(3,N))
     ALLOCATE(EL%FORM(N))
@@ -890,6 +898,8 @@ contains
        ENDDO
        CALL ALLOC(EL%A,SIZE(EL%A));
        CALL ALLOC(EL%F,SIZE(EL%A));
+       CALL ALLOC(EL%phi_x,SIZE(EL%A));
+       CALL ALLOC(EL%phi_y,SIZE(EL%A));
        CALL ALLOC(EL%offset);
     ENDIF
   END SUBROUTINE ALLOC_WIGGLER
@@ -917,6 +927,8 @@ contains
           ENDDO
        ENDDO
        CALL KILL(EL%A,SIZE(EL%A));
+       CALL KILL(EL%phi_x,SIZE(EL%A));
+       CALL KILL(EL%phi_y,SIZE(EL%A));
        CALL KILL(EL%F,SIZE(EL%A));
        CALL KILL(EL%offset);
     ENDIF
@@ -946,6 +958,8 @@ contains
 
        CALL resetpoly_R31N(EL%A,SIZE(EL%A))
        CALL resetpoly_R31N(EL%F,SIZE(EL%A))
+       CALL resetpoly_R31N(EL%phi_x,SIZE(EL%A))
+       CALL resetpoly_R31N(EL%phi_y,SIZE(EL%A))
        CALL resetpoly_R31(EL%offset)
     ENDIF
   END SUBROUTINE reset_WIG
@@ -1243,23 +1257,23 @@ contains
     B=0.0_dp
     DO I=1,SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyperbolic_ydollar) THEN
-          A = -EL%W%K(3,i)*X(1)*X(3) * SINX_X(EL%W%K(1,i)*X(1)) * SINeHX_X(EL%W%K(2,i)*X(3)) * &
-               SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
-          B = -0.5_dp*EL%W%K(3,i)*X(3)**2 * COS(EL%W%K(1,i)*X(1)) * (SINeHX_X(EL%W%K(2,i)*X(3)*0.5_dp))**2 * &
-               SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
-       elseif (EL%W%FORM(I) == hyperbolic_xydollar) THEN
-          A = -EL%W%K(3,i)*X(1)*X(3) * SINeHX_X(EL%W%K(1,i)*X(1)) * SINeHX_X(EL%W%K(2,i)*X(3)) * &
-               SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
-          B = -0.5_dp*EL%W%K(3,i)*X(3)**2 * COSeH(EL%W%K(1,i)*X(1)) * (SINeHX_X(EL%W%K(2,i)*X(3)*0.5_dp))**2 * &
-               SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
-       elseif (EL%W%FORM(I) == hyperbolic_xdollar) THEN
-          A = -EL%W%K(3,i)*X(1)*X(3) * SINeHX_X(EL%W%K(1,i)*X(1)) * SINX_X(EL%W%K(2,i)*X(3)) * &
-               SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
-          B = -0.5_dp*EL%W%K(3,i)*X(3)**2 * COSeH(EL%W%K(1,i)*X(1)) * (SINX_X(EL%W%K(2,i)*X(3)*0.5_dp))**2 * &
-               SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
-       else
-          print *, 'ERROR IN COMPY_R: UNKNOWN FORM FOR WIGGLER TERM!'
-          stop
+A = -EL%W%K(3,i)*X(1)*X(3) * SINX_X(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINeHX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
+     SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
+B = -0.5_dp*EL%W%K(3,i)*X(3)**2 * COS(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * (SINeHX_X((EL%W%K(2,i)*X(3)+EL%W%phi_y(I))  & 
+     *0.5_dp))**2 * SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
+ elseif (EL%W%FORM(I) == hyperbolic_xydollar) THEN
+ A = -EL%W%K(3,i)*X(1)*X(3) * SINeHX_X(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINeHX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
+      SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
+ B = -0.5_dp*EL%W%K(3,i)*X(3)**2 * COSeH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I))*(SINeHX_X((EL%W%K(2,i)*X(3)+EL%W%phi_y(I))*0.5_dp))**2* &
+      SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
+ elseif (EL%W%FORM(I) == hyperbolic_xdollar) THEN
+ A = -EL%W%K(3,i)*X(1)*X(3) * SINeHX_X(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
+      SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
+ B = -0.5_dp*EL%W%K(3,i)*X(3)**2 * COSeH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I))*(SINX_X((EL%W%K(2,i)*X(3)+EL%W%phi_y(I))*0.5_dp))**2 * &
+      SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
+ else
+    print *, 'ERROR IN COMPY_R: UNKNOWN FORM FOR WIGGLER TERM!'
+    stop
        ENDIF
     ENDDO
     A=A*EL%P%CHARGE 
@@ -1279,23 +1293,23 @@ contains
     call alloc(s1,s2,s3)
     DO I=1,SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyperbolic_ydollar) THEN
-          s1=EL%W%K(1,i)*X(1)
-          s2=EL%W%K(2,i)*X(3)
+          s1=EL%W%K(1,i)*X(1)+EL%W%phi_x(I)
+          s2=EL%W%K(2,i)*X(3)+EL%W%phi_y(I)
           s3=EL%W%K(3,i)*Z+EL%W%F(I)
           A = -EL%W%K(3,i)*X(1)*X(3) * SINX_X(s1) * SINHX_X(s2) * SIN(s3) * EL%W%A(I) + A
           s2=s2*0.5_dp
           B = -0.5_dp*EL%W%K(3,i)*X(3)**2 * COS(s1) * (SINHX_X(s2))**2 * &
                SIN(s3) * EL%W%A(I) + B
        elseif (EL%W%FORM(I) == hyperbolic_xydollar) THEN
-          A = -EL%W%K(3,i)*X(1)*X(3) * SINHX_X(EL%W%K(1,i)*X(1)) * SINHX_X(EL%W%K(2,i)*X(3)) * &
-               SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
-          B = -0.5_dp*EL%W%K(3,i)*X(3)**2 * COSH(EL%W%K(1,i)*X(1)) * (SINHX_X(EL%W%K(2,i)*X(3)*0.5_dp))**2 * &
-               SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
+ A = -EL%W%K(3,i)*X(1)*X(3) * SINHX_X(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINHX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
+      SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
+ B = -0.5_dp*EL%W%K(3,i)*X(3)**2 * COSH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * (SINHX_X((EL%W%K(2,i)*X(3)+EL%W%phi_y(I))*0.5_dp))**2* &
+      SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
        elseif (EL%W%FORM(I) == hyperbolic_xdollar) THEN
-          A = -EL%W%K(3,i)*X(1)*X(3) * SINHX_X(EL%W%K(1,i)*X(1)) * SINX_X(EL%W%K(2,i)*X(3)) * &
-               SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
-          B = -0.5_dp*EL%W%K(3,i)*X(3)**2 * COSH(EL%W%K(1,i)*X(1)) * (SINX_X(EL%W%K(2,i)*X(3)*0.5_dp))**2 * &
-               SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
+ A = -EL%W%K(3,i)*X(1)*X(3) * SINHX_X(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
+      SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
+ B = -0.5_dp*EL%W%K(3,i)*X(3)**2 * COSH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * (SINX_X((EL%W%K(2,i)*X(3)+EL%W%phi_y(I))*0.5_dp))**2 * &
+      SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
        else
           print *, 'ERROR IN COMPY_P: UNKNOWN FORM FOR WIGGLER TERM!'
           stop
@@ -1319,19 +1333,19 @@ contains
     B=0.0_dp
     DO I=1,SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyperbolic_ydollar) THEN
-          A = -COS(EL%W%K(1,i)*X(1)) * COSeH(EL%W%K(2,i)*X(3)) * &
+          A = -COS(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * COSeH(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
-          B = -EL%W%K(2,i)*X(1) * SINX_X(EL%W%K(1,i)*X(1)) * sineh(EL%W%K(2,i)*X(3)) * &
+          B = -EL%W%K(2,i)*X(1) * SINX_X(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * sineh(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
        elseif (EL%W%FORM(I) == hyperbolic_xydollar) THEN
-          A = -COSeH(EL%W%K(1,i)*X(1)) * COSeH(EL%W%K(2,i)*X(3)) * &
+          A = -COSeH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * COSeH(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
-          B = -EL%W%K(2,i)*X(1) * SINeHX_X(EL%W%K(1,i)*X(1)) * sineh(EL%W%K(2,i)*X(3)) * &
+          B = -EL%W%K(2,i)*X(1) * SINeHX_X(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * sineh(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
        elseif (EL%W%FORM(I) == hyperbolic_xdollar) THEN
-          A = -COSeH(EL%W%K(1,i)*X(1)) * COS(EL%W%K(2,i)*X(3)) * &
+          A = -COSeH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * COS(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
-          B =  EL%W%K(2,i)*X(1) * SINeHX_X(EL%W%K(1,i)*X(1)) * sin(EL%W%K(2,i)*X(3)) * &
+          B =  EL%W%K(2,i)*X(1) * SINeHX_X(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * sin(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
        else
           print *, 'ERROR IN COMPZ_R: UNKNOWN FORM FOR WIGGLER TERM!'
@@ -1373,20 +1387,20 @@ contains
     B=0.0_dp
     DO I=1,SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyperbolic_ydollar) THEN
-          s1=EL%W%K(1,i)*X(1)
-          s2=EL%W%K(2,i)*X(3)
+          s1=EL%W%K(1,i)*X(1)+EL%W%phi_x(I)
+          s2=EL%W%K(2,i)*X(3)+EL%W%phi_y(I)
           s3=EL%W%K(3,i)*Z+EL%W%F(I)
           A = -COS(s1) * COSH(s2) * COS(s3) * EL%W%A(I) + A
           B = -EL%W%K(2,i)*X(1) * SINX_X(s1) * sinh(s2) * COS(s3) * EL%W%A(I) + B
        elseif (EL%W%FORM(I) == hyperbolic_xydollar) THEN
-          A = -COSH(EL%W%K(1,i)*X(1)) * COSH(EL%W%K(2,i)*X(3)) * &
+          A = -COSH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * COSH(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
-          B = -EL%W%K(2,i)*X(1) * SINHX_X(EL%W%K(1,i)*X(1)) * sinh(EL%W%K(2,i)*X(3)) * &
+          B = -EL%W%K(2,i)*X(1) * SINHX_X(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * sinh(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
        elseif (EL%W%FORM(I) == hyperbolic_xdollar) THEN
-          A = -COSH(EL%W%K(1,i)*X(1)) * COS(EL%W%K(2,i)*X(3)) * &
+          A = -COSH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * COS(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + A
-          B =  EL%W%K(2,i)*X(1) * SINHX_X(EL%W%K(1,i)*X(1)) * sin(EL%W%K(2,i)*X(3)) * &
+          B =  EL%W%K(2,i)*X(1) * SINHX_X(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * sin(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B
        else
           print *, 'ERROR IN COMPZ_P: UNKNOWN FORM FOR WIGGLER TERM!'
@@ -1426,25 +1440,25 @@ contains
 
     DO I=1,SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyperbolic_ydollar) THEN
-          B(1) = -EL%W%K(1,i)*X(3) * SIN(EL%W%K(1,i)*X(1)) * SINeHX_X(EL%W%K(2,i)*X(3)) * &
+          B(1) = -EL%W%K(1,i)*X(3) * SIN(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINeHX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(1)
-          B(2) =  COS(EL%W%K(1,i)*X(1)) * COSeH(EL%W%K(2,i)*X(3)) * &
+          B(2) =  COS(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * COSeH(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(2)
-          B(3) = -EL%W%K(3,i)*X(3) * COS(EL%W%K(1,i)*X(1)) * SINeHX_X(EL%W%K(2,i)*X(3)) * &
+          B(3) = -EL%W%K(3,i)*X(3) * COS(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINeHX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(3)
        elseif (EL%W%FORM(I) == hyperbolic_xydollar) THEN
-          B(1) =  EL%W%K(1,i)*X(3) * sineh(EL%W%K(1,i)*X(1)) * SINeHX_X(EL%W%K(2,i)*X(3)) * &
+          B(1) =  EL%W%K(1,i)*X(3) * sineh(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINeHX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(1)
-          B(2) =  COSeH(EL%W%K(1,i)*X(1))*   COSeH(EL%W%K(2,i)*X(3)) * &
+          B(2) =  COSeH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I))*   COSeH(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(2)
-          B(3) = -EL%W%K(3,i)*X(3) * COSeH(EL%W%K(1,i)*X(1)) * SINeHX_X(EL%W%K(2,i)*X(3)) * &
+          B(3) = -EL%W%K(3,i)*X(3) * COSeH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINeHX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(3)
        elseif (EL%W%FORM(I) == hyperbolic_xdollar) THEN
-          B(1) =  EL%W%K(1,i)*X(3) * sineh(EL%W%K(1,i)*X(1)) * SINX_X(EL%W%K(2,i)*X(3)) * &
+          B(1) =  EL%W%K(1,i)*X(3) * sineh(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(1)
-          B(2) =  COSeH(EL%W%K(1,i)*X(1))*   COS(EL%W%K(2,i)*X(3)) * &
+          B(2) =  COSeH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I))*   COS(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(2)
-          B(3) = -EL%W%K(3,i)*X(3) * COSeH(EL%W%K(1,i)*X(1)) * SINX_X(EL%W%K(2,i)*X(3)) * &
+          B(3) = -EL%W%K(3,i)*X(3) * COSeH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(3)
        else
           print *, 'ERROR IN BF_R: UNKNOWN FORM FOR WIGGLER TERM!'
@@ -1469,25 +1483,25 @@ contains
 
     DO I=1,SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyperbolic_ydollar) THEN
-          B(1) = -EL%W%K(1,i)*X(3) * SIN(EL%W%K(1,i)*X(1)) * SINHX_X(EL%W%K(2,i)*X(3)) * &
+          B(1) = -EL%W%K(1,i)*X(3) * SIN(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINHX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(1)
-          B(2) =  COS(EL%W%K(1,i)*X(1)) * COSH(EL%W%K(2,i)*X(3)) * &
+          B(2) =  COS(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * COSH(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(2)
-          B(3) = -EL%W%K(3,i)*X(3) * COS(EL%W%K(1,i)*X(1)) * SINHX_X(EL%W%K(2,i)*X(3)) * &
+          B(3) = -EL%W%K(3,i)*X(3) * COS(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINHX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(3)
        elseif (EL%W%FORM(I) == hyperbolic_xydollar) THEN
-          B(1) =  EL%W%K(1,i)*X(3) * sinH(EL%W%K(1,i)*X(1)) * SINHX_X(EL%W%K(2,i)*X(3)) * &
+          B(1) =  EL%W%K(1,i)*X(3) * sinH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINHX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(1)
-          B(2) =  COSH(EL%W%K(1,i)*X(1))*   COSH(EL%W%K(2,i)*X(3)) * &
+          B(2) =  COSH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I))*   COSH(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(2)
-          B(3) = -EL%W%K(3,i)*X(3) * COSH(EL%W%K(1,i)*X(1)) * SINHX_X(EL%W%K(2,i)*X(3)) * &
+          B(3) = -EL%W%K(3,i)*X(3) * COSH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINHX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(3)
        elseif (EL%W%FORM(I) == hyperbolic_xdollar) THEN
-          B(1) =  EL%W%K(1,i)*X(3) * sinH(EL%W%K(1,i)*X(1)) * SINX_X(EL%W%K(2,i)*X(3)) * &
+          B(1) =  EL%W%K(1,i)*X(3) * sinH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(1)
-          B(2) =  COSH(EL%W%K(1,i)*X(1))*   COS(EL%W%K(2,i)*X(3)) * &
+          B(2) =  COSH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I))*   COS(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                COS(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(2)
-          B(3) = -EL%W%K(3,i)*X(3) * COSH(EL%W%K(1,i)*X(1)) * SINX_X(EL%W%K(2,i)*X(3)) * &
+          B(3) = -EL%W%K(3,i)*X(3) * COSH(EL%W%K(1,i)*X(1)+EL%W%phi_x(I)) * SINX_X(EL%W%K(2,i)*X(3)+EL%W%phi_y(I)) * &
                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) * EL%W%A(I) + B(3)
        else
           print *, 'ERROR IN BF_R: UNKNOWN FORM FOR WIGGLER TERM!'

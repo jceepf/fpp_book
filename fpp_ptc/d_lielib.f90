@@ -62,7 +62,6 @@ contains
     integer i,nd1,ndc1,ndpt1,no1,nv1      !,nis
     real(dp),dimension(ndim)::ang,ra,st
     integer, optional :: time_pos
-    integer ipause,mypauses
     logical, optional :: da_init
     logical dai
     dai=.true.
@@ -1636,7 +1635,7 @@ contains
 
   subroutine flip(xy,xyf)
     implicit none
-    integer i,nord
+
     integer,dimension(:):: xy,xyf
     integer,dimension(ndim2)::x,xi
     if(.not.c_%stable_da) return
@@ -1699,7 +1698,7 @@ contains
 
   subroutine flip_resonance(xy,xyf,i)
     implicit none
-    integer i,NRES,j
+    integer i,j
     integer,dimension(:,:):: xy,xyf
     integer,dimension(NDIM,NRESO) ::x
     if(.not.c_%stable_da) return
@@ -1768,7 +1767,7 @@ contains
 
   subroutine flip_i(xy,xyf,i)
     implicit none
-    integer i,nord
+    integer i
     integer  xy,xyf
     integer,dimension(ndim2)::x,xi
     if(.not.c_%stable_da) return
@@ -4492,10 +4491,10 @@ endif
     implicit none
 
 
-    integer i,j
+    integer i
     real(dp) a(6,6),ai(6,6),b(6,6)
 
-    real(dp) xj(6,6),mj(6,6),xn,jb(6,6),kick(3),br(6,6)
+    real(dp) xj(6,6),xn,jb(6,6),kick(3),br(6,6)
 
 
 
@@ -4535,12 +4534,11 @@ endif
     !---- FROM TRACKING CODE
     ! ---------------------
     integer, parameter :: ndimt=3,ndimt2=6
-    integer i,ier,iunst,j,l,n1,n(ndimt)
-    real(dp) ap,ax,rd,rd1,xd,xsu
+    integer i,ier,iunst,j,n1,n(ndimt)
     real(dp),dimension(ndimt2,ndimt2)::cr,xj,sa,sai,cm,w,vr,vi,s1
     real(dp),dimension(ndimt)::x,xx,st
-    real(dp),dimension(ndimt2)::rr,ri,p
-    logical hyp
+    real(dp),dimension(ndimt2)::rr,ri
+
     if(.not.c_%stable_da) return
 
     n1=0
@@ -4647,7 +4645,7 @@ endif
     integer jet,nn,i,i1,ilo,ihi,mdim,info
     real(dp),dimension(ndimt2)::reval,aieval,ort
     real(dp),dimension(ndimt2,ndimt2)::revec,aievec,fm,aa,vv
-    INTEGER IPAUSE,MYPAUSES
+
     if(.not.c_%stable_da) return
 
     !  copy matrix to temporary storage (the matrix aa is destroyed)

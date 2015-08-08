@@ -1419,7 +1419,7 @@ CONTAINS
     implicit none
     TYPE(probe_8), INTENT(IN) :: R
     TYPE(damapspin), INTENT(INOUT) :: DS
-    real(dp) s(3,3),m(6,6)
+    real(dp) m(6,6)
     INTEGER I,J,nd2t
     logical(lp) rad_in
 
@@ -1843,7 +1843,7 @@ CONTAINS
   subroutine print_res_spinor_8(S,MF)
     implicit none
     TYPE(res_spinor_8), INTENT(INOUT) :: s
-    INTEGER MF,I
+    INTEGER MF 
 
   !  do i=1,3
        write(mf,*) ' ' 
@@ -2202,7 +2202,7 @@ CONTAINS
     implicit none
     type(spinor_8),intent(inout) :: y_axis,x_axis,z_axis
     type(spinor_8) junk_axis
-    integer i,is
+    integer is
     type(real_8) norm
 
     call alloc(norm)
@@ -2394,7 +2394,7 @@ CONTAINS
     type(taylor) t
     integer i,j
     integer  nmax
-    real(dp) c,eps,norm1,norm2
+    real(dp)  eps,norm1,norm2
     logical check
 !!!  original as_xyz = as_xyz*r_y = a_y*a_nl*r_y  on exit
     check=.true.
@@ -2469,7 +2469,7 @@ CONTAINS
     type(taylor) t
     integer i,j
     integer  nmax
-    real(dp) c,eps,norm1,norm2
+    real(dp) eps,norm1,norm2
     logical check
 !!!  original as_xyz = as_xyz*r_y = a_y*a_nl*r_y  on exit
     check=.true.
@@ -2730,7 +2730,7 @@ CONTAINS
     type(damapspin) ma
     real(dp), optional :: n0(3),m(3),l(3)
     real(dp) al
-    integer j
+
     integer i,is
 
 
@@ -2826,7 +2826,7 @@ CONTAINS
     type(real_8)  a(3,3),s,n
     real(dp),optional :: ang
     real(dp) al
-    integer j
+
     integer i,is
 
     call alloc(n1,3)
@@ -4128,7 +4128,7 @@ CONTAINS
     implicit none
     type(spinor_8) mul_spin8_spin8
     type(spinor_8), INTENT (IN) :: S1,S2
-    integer i
+ 
     integer localmaster
 
     IF(.NOT.C_%STABLE_DA) RETURN
@@ -4364,10 +4364,10 @@ CONTAINS
     type(damapspin)s ,a ,ai
     type(taylor) nn
     type(real_8) a11,a13
-    integer i,j,jj(lnv)
-    real(dp) ss(3,3)
+
+ 
 !!!!!!!!!!   wrapping for radiation  !!!!!!!!!!!!!!!!!!!
-    type(radtaylor) ys(ndim2)
+ 
 
 
     call alloc(a1i)
@@ -4461,14 +4461,14 @@ CONTAINS
     implicit none
     type(normal_spin) norm_spin
     type(damapspin) m_spin
-    type(normalform) norm
-    type(damap) m
-    integer i,j,i1,i2
+ 
+ 
+    integer i,j
     real(dp) a(6,6),ai(6,6),ait(6,6),mat(6,6), sigma_inf(6,6),at(6,6),br(6,6)
     complex(dp) c(6,6),ci(6,6),cit(6,6), b(6,6),ct(6,6)
-    complex(dp) coef,ba(6,6),b_phasor(6,6)
+    complex(dp) ba(6,6),b_phasor(6,6)
     complex(dp) R(6,6),r_phasor(6,6), sigma_inf_phasor(6,6)
-    real(dp) xj(6,6),mj(6,6),xn,jb(6,6),bs(6,6)
+    real(dp) xj(6,6),bs(6,6)
 
     b=m_spin%e_ij
     bs=m_spin%e_ij
@@ -4712,7 +4712,7 @@ CONTAINS
     TYPE(complextaylor) omr(3),omc(3)
     integer N,i,nd,j
     integer, allocatable :: jc(:)
-    real(dp) value,ang,tune(4)
+    real(dp) value,ang 
     complex(dp) denom
     logical doit,doflip
 
@@ -5801,13 +5801,13 @@ CONTAINS
   subroutine factor_am_special(a_t,a_f,a_l,a_nl,DR)
     implicit none
     TYPE(damap), INTENT(INout) :: a_t,a_nl,a_l,a_f
-    integer i,n,k,nt,j
+    integer  i,n,k,nt 
     integer, allocatable :: jc(:)
-    real(dp) value,alpha0
+    real(dp) value
     logical doit
     TYPE(damap) atemp,s1,s1i,m1
     TYPE(taylor)a12,a11,p(ndim)
-    logical(lp) doflip,dote,lagrange0
+    logical(lp) doflip,lagrange0
     TYPE(damap), optional, intent(inout) ::DR
  !   type(taylor) m(ndim2,ndim2)
  !   type(taylor) at(2,2),bt(2,2),ct(2,2),dt(2,2),ati(2,2),bti(2,2),alpha,det
@@ -6362,7 +6362,6 @@ CONTAINS
     real(dp) value,valuexp
     integer, allocatable :: jc(:)
     logical(lp), optional :: use_J
-    logical usej
     integer i,n,j,it,nd,iu
     logical doflip,uj
 
@@ -6509,7 +6508,7 @@ CONTAINS
  integer function mul_fac(ju)
     implicit none
     integer ju(:),nv
-    integer i,k,no
+    integer i,k 
     
     mul_fac=1.0_dp
     if(firstfac) then

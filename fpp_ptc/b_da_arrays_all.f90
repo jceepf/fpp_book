@@ -60,7 +60,6 @@ contains
 
 subroutine alloc_
 implicit none
-integer i
 allocate(cc(lst))
 allocate(i_1(lst));allocate(i_2(lst));
 allocate(ie1(lea));allocate(ie2(lea));allocate(ieo(lea));

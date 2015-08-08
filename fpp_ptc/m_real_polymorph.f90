@@ -5512,7 +5512,7 @@ contains
 
   FUNCTION datan2tt( S2,S1 )
     implicit none
-    integer ipause, mypauses
+ 
     TYPE (taylor) datan2tt
     TYPE (taylor), INTENT (IN) :: S2,S1
     TYPE (real_8) temp,s1_8,s2_8
@@ -6427,7 +6427,6 @@ contains
     type (real_8),INTENT(INOUT)::S2
     type (real_8), intent(INOUT):: s1
     real(dp) prec
-    integer i
     type(real_8) t
 
     call alloc(t)

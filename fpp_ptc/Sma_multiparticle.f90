@@ -64,10 +64,7 @@ module ptc_multiparticle
      MODULE PROCEDURE TRACK_FIBRE_BACKP
   END INTERFACE
 
-  INTERFACE COPY
-     MODULE PROCEDURE COPY_BEAM
-  END INTERFACE
-
+ 
   INTERFACE OPERATOR (.feq.)
      MODULE PROCEDURE fuzzy_eq
   END INTERFACE
@@ -544,7 +541,7 @@ CONTAINS
     implicit none
     logical(lp) :: doneitt=.true.
     TYPE(FIBRE),TARGET,INTENT(INOUT):: C
-    !    TYPE(BEAM),TARGET,INTENT(INOUT):: B
+
     real(dp), INTENT(INOUT) :: X(6)
     TYPE(INTERNAL_STATE)  K
     !    TYPE(INTERNAL_STATE), INTENT(IN) :: K
@@ -640,7 +637,6 @@ CONTAINS
     implicit none
     logical(lp) :: doneitt=.true.
     TYPE(FIBRE),TARGET,INTENT(INOUT):: C
-    !    TYPE(BEAM),TARGET,INTENT(INOUT):: B
     TYPE(REAL_8), INTENT(INOUT) :: X(6)
     TYPE(INTERNAL_STATE)  K
     !    TYPE(INTERNAL_STATE), INTENT(IN) :: K
@@ -741,7 +737,6 @@ CONTAINS
     implicit none
     logical(lp) :: doneitf=.false.
     TYPE(FIBRE),TARGET,INTENT(INOUT):: C
-    !    TYPE(BEAM),TARGET,INTENT(INOUT):: B
     real(dp), INTENT(INOUT) :: X(6)
     TYPE(INTERNAL_STATE)  K
     !    TYPE(INTERNAL_STATE), INTENT(IN) :: K
@@ -830,7 +825,6 @@ ENDIF
     implicit none
     logical(lp) :: doneitf=.false.
     TYPE(FIBRE),TARGET,INTENT(INOUT):: C
-    !    TYPE(BEAM),TARGET,INTENT(INOUT):: B
     type(real_8), INTENT(INOUT) :: X(6)
     TYPE(INTERNAL_STATE)  K
     !    TYPE(INTERNAL_STATE), INTENT(IN) :: K
@@ -1869,328 +1863,7 @@ endif
   end  subroutine fill_survey_data_in_NODE_LAYOUT
 
 
-  ! BEAM STUFF
 
-  subroutine create_beam(B,N,CUT,SIG,A,C,T)
-    USE gauss_dis
-    implicit none
-    INTEGER N,I,J,K
-    REAL(DP) CUT,SIG(6),X
-    TYPE(BEAM) B
-    REAL(DP), OPTIONAL :: A(6,6),C(6)
-    REAL(DP)  AS(6,6),CL(6),XT(6)
-    TYPE (INTEGRATION_NODE),optional,target::  T
-
-    IF(.NOT.ASSOCIATED(B%N)) THEN
-       CALL ALLOCATE_BEAM(B,N)
-    ELSEIF(B%N/=N) THEN
-       CALL KILL_BEAM(B)
-       CALL ALLOCATE_BEAM(B,N)
-    ENDIF
-
-    CL=0.0_dp; AS=0.0_dp;
-    DO I=1,6
-       AS(I,I)=1.0_dp
-    ENDDO
-
-    IF(PRESENT(A)) AS=A
-    IF(PRESENT(C)) CL=C
-
-    DO I=1,N
-       DO J=1,6
-          CALL GRNF(X,cut)
-          XT(J)=X*SIG(J)
-       ENDDO
-       B%X(I,1:6)=CL(:)
-       DO J=1,6
-          DO K=1,6
-             B%X(I,J)=AS(J,K)*XT(K)+B%X(I,J)
-          ENDDO
-
-       ENDDO
-    ENDDO
-
-
-    if(present(t)) then
-       DO I=1,N
-          ! if(associated(B%POS(I)%NODE))then
-          B%POS(I)%NODE=>T
-          ! endif
-       ENDDO
-
-    endif
-
-  end    subroutine create_beam
-
-  subroutine create_PANCAKE(B,N,CUT,SIG,T,A)
-    USE gauss_dis
-    implicit none
-    INTEGER N,I,J
-    REAL(DP) CUT,SIG(6),X,Y(LNV),beta(2)
-    TYPE(BEAM) B
-    TYPE (INTEGRATION_NODE),optional,target::  T
-    TYPE (DAMAP),OPTIONAL :: A
-    TYPE (tree) monkey
-
-    IF(.NOT.ASSOCIATED(B%N)) THEN
-       CALL ALLOCATE_BEAM(B,N)
-    ELSEIF(B%N/=N) THEN
-       CALL KILL_BEAM(B)
-       CALL ALLOCATE_BEAM(B,N)
-    ENDIF
-    write(6,*) n," particles created"
-    Y=0.0_dp
-    IF(.not.PRESENT(A)) THEN
-
-       DO I=1,N
-          DO J=1,6
-             CALL GRNF(X,cut)
-             B%X(I,J)=X*SIG(J)
-          ENDDO
-          B%X(I,7)=0.0_dp
-       enddo
-    ELSE
-       call alloc(monkey)
-       beta(1)=(a%v(1).sub.'1')**2+(a%v(1).sub.'01')**2
-       beta(2)=(a%v(3).sub.'001')**2+(a%v(3).sub.'0001')**2
-       write(6,*) " Betas in create_PANCAKE ",beta
-       monkey=A
-       DO I=1,N
-          DO J=1,C_%ND
-             CALL GRNF(X,cut)
-             Y(2*j-1)=X*sqrt(SIG(j)/2.0_dp)
-             CALL GRNF(X,cut)
-             Y(2*j)=X*sqrt(SIG(j)/2.0_dp)
-          ENDDO
-          y=monkey*Y
-          B%X(I,1:C_%ND2)=y(1:c_%nd2)
-
-          DO J=C_%ND2+1,6
-             CALL GRNF(X,cut)
-             B%X(I,J)=X*SIG(J)
-          ENDDO
-          B%X(I,7)=0.0_dp
-       enddo
-       CALL KILL(MONKEY)
-    ENDIF
-
-
-
-
-    if(present(t)) then
-       DO I=1,N
-          if(associated(B%POS(I)%NODE))then
-             B%POS(I)%NODE=>T
-          endif
-       ENDDO
-
-    endif
-  end    subroutine create_PANCAKE
-
-  subroutine copy_beam(B1,B2)
-    implicit none
-    INTEGER I
-    TYPE(BEAM), INTENT(INOUT) :: B1,B2
-
-    IF(.NOT.ASSOCIATED(B2%N)) THEN
-       CALL ALLOCATE_BEAM(B2,B1%N)
-    ELSEIF(B1%N/=B2%N) THEN
-       CALL KILL_BEAM(B2)
-       CALL ALLOCATE_BEAM(B2,B1%N)
-    ENDIF
-
-    B2%X=B1%X
-    B2%U=B1%U
-    B2%N=B1%N
-    !    B2%CHARGE=B1%CHARGE
-    B2%LOST=B1%LOST
-    DO I=0,B1%N
-       if(associated(B1%POS(I)%NODE))then
-          B2%POS(I)%NODE=>B1%POS(I)%NODE
-       endif
-    ENDDO
-
-  END subroutine copy_beam
-
-  subroutine READ_beam_raw(B,MF)
-    implicit none
-    INTEGER k,mf
-    TYPE(BEAM), INTENT(IN):: B
-
-    DO K=1,b%n
-       IF(.not.B%U(K)) THEN
-          if(associated(b%pos(k)%NODE)) then
-             WRITE(MF,100) B%X(K,1:6),b%pos(k)%NODE%s(3)+B%X(K,7)
-          else
-             WRITE(MF,100) B%X(K,1:6),B%X(K,7)
-          endif
-       ENDIF
-    ENDDO
-100 FORMAT(7(1x,e13.6))
-  END subroutine READ_beam_raw
-
-  subroutine PRINT_beam_raw(B,MF)
-    implicit none
-    INTEGER k,mf
-    TYPE(BEAM), INTENT(IN):: B
-
-    DO K=1,b%n
-       IF(.not.B%U(K)) THEN
-          if(associated(b%pos(k)%NODE)) then
-             WRITE(MF,100) B%X(K,1:6),b%pos(k)%NODE%s(3)+B%X(K,7)
-          else
-             WRITE(MF,100) B%X(K,1:6),B%X(K,7)
-          endif
-       ENDIF
-    ENDDO
-100 FORMAT(7(1x,e13.6))
-  END subroutine PRINT_beam_raw
-
-  subroutine stat_beam_raw(B,n,MF,xm)
-    implicit none
-    INTEGER i,j,k,mf,NOTlost,N
-    TYPE(BEAM), INTENT(IN):: B
-    real(dp), optional :: xm(6)
-    real(dp), allocatable :: av(:,:)
-    real(dp) em(2),beta(2),xma(6)
-    allocate(av(n,n))
-    av=0.0_dp
-    notlost=0
-    xma(:)=-1.0_dp
-    DO K=1,b%n
-       IF(.not.B%U(K)) THEN
-          do i=1,6
-             if(abs(b%x(k,i))>xma(i)) xma(i)=abs(b%x(k,i))
-          enddo
-
-          do i=1,n
-             do j=i,n
-                av(i,j)= b%x(k,i)*b%x(k,j)+av(i,j)
-             enddo
-          enddo
-          notlost=notlost+1
-       ENDIF
-    ENDDO
-    IF(NOTLOST==0) THEN
-       if(mf/=6) then
-          WRITE(mf,*) " ALL PARTICLES ARE LOST "
-          WRITE(mf,*) " NO STATISTICS "
-       else
-          WRITE(6,*) " ALL PARTICLES ARE LOST "
-          WRITE(6,*) " NO STATISTICS "
-       endif
-       deallocate(av)
-       RETURN
-    ENDIF
-    if(notlost/=b%n-b%lost) then
-       Write(6,*) " Error keeping track of lost particles "
-       stop 999
-    endif
-
-    WRITE(MF,*) " NUMBER LEFT ",B%N-B%LOST
-    if(mf/=6)WRITE(6,*) " NUMBER LEFT ",B%N-B%LOST
-    WRITE(MF,*) " LOST ",B%LOST
-    if(mf/=6)WRITE(6,*) " LOST ",B%LOST
-    av=av/notlost
-    em(1)=2.0_dp*sqrt(av(1,1)*av(2,2)-av(1,2)**2)
-    em(2)=2.0_dp*sqrt(av(3,3)*av(4,4)-av(3,4)**2)
-    beta(1)=2.0_dp*av(1,1)/em(1)
-    beta(2)=2.0_dp*av(3,3)/em(2)
-
-    write(mf,*) " average arrays "
-    write(mf,*) "betas ",beta
-    write(mf,*) "emittances ",em
-    if(mf/=6) then
-       write(6,*) " average arrays "
-       write(6,*) "betas ",beta
-       write(6,*) "emittances ",em
-    endif
-    write(6,*) " limits "
-    write(6,*) xma(1:2)
-    write(6,*) xma(3:4)
-    write(6,*) xma(5:6)
-    if(present(xm)) xm=xma
-
-100 FORMAT(7(1x,e13.6))
-
-    deallocate(av)
-  END subroutine stat_beam_raw
-
-
-  subroutine PRINT_beam(B,MF,I)
-    implicit none
-    INTEGER K,MF,I1,I2
-    INTEGER,OPTIONAL:: I
-    TYPE(BEAM), INTENT(IN):: B
-    TYPE(INTEGRATION_NODE),POINTER::T
-    TYPE(FIBRE),POINTER::F
-
-    I1=1
-    I2=B%N
-
-    IF(PRESENT(I)) THEN
-       I1=I
-       I2=I
-    ENDIF
-    !    IF(B%TIME_INSTEAD_OF_S) THEN
-    !       WRITE(MF,*) "____________________________ TIME TRACKED BEAM __________________________________"
-    !    ELSE
-    WRITE(MF,*) "_________________ POSITION TRACKED BEAM (AS IN PTC PROPER)_______________________"
-    !    ENDIF
-
-    DO K=I1,I2
-       IF(B%U(K)) THEN
-          WRITE(MF,*) " PARTICLE # ",K, " IS LOST "
-       ELSE
-          T=>B%POS(K)%NODE
-          F=>T%PARENT_FIBRE
-          WRITE(MF,*) "_________________________________________________________________________"
-          WRITE(MF,*) " PARTICLE # ",K, " IS LOCATED AT SLICE # ",T%POS," IN FIBRE  ",F%MAG%NAME
-          WRITE(MF,*) " IN THE FIBRE POSITION  ",T%pos_in_fibre
-          WRITE(MF,*) " IN ",CASE_NAME(T%CAS)
-          IF(T%CAS==CASE0)WRITE(MF,*) " AT THE STEP NUMBER ",T%pos_in_fibre-2
-
-          WRITE(MF,*) "........................................................................."
-          !          IF(B%TIME_INSTEAD_OF_S) THEN
-          !             WRITE(MF,*) " TIME AND POSITION AFTER THIN SLICE = ",B%X(K,6:7)
-          !          ELSE
-          WRITE(MF,*) " TIME AND POSITION  = ",B%X(K,6:7)
-          !          ENDIF
-          WRITE(MF,*) " X,Y = ",B%X(K,1),B%X(K,3)
-          WRITE(MF,*) " PX,PY = ",B%X(K,2),B%X(K,4)
-          WRITE(MF,*) " ENERGY VARIABLE = ",B%X(K,5)
-       ENDIF
-       WRITE(MF,*) "_________________________________________________________________________"
-    ENDDO
-
-  END subroutine PRINT_beam
-
-
-
-  SUBROUTINE NULLIFY_BEAM(B)
-    IMPLICIT NONE
-    TYPE(BEAM) , INTENT (INOUT) :: B
-    NULLIFY(B%N,B%LOST)
-    !    NULLIFY(B%Y)
-    NULLIFY(B%X)
-    NULLIFY(B%U)
-    NULLIFY(B%POS)
-    !    NULLIFY(B%CHARGE)
-    !    NULLIFY(B%TIME_INSTEAD_OF_S)
-    !    NULLIFY(B%SIGMA)
-    !    NULLIFY(B%DX,B%ORBIT)
-    !    NULLIFY(B%BBPAR,B%BEAM_BEAM,B%BBORBIT)
-  END SUBROUTINE NULLIFY_BEAM
-
-  SUBROUTINE NULLIFY_BEAMS(B)
-    IMPLICIT NONE
-    TYPE(BEAM) , INTENT (INOUT) :: B(:)
-    INTEGER I
-    DO I=1,SIZE(B)
-       CALL NULLIFY_BEAM(B(i))
-    ENDDO
-
-  END SUBROUTINE NULLIFY_BEAMS
 
   subroutine alloc_three_d_info(v)
     IMPLICIT NONE
@@ -2212,102 +1885,6 @@ endif
 
   end subroutine alloc_three_d_info
 
-  SUBROUTINE ALLOCATE_BEAM(B,N)
-    IMPLICIT NONE
-    TYPE(BEAM) , INTENT (INOUT) :: B
-    INTEGER , INTENT (IN) :: N
-    INTEGER I
-
-    ALLOCATE(B%N,B%LOST)
-
-    B%N=N
-    B%LOST=0
-    !    NULLIFY(B%Y)
-    !    IF(PRESENT(POLYMORPH)) THEN
-    !       IF(POLYMORPH) then
-    !          ALLOCATE(B%Y(6))
-    !          CALL ALLOC(B%Y)
-    !       endif
-    !    ENDIF
-    ALLOCATE(B%X(N,7))
-    ALLOCATE(B%U(0:N))
-    ALLOCATE(B%POS(0:N))
-    !    ALLOCATE(B%SIGMA(6))
-    !    ALLOCATE(B%DX(3))
-    !    ALLOCATE(B%ORBIT(6))
-    !    ALLOCATE(B%BBPAR,B%BEAM_BEAM,B%BBORBIT)
-    DO I=0,N
-       NULLIFY(B%POS(i)%NODE)
-    ENDDO
-    !   ALLOCATE(B%CHARGE)
-    !   ALLOCATE(B%TIME_INSTEAD_OF_S)
-
-    B%X  = 0.0_dp
-    B%U  = .FALSE.
-    !    B%CHARGE=1
-    !    B%TIME_INSTEAD_OF_S=.FALSE.
-
-    !    B%SIGMA=ZERO
-    !    B%DX=ZERO
-    !    B%BBPAR=ZERO
-    !    B%ORBIT=ZERO
-    !    B%BEAM_BEAM=MY_FALSE
-    !    B%BBORBIT=MY_FALSE
-  END SUBROUTINE ALLOCATE_BEAM
-
-  SUBROUTINE KILL_BEAM(B)
-    IMPLICIT NONE
-    TYPE(BEAM) , INTENT (INOUT) :: B
-    !    IF(ASSOCIATED(B%Y)) THEN
-    !       CALL KILL(B%Y)
-    !       DEALLOCATE(B%Y)
-    !    ENDIF
-    IF(ASSOCIATED(B%N)) THEN
-       DEALLOCATE(B%N,B%LOST,B%X,B%U,B%POS)
-       !       DEALLOCATE(B%N,B%LOST,B%X,B%U,B%POS,B%CHARGE,B%TIME_INSTEAD_OF_S)
-       !      DEALLOCATE(B%SIGMA,B%DX,B%BBPAR,B%ORBIT,B%BEAM_BEAM,B%BBORBIT)
-    ENDIF
-  END SUBROUTINE KILL_BEAM
-
-  SUBROUTINE KILL_BEAMS(B)
-    IMPLICIT NONE
-    TYPE(BEAM) , INTENT (INOUT) :: B(:)
-    INTEGER I
-    DO I=1,SIZE(B)
-       CALL KILL_BEAM(B(i))
-    ENDDO
-  END SUBROUTINE KILL_BEAMS
-
-
-  FUNCTION BEAM_IN_X(B,I)
-    IMPLICIT NONE
-    REAL(DP) BEAM_IN_X(6)
-    TYPE(BEAM), INTENT(INOUT) ::B
-    INTEGER, INTENT(IN) :: I
-
-    BEAM_IN_X=B%X(I,1:6)
-
-  END  FUNCTION BEAM_IN_X
-
-  SUBROUTINE X_IN_BEAM(B,X,I,DL,T)
-    IMPLICIT NONE
-    REAL(DP),OPTIONAL:: X(6)
-    REAL(DP),OPTIONAL:: DL
-    TYPE(BEAM), INTENT(INOUT) ::B
-    TYPE(INTEGRATION_NODE),OPTIONAL,POINTER :: T
-    INTEGER, INTENT(IN) :: I
-
-    if(PRESENT(X)) B%X(I,1:6)=X(1:6)
-    IF(PRESENT(DL)) B%X(I,7)=DL
-    IF(PRESENT(T)) B%POS(I)%NODE=>T
-    if(.not.CHECK_STABLE) then
-       !       write(6,*) "unstable "
-       CALL RESET_APERTURE_FLAG
-       b%u(I)=.true.
-       B%LOST=B%LOST+1
-    endif
-
-  END  SUBROUTINE X_IN_BEAM
 
   !  Beam Beam stuff
 
@@ -2572,8 +2149,5 @@ endif
 
 
      end subroutine convert_ptc_to_bmadp   
-
-
-
 
 end module ptc_multiparticle

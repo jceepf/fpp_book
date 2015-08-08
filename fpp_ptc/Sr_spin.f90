@@ -5018,27 +5018,7 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
 
 
 
-  SUBROUTINE TRACK_beam(r,b,k, fibre1,fibre2,node1,node2) ! fibre i1 to i2
-    IMPLICIT NONE
-    TYPE(layout),target,INTENT(INOUT):: r
-    real(dp) x(6)
-    type(beam),intent(INOUT) ::  b
-    TYPE(INTERNAL_STATE) K
-    integer,optional:: fibre1,fibre2,node1,node2
-    integer i
-    !    type(integration_node),optional, pointer :: t
-    !BEAM_IN_X(B,I)
-    !X_IN_BEAM(B,X,I,DL,T)
 
-    do i=1,b%n
-       if(b%u(i)) cycle
-       x=BEAM_IN_X(B,I)
-       call track_probe_x(r,x,k, fibre1,fibre2,node1,node2)
-       B%U(I)=.NOT.CHECK_STABLE
-       call X_IN_BEAM(B,X,I)
-    enddo
-    !          call track_beam(my_ring,TheBeam,getintstate(), pos1=ni, pos2=ni+1)
-  end SUBROUTINE TRACK_beam
 
 !!! extract moments using initial moment and the probe_8 containing fluctuations and map
   subroutine extract_moments(p8,s_ij_in,s_ij_out)

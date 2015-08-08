@@ -51,7 +51,7 @@ contains
     if(present(graphics_maybe)) then
         if(graphics_maybe>=1) call open_gino_graphics
       do i=2,graphics_maybe
-        command_gino="MINI"                                                                                                                            
+        command_gino="MINI" 
         call call_gino(command_gino)  
       enddo
     endif

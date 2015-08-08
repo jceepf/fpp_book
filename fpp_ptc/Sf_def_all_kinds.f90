@@ -693,9 +693,7 @@ implicit none
 type(integration_node), target :: t
 real(dp), target :: a0(3),ent0(3,3),b0(3),exi0(3,3)
 type(fibre), pointer :: f
-type(element), pointer :: m
-type(magnet_chart), pointer :: p
-real(dp) h,d(3),pix1(3),pix2(3) 
+real(dp) pix1(3),pix2(3) 
 logical(lp) :: ENTERING=my_true
 
 f=>t%parent_fibre
@@ -741,9 +739,7 @@ implicit none
 type(integration_node), target :: t
 real(dp), target :: a0(3),ent0(3,3),b0(3),exi0(3,3)
 type(fibre), pointer :: f
-type(element), pointer :: m
-type(magnet_chart), pointer :: p
-real(dp) h,d(3),pix1(3),pix2(3)
+real(dp) pix1(3),pix2(3)
 logical(lp) :: ENTERING=my_FALSE
 
 f=>t%parent_fibre

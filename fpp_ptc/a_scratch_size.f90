@@ -512,58 +512,6 @@ contains
        s2%c(i)=s1(i)
     enddo
   END SUBROUTINE EQUAL_c
-
-  !  SUBROUTINE WRITE_G(IEX)
-  !    IMPLICIT NONE
-  !    integer, OPTIONAL :: IEX
-  !    integer I,MYPAUSE,IPAUSE
-  !    if(.not.global_verbose) return
-  !    IF(W_P%NC/=0) THEN
-  !       if(W_P%FC/=' ') then
-  !          WRITE(6,W_P%FC,advance=W_P%ADV) (W_P%C(I), I=1,W_P%NC)
-  !       else
-  !          do i=1,W_P%NC
-  !             WRITE(6,*) W_P%C(I)
-  !          enddo
-  !       endif
-  !    ENDIF
-  !    IF(W_P%NI/=0) THEN
-  !       if(W_P%FI/=' ') then
-  !          WRITE(6,W_P%FI,advance=W_P%ADV) (W_P%I(I), I=1,W_P%NI )
-  !       else
-  !          do i=1,W_P%NI
-  !             WRITE(6,*) W_P%I(I)
-  !          enddo
-  !       endif
-  !    ENDIF
-  !    IF(W_P%NR/=0) THEN
-  !       if(W_P%FR/=' ') then
-  !          WRITE(6,W_P%FR,advance=W_P%ADV) (W_P%R(I), I=1,W_P%NR)
-  !       else
-  !          do i=1,W_P%NR
-  !             WRITE(6,*) W_P%R(I)
-  !          enddo
-  !       endif
-  !    ENDIF
-  !    if(W_P%ADV=='NO') then
-  !       WRITE(6,*) " "
-  !    endif
-  !    IF(PRESENT(IEX)) THEN
-  !       if(iex==-1) stop
-  !       IPAUSE=MYPAUSE(IEX)
-  !    ENDIF
-  !  END SUBROUTINE WRITE_G
-  !
-  !  SUBROUTINE WRITE_a(IEX)
-  !    IMPLICIT NONE
-  !    integer, OPTIONAL :: IEX
-  !    logical(lp) temp
-  !    temp=global_verbose
-  !    global_verbose=.true.
-  !    ! call ! WRITE_I(IEX)
-  !    global_verbose=temp
-  !
-  !  END SUBROUTINE WRITE_a
   !
   SUBROUTINE read_int(IEX)
     IMPLICIT NONE
@@ -1314,7 +1262,7 @@ contains
 
   FUNCTION DSQRTT( S1 )
     implicit none
-    type (my_1D_taylor) DSQRTT,t
+    type (my_1D_taylor) DSQRTT 
     type (my_1D_taylor), INTENT (IN) :: S1
     ! WRITE(6,*) " MARDE "
     ! STOP 666

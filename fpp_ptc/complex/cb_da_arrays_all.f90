@@ -61,7 +61,6 @@ contains
 
   subroutine alloc_c
     implicit none
-    integer i
     allocate(c_cc(c_lst))
     allocate(c_i_1(c_lst));allocate(c_i_2(c_lst));
     allocate(c_ie1(c_lea));allocate(c_ie2(c_lea));allocate(c_ieo(c_lea));

@@ -1037,7 +1037,7 @@ contains
     !
     !-----------------------------------------------------------------------------
     !
-    integer idal,ipause,mypauses
+    integer idal
     !
     !    if((.not.C_STABLE_DA)) then
     !       if(C_watch_user) then
@@ -4868,7 +4868,7 @@ if(longprint) write(iunit,502) -iout,0.0_dp,0.0_dp,(j(i),i=1,inva)
     return
   end subroutine c_dacycle
 !!!! new stuff lingyun
-  subroutine dacc_lean(ina,value)
+  subroutine dacc_lean(ina)
     implicit none
     integer ipause, mypauses
     !     ***************************
@@ -4878,7 +4878,7 @@ if(longprint) write(iunit,502) -iout,0.0_dp,0.0_dp,(j(i),i=1,inva)
     !-----------------------------------------------------------------------------
     !
     integer ii,illa,ilma,ina,inoa,inva,iout,ipoa
-    real(dp) value,a,b
+    real(dp) a,b
  
 
     if(ina.lt.1.or.ina.gt.c_nda_dab) then

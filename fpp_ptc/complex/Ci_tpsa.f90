@@ -1223,7 +1223,7 @@ end subroutine c_get_indices
   SUBROUTINE  alloc_c_damap(S1)
     implicit none
     type (c_damap),INTENT(INOUT) :: S1
-    INTEGER i,J,N
+    INTEGER i,N
 
 
 
@@ -1246,7 +1246,7 @@ end subroutine c_get_indices
   SUBROUTINE  alloc_c_vector_field(S1)
     implicit none
     type (c_vector_field),INTENT(INOUT) :: S1
-    INTEGER i,J,N
+    INTEGER i,N
 
 
     s1%eps   = eps_tpsalie
@@ -1623,7 +1623,7 @@ end subroutine c_get_indices
     type (c_ray),INTENT(inOUT)::S2
     complex(dp),INTENT(IN)::S1(:)
     integer i
-    complex(dp) value
+
 
     IF(.NOT.C_STABLE_DA) RETURN
     
@@ -1640,7 +1640,7 @@ end subroutine c_get_indices
     type (c_ray),INTENT(in)::S2
     complex(dp),INTENT(inOUT)::S1(:)
     integer i
-    complex(dp) value
+
 
     IF(.NOT.C_STABLE_DA) RETURN
     
@@ -1730,8 +1730,8 @@ end subroutine c_get_indices
     type (damap),INTENT(IN)::S1
     type(complextaylor) ct
     integer i,i1(4),i2(4)
-    complex(dp) x
-    real(dp) value
+
+
 
     call check_snake
     call alloc(ct)
@@ -1755,8 +1755,8 @@ end subroutine c_get_indices
     type (c_damap),INTENT(IN)::S1
     type(complextaylor) ct
     integer i,i1(4),i2(4)
-    complex(dp) x
-    real(dp) value
+
+
 
     call c_check_snake
 
@@ -1824,7 +1824,7 @@ end subroutine c_get_indices
     implicit none
     TYPE(probe_8), INTENT(IN) :: R
     TYPE(c_damap), INTENT(INOUT) :: DS
-    real(dp) s(3,3),m(6,6)
+    real(dp) m(6,6)
     type(taylor) t
 
     INTEGER I,J,nd2t1
@@ -1911,7 +1911,7 @@ end subroutine c_get_indices
     type (c_damap),INTENT(inOUT)::S2
     type (damapspin),INTENT(IN)::S1
     type(complextaylor) t
-    complex(dp) f2(6,6)
+
     integer i,j
 
     call alloc(t)
@@ -1949,7 +1949,7 @@ end subroutine c_get_indices
     type (c_damap),INTENT(in)::S1
     type (damapspin),INTENT(INOUT)::S2
     type(complextaylor) t
-    real(dp) f2(6,6)
+
     integer i,j
 
     call alloc(t)
@@ -1986,8 +1986,8 @@ end subroutine c_get_indices
     type (vecfield),INTENT(IN)::S1
     type(complextaylor) ct
     integer i,i1(4),i2(4)
-    complex(dp) x
-    real(dp) value
+
+
 
     call check_snake
 
@@ -2487,7 +2487,7 @@ FUNCTION cpbbra( S1, S2 )
     TYPE (c_taylor) cpbbra
     TYPE (c_taylor), INTENT (IN) :: S1, S2
     integer localmaster
-    integer i
+
     IF(.NOT.C_STABLE_DA) then
      cpbbra%i=0
      RETURN
@@ -2511,7 +2511,7 @@ FUNCTION cpbbra( S1, S2 )
     TYPE (c_vector_field) liebra
     TYPE (c_vector_field), INTENT (IN) :: S1, S2
     integer localmaster
-    integer i
+
     IF(.NOT.C_STABLE_DA) then
      liebra%v%i=0
      RETURN
@@ -2537,7 +2537,7 @@ FUNCTION cpbbra( S1, S2 )
     TYPE (c_damap) liebramap
     TYPE (c_damap), INTENT (IN) :: S1, S2
     integer localmaster
-    integer i
+
     IF(.NOT.C_STABLE_DA) then
      liebramap%v%i=0
      RETURN
@@ -2564,7 +2564,7 @@ FUNCTION cpbbra( S1, S2 )
     TYPE (c_damap), INTENT (IN) :: S2
     TYPE (c_vector_field), INTENT (IN) :: S1
     integer localmaster
-    integer i
+
     IF(.NOT.C_STABLE_DA) then
      liebramap1%v%i=0
      RETURN
@@ -2618,7 +2618,7 @@ FUNCTION cpbbra( S1, S2 )
     TYPE (c_damap) GETORDERMAP
     TYPE (c_damap), INTENT (IN) :: S1
     INTEGER, INTENT (IN) :: S2
-    INTEGER I,J,s22
+    INTEGER I,s22
     integer localmaster
     IF(.NOT.C_STABLE_DA) then
      GETORDERMAP%v%i=0
@@ -2683,7 +2683,7 @@ FUNCTION cpbbra( S1, S2 )
     TYPE (c_taylor), INTENT (IN) :: S1
     TYPE (c_taylor) g
     INTEGER, INTENT (IN) ::  S2
-    integer localmaster,j,k,t
+    integer localmaster,j,k
     integer, allocatable :: je(:)
     complex(dp) v
     IF(.NOT.C_STABLE_DA) then
@@ -2722,7 +2722,7 @@ FUNCTION cpbbra( S1, S2 )
     TYPE (c_damap) GETORDERMAP_par
     TYPE (c_damap), INTENT (IN) :: S1
     INTEGER, INTENT (IN) :: S2
-    INTEGER I,J,s22
+    INTEGER I,s22
     integer localmaster
     IF(.NOT.C_STABLE_DA) then
      GETORDERMAP_par%v%i=0
@@ -2787,7 +2787,7 @@ FUNCTION cpbbra( S1, S2 )
     implicit none
     TYPE (c_damap) from_phasor
     integer, optional :: k
-    INTEGER I,J,k1
+    INTEGER I,k1
     integer localmaster
     TYPE (c_damap) from_phasori
     complex(dp) N    
@@ -5242,8 +5242,8 @@ cgetvectorfield=0
     INTEGER,INTENT(IN)::MFILE
     type (c_damap),INTENT(inout)::S1
     integer i,j,i1,j2
-    logical(lp) rad_in
-    real(dp) norm
+
+
     character(255) line 
 
     read(mfile,'(a255)') line
@@ -5856,7 +5856,7 @@ cgetvectorfield=0
   subroutine c_ass_spinor(s1) ! spin routine
     implicit none
     TYPE (c_spinor) s1
-    integer i,j
+    integer i
    
     select case(c_master)
     case(0:c_ndumt-1)
@@ -5878,7 +5878,7 @@ cgetvectorfield=0
   subroutine c_ass_vector_field(s1)
     implicit none
     TYPE (c_vector_field) s1
-    integer i,j
+    integer i
 
     select case(c_master)
     case(0:c_ndumt-1)
@@ -5920,7 +5920,7 @@ cgetvectorfield=0
     type (c_taylor),INTENT(INOUT)::S2
     type (c_taylor), intent(INOUT):: s1
     real(dp) prec
-    INTEGER ipresent,k,n,I,illa
+    INTEGER ipresent,n,I,illa
     complex(dp) value,v
     real(dp) x
     INTEGER, allocatable :: j(:)
@@ -6141,8 +6141,8 @@ endif
  subroutine c_etinv(x,y)
     implicit none
     ! Y=X^-1
-    integer i,k
-    type(c_damap) ie1,ie2,iv1,iv2
+    integer i
+    type(c_damap) ie1,ie2 
     type(c_damap), intent(inout):: x,y
     if(.not.c_stable_da) return
     
@@ -6258,7 +6258,7 @@ endif
     implicit none
     TYPE (c_damap) c_concat,t1,t2,tempnew
     TYPE (c_damap), INTENT (IN) :: S1, S2
-    complex(dp) v1(lnv),f2it(6,6),f2i(6,6)
+    complex(dp) f2it(6,6),f2i(6,6)
     integer i
     logical(lp) rad1,rad2
     integer localmaster
@@ -6323,8 +6323,8 @@ endif
     implicit none
     TYPE (c_damap) c_concat_da,t1,t2,tempnew
     TYPE (c_damap), INTENT (IN) :: S1, S2
-    complex(dp) v1(lnv),f2it(6,6),f2i(6,6)
-    integer i
+    complex(dp) f2it(6,6),f2i(6,6)
+
     logical(lp) rad1,rad2
     integer localmaster
      IF(.NOT.C_STABLE_DA) then
@@ -6574,7 +6574,7 @@ endif
     TYPE (c_damap) c_transpose,t1
     TYPE (c_damap), INTENT (IN) :: S1
     complex(dp) f2t(ndim2t,ndim2t)
-    integer i
+
     integer localmaster
      IF(.NOT.C_STABLE_DA) then
      c_transpose%v%i=0
@@ -6776,7 +6776,7 @@ endif
     TYPE (c_spinor) c_spinor_spinor 
     TYPE (c_spinor), INTENT (IN) ::  S2
     TYPE (c_spinor), INTENT (IN) :: S1
-    integer i
+
 
     integer localmaster
      IF(.NOT.C_STABLE_DA) then
@@ -6871,7 +6871,7 @@ endif
     TYPE (c_taylor), INTENT (IN) :: S1
     TYPE (c_damap), INTENT (IN) ::  S2
     TYPE (c_damap)  S22,temp
-    integer i
+
     integer localmaster
      IF(.NOT.C_STABLE_DA) then
      c_trxtaylor_da%i=0
@@ -7004,7 +7004,7 @@ endif
     TYPE (c_ray), INTENT (IN) ::  S2
     TYPE (c_damap)  temp
  
-    integer i,j,k
+    integer i
     integer localmaster
      IF(.NOT.C_STABLE_DA) then
      c_concat_map_ray%x=0
@@ -7116,7 +7116,7 @@ endif
     TYPE (c_vector_field), INTENT (IN) :: S1
     TYPE (c_damap), INTENT (IN) ::  S2
     TYPE (c_damap)  S22 
-    complex(dp) zero_(lnv)
+
     integer i,j,k
     integer localmaster
      IF(.NOT.C_STABLE_DA) then
@@ -7158,8 +7158,8 @@ FUNCTION c_bra_v_v( S1, S2 )
     TYPE (c_vector_field), INTENT (IN) :: S1
     TYPE (c_vector_field), INTENT (IN) ::  S2
     TYPE (c_vector_field)  S22 
-    complex(dp) zero_(lnv)
-    integer i,j,k
+
+    integer i,j
     integer localmaster
      IF(.NOT.C_STABLE_DA) then
      c_bra_v_v%v%i=0
@@ -7197,7 +7197,7 @@ FUNCTION c_bra_v_v( S1, S2 )
     TYPE (c_damap), INTENT (IN) :: S1
     INTEGER, INTENT (IN) :: R2
     TYPE (c_damap) S11
-    INTEGER I,R22,j
+    INTEGER I,R22
     integer localmaster
      IF(.NOT.C_STABLE_DA) then
      POWMAP%v%i=0
@@ -7403,7 +7403,10 @@ FUNCTION c_bra_v_v( S1, S2 )
     integer,INTENT(IN)::S1
     integer i
     IF(.NOT.C_STABLE_DA) RETURN
-
+     if(s1/=0) then 
+       write(6,*) "c_IdentityEQUALVEC"
+      stop
+     endif
      do i=1,s2%n
         s2%v(i)=(0.0_dp,0.0_dp)
      enddo
@@ -7548,13 +7551,12 @@ subroutine c_linear_a(xy,a1)
     integer i,j
     type(c_damap), intent(inout) ::  xy,a1 
     real(dp) reval(ndim2t),imval(ndim2t),vr(ndim2t,ndim2t),vi(ndim2t,ndim2t),vrt(ndim2t,ndim2t),vit(ndim2t,ndim2t)
-    real(dp) fm0(ndim2t,ndim2t),x(ndim2t/2),xx(ndim2t/2),p
-    integer ndel 
+    real(dp) fm0(ndim2t,ndim2t),x(ndim2t/2),xx(ndim2t/2)
     integer idef(ndim2t/2)
     real(dp), allocatable :: fm(:,:),fmi(:,:),fmii(:,:)
     type(c_damap) s1
 
-    logical(lp) doit
+
     if(.not.c_stable_da) return
 
  
@@ -7834,14 +7836,14 @@ subroutine c_linear_ac_longitudinal(xy,a1,ac)
     ! for ndpt not zero, works in all cases. (coasting beam: eigenvalue
     ! 1 in Jordan form)
     !****************************************************************
-    integer i,j
+    integer i
     type(c_damap), intent(inout) ::  xy,a1,ac 
     complex(dp) m(ndim2t,ndim2t) , cc
-    real(dp) mr(ndim2t,ndim2t) ,prec
+
     type(c_damap) s1
     integer jc(ndim2t)
     complex  r(ndim2t)
-    logical(lp) doit
+
     if(.not.c_stable_da) return
 
 
@@ -7894,13 +7896,13 @@ subroutine c_linear_ac_longitudinal(xy,a1,ac)
     ! for ndpt not zero, works in all cases. (coasting beam: eigenvalue
     !1 in Jordan form)
     !****************************************************************
-    integer i,j,ndloc,kr,krf,k,ik,mf
+    integer i,j,ndloc
     type(c_damap), intent(inout) ::  xy,a1 
     type(c_damap) w,v,rel,x
     type(c_taylor) t1
     real(dp), allocatable :: mt(:,:),mv(:)
     integer, allocatable :: je(:)
-    complex(dp) val
+
     
   !  ndct=iabs(ndpt-ndptb)  ! 1 if coasting, otherwise 0
   !  ndc2t=2*ndct  ! 2 if coasting, otherwise 0
@@ -8103,7 +8105,7 @@ end subroutine c_canonise
     logical(lp) removeit,rad_in
     complex(dp) v,lam,egspin(3)
     complex(dp), allocatable :: eg(:)
-    real(dp) prec,norm
+    real(dp) norm
     logical(lp), optional :: dospin
     logical dospinr
     type(c_spinor) n0,nr
@@ -8379,7 +8381,7 @@ end subroutine c_canonise
     implicit none
     type(c_damap) , intent(inout) :: xy,m1
     type(c_taylor) s(3)
-    integer i,j
+    integer i
     
     do i=1,3
      call alloc(s(i))
@@ -8577,7 +8579,6 @@ end subroutine c_canonise
   function c_expflo_fac(h,x)   !,eps,nrmax)
     implicit none
     ! DOES EXP( \VEC{H} ) X = Y
-    logical(lp) more
     integer i,localmaster
     type(c_damap) c_expflo_fac
     type(c_damap),optional, intent(in):: x
@@ -8620,7 +8621,6 @@ end subroutine c_canonise
   function c_expflo_fac_inv(h,x)   !,eps,nrmax)
     implicit none
     ! DOES EXP( \VEC{H} ) X = Y
-    logical(lp) more
     integer i,localmaster
     type(c_damap) c_expflo_fac_inv
     type(c_damap),optional, intent(in):: x
@@ -8662,7 +8662,6 @@ end subroutine c_canonise
       function c_add_vf(s1,s2)   !,eps,nrmax)
     implicit none
  
-    logical(lp) more
     integer i,localmaster
     type(c_vector_field) c_add_vf
     type(c_vector_field), intent(in):: s1
@@ -8781,7 +8780,7 @@ end subroutine c_canonise
     function exp_ad(h,x)  !  exp(Lie bracket)
     implicit none
     ! DOES EXP( \VEC{H} ) X = Y
-    logical(lp) more
+
     integer i,j,localmaster
     type(c_vector_field) exp_ad,ft
     type(c_vector_field), intent(in):: x
@@ -8842,7 +8841,7 @@ prec=1.d-8
   function c_expflo_map(h,x)   !,eps,nrmax)
     implicit none
     ! DOES EXP( \VEC{H} ) X = Y
-    logical(lp) more
+
     integer i,j,localmaster
     type(c_damap) c_expflo_map
     type(c_damap), optional, intent(in):: x
@@ -8971,8 +8970,7 @@ prec=1.d-8
     implicit none
     ! GENERAL ONE EXPONENT FACTORIZATION
     logical(lp) more
-    integer i,k,kk,nrmax,k1,n1,nn,n2
-    real(dp) quad
+    integer i,k,nrmax,k1,n1,nn,n2
 !    integer,dimension(:)::xy,h
 !    integer,dimension(ndim2)::x,v,w,t,z
      type(c_damap), intent(inout) :: xy0
@@ -8981,9 +8979,8 @@ prec=1.d-8
      type(c_damap)  x,v,xy
      real(dp), optional :: epso
      integer, optional :: n
-     real(dp) :: xint(2)=(/0.5_dp,1.0_dp/12.0_dp/)
     integer,dimension(lnv)::jj
-    real(dp) eps,epsone,r,xn,xnbefore,xnorm,xnorm1,xx
+    real(dp) eps,epsone,r,xn,xnbefore,xnorm,xnorm1
     
     n1=1
     if(present(n)) n1=n
@@ -9357,7 +9354,7 @@ prec=1.d-8
     type(c_spinor)  n1 ,n3 
     type(c_taylor)   s,n
     real(dp) x
-    integer j
+
     integer i,is
     call alloc(n1)
     call alloc(n3)
@@ -9476,7 +9473,7 @@ endif
   subroutine c_find_spin_angle(m,tune,radian) ! spin routine
     !  inverse 3x3 rrotation
     implicit none
-    integer i,j
+
     TYPE (c_spinmatrix), intent (inout):: m
     TYPE (c_taylor) tune    
     logical(lp),optional :: radian
@@ -9502,7 +9499,7 @@ endif
     logical(lp) exa
     integer localmaster
     real(dp) d
-    integer k,n1,n
+    integer k,n
     IF(.NOT.C_STABLE_DA) then
      c_log_spinmatrix%v%i=0
      RETURN
@@ -9745,7 +9742,7 @@ endif
     integer jet,nn,i,i1,ilo,ihi,mdim,info
     real(dp),dimension(ndim2t)::reval,aieval,ort
     real(dp),dimension(ndim2t,ndim2t)::revec,aievec,fm,aa,vv
-    INTEGER IPAUSE,MYPAUSES
+
     if(.not.c_%stable_da) return
 
     !  copy matrix to temporary storage (the matrix aa is destroyed)
@@ -10490,12 +10487,11 @@ subroutine teng_edwards_a1(a1,R_TE,CS_TE,COSLIKE,t_e)
     implicit none
     type(c_damap) , intent(inout) :: a1,R_TE,CS_TE
 
-    type(c_damap) b1,g,s1,s1i
-    type(c_taylor)  cphi,sphi,t
-    complex(dp) v
+    type(c_damap) g,s1,s1i
+
  
-    integer i,j,k,kr
-    integer, allocatable :: je(:)
+    integer i,j
+
     type(c_taylor) m(4,4),unpb
     type(c_taylor) at(2,2),bt(2,2),ct(2,2),dt(2,2),ati(2,2),bti(2,2),alpha,det
     logical(lp) t_e,COSLIKE
@@ -10721,7 +10717,7 @@ end subroutine teng_edwards_a1
     type(c_damap) m
 
     integer i,j,nt
-    logical doflip
+
     integer, allocatable :: jl(:)
 
     call alloc(m)
@@ -10849,7 +10845,7 @@ subroutine c_full_canonise(at,a_cs,as,a0,a1,a2,rotation,phase,nu_spin) ! spin ro
 
     type(c_damap) ar,att,phi,a0t,a1t,a2t,ast
     type(c_taylor) pha,tune_spin
-    integer i,k,kspin
+    integer i,kspin
     real(dp) norm
 
     call alloc(ar)
@@ -11045,11 +11041,10 @@ subroutine extract_a0(a,a0)
  
     type(c_damap) a0t,at,ai,x,v
     type(c_taylor)  t1
-    integer i,j,k,l,kr
-    logical(lp) removeit,rad_in
+    integer i
     integer np_pos
-    complex(dp) val
-    integer, allocatable:: je(:)
+
+
     ! a0 is for the fixed point
     
     at%n=nv
@@ -11238,13 +11233,13 @@ subroutine extract_a2(a,phi2)
     type(c_damap),optional , intent(inout) :: phi2
     type(c_damap) b1 
     type(c_vector_field) h,hr,hf
-    type(c_taylor) t,tr,cphi,sphi
+
     real(dp) eps
     complex(dp) v
  
-    integer i,j,k,kr
+    integer j,k,kr
     integer, allocatable :: je(:)
-    logical(lp) removeit , removeres
+    logical(lp) removeit
  
      if(.not.present(phi2)) return
  
@@ -11319,9 +11314,9 @@ end subroutine extract_a2
     type(c_spinor) n_expo,n_tune,tune0
     type(c_taylor) tr
     type(c_taylor) t
-    integer i,j,n1
+    integer i
     integer  nmax
-    real(dp) c,eps,norm1,norm2,d
+    real(dp) eps,norm1,norm2,d
     logical check
 !!!  original as_xyz = as_xyz*r_y = a_y*a_nl*r_y  on exit
     check=.true.
@@ -11428,9 +11423,9 @@ end subroutine extract_a2
     type(c_spinor) n_expo,n_tune,tune0
     type(c_taylor) tr
     type(c_taylor) t
-    integer i,j,n1
+    integer i
     integer  nmax
-    real(dp) c,eps,norm1,norm2,d
+    real(dp) eps,norm1,norm2,d
     logical check
 !!!  original as_xyz = as_xyz*r_y = a_y*a_nl*r_y  on exit
     check=.true.
@@ -11530,10 +11525,10 @@ end subroutine extract_a2
 
   complex(dp) function c_phase_shift(j)
     implicit none
-    integer i
+
     !      INTEGER J(NTT)
     integer,dimension(:)::j
-    integer nd
+
     logical(lp) removeit
 
     c_phase_shift=0.d0
@@ -11552,7 +11547,7 @@ end subroutine extract_a2
     integer i,k
     !       keeps in regular harmonic planes zeroth order
     integer,dimension(:)::j
-    integer nd
+
  
     c_zeroth=0.d0
     if(.not.c_%stable_da) return
@@ -11599,9 +11594,9 @@ end subroutine produce_orthogonal
     type(c_damap) e_ly
     integer, intent(inout) :: kp,nturn
     integer, optional :: mff
-    integer i,k,imax,nd2,j
+    integer i,k,imax,j
     type(spinor) n
-    real(dp) norm,norm0,n0(3),theta0
+    real(dp) norm,norm0
     logical ord
    call alloc(e_ly)
 
@@ -11723,7 +11718,10 @@ end subroutine produce_orthogonal
     integer,INTENT(IN)::S1
     integer i
     IF(.NOT.C_STABLE_DA) RETURN
-
+     if(s1/=0) then 
+       write(6,*) "c_IdentityEQUALVECfourier"
+      stop
+     endif
      do i=-s2%n,s2%n
       s2%f(i)=0
      enddo
@@ -11801,9 +11799,8 @@ end SUBROUTINE  equal_c_vector_field_fourier
     implicit none
     TYPE (c_vector_field_fourier), INTENT (INout) :: S1 ,s2
     TYPE (c_damap), INTENT (IN) :: m
-    TYPE (c_damap) mi
-    integer localmaster
-    integer i,k
+ 
+    integer i
 
 
      IF(.NOT.C_STABLE_DA) then
@@ -11825,7 +11822,7 @@ subroutine exp_vector_field_fourier(F,H,K,nlin)
     TYPE (c_vector_field_fourier), INTENT (INout) :: F,H,K
     TYPE (c_vector_field_fourier) s3,t,dF_dt,dhs
     integer, optional :: nlin
-    INTEGER I,J,nl
+    INTEGER I ,nl
     real(dp) norm(3)
     complex(dp) fac,fac1
     nl=0
@@ -11901,7 +11898,6 @@ subroutine bra_vector_field_fourier(s1,s2,r)
     implicit none
     TYPE (c_vector_field_fourier), INTENT (INout) :: S1,s2,r
     TYPE (c_vector_field_fourier) s3
-    complex(dp) fac
     INTEGER I,J
     call alloc(s3)
 
@@ -11995,8 +11991,8 @@ end subroutine mulc_vector_field_fourier
     TYPE (c_vector_field_fourier), INTENT (INout) :: H,F,K
     TYPE (c_vector_field_fourier),optional, INTENT (INout) :: F1
     TYPE (c_taylor) temp
-    integer localmaster
-    integer i,ki,n,m,j,l,o,nl,i1
+ 
+    integer ki,n,m,j,l,o,nl,i1
     complex(dp), allocatable :: eg(:)
     integer, allocatable :: je(:)
     complex(dp) v,lam
@@ -12082,8 +12078,8 @@ end  subroutine normalise_vector_field_fourier
     implicit none
     TYPE (c_vector_field_fourier), INTENT (INout) :: H
     TYPE (c_taylor) temp
-    integer localmaster
-    integer i,k,n,m,j,l,o,nl
+ 
+    integer k,n,m,j,l,o,nl
     complex(dp), allocatable :: eg(:)
     integer, allocatable :: je(:)
     complex(dp) v,lam

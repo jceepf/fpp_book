@@ -30,8 +30,7 @@ module pointer_lattice
   REAL(DP) SIG(6) 
   REAL(DP) ait(6,6)
  
-  type(beam), allocatable:: my_beams(:)
-  type(beam), pointer:: my_beam
+
   INTEGER :: N_BEAM=0,USE_BEAM=1
   logical, private :: m_u_t = .true.
   TYPE(REAL_8),private :: Y(6)
@@ -761,43 +760,6 @@ endif
              WRITE(6,*) " NO NODE LAYOUT PRESENT "
           ENDIF
 
-
-          ! BEAMS STUFF
-       case('ALLOCATEBEAMS')
-          READ(MF,*) N_BEAM
-          ALLOCATE(MY_BEAMS(N_BEAM))
-          CALL NULLIFY_BEAMS(MY_BEAMS)
-       case('DEALLOCATEBEAMS')
-          CALL KILL_BEAMS(MY_BEAMS)
-          DEALLOCATE(MY_BEAMS)
-       case('CREATEBEAM')
-          READ(MF,*) USE_BEAM,NUMBER_OF_PARTICLE, FILENAME
-          READ(MF,*) CUT,SIG(1:6)
-          CALL CONTEXT(FILENAME)
-          IF(FILENAME(1:2)=='NO'.OR.FILENAME(1:2)=='no') THEN
-             CALL  create_PANCAKE(MY_BEAMS(USE_BEAM),NUMBER_OF_PARTICLE,CUT,SIG,my_ering%start%t1)
-          ELSE
-             CALL  kanalnummer(mfr)
-             OPEN(UNIT=MFR,FILE=FILENAME)
-             READ(MF,*) MY_A_NO
-             CALL compute_A_4d(my_ering,my_estate,filename,pos,del,MY_A_NO,MY_A)
-             CALL  create_PANCAKE(MY_BEAMS(USE_BEAM),NUMBER_OF_PARTICLE,CUT,SIG,my_ering%start%t1,MY_A)
-             CALL KILL(MY_A)
-             close(mfr)
-          ENDIF
-       case('COPYBEAM')
-          READ(MF,*) I1,I2
-          CALL COPY_BEAM(MY_BEAMS(I1),MY_BEAMS(I2))
-       case('PRINTBEAM')
-          READ(MF,*) i1,filename
-          CALL  kanalnummer(mfr)
-          OPEN(UNIT=MFR,FILE=FILENAME)
-          call PRINT_beam_raw(MY_BEAMS(I1),MFr)
-          CLOSE(MFR)
-       case('BEAMSTATISTICS')
-          READ(MF,*) USE_BEAM
-
-          CALL Stat_beam_raw(MY_BEAMS(USE_BEAM),4,6)
 
        case('CHECKKREIN')
           WRITE(6,*) "OLD CHECK_KREIN ",check_krein

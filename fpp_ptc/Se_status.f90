@@ -958,7 +958,7 @@ CONTAINS
   subroutine make_set_coef(b,no,ic)
     implicit none
     integer no
-    integer i,j,k,a,m , ic
+    integer  ic
 
     type(B_CYL) b
 
@@ -1283,7 +1283,7 @@ CONTAINS
     INTEGER,optional :: ND2,NPARA
     INTEGER  ND2l,NPARAl,n_acc
     LOGICAL(lp) package
-    call dd_p !valishev
+!    call dd_p !valishev
     doing_ac_modulation_in_ptc=.false.
     package=my_true
     if(present(pack))     package=my_true
@@ -1480,7 +1480,6 @@ CONTAINS
     ! A.Valishev (valishev@fnal.gov) October 19, 2010
     ! Modified by E. Forest for PTC
     implicit none
-    type(real_8) u,dd
     type(my_1D_taylor) del,logdel
     integer i,n
 
@@ -5979,12 +5978,12 @@ end subroutine set_s_e
 
  SUBROUTINE  get_bend_electric_coeff(s_b0t,NO1,h00,verb)
     implicit none
-    integer no,n,i,k,j(2),NO1,l,mf
+    integer no,i,k,j(2),NO1,l,mf
     type(taylor) x,y,h,df,ker,sol
     type(complextaylor) z 
     type(taylor) f,kick_x,kick_y
     type(damap) y0
-    real(dp) h0,cker,cker0
+    real(dp) h0,cker
      TYPE(B_CYL), intent(inout) :: s_b0t
       logical(lp),optional :: verb    
       real(dp),optional :: h00    
@@ -6118,12 +6117,12 @@ enddo
  SUBROUTINE  get_bend_magnetic_potential(s_b0t,NO1,h00,verb)
 ! trying to get magnetic field from scalar potential
     implicit none
-    integer no,n,i,k,j(2),NO1,l,mf
+    integer no,i,k,j(2),NO1,l,mf
     type(taylor) x,y,h,df,ker,sol
     type(complextaylor) z 
     type(taylor) f,kick_x,kick_y
     type(damap) y0
-    real(dp) h0,cker,cker0
+    real(dp) h0,cker
      TYPE(B_CYL), intent(inout) :: s_b0t
       logical(lp),optional :: verb    
       real(dp),optional :: h00    

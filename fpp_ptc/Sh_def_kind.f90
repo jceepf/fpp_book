@@ -1002,7 +1002,6 @@ contains
     implicit none
     logical(lp) :: doneitt=.true.
     TYPE(SUPERDRIFT1),TARGET,INTENT(INOUT):: C
-    !    TYPE(BEAM),TARGET,INTENT(INOUT):: B
     real(dp), INTENT(INOUT) :: X(6)
     TYPE(INTERNAL_STATE)  K
     !    TYPE(INTERNAL_STATE), INTENT(IN) :: K
@@ -1055,7 +1054,6 @@ endif
     implicit none
     logical(lp) :: doneitt=.true.
     TYPE(SUPERDRIFT1P),TARGET,INTENT(INOUT):: C
-    !    TYPE(BEAM),TARGET,INTENT(INOUT):: B
     TYPE(REAL_8), INTENT(INOUT) :: X(6)
     TYPE(INTERNAL_STATE)  K
     !    TYPE(INTERNAL_STATE), INTENT(IN) :: K
@@ -1152,7 +1150,6 @@ endif
     TYPE(SOL5),OPTIONAL,INTENT(INOUT):: EL5
     TYPE(KTK),OPTIONAL,INTENT(INOUT):: EL6
     TYPE(TKTF),OPTIONAL,INTENT(INOUT):: EL7
-    !      TYPE(BEAM), INTENT(INOUT) ::B
     integer,INTENT(IN):: J
     real(dp), INTENT(INOUT) :: X(6)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
@@ -1296,7 +1293,6 @@ endif
     TYPE(SOL5P),OPTIONAL,INTENT(INOUT):: EL5
     TYPE(KTKP),OPTIONAL,INTENT(INOUT):: EL6
     TYPE(TKTFP),OPTIONAL,INTENT(INOUT):: EL7
-    !      TYPE(BEAM), INTENT(INOUT) ::B
     integer,INTENT(IN):: J
     TYPE(REAL_8), INTENT(INOUT) :: X(6)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
@@ -13187,7 +13183,6 @@ integer :: kkk=0
 
   SUBROUTINE  FRINGE_CAV_TRAVR(EL,X,k,J)
     IMPLICIT NONE
-    !      TYPE(BEAM), INTENT(INOUT) ::B
     integer,INTENT(IN):: J
     real(dp), INTENT(INOUT) :: X(6)
     TYPE(CAV_TRAV),INTENT(INOUT):: EL
@@ -13207,7 +13202,6 @@ integer :: kkk=0
 
   SUBROUTINE  FRINGE_CAV_TRAVP(EL,X,k,J)
     IMPLICIT NONE
-    !      TYPE(BEAM), INTENT(INOUT) ::B
     integer,INTENT(IN):: J
     TYPE(REAL_8), INTENT(INOUT) :: X(6)
     TYPE(CAV_TRAVP),INTENT(INOUT):: EL

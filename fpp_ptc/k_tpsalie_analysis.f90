@@ -1318,10 +1318,10 @@ contains
     newprint=.false.
     ! if(old) then
     call LIEINIT(NO1,NV,ND1,NDPT1)   !,0
-    w_p=0
-    w_p%nc=1
-    w_p=(/" Berz's Package  "/)
-    w_p%fc='(1((1X,A72),/))'
+ !   w_p=0
+ !   w_p%nc=1
+ !   w_p=(/" Berz's Package  "/)
+ !   w_p%fc='(1((1X,A72),/))'
     !       ! call ! WRITE_I
     !    else
     !       if(no1>3) then
@@ -1344,12 +1344,12 @@ contains
 
 
 
-    w_p=0
-    w_p%nc=1
-    w_p=(/"          NO          ND         ND2          NP        NDPT          NV"/)
-    w_p%fc='(1((1X,A72)))'
-    w_p%fi='(1x,6(6x,i6))'
-    w_p=(/NO,ND,ND2,NP,NDPT,NV/)
+!    w_p=0
+!    w_p%nc=1
+!    w_p=(/"          NO          ND         ND2          NP        NDPT          NV"/)
+!    w_p%fc='(1((1X,A72)))'
+!    w_p%fi='(1x,6(6x,i6))'
+!    w_p=(/NO,ND,ND2,NP,NDPT,NV/)
     ! call ! WRITE_I
     CALL ASSIGN
     !    CALL ASSIGNMAP
