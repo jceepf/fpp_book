@@ -28,7 +28,7 @@ MODULE c_TPSA
   private dexpt,dcost,dsint,dtant
   PRIVATE GETCHARnd2,GETintnd2,dputchar,dputint, filter,check_j,c_dputint0,c_dputint0r
   private GETintnd2t,equalc_cspinor_cspinor,c_AIMAG,c_real,equalc_ray_ray
-  PRIVATE DEQUAL,REQUAL,varf,varf001  !,CHARINT
+  PRIVATE DEQUAL,REQUAL,varf,varf001,equalc_spinor_cspinor  !,CHARINT
   !  PUBLIC VAR,ASS
   private pbbra,liebra,liebramap,liebramap1,full_absT,c_asstaylor,getcharnd2s,GETintnd2s,GETintk
   private shiftda,shift000,cDEQUAL,pri,rea,cfu000,alloc_DA,alloc_c_spinmatrix,cpbbra
@@ -125,6 +125,7 @@ logical :: remove_tune_shift=.false.
       MODULE PROCEDURE equalc_r6_ray
       MODULE PROCEDURE equalc_ray_ray
       MODULE PROCEDURE equal_c_vector_field_fourier
+      MODULE PROCEDURE equalc_spinor_cspinor
   end  INTERFACE
 
 
@@ -2022,6 +2023,22 @@ end subroutine c_get_indices
 
 
  end SUBROUTINE  equalc_cspinor_cspinor
+
+  SUBROUTINE  equalc_spinor_cspinor(S2,S1) ! spin routine
+    implicit none
+    type (spinor),INTENT(inOUT)::S2
+    type (c_spinor),INTENT(IN)::S1
+
+    integer i 
+
+    call check_snake
+
+    do i=1,3
+      s2%x(i)=s1%v(i)
+    enddo
+
+
+ end SUBROUTINE  equalc_spinor_cspinor
 
   SUBROUTINE  c_DPEKMAP(S2,S1)
     implicit none
@@ -6007,7 +6024,6 @@ cgetvectorfield=0
     do i=1,nd2
        call c_clean_taylor(s1%v(i),s2%v(i),prec)
     enddo
-
 
   END SUBROUTINE c_clean_vector_field
 
