@@ -137,8 +137,9 @@ m=c_map
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
  
 call c_normal(c_map,c_n,dospin=state%spin)  ! (6)
- write(6,'(4(1x,g21.14))') c_n%tune(1:3), c_n%spin_tune
+! write(6,'(4(1x,g21.14))') c_n%tune(1:3), c_n%spin_tune
 f%i%m=m
+f%i%fix0=xs%x
 
 f1=>f
 do i=1,als%n
@@ -146,7 +147,7 @@ do i=1,als%n
  CALL propagate(XS,STATE,FIBRE1=f1,fibre2=f1%next)
 f1=>f1%next
 d_map=xs
-
+f1%i%fix0=xs%x
 if(.not.state%radiation) then
 f1%i%m=d_map
 f1%i%m=matmul(f1%i%m, matmul(m,matmul(S,matmul(transpose(f1%i%m),transpose(S)))))
