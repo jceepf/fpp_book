@@ -2133,7 +2133,7 @@ endif
 
   END subroutine read_ptc_command
 
- SUBROUTINE radia_new(R,loc,estate,FILE1,em,sij,sijr,tune,damping)
+ SUBROUTINE radia_new(R,loc,estate,FILE1,fix,em,sij,sijr,tune,damping)
     implicit none
     TYPE(LAYOUT) R
 
@@ -2142,7 +2142,7 @@ endif
     type(c_damap)  Id,a0,a_cs
     type(c_normal_form) normal
     integer  i,j 
-    real(dp), optional :: em(3),sij(6,6),tune(3),damping(3)
+    real(dp), optional :: fix(6), em(3),sij(6,6),tune(3),damping(3)
     complex(dp), optional :: sijr(6,6)   
     TYPE(INTERNAL_STATE) state
     TYPE(INTERNAL_STATE), target :: estate
@@ -2165,10 +2165,11 @@ fmd1='(1X,a3,I1,a3,i1,a4,2(D18.11,1x),(f10.3,1x),a2)'
     x=0.d0
 
     CALL FIND_ORBIT_x(R,X,STATE,1.0e-8_dp,fibre1=loc)
-    WRITE(6,*) " CLOSED ORBIT AT LOCATION ",loc
-    write(6,*) x
-
-
+    if(present(FILE1)) then
+        WRITE(mf1,*) " CLOSED ORBIT AT LOCATION ",loc
+        write(mf1,*) x
+    endif
+     if(present(fix)) fix=x
 
 
     call GET_loss(r,energy,deltap)
