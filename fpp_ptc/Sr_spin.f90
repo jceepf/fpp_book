@@ -2800,7 +2800,7 @@ call kill(e)
     type(probe), INTENT(INOUT) :: xs
     TYPE(INTERNAL_STATE) K
     REAL(DP) FAC,DS
-    logical(lp) bmad
+!    logical(lp) bmad
     IF(.NOT.CHECK_STABLE) then
        CALL RESET_APERTURE_FLAG
     endif
@@ -2815,8 +2815,8 @@ call kill(e)
     C%PARENT_FIBRE%MAG%P%CHARGE=>C%PARENT_FIBRE%CHARGE
     !      ag=xs%s%g
     !      if(associated(c%bb)) call BBKICK(c%BB,XS%X)
-    bmad=use_bmad_units.and.(c%cas/=casep1.and.c%cas/=casep2)
-    if(bmad) then 
+!    bmad=use_bmad_units.and.(c%cas/=casep1.and.c%cas/=casep2)
+    if(use_bmad_units) then 
       call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
     endif
 
@@ -2844,15 +2844,15 @@ call kill(e)
        IF(c%cas==caseP1) THEN
           CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
           if(k%spin) then
-               If(use_bmad_units) call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
+!               If(use_bmad_units) call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
                  CALL TRACK_SPIN_FRONT(C%PARENT_FIBRE,XS)
-               If(use_bmad_units) call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
+!               If(use_bmad_units) call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
           endif
        ELSE
           if(k%spin) then
-               If(use_bmad_units) call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
+!               If(use_bmad_units) call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
                  CALL TRACK_SPIN_BACK(C%PARENT_FIBRE,XS)
-               If(use_bmad_units) call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
+!               If(use_bmad_units) call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
            endif
           CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
      ENDIF
@@ -2864,7 +2864,7 @@ call kill(e)
   !  IF((K%MODULATION.or.ramp).and.c%parent_fibre%mag%slow_ac) THEN  !modulate
   !     CALL restore_ANBN_SINGLE(C%PARENT_FIBRE%MAG,C%PARENT_FIBRE%MAGP)
   !  ENDIF  !modulate
-    if(bmad) then 
+    if(use_bmad_units) then 
       call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
     endif
     xs%u=.not.check_stable
@@ -2885,7 +2885,7 @@ call kill(e)
     logical(lp) CHECK_KNOB
     integer(2), pointer,dimension(:)::AN,BN
     integer ki
-    logical(lp) bmad
+!    logical(lp) bmad
     !   if(xs%u) return
 
     IF(.NOT.CHECK_STABLE) then
@@ -2900,8 +2900,8 @@ call kill(e)
     C%PARENT_FIBRE%MAGP%P%ag => C%PARENT_FIBRE%ag
     C%PARENT_FIBRE%MAGp%P%CHARGE=>C%PARENT_FIBRE%CHARGE
     !      ag=xs%s%g
-    bmad=use_bmad_units.and.(c%cas/=casep1.and.c%cas/=casep2)
-    if(bmad) then 
+ !   bmad=use_bmad_units.and.(c%cas/=casep1.and.c%cas/=casep2)
+    if(use_bmad_units) then 
       call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
     endif
 
@@ -2940,15 +2940,15 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
        IF(c%cas==caseP1) THEN
           CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
           if(k%spin) then
-               If(use_bmad_units) call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
+ !              If(use_bmad_units) call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
                  CALL TRACK_SPIN_FRONT(C%PARENT_FIBRE,XS)
-               If(use_bmad_units) call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
+!               If(use_bmad_units) call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
           endif
        ELSE
           if(k%spin) then
-               If(use_bmad_units) call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
+   !            If(use_bmad_units) call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
                  CALL TRACK_SPIN_BACK(C%PARENT_FIBRE,XS)
-               If(use_bmad_units) call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
+  !             If(use_bmad_units) call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
            endif
           CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
      ENDIF
@@ -2970,7 +2970,7 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     call kill(ds)
 
 
-    if(bmad) then 
+    if(use_bmad_units) then 
       call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
     endif
 

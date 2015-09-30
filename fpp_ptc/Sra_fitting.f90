@@ -111,7 +111,7 @@ end subroutine find_time_patch
     als=>f%parent_layout
 
     if(present(del)) closed(5+ndpt_bmad)=del
-    CALL FIND_ORBIT(als,CLOSED,1,STATE,1.e-8_dp)     
+    call find_orbit_x(CLOSED,STATE,1.e-8_dp,fibre1=f)       
     call init_all(STATE,no,0)
 call alloc(c_map,d_map)
 call alloc(id_s)
@@ -170,7 +170,7 @@ end subroutine compute_linear_one_magnet_maps
     als=>f%parent_layout
 
     if(present(del)) closed(5+ndpt_bmad)=del
-    CALL FIND_ORBIT(als,CLOSED,1,STATE,1.e-8_dp)     
+    call find_orbit_x(CLOSED,STATE,1.e-8_dp,fibre1=f)    
     call init_all(STATE,no,0)
 call alloc(c_map,d_map)
 call alloc(c_n)
