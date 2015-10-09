@@ -2647,10 +2647,10 @@ CONTAINS
   END SUBROUTINE KILL_BEAM_BEAM_NODE
 !!!!  aperture stuff
 
-  SUBROUTINE assign_aperture(p,mpos,kindaper,R,X,Y,dx,dy,pos)
+  SUBROUTINE assign_aperture(p,kindaper,R,X,Y,dx,dy,pos)
     IMPLICIT NONE
     integer, optional :: pos
-    integer mpos,kindaper
+    integer kindaper
     REAL(DP) R(:),X,Y,dx,dy
     type(fibre), pointer :: P
 
@@ -2689,11 +2689,11 @@ CONTAINS
 
     call move_to(L,p,mpos)
 
-    call assign_aperture(p,mpos,kindaper,R,X,Y,dx,dy,pos)
+    call assign_aperture(p,kindaper,R,X,Y,dx,dy,pos)
 
   end SUBROUTINE assign_one_aperture
 
- SUBROUTINE toggle_ONE_aperture(p,pos)
+ SUBROUTINE toggle_ONE_aperture(p)
     IMPLICIT NONE
     integer pos
     type(fibre), pointer :: P
@@ -2712,7 +2712,7 @@ CONTAINS
     integer pos
     type(fibre), pointer :: P
 
-    call toggle_ONE_aperture(p,pos)
+    call toggle_ONE_aperture(p)
 
 
 
