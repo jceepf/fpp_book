@@ -599,6 +599,11 @@ CONTAINS
 
   END SUBROUTINE  CHECK_APERTURE_P
 
+
+
+ 
+
+
   FUNCTION minu( S1,S2  )
     implicit none
     logical(lp) minu
