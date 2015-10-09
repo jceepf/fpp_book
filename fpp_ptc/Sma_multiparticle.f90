@@ -984,7 +984,7 @@ endif
     TYPE(INTERNAL_STATE)  K
     !    TYPE(INTERNAL_STATE), INTENT(IN) :: K
     type(element),pointer :: el
-
+    LOGICAL TA
     IF(.NOT.CHECK_STABLE) return
     !       CALL RESET_APERTURE_FLAG
     !    endif
@@ -1016,11 +1016,13 @@ endif
     CASE(CASEP1)
        CALL TRACK_FIBRE_FRONT(T%PARENT_FIBRE,X,K)
      if(associated(T%PARENT_FIBRE%MAG%p%aperture)) then
-          if(T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos<=0) call CHECK_APERTURE(T%PARENT_FIBRE%MAG%p%aperture,X)
+TA=T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==-1.OR.T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==0
+          if(TA) call CHECK_APERTURE(T%PARENT_FIBRE%MAG%p%aperture,X)
      endif
     CASE(CASEP2)
      if(associated(T%PARENT_FIBRE%MAG%p%aperture)) then
-          if(T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos>=0) call CHECK_APERTURE(T%PARENT_FIBRE%MAG%p%aperture,X)
+TA=T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==1.OR.T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==0
+          if(TA) call CHECK_APERTURE(T%PARENT_FIBRE%MAG%p%aperture,X)
      endif
        CALL TRACK_FIBRE_BACK(T%PARENT_FIBRE,X,K)
 
@@ -1167,7 +1169,7 @@ endif
     logical(lp) BN2,L
     logical(lp) CHECK_KNOB
     integer(2), pointer,dimension(:)::AN,BN
-
+     logical TA
     IF(.NOT.CHECK_STABLE) return
     !       CALL RESET_APERTURE_FLAG
     !    endif
@@ -1196,11 +1198,13 @@ endif
     CASE(CASEP1)
        CALL TRACK_FIBRE_FRONT(T%PARENT_FIBRE,X,K)
      if(associated(T%PARENT_FIBRE%MAG%p%aperture)) then
-          if(T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos<=0) call CHECK_APERTURE(T%PARENT_FIBRE%MAG%p%aperture,X)
+TA=T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==-1.OR.T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==0
+          if(TA) call CHECK_APERTURE(T%PARENT_FIBRE%MAG%p%aperture,X)
      endif
     CASE(CASEP2)
      if(associated(T%PARENT_FIBRE%MAG%p%aperture)) then
-          if(T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos>=0) call CHECK_APERTURE(T%PARENT_FIBRE%MAG%p%aperture,X)
+TA=T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==1.OR.T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==0
+          if(TA) call CHECK_APERTURE(T%PARENT_FIBRE%MAG%p%aperture,X)
      endif
        CALL TRACK_FIBRE_BACK(T%PARENT_FIBRE,X,K)
 

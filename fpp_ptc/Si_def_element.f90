@@ -145,7 +145,7 @@ CONTAINS
     TYPE(INTERNAL_STATE) K
 
     if(associated(el%p%aperture)) then
-     if(el%p%dir*el%p%aperture%pos<=0) call CHECK_APERTURE(EL%p%aperture,X)
+     if(el%p%dir*el%p%aperture%pos==0.OR.el%p%dir*el%p%aperture%pos==-1) call CHECK_APERTURE(EL%p%aperture,X)
     endif
     !    if(other_program) then
     !       call track_R(x)
@@ -204,7 +204,7 @@ CONTAINS
        ! call !write_e(0)
     END SELECT
     if(associated(el%p%aperture)) then
-     if(el%p%dir*el%p%aperture%pos>=0) call CHECK_APERTURE(EL%p%aperture,X)
+     if(el%p%dir*el%p%aperture%pos==0.OR.el%p%dir*el%p%aperture%pos==1)  call CHECK_APERTURE(EL%p%aperture,X)
     endif
   END SUBROUTINE TRACKR
 
@@ -216,7 +216,7 @@ CONTAINS
     TYPE(INTERNAL_STATE) K
 
     if(associated(el%p%aperture)) then
-     if(el%p%dir*el%p%aperture%pos<=0) call CHECK_APERTURE(EL%p%aperture,X)
+     if(el%p%dir*el%p%aperture%pos==0.OR.el%p%dir*el%p%aperture%pos==-1)  call CHECK_APERTURE(EL%p%aperture,X)
     endif
     SELECT CASE(EL%KIND)
     CASE(KIND0)
@@ -269,7 +269,7 @@ CONTAINS
        ! call !write_e(0)
     END SELECT
     if(associated(el%p%aperture)) then
-     if(el%p%dir*el%p%aperture%pos>=0) call CHECK_APERTURE(EL%p%aperture,X)
+     if(el%p%dir*el%p%aperture%pos==0.OR.el%p%dir*el%p%aperture%pos==1)  call CHECK_APERTURE(EL%p%aperture,X)
     endif
   END SUBROUTINE TRACKP
 

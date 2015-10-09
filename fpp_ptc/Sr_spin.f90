@@ -2872,6 +2872,7 @@ call kill(e)
        xs%lost_node=>c
        lost_fibre=>c%parent_fibre
        lost_node=>c
+       xlost=xs%x
     endif
   END SUBROUTINE TRACK_NODE_FLAG_probe_R
 
@@ -2979,6 +2980,7 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
        xs%lost_node=>c
        lost_fibre=>c%parent_fibre
        lost_node=>c
+       xlost=xs%x
     endif
 
   END SUBROUTINE TRACK_NODE_FLAG_probe_P
