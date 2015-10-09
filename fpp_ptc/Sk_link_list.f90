@@ -2647,15 +2647,12 @@ CONTAINS
   END SUBROUTINE KILL_BEAM_BEAM_NODE
 !!!!  aperture stuff
 
-  SUBROUTINE assign_one_aperture(L,mpos,kindaper,R,X,Y,dx,dy,pos)
+  SUBROUTINE assign_aperture(p,mpos,kindaper,R,X,Y,dx,dy,pos)
     IMPLICIT NONE
-    TYPE(LAYOUT),TARGET :: L
     integer, optional :: pos
     integer mpos,kindaper
     REAL(DP) R(:),X,Y,dx,dy
     type(fibre), pointer :: P
-
-    call move_to(L,p,mpos)
 
     if(.NOT.ASSOCIATED(P%MAG%p%aperture)) THEN
        call alloc(P%MAG%p%aperture)
@@ -2680,7 +2677,34 @@ CONTAINS
        endif
     endif
 
+  end SUBROUTINE assign_aperture
+
+  SUBROUTINE assign_one_aperture(L,mpos,kindaper,R,X,Y,dx,dy,pos)
+    IMPLICIT NONE
+    TYPE(LAYOUT),TARGET :: L
+    integer, optional :: pos
+    integer mpos,kindaper
+    REAL(DP) R(:),X,Y,dx,dy
+    type(fibre), pointer :: P
+
+    call move_to(L,p,mpos)
+
+    call assign_aperture(p,mpos,kindaper,R,X,Y,dx,dy,pos)
+
   end SUBROUTINE assign_one_aperture
+
+ SUBROUTINE toggle_ONE_aperture(p,pos)
+    IMPLICIT NONE
+    integer pos
+    type(fibre), pointer :: P
+
+
+    if(ASSOCIATED(P%MAG%p%aperture)) THEN
+       P%MAG%p%aperture%kind = -P%MAG%p%aperture%kind
+       P%MAGP%p%aperture%kind = P%MAG%p%aperture%kind
+    ENDIF
+
+  end SUBROUTINE toggle_ONE_aperture
 
  SUBROUTINE TURN_OFF_ONE_aperture(R,pos)
     IMPLICIT NONE
@@ -2688,13 +2712,9 @@ CONTAINS
     integer pos
     type(fibre), pointer :: P
 
-    call move_to(r,p,pos)
+    call toggle_ONE_aperture(p,pos)
 
-    if(ASSOCIATED(P%MAG%p%aperture)) THEN
-       P%MAG%p%aperture%kind = -P%MAG%p%aperture%kind
-       P%MAGP%p%aperture%kind = P%MAG%p%aperture%kind
-    ENDIF
+
 
   end SUBROUTINE TURN_OFF_ONE_aperture
-
 END MODULE S_FIBRE_BUNDLE
