@@ -3788,14 +3788,15 @@ endif
 
   ! THIN LENS EXAMPLE
 
-  SUBROUTINE assign_one_aperture(L,pos,kindaper,R,X,Y,dx,dy)
+  SUBROUTINE assign_one_aperture(L,mpos,kindaper,R,X,Y,dx,dy,pos)
     IMPLICIT NONE
     TYPE(LAYOUT),TARGET :: L
-    integer pos,kindaper
+    integer, optional :: pos
+    integer mpos,kindaper
     REAL(DP) R(:),X,Y,dx,dy
     type(fibre), pointer :: P
 
-    call move_to(L,p,pos)
+    call move_to(L,p,mpos)
 
     if(.NOT.ASSOCIATED(P%MAG%p%aperture)) THEN
        call alloc(P%MAG%p%aperture)
@@ -3814,6 +3815,10 @@ endif
        P%MAGP%p%aperture%y    = y
        P%MAGP%p%aperture%dx    = dX
        P%MAGP%p%aperture%dy    = dy
+       if(present(pos)) then
+          P%MAG%p%aperture%pos=pos
+         P%MAGP%p%aperture%pos=pos
+       endif
     endif
 
   end SUBROUTINE assign_one_aperture
