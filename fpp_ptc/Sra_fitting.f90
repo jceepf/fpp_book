@@ -24,6 +24,108 @@ module S_fitting_new
 
 contains
 
+!!!! Meiqin analysis
+subroutine read_file_meiqin(mf)
+implicit none
+integer mf,i,k,ks
+character(255) line
+real(sp) s(3),time,gamma,x(6)
+integer ip,turn,krem,mnew
+call kanalnummer(mnew,"dis_small.txt")
+k=0
+do while(.true.)
+read(mf,*,end=100) turn,time,gamma,krem
+write(mnew,'(i4,1x,2(1x,E20.13),1x,i4)') turn,time,gamma,krem
+do ks=1,krem
+read(mf,*) ip,s,x(6)
+write(mnew,'(i4,1x,3(1x,E20.13))')ip,s
+enddo
+!read(mf,'(a255)',end=100) line
+
+k=k+1
+
+enddo
+100 continue
+write(6,*) "number of lines",k
+close(mnew)
+end subroutine read_file_meiqin
+
+subroutine read_file_small_meiqin(mnew)
+implicit none
+integer i,k,ks,mf
+character(255) line
+character(4) aturn
+real(dp) s(3),time,gamma,norm,xturn,n
+integer ip,turn,krem,mnew
+type(spinor) ss
+real(dp) em(256,1:3),emax(3)
+call kanalnummer(mf,"original_emittances.txt")
+
+emax=0.d0
+do i=1,256
+read(mf,*) ip,em(i,1:3)
+ if(emax(1)<em(i,1)) emax(1)=em(i,1)
+ if(emax(2)<em(i,2)) emax(2)=em(i,2)
+ if(emax(3)<em(i,3)) emax(3)=em(i,3)
+!write(6,*)emax
+enddo
+close(mf)
+
+
+
+emax=emax/6
+
+n=0
+do i=1,256
+n=rhodis(em(i,1:3),emax(1:3),1.d0)+n
+enddo
+
+
+call kanalnummer(mf,"polarisation.dat")
+k=0
+ xturn=0
+
+do while(.true.)
+read(mnew,*,end=100) aturn,time,gamma,krem
+
+ss%x=0
+do ks=1,krem
+read(mnew,*) ip,s
+ 
+ss%x=ss%x+s*rhodis(em(ks,1:3),emax(1:3),n)
+enddo
+!ss%x=ss%x/krem
+norm=sqrt(ss%x(1)**2+ss%x(2)**2+ss%x(3)**2)
+
+xturn=xturn+1
+write(mf,'(7(1x,E20.13))')xturn,time,gamma,norm,ss%x
+!write(mf,'(a4,1x,6(1x,E20.13))')xturn,time,gamma,norm,ss%x
+
+!read(mf,'(a255)',end=100) line
+
+k=k+1
+!if(k==10) exit
+enddo
+100 continue
+write(6,*) "number of lines",k
+close(mf)
+end subroutine read_file_small_meiqin
+
+function rhodis(em,sig,n)
+ real(dp) rhodis,n,em(3),sig(3)
+rhodis=1.d0/n
+
+return
+if(em(2)>10*sig(2).or.em(3)>10*sig(3)) then
+   rhodis=0
+else
+   rhodis= exp(-em(2)/sig(2))*exp(-em(3)/sig(3))/n
+endif
+
+end function rhodis
+
+
+
 subroutine find_time_patch(kekb,my_default,ee,kf,kb)
 implicit none
 type(layout), pointer :: kekb

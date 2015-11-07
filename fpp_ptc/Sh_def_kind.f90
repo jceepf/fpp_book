@@ -10454,11 +10454,6 @@ integer :: kkk=0
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     real(dp) dir
 
-    !    if(abs(x(1))+abs(x(3))+abs(x(2))+abs(x(4))>absolute_aperture.or.(.not.CHECK_MADX_APERTURE)) then
-    !       if(CHECK_MADX_APERTURE) c_%message="exceed absolute_aperture in SKICKR"
-    !       CHECK_STABLE=.false.
-    !    endif
-    !    if(.not.CHECK_STABLE) return
 
     DIR=EL%P%DIR*EL%P%CHARGE
 

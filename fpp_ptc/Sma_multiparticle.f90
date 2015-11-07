@@ -923,7 +923,7 @@ endif
     !    endif
 
     x=V%X
-    if(abs(x(1))+abs(x(3))>absolute_aperture) then
+    if(abs(x(1))+abs(x(3))>absolute_aperture.or.abs(x(6))>t_aperture) then
        messageLOST="exceed absolute_aperture in TRACKV_NODE_SINGLE"
        lost_node=>t
        lost_fibre=>t%parent_fibre
@@ -989,7 +989,7 @@ endif
     !       CALL RESET_APERTURE_FLAG
     !    endif
 
-    if(abs(x(1))+abs(x(3))>absolute_aperture) then   !.or.(.not.CHECK_MADX_APERTURE)) then
+    if(abs(x(1))+abs(x(3))>absolute_aperture.or.abs(x(6))>t_aperture) then   !.or.(.not.CHECK_MADX_APERTURE)) then
        messageLOST="exceed absolute_aperture in TRACKR_NODE_SINGLE"
        lost_node=>t
        lost_fibre=>t%parent_fibre
@@ -1174,7 +1174,7 @@ TA=T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==1.OR.T%PARENT_FIB
     !       CALL RESET_APERTURE_FLAG
     !    endif
 
-    if(abs(x(1))+abs(x(3))>absolute_aperture) then
+    if(abs(x(1))+abs(x(3))>absolute_aperture.or.abs(x(6))>t_aperture) then
        messageLOST="exceed absolute_aperture in TRACKP_NODE_SINGLE"
        lost_node=>t
        lost_fibre=>t%parent_fibre
