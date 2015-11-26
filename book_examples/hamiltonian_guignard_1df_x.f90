@@ -102,7 +102,7 @@ read(5,*) n_mode
 n_fourier=n_mode
 
 map_order=4                ! (3)    
-call init_all(state,map_order,1)
+call init_all(state,map_order,0)
 
 call alloc(one_turn_map, id_s,U_c,A,U,fi,b,a_cs) 
 call alloc(normal_form); call alloc(ray); 

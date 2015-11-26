@@ -29,14 +29,14 @@ module ptc_spin
   !  private PUSH_SPIN_RAY8
   private radiate_2p,radiate_2r,radiate_2
   private TRACK_NODE_FLAG_probe_R,TRACK_NODE_FLAG_probe_p,TRACK_NODE_LAYOUT_FLAG_spinr_x
-  private FIND_ORBIT_LAYOUT_noda,FIND_ORBIT_LAYOUT_noda_object,FIND_ORBIT_LAYOUT_noda_spin_object
+  private FIND_ORBIT_LAYOUT_noda,FIND_ORBIT_LAYOUT_noda_object
   PRIVATE get_Bfield_fringeR,get_Bfield_fringeP,get_Bfield_fringe,TRACK_NODE_LAYOUT_FLAG_spinp_x
   private TRACK_LAYOUT_FLAG_spin12r_x,TRACK_LAYOUT_FLAG_spin12p_x
   PRIVATE TRACK_LAYOUT_FLAG_probe_spin12R,TRACK_LAYOUT_FLAG_probe_spin12P
   private PUSH_SPIN_fake_fringer,PUSH_SPIN_fake_fringep,PUSH_SPIN_fake_fringe
   PRIVATE TRACK_NODE_LAYOUT_FLAG_pr_t12_R,TRACK_NODE_LAYOUT_FLAG_pr_t12_P
   private TRACK_LAYOUT_FLAG_spint12r_x,TRACK_LAYOUT_FLAG_spint12p_x,alloc_temporal_beam
-  private alloc_temporal_probe,FIND_ORBIT_LAYOUT_noda_spin,GET_BZ_fringe,GET_BZ_fringer,GET_BZ_fringep
+  private alloc_temporal_probe,GET_BZ_fringe,GET_BZ_fringer,GET_BZ_fringep
   private TRACK_rotate_spin_r,TRACK_rotate_spin_p,TRACK_rotate_spin
   private TRACK_FRINGE_multipole_r,TRACK_FRINGE_multipole_p,TRACK_FRINGE_multipole
   private TRACK_wedge_spin_R,TRACK_wedge_spin_p,TRACK_wedge_spin
@@ -112,10 +112,7 @@ module ptc_spin
   END INTERFACE
 
 
-  INTERFACE FIND_ORBIT_probe_spin
-     MODULE PROCEDURE FIND_ORBIT_LAYOUT_noda_spin
-     MODULE PROCEDURE FIND_ORBIT_LAYOUT_noda_spin_object
-  END INTERFACE
+
 
 
   INTERFACE radiate_2
@@ -3646,144 +3643,6 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     ENDIF
 
   END SUBROUTINE DTILTP_SPIN
-
-  SUBROUTINE FIND_ORBIT_LAYOUT_noda_spin(RING,FIX,STATE,eps,TURNS,fibre1,node1,theta0)
-    ! Finds orbit without TPSA in State or compatible state
-    IMPLICIT NONE
-    TYPE(layout),target,INTENT(INOUT):: RING
-    type(probe) , intent(inOUT) :: FIX
-    type(probe)  FIXT
-    INTEGER , optional,intent(in) :: TURNS,node1,fibre1
-    real(dp)  eps,x0(6),theta0r,s(3,3)
-    real(dp), optional,intent(inout) :: theta0
-    TYPE(INTERNAL_STATE), intent(in) :: STATE
-    TYPE(INTERNAL_STATE) stat
-    !    type(probe_8) xs
-    !    type(damapspin) ds
-    integer i,turns0,J
-    turns0=1
-    theta0r=0.d0
-    if(present(turns)) turns0=turns
-    x0=FIX%x
-    stat=state
-    call find_orbit_x(RING,x0,STATE,eps,TURNS,fibre1,node1)
-
-    stat=state+spin0 !+spin_only0
-
-    FIX=x0
-
-    !        call init(stat,1,0)
-
-    !        call alloc(xs)
-    !        call alloc(ds)
-
-    !        ds=1
-    !        xs= FIX + ds
-
-    !        do i=1,TURNS0
-    !         call track_probe(RING,xs,stat,fibre1,node1)
-    !        enddo
-
-    !        ds=xs
-
-    !         DO J=1,3
-    FIXT=x0
-
-    do i=1,TURNS0
-       call track_probe(RING,fixt,stat,fibre1=fibre1,node1=node1)
-    enddo
-    DO J=1,3
-       s(1:3,j)=FIXT%S(J)%X(1:3)
-    ENDDO
-    !         ENDDO
-
-
-
-    call get_spin_n0(S,theta0r,FIX%s(1)%x)
-    FIX%s(2)%x=FIX%s(1)%x
-    FIX%s(3)%x=FIX%s(1)%x
-    if(present(theta0)) theta0=theta0r
-
-    !        call kill(xs)
-    !        call kill(ds)
-
-
-
-  END SUBROUTINE FIND_ORBIT_LAYOUT_noda_spin
-
-  SUBROUTINE FIND_ORBIT_LAYOUT_noda_spin_object(FIX,STATE,eps,TURNS,fibre1,node1,theta0)
-    ! Finds orbit without TPSA in State or compatible state
-    IMPLICIT NONE
-    TYPE(layout),pointer :: RING
-    type(probe) , intent(inOUT) :: FIX
-    type(probe)  FIXT
-    INTEGER , optional,intent(in) :: TURNS
-    type(fibre), optional, pointer :: fibre1
-    type(integration_node), optional, pointer :: node1
-    real(dp)  eps,x0(6),theta0r,s(3,3)
-    real(dp), optional,intent(inout) :: theta0
-    TYPE(INTERNAL_STATE), intent(in) :: STATE
-    TYPE(INTERNAL_STATE) stat
-    !    type(probe_8) xs
-    !    type(damapspin) ds
-    integer i,turns0,J
-
-    
-    if(present(fibre1)) then
-     ring=>fibre1%parent_layout
-    else
-     ring=>node1%parent_fibre%parent_layout
-    endif
-
-    turns0=1
-    theta0r=0.d0
-    if(present(turns)) turns0=turns
-    x0=FIX%x
-    stat=state
-    call find_orbit_x(x0,STATE,eps,TURNS,fibre1,node1)
-
-    stat=state+spin0 !+spin_only0
-
-    FIX=x0
-
-    !        call init(stat,1,0)
-
-    !        call alloc(xs)
-    !        call alloc(ds)
-
-    !        ds=1
-    !        xs= FIX + ds
-
-    !        do i=1,TURNS0
-    !         call track_probe(RING,xs,stat,fibre1,node1)
-    !        enddo
-
-    !        ds=xs
-
-    !         DO J=1,3
-    FIXT=x0
-
-    do i=1,TURNS0
-       call track_probe(fixt,stat,fibre1=fibre1,node1=node1)
-    enddo
-    DO J=1,3
-       s(1:3,j)=FIXT%S(J)%X(1:3)
-    ENDDO
-    !         ENDDO
-
-
-
-    call get_spin_n0(S,theta0r,FIX%s(1)%x)
-    FIX%s(2)%x=FIX%s(1)%x
-    FIX%s(3)%x=FIX%s(1)%x
-    if(present(theta0)) theta0=theta0r
-
-    !        call kill(xs)
-    !        call kill(ds)
-
-
-
-  END SUBROUTINE FIND_ORBIT_LAYOUT_noda_spin_object
 
   SUBROUTINE FIND_ORBIT_LAYOUT_noda(RING,FIX,STATE,eps,TURNS,fibre1,node1) ! Finds orbit without TPSA in State or compatible state
     IMPLICIT NONE

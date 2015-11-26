@@ -137,6 +137,9 @@ module S_status
   logical(lp) :: accelerate=my_false, first_particle=my_false
   logical(lp) :: automatic_complex = my_true
   integer :: aperture_pos_default=0
+  private track_TREE_G_complexr,track_TREE_G_complexp,track_TREE_probe_complexr,track_TREE_probe_complexp
+  integer :: size_tree=6+9
+
   TYPE B_CYL
      integer firsttime
      integer, POINTER ::  nmul,n_mono   !,nmul_e,n_mono_e
@@ -221,7 +224,15 @@ module S_status
      MODULE PROCEDURE DTILTP_EXTERNAL       ! EXTERNAL
   END INTERFACE
 
+  INTERFACE track_TREE_G_complex
+     MODULE PROCEDURE track_TREE_G_complexr
+     MODULE PROCEDURE track_TREE_G_complexp       ! EXTERNAL
+  END INTERFACE
 
+  INTERFACE track_TREE_probe_complex
+     MODULE PROCEDURE track_TREE_probe_complexr
+     MODULE PROCEDURE track_TREE_probe_complexp       ! EXTERNAL
+  END INTERFACE 
 
 CONTAINS
 
@@ -6371,5 +6382,218 @@ enddo
 
   end subroutine nul_coef
 
+!!!!!!!!!!!!!!!!!!!!   tree tracking for PTC using stuff in 
+  SUBROUTINE SET_TREE_G_complex(T,Ma)
+    IMPLICIT NONE
+    TYPE(TREE_ELEMENT), INTENT(INOUT) :: T
+    TYPE(c_damap), INTENT(INOUT) :: Ma
+    INTEGER N,NP,i,k,j
+    real(dp) norm
+    TYPE(taylor), ALLOCATABLE :: M(:)
+
+    ind_spin(1,1)=1;ind_spin(1,2)=2;ind_spin(1,3)=3;
+    ind_spin(2,1)=4;ind_spin(2,2)=5;ind_spin(2,3)=6;
+    ind_spin(3,1)=7;ind_spin(3,2)=8;ind_spin(3,3)=9;
+    
+    np=ma%n+9
+     
+    ind_spin=ind_spin+ma%n
+
+    ALLOCATE(M(NP))
+    CALL ALLOC(M,NP)
+    do i=1,np
+     m(i)=0.e0_dp
+    enddo
+     do i=1,ma%n
+      m(i)=ma%v(i)
+     enddo
+
+    call c_full_norm_spin(Ma%s,k,norm)
+
+    if(k==-1) then
+      do i=1,3
+      do j=1,3
+        m(ind_spin(i,j))=ma%s%s(i,j)
+      enddo
+      enddo
+    else
+      do i=1,3
+        m(ind_spin(i,i))=1.0e0_dp
+      enddo
+    endif
+
+    call SET_TREE_G(T,M)
+
+    deallocate(M)
+
+  END SUBROUTINE SET_TREE_G_complex
+
+  SUBROUTINE track_TREE_probe_complexr(T,xs)
+    use da_arrays
+    IMPLICIT NONE
+    TYPE(TREE_ELEMENT), INTENT(IN) :: T
+    type(probe) xs
+    real(dp) x(size_tree),s0(3,3)
+    integer i,j,k
+
+    x=0.e0_dp
+    do i=1,6
+      x(i)=xs%x(i)
+    enddo
+
+    call track_TREE_G_complex(T,X)
+    s0=0.0e0_dp
+
+    do k=1,3
+     s0(k,1:3)=0.0e0_dp
+     do i=1,3
+     do j=1,3
+       s0(k,i)=x(ind_spin(i,j))*xs%s(k)%x(j)+s0(k,i)
+     enddo
+    enddo
+    enddo
+
+    do k=1,3
+     do j=1,3
+       xs%s(k)%x(j)=s0(k,j)
+     enddo
+    enddo   
+
+    do i=1,6
+      xs%x(i)=x(i)
+    enddo
+
+  end SUBROUTINE track_TREE_probe_complexr
+
+  SUBROUTINE track_TREE_probe_complexp(T,xs)
+    use da_arrays
+    IMPLICIT NONE
+    TYPE(TREE_ELEMENT), INTENT(IN) :: T
+    type(probe_8) xs
+    type(real_8) x(size_tree),s0(3,3)
+    integer i,j,k
+
+    call alloc(x,size_tree)
+    do i=1,3
+    do j=1,3
+     call alloc(s0(i,j))
+    enddo
+    enddo
+
+    do i=1,6
+      x(i)=xs%x(i)
+    enddo
+
+    call track_TREE_G_complex(T,X)
+
+
+    do k=1,3
+     do i=1,3
+     do j=1,3
+       s0(k,i)=x(ind_spin(i,j))*xs%s(k)%x(j)+s0(k,i)
+     enddo
+    enddo
+    enddo
+
+    do k=1,3
+     do j=1,3
+       xs%s(k)%x(j)=s0(k,j)
+     enddo
+    enddo   
+
+    do i=1,6
+      xs%x(i)=x(i)
+    enddo
+
+    call kill(x,size_tree)
+    do i=1,3
+    do j=1,3
+     call kill(s0(i,j))
+    enddo
+    enddo
+
+  end SUBROUTINE track_TREE_probe_complexp
+
+
+
+  SUBROUTINE track_TREE_G_complexr(T,XI)
+    use da_arrays
+    IMPLICIT NONE
+    TYPE(TREE_ELEMENT), INTENT(IN) :: T
+    REAL(DP), INTENT(INOUT) :: XI(:)
+    REAL(DP) XT(lno),XF(lnv),XM(lno+1),XX
+    INTEGER JC,I,IV
+
+    XT=0.0_dp
+    XF=0.0_dp
+    XM=0.0_dp
+
+    do i=1,T%np
+       xt(i)=xi(i)
+    enddo
+    do i=1,T%np
+       xf(i) = T%cc(i)
+    enddo
+
+    XM(1) = 1.0_dp
+    JC=T%np
+    do i=1,(T%N-T%np)/T%np
+       !
+       xx = xm(T%jl(JC+1))*xt(T%jV(JC+1))
+       xm(T%jl(JC+1)+1) = xx
+       !
+       do iv=1,T%np
+          jc=jc+1
+          xf(iv) = xf(iv) + t%cc(jc) * xx
+       enddo
+    enddo
+    do i=1,size(xi)
+       xI(i)=xF(i)
+    enddo
+
+  END SUBROUTINE track_TREE_G_complexr
+
+  SUBROUTINE track_TREE_G_complexp(T,XI)
+    use da_arrays
+    IMPLICIT NONE
+    TYPE(TREE_ELEMENT), INTENT(IN) :: T
+    type(real_8), INTENT(INOUT) :: XI(:)
+    type(real_8) XT(lno),XF(lnv),XM(lno+1),XX
+    INTEGER JC,I,IV
+
+    call alloc(xt)
+    call alloc(xf)
+    call alloc(xm)
+    call alloc(xx)
+
+    do i=1,T%np
+       xt(i)=xi(i)
+    enddo
+    do i=1,T%np
+       xf(i) = T%cc(i)
+    enddo
+
+    XM(1) = 1.0_dp
+    JC=T%np
+    do i=1,(T%N-T%np)/T%np
+       !
+       xx = xm(T%jl(JC+1))*xt(T%jV(JC+1))
+       xm(T%jl(JC+1)+1) = xx
+       !
+       do iv=1,T%np
+          jc=jc+1
+          xf(iv) = xf(iv) + t%cc(jc) * xx
+       enddo
+    enddo
+    do i=1,size(xi)
+       xI(i)=xF(i)
+    enddo
+
+    call kill(xt)
+    call kill(xf)
+    call kill(xm)
+    call kill(xx)
+
+  END SUBROUTINE track_TREE_G_complexp
 
 end module S_status

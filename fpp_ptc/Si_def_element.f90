@@ -2539,6 +2539,7 @@ ENDIF
     nullify(EL%SIAMESE_FRAME);
     nullify(EL%girder_FRAME);
     nullify(EL%doko);
+    nullify(EL%tree,EL%branch);
   end SUBROUTINE null_EL
 
   SUBROUTINE null_ELp(EL)
@@ -2590,6 +2591,7 @@ ENDIF
     nullify(EL%PA);
     nullify(EL%P);
     nullify(EL%PARENT_FIBRE);
+    nullify(EL%tree,EL%branch);
   end SUBROUTINE null_ELp
 
 
@@ -2722,6 +2724,16 @@ ENDIF
        IF(ASSOCIATED(EL%WI))        then
           el%WI=-1     !USER DEFINED MAGNET
           DEALLOCATE(EL%WI)
+       ENDIF
+
+       IF(ASSOCIATED(EL%tree))        then
+          call kill(EL%tree)     
+          DEALLOCATE(EL%tree)
+       ENDIF
+
+       IF(ASSOCIATED(EL%branch))        then
+          call kill(EL%branch)     
+          DEALLOCATE(EL%branch)
        ENDIF
 
        IF(ASSOCIATED(EL%ramp))        then
@@ -2926,6 +2938,15 @@ ENDIF
           DEALLOCATE(EL%WI)
        ENDIF
 
+       IF(ASSOCIATED(EL%tree))        then
+          call kill(EL%tree)     
+          DEALLOCATE(EL%tree)
+       ENDIF
+
+       IF(ASSOCIATED(EL%branch))        then
+          call kill(EL%branch)     
+          DEALLOCATE(EL%branch)
+       ENDIF
 
        IF(ASSOCIATED(EL%ramp))        then
           el%ramp=-1     !USER DEFINED MAGNET
@@ -3418,6 +3439,26 @@ ENDIF
     !       ELP%PARENT_FIBRE=>EL%PARENT_FIBRE
     !    ENDIF
 
+       IF(ASSOCIATED(EL%branch))        then
+         if(associated(elp%branch)) then
+          call kill(ELp%branch)     
+          DEALLOCATE(ELp%branch)
+         endif
+         allocate(elp%branch)
+         call alloc_tree(elp%branch,el%branch%n,elp%branch%np)
+         call COPY_TREE(EL%branch,ELp%branch)
+       ENDIF
+ 
+
+       IF(ASSOCIATED(EL%tree))        then
+         if(associated(elp%tree)) then
+          call kill(ELp%tree)     
+          DEALLOCATE(ELp%tree)
+         endif
+         allocate(elp%tree)
+         call alloc_tree(elp%tree,el%tree%n,elp%tree%np)
+         call COPY_TREE(EL%tree,ELp%tree)
+       ENDIF
 
   END SUBROUTINE copy_el_elp
 
@@ -3760,11 +3801,27 @@ ENDIF
        CALL COPY(EL%PA,ELP%PA)
     ENDIF
 
-    !    IF(ASSOCIATED(EL%PARENT_FIBRE))        then
-    !       ELP%PARENT_FIBRE=>EL%PARENT_FIBRE
-    !    ENDIF
 
+       IF(ASSOCIATED(EL%branch))        then
+         if(associated(elp%branch)) then
+          call kill(ELp%branch)     
+          DEALLOCATE(ELp%branch)
+         endif
+         allocate(elp%branch)
+         call alloc_tree(elp%branch,el%branch%n,elp%branch%np)
+         call COPY_TREE(EL%branch,ELp%branch)
+       ENDIF
+ 
 
+       IF(ASSOCIATED(EL%tree))        then
+         if(associated(elp%tree)) then
+          call kill(ELp%tree)     
+          DEALLOCATE(ELp%tree)
+         endif
+         allocate(elp%tree)
+         call alloc_tree(elp%tree,el%tree%n,elp%tree%np)
+         call COPY_TREE(EL%tree,ELp%tree)
+       ENDIF
   END SUBROUTINE copy_elp_el
 
 
@@ -4110,6 +4167,27 @@ ENDIF
     !       ELP%PARENT_FIBRE=>EL%PARENT_FIBRE
     !    ENDIF
 
+
+       IF(ASSOCIATED(EL%branch))        then
+         if(associated(elp%branch)) then
+          call kill(ELp%branch)     
+          DEALLOCATE(ELp%branch)
+         endif
+         allocate(elp%branch)
+         call alloc_tree(elp%branch,el%branch%n,elp%branch%np)
+         call COPY_TREE(EL%branch,ELp%branch)
+       ENDIF
+ 
+
+       IF(ASSOCIATED(EL%tree))        then
+         if(associated(elp%tree)) then
+          call kill(ELp%tree)     
+          DEALLOCATE(ELp%tree)
+         endif
+         allocate(elp%tree)
+         call alloc_tree(elp%tree,el%tree%n,elp%tree%np)
+         call COPY_TREE(EL%tree,ELp%tree)
+       ENDIF
 
   END SUBROUTINE copy_el_el
 

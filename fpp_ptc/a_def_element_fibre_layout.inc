@@ -224,7 +224,7 @@ TYPE ELEMENT
    !   integer, POINTER ::girder_index
    type(girder),pointer :: assembly
    type(ramping), pointer :: ramp
-
+   type(tree_element), pointer :: tree,branch
 END TYPE  ELEMENT
 
 
@@ -282,6 +282,7 @@ TYPE ELEMENTP
    TYPE(FIBRE), POINTER :: PARENT_FIBRE
    !   TYPE(fibre_appearance), POINTER :: doko
    type(ramping), pointer :: ramp
+   type(tree_element), pointer :: tree,branch
 END TYPE  ELEMENTP
 
 type fibre_appearance

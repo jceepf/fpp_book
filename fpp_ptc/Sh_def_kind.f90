@@ -14878,7 +14878,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
        EL%B(I)%JL=T(I)%JL
        EL%B(I)%JV=T(I)%JV
        EL%B(I)%N=T(I)%N
-       EL%B(I)%ND2=T(I)%ND2
+       EL%B(I)%NP=T(I)%NP
        EL%B(I)%no=T(I)%no
        !       EL%ax(I)%CC=t_ax(I)%CC
        !       EL%ax(I)%JL=t_ax(I)%JL
@@ -14928,7 +14928,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
        EL%B(I)%JL=T(I)%JL
        EL%B(I)%JV=T(I)%JV
        EL%B(I)%N=T(I)%N
-       EL%B(I)%ND2=T(I)%ND2
+       EL%B(I)%NP=T(I)%NP
        EL%B(I)%no=T(I)%no
        !       EL%ax(I)%CC=t_ax(I)%CC
        !       EL%ax(I)%JL=t_ax(I)%JL
