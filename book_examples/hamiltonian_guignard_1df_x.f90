@@ -82,7 +82,7 @@ write(dsc,*) ts
 
 
 courant_snyder_teng_edwards=.true.
-time_symplectic_choice=.true.
+time_lie_choice=.true.
 
 p=>als%start
 

@@ -49,7 +49,7 @@ p=>als%start
 !!!!!  Make the lattice linear by zeroing all sextupoles !!!!!! 
 !!!
 courant_snyder_teng_edwards=.true.
-time_symplectic_choice=.true.
+time_lie_choice=.true.
 p=>als%start
 do i=1,als%n
  IF(P%MAG%P%NMUL>=3) THEN

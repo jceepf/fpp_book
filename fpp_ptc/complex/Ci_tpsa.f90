@@ -43,7 +43,7 @@ MODULE c_TPSA
   private old
   logical(lp) :: old ,testing_new=.true.
   logical(lp),target  :: c_real_warning =.true.
-  logical(lp) :: c_mess_up_vector=.false.
+  logical(lp) :: c_mess_up_vector=.false. 
   real(dp) :: a_mess=0.d0 , b_mess=1.d0
 
   PRIVATE null_it,Set_Up,de_Set_Up,LINE_L,RING_L,kill_DALEVEL,dealloc_DASCRATCH,set_up_level
@@ -58,7 +58,7 @@ MODULE c_TPSA
  private c_IdentityEQUALSPINOR,c_spinmatrix_spinor,c_logt,c_pri_factored_lie,equalc_map_cmap
  private c_expflo_fac_inv,c_logc,c_complex_spinor,GETORDERSPINMATRIX,c_pri_spinor
  private c_spinor_cmap,c_adjoint_vec,c_adjoint,c_trxtaylor_da,c_spinmatrix_sub_spinmatrix
- PRIVATE CUTORDERMAP,CUTORDERspin,c_concat_da,c_concat_spinor_ray
+ PRIVATE CUTORDERMAP,CUTORDERspin,CUTORDERspinor,c_concat_tpsa,c_concat_spinor_ray
   type(C_dalevel) c_scratchda(ndumt)   !scratch levels of DA using linked list
 integer, private :: nd2t=6,ndt=3,ndc2t=2,ndct=1,nd2harm,ndharm
 !integer, private, parameter :: ndim2t=10
@@ -67,7 +67,7 @@ logical(lp) :: symp =my_false
 logical(lp) :: c_normal_auto=my_true,c_verbose=my_true
 integer :: spin_tune_def=-1,spin_def=-1   !, private 
 integer :: order_gofix=1
-logical(lp) :: time_symplectic_choice=my_false,courant_snyder_teng_edwards=my_true,dosymp=my_false
+logical(lp) :: time_lie_choice=my_false,courant_snyder_teng_edwards=my_true,dosymp=my_false
   private copy_damap_matrix,copy_matrix_matrix,invert_22,ALLOC_33t,kill_33t,matmul_33
   private A_OPT_C_damap,K_OPT_c_damap,equalc_t,equalt_c,daddsco,scdaddo,daddsc,scdadd
 private equal_real8_cmap,equal_cmap_real8,EQUAL_c_map_RAY8,EQUAL_RAY8_c_map,c_add_vf,real_mul_vec
@@ -81,6 +81,9 @@ private complex_mul_vec,equal_c_vector_field_fourier,c_IdentityEQUALVECfourier,c
 private c_add_map,c_sub_map
 integer :: n_fourier=12,n_extra=0
 logical :: remove_tune_shift=.false.
+complex(dp) :: n_cai=-2*i_
+integer :: complex_extra_order=0
+logical :: special_extra_order_1=.true.
 
   INTERFACE assignment (=)
      MODULE PROCEDURE EQUAL
@@ -207,6 +210,7 @@ logical :: remove_tune_shift=.false.
      MODULE PROCEDURE c_spinor_cmap        ! spinor * cmap
      MODULE PROCEDURE real_mul_vec  ! real(dp)*vf
      MODULE PROCEDURE complex_mul_vec  ! complex(dp)*vf
+     MODULE PROCEDURE real_mul_map
      MODULE PROCEDURE map_mul_vec      ! map(vector_field)   ! same as transform_vector_field_by_map
  !    MODULE PROCEDURE c_concat_vec_map  !!   vector_field = (f.grad m**(-1)) * m
      MODULE PROCEDURE c_spinor_spinmatrix    ! spinor.L   spinmatrix
@@ -217,7 +221,7 @@ logical :: remove_tune_shift=.false.
      MODULE PROCEDURE c_concat_c_ray    ! c_taylor .o. c_ray
      MODULE PROCEDURE c_concat_map_ray  ! c_ray= map o c_ray
      MODULE PROCEDURE c_trxtaylor_da   ! c_taylor= c_taylor .o. c_map
-     MODULE PROCEDURE c_concat_da     ! c_map o  c_map
+     MODULE PROCEDURE c_concat_tpsa     ! c_map o  c_map
      module procedure c_concat_spinor_ray   ! c_spinor= c_spinor o  c_ray
      module procedure c_concat_spinmatrix_ray ! c_spinmatrix= c_spinmatrix o  c_ray
      module procedure c_concat_vector_field_ray  ! c_vector_field o  cray
@@ -343,6 +347,7 @@ logical :: remove_tune_shift=.false.
      MODULE PROCEDURE CUTORDERMAP
      MODULE PROCEDURE CUTORDERvec
      MODULE PROCEDURE CUTORDERspin
+     MODULE PROCEDURE CUTORDERspinor
   END INTERFACE
 
 
@@ -2272,75 +2277,79 @@ end subroutine c_get_indices
        s2%v(i)=s2%v(i)+s1%f(j)%v(i)
       enddo      
     enddo
+  if(complex_extra_order==1.and.special_extra_order_1) s2=s2.cut.no
 
   END SUBROUTINE flatten_c_factored_lie
 
-  FUNCTION c_logf_spin( s1,h,epso,n )
+  FUNCTION c_logf_spin( s1,h,epso,n,tpsa )
     implicit none
     TYPE (c_vector_field) c_logf_spin
     TYPE (c_vector_field) , optional :: h
     TYPE (c_damap), INTENT (INOUT) :: S1
      real(dp), optional :: epso
      integer, optional :: n
+     logical, optional :: tpsa
+     logical da
     integer localmaster,k,i
     TYPE (c_vector_field) t,t2
-    type(c_damap) mt,t_1,e2
-    real(dp) xnorm1,epsone,xn,xnorm2
+    type(c_damap) mt,t_1,e2,s1t
+    real(dp) xnorm1,epsone,xn,xnorm2,r
     IF(.NOT.C_STABLE_DA) then
      c_logf_spin%v%i=0
      RETURN
     endif
+    da=.true.
+    if(present(tpsa)) da=.not.tpsa
     localmaster=c_master
-    t%n=s1%n;t2%n=s1%n;mt%n=s1%n;t_1%n=s1%n;e2%n=s1%n;
-    call alloc(t);call alloc(t2);call alloc(mt,t_1,e2);
+    t%n=s1%n;t2%n=s1%n;mt%n=s1%n;t_1%n=s1%n;e2%n=s1%n;s1t%n=s1%n;
+    call alloc(t);call alloc(t2);call alloc(mt,t_1,e2,s1t);
 
     c_logf_spin%n=s1%n
     call c_ass_vector_field(c_logf_spin)
     c_logf_spin=0
      if(present(h)) c_logf_spin=h
-
+    s1t=s1
     xnorm1=0.0_dp
-        call c_full_norm_spin(s1%s,k,xnorm1)
-        if(k==-1) then
-         endif
-        if(k==0) then
+        call c_full_norm_spin(s1t%s,k,xnorm1)
+    do i=1,s1t%n
+       if(da) then
+         s1t%v(i)=s1t%v(i)-(s1t%v(i).sub.'0')
         endif
-        if(k==1) then
-        endif
+       r=full_abs(s1t%v(i))
+       xnorm1=xnorm1+r
+    enddo
+
     if(present(epso)) then
      epsone= epso
     else
      epsone= xnorm1/1000
     endif
  
-     eps=abs(epsone)/2  !1.d5
+!     eps=abs(epsone)/2  !1.d5
     xn=1e36_dp
 
-write(6,*) "max "
-read(5,*) k
+    k=1000
+  if(present(n)) k=n
     do i=1,k
 
-      mt=exp(-c_logf_spin,s1)
+      mt=exp(-c_logf_spin,s1t)
 
       t=c_1_vf(mt)   !  extracts mt-1 as a vector field including spin
+ 
       t_1=1
       t_1=mt-t_1     !  same as a map
       e2=(t*t_1)
 
       t2=(-0.5d0)*c_1_vf(e2,0)
-      t=t !+t2
+      t=t+t2
       call c_full_norm_vector_field(t,xnorm1)
-!write(6,*) i,xnorm1
-!call print(t,6)
+      if(lielib_print(3)==1) write(6,*) i,xn,xnorm1
 
-    if(xnorm1.lt.epsone.and.i>=10) then
-      t2=0.5e0_dp*(c_logf_spin.lb.t)
-      call c_full_norm_vector_field(t2,xnorm2)
-!call print(t2,6)
-!write(6,*) xnorm1,xnorm2
-!pause 7
-      c_logf_spin=c_logf_spin+t !+ t2 !+0.5e0_dp*(c_logf_spin.lb.t)
-      if(xnorm1>=xn) exit
+    if(xnorm1.lt.epsone) then !.and.i>=10) then
+ !     call c_full_norm_vector_field(t2,xnorm2)
+ 
+      c_logf_spin=c_logf_spin+t+0.5e0_dp*(c_logf_spin.lb.t)
+      if(xnorm1>=xn.and.(.not.present(n))) exit
       xn=xnorm1
     else
       c_logf_spin=c_logf_spin+t
@@ -2348,16 +2357,18 @@ read(5,*) k
     endif
 
    enddo
-write(6,*) i
-pause 753
-    call kill(t);call kill(t2);call kill(mt,t_1,e2);
+   if(i>k-10.and.(.not.present(n))) then
+     write(6,*) " no convergence in c_logf_spin "
+   !  stop 1984
+   endif
+    call kill(t);call kill(t2);call kill(mt,t_1,e2,s1t);
 !     call c_flofacg(s1,c_logf_spin,epso,n)
-
+  if(complex_extra_order==1.and.special_extra_order_1) c_logf_spin=c_logf_spin.cut.no
     c_master=localmaster
-
+pause
   END FUNCTION c_logf_spin
 
-  FUNCTION c_logf( s1,h,epso,n )
+  FUNCTION c_logf( s1,h,epso,n,tpsa )
 !$internal: manipulation
 !$ Accessable with the interface log if desired.
 !$ Takes the logarithm of a nonlinear map s1
@@ -2375,21 +2386,34 @@ pause 753
     TYPE (c_damap), INTENT (INOUT) :: S1
      real(dp), optional :: epso
      integer, optional :: n
-    integer localmaster
+     logical, optional :: tpsa
+    type(c_damap) s1t
+     logical da
+    integer localmaster,i
     IF(.NOT.C_STABLE_DA) then
      c_logf%v%i=0
      RETURN
     endif
     localmaster=c_master
+     s1t%n=s1%n
+     call alloc(s1t)
+    s1t=s1
+    da=.true.
+    if(present(tpsa)) da=tpsa
+    if(da) then
+     do i=1,s1t%n
+         s1t%v(i)=s1t%v(i)-(s1t%v(i).sub.'0')
+     enddo
+    endif
 
     c_logf%n=s1%n
     call c_ass_vector_field(c_logf)
     c_logf=0
      if(present(h)) c_logf=h
      call c_flofacg(s1,c_logf,epso,n)
-
+    call kill(s1t)
     c_master=localmaster
-
+  if(complex_extra_order==1.and.special_extra_order_1) c_logf=c_logf.cut.no
   END FUNCTION c_logf
 
   FUNCTION c_logc( S1 )
@@ -2617,7 +2641,7 @@ FUNCTION cpbbra( S1, S2 )
     call ass(cpbbra)
 
     ! if(old) then
-    cpbbra=-2*i_*s1.pb.s2
+    cpbbra=n_cai*(s1.pb.s2) 
  
     c_master=localmaster
 
@@ -2710,12 +2734,13 @@ FUNCTION cpbbra( S1, S2 )
     liebra=0
      call c_etcom(s1%v%i,s2%v%i,liebra%v%i,s1%n)
 
+
      liebra%om = s1%om.lb.s2%om  ! OK
 
      do i=1,3
       liebra%om%v(i)=liebra%om%v(i) + s1*s2%om%v(i)-s2*s1%om%v(i)  ! OK
      enddo
-    
+         if(complex_extra_order==1.and.special_extra_order_1) liebra=liebra.cut.no
     c_master=localmaster
 
   END FUNCTION liebra
@@ -2929,13 +2954,14 @@ FUNCTION cpbbra( S1, S2 )
     integer localmaster
     TYPE (c_damap) from_phasori
     complex(dp) N    
+    real(dp) xn
     IF(.NOT.C_STABLE_DA) then
      from_phasor%v%i=0
      RETURN
     endif
     localmaster=c_master
 
-
+    
     call alloc(from_phasori)
     
     
@@ -2947,30 +2973,32 @@ FUNCTION cpbbra( S1, S2 )
     if( present(k) ) k1=k
 
     if(symp) then
-          N=(1.0_dp-i_)
+        n=sqrt(2.e0_dp)
+        n_cai=1
           do i=1,ndt
              from_phasori%v(2*i-1)=((1.0_dp.cmono.(2*i-1))+i_*(1.0_dp.cmono.(2*i)))/N
-             from_phasori%v(2*i)=((1.0_dp.cmono.(2*i-1))-i_*(1.0_dp.cmono.(2*i)))/N
+             from_phasori%v(2*i)=((1.0_dp.cmono.(2*i-1))-i_*(1.0_dp.cmono.(2*i)))/N/(-i_)
           enddo
           do i=nd,nd-rf+1,-1
              from_phasori%v(2*i-1)=((1.0_dp.cmono.(2*i-1))+i_*(1.0_dp.cmono.(2*i)))/N
-             from_phasori%v(2*i)=((1.0_dp.cmono.(2*i-1))-i_*(1.0_dp.cmono.(2*i)))/N
+             from_phasori%v(2*i)=((1.0_dp.cmono.(2*i-1))-i_*(1.0_dp.cmono.(2*i)))/N/(-i_)
           enddo
           from_phasor=from_phasori**(-1)
-    else
-   n=1.0_dp  !sqrt(2.d0)
+    else   
+     xn=abs(n_cai)
+     if(xn>1.5_dp) then
+      n=1.e0_dp
+      else
+      n=sqrt(2.e0_dp)
+     endif
           do i=1,ndt
-
              from_phasor%v(2*i-1)=n*((0.5_dp.cmono.(2*i-1))+(0.5_dp.cmono.(2*i)))
              from_phasor%v(2*i)=n*((0.5_dp.cmono.(2*i-1))-(0.5_dp.cmono.(2*i)))/i_
-
           enddo
 
           do i=nd,nd-rf+1,-1
-
              from_phasor%v(2*i-1)=n*((0.5_dp.cmono.(2*i-1))+(0.5_dp.cmono.(2*i)))
              from_phasor%v(2*i)=n*((0.5_dp.cmono.(2*i-1))-(0.5_dp.cmono.(2*i)))/i_
-
           enddo
      endif
 
@@ -3093,6 +3121,9 @@ FUNCTION cpbbra( S1, S2 )
       CUTORDERVEC%V(I)=CUTORDERVEC%V(I).CUT.S2
      ENDDO
 
+     DO I=1,3
+      CUTORDERVEC%om%V(I)=CUTORDERVEC%om%V(I).CUT.s2
+     ENDDO
 
     c_master=localmaster
 
@@ -3123,6 +3154,30 @@ FUNCTION cpbbra( S1, S2 )
     c_master=localmaster
 
   END FUNCTION CUTORDERspin
+
+  FUNCTION CUTORDERspinor( S1, S2 ) ! spin routine function
+    implicit none
+    TYPE (c_spinor) CUTORDERspinor
+    TYPE (c_spinor), INTENT (IN) :: S1
+    INTEGER, INTENT (IN) ::  S2
+    integer localmaster,I
+    IF(.NOT.C_STABLE_DA) then
+     CUTORDERspinor%v(1)%i=0
+     RETURN
+    endif
+    localmaster=c_master
+
+
+    call c_ass_spinor(CUTORDERspinor)
+      CUTORDERspinor=S1
+
+     DO I=1,3
+      CUTORDERspinor%v(i)=CUTORDERspinor%v(i).CUT.S2
+     ENDDO
+
+    c_master=localmaster
+
+  END FUNCTION CUTORDERspinor
 
   FUNCTION dputchar( S1, S2 )
     implicit none
@@ -3732,7 +3787,7 @@ endif
  
  
     call ass(cgetpb)
-     cgetpb=getpb( S1, S2 )/(-2*i_)  
+     cgetpb=getpb( S1, S2 )/n_cai
     c_master=localmaster
     END FUNCTION cgetpb
     
@@ -3759,6 +3814,8 @@ endif
      enddo
     endif
     c_master=localmaster
+     if(complex_extra_order==1.and.special_extra_order_1) getvectorfield=getvectorfield.cut.no
+
       END FUNCTION getvectorfield 
     
     FUNCTION cgetvectorfield( S1 )  
@@ -3779,6 +3836,7 @@ cgetvectorfield=0
      enddo
  
      c_master=localmaster
+     if(complex_extra_order==1.and.special_extra_order_1) cgetvectorfield=cgetvectorfield.cut.no
     END FUNCTION cgetvectorfield 
     
   FUNCTION GETdatra( S1, S2 )
@@ -6413,6 +6471,7 @@ endif
 
     call kill(s2i)
     c_master=localmaster
+    if(complex_extra_order==1.and.special_extra_order_1) transform_vector_field_by_map=transform_vector_field_by_map.cut.no
 
   END FUNCTION transform_vector_field_by_map
 
@@ -6473,7 +6532,7 @@ endif
 endif
     c_concat=tempnew
 
-
+    if(complex_extra_order==1.and.special_extra_order_1) c_concat=c_concat.cut.no
 
 
     call kill(t1);call kill(t2);call kill(tempnew);
@@ -6481,21 +6540,21 @@ endif
 
   END FUNCTION c_concat
 
-  FUNCTION c_concat_da(S1,S2)
+  FUNCTION c_concat_tpsa(S1,S2)
     implicit none
-    TYPE (c_damap) c_concat_da,t1,t2,tempnew
+    TYPE (c_damap) c_concat_tpsa,t1,t2,tempnew
     TYPE (c_damap), INTENT (IN) :: S1, S2
     complex(dp) f2it(6,6),f2i(6,6)
 
     logical(lp) rad1,rad2
     integer localmaster
      IF(.NOT.C_STABLE_DA) then
-     c_concat_da%v%i=0
+     c_concat_tpsa%v%i=0
      RETURN
      endif
     localmaster=c_master
-    c_concat_da%n=s1%n
-    call c_assmap(c_concat_da)
+    c_concat_tpsa%n=s1%n
+    call c_assmap(c_concat_tpsa)
     t1%n=s1%n
     t2%n=s2%n
     tempnew%n=t1%n
@@ -6531,15 +6590,16 @@ endif
       tempnew%e_ij=t1%e_ij + matmul(matmul(f2i,t2%e_ij),f2it)
     endif
 endif
-    c_concat_da=tempnew
+    c_concat_tpsa=tempnew
 
 
+   if(complex_extra_order==1.and.special_extra_order_1) c_concat_tpsa=c_concat_tpsa.cut.no
 
 
     call kill(t1);call kill(t2);call kill(tempnew);
     c_master=localmaster
 
-  END FUNCTION c_concat_da
+  END FUNCTION c_concat_tpsa
 
   FUNCTION c_adjoint(S1,S2,i)
     implicit none
@@ -6582,7 +6642,7 @@ endif
     endif
 
     endif
-    
+       if(complex_extra_order==1.and.special_extra_order_1) c_adjoint=c_adjoint.cut.no
     c_similarity=my_false
     
     c_master=localmaster
@@ -6634,6 +6694,8 @@ endif
 
     endif
     
+       if(complex_extra_order==1.and.special_extra_order_1) c_adjoint_vec=c_adjoint_vec.cut.no
+
     c_similarity=my_false
     
     c_master=localmaster
@@ -6669,7 +6731,8 @@ endif
       enddo
      enddo
      
- 
+        if(complex_extra_order==1.and.special_extra_order_1) c_spinmatrix_spinmatrix=c_spinmatrix_spinmatrix.cut.no
+
     c_master=localmaster
 
   END FUNCTION c_spinmatrix_spinmatrix
@@ -6726,7 +6789,8 @@ endif
       enddo
      enddo
      
- 
+         if(complex_extra_order==1.and.special_extra_order_1) c_spinmatrix_spinor=c_spinmatrix_spinor.cut.no
+
     c_master=localmaster
 
   END FUNCTION c_spinmatrix_spinor
@@ -6792,7 +6856,7 @@ endif
           c_spinor_cmap%v(i)=s1%v(i)*s2
      enddo
      
- 
+          if(complex_extra_order==1.and.special_extra_order_1) c_spinor_cmap=c_spinor_cmap.cut.no
     c_master=localmaster
 
   END FUNCTION c_spinor_cmap
@@ -7010,7 +7074,8 @@ endif
           c_spinor_spinor%v(1)=s1%v(2)*s2%v(3)-s1%v(3)*s2%v(2)
           c_spinor_spinor%v(2)=s1%v(3)*s2%v(1)-s1%v(1)*s2%v(3)
           c_spinor_spinor%v(3)=s1%v(1)*s2%v(2)-s1%v(2)*s2%v(1)
- 
+           if(complex_extra_order==1.and.special_extra_order_1) c_spinor_spinor=c_spinor_spinor.cut.no
+
     c_master=localmaster
 
   END FUNCTION c_spinor_spinor
@@ -7035,7 +7100,7 @@ endif
         c_trxspinmatrix%s(i,j)=s1%s(i,j)*s2
        enddo
       enddo
-    
+     if(complex_extra_order==1.and.special_extra_order_1) c_trxspinmatrix=c_trxspinmatrix.cut.no
     c_master=localmaster
 
   END FUNCTION c_trxspinmatrix
@@ -7060,7 +7125,7 @@ endif
         c_trxspinmatrixda%s(i,j)=s1%s(i,j).o.s2
        enddo
       enddo
-    
+         if(complex_extra_order==1.and.special_extra_order_1) c_trxspinmatrixda=c_trxspinmatrixda.cut.no
     c_master=localmaster
 
   END FUNCTION c_trxspinmatrixda
@@ -7393,7 +7458,7 @@ endif
 
     s22%s=s1*s2%s
  
-
+         if(complex_extra_order==1.and.special_extra_order_1) c_bra_v_dm=c_bra_v_dm.cut.no
      c_bra_v_dm=s22
 
     call kill(s22)
@@ -7440,7 +7505,7 @@ endif
   
 
     powmap=s11
-
+         if(complex_extra_order==1.and.special_extra_order_1) powmap=powmap.cut.no
 
     call kill(s11)
 
@@ -7490,7 +7555,7 @@ endif
   
 
     powmaps=s11%s
-
+         if(complex_extra_order==1.and.special_extra_order_1) powmaps=powmaps.cut.no
 
     call kill(s11)
     call kill(s1)
@@ -8343,7 +8408,8 @@ implicit none
      t=l**(-1)*t
     endif
      epso=-no
-     call c_flofacg(t,f,epso)
+     f=log(t,epso=epso)
+     !call c_flofacg(t,f,epso)
      
     call kill(t)
     
@@ -8517,7 +8583,11 @@ end subroutine c_full_canonise
     type(c_spinor) n0,nr
 
     not=no
-    if(present(no_used)) not=no_used  ! sometimes only linear stuff is needed
+    if(present(no_used)) then
+      not=no_used  ! sometimes only linear stuff is needed
+    else
+       if(complex_extra_order==1.and.special_extra_order_1) not=not-1
+    endif
 
     dospinr=.false.
     if(present(dospin)) dospinr=dospin
@@ -9121,7 +9191,7 @@ end subroutine c_full_canonise
     call c_assmap(c_add_map)
     
     do i=1,s1%n
-      tt=c_add_map%v(i)+ c_add_map%v(i) 
+      tt=s1%v(i)+ s2%v(i) 
       c_add_map%v(i)=tt
     enddo
     c_add_map%s=s1%s+ s1%s 
@@ -9189,6 +9259,39 @@ end subroutine c_full_canonise
  call kill(tt)
   end function c_1_vf
 
+      function c_1_map(s1,c)   !,eps,nrmax)
+    implicit none
+ 
+    integer i,j,localmaster,ci
+    type(c_damap) c_1_map
+    type(c_damap), intent(in):: s1
+    type(c_taylor) tt
+    real(dp) norm
+    integer, optional :: c
+      localmaster=c_master
+     ci=-1
+     if(present(c)) ci=c
+     c_1_map%n=s1%n
+    call alloc(tt)
+    call c_assmap(c_1_map)
+     c_1_map=s1
+    do i=1,s1%n
+      tt=s1%v(i)+ci*(1.d0.cmono.i)
+      c_1_map%v(i)=tt
+    enddo
+    
+    call c_full_norm_spin(s1%s,i,norm)
+    if(i/=0) then
+      do j=1,3
+           c_1_map%s%s(j,j)=c_1_map%s%s(j,j)+ci 
+      enddo
+    endif
+    
+    c_master=localmaster
+ call kill(tt)
+  end function c_1_map
+
+
       function c_add_vf(s1,s2)   !,eps,nrmax)
     implicit none
  
@@ -9246,6 +9349,37 @@ end subroutine c_full_canonise
   end function c_sub_vf
 
 
+    FUNCTION real_mul_map( r,S1 )
+    implicit none
+    TYPE (c_damap) real_mul_map
+    real(dp),intent(in):: r
+    TYPE (c_damap), INTENT (IN) :: S1
+    integer localmaster,i,j
+
+    IF(.NOT.C_STABLE_DA) then
+     real_mul_map%v%i=0
+     RETURN
+     endif
+    localmaster=c_master
+
+    !    call check(s1)
+    real_mul_map%n=s1%n
+    call c_assmap(real_mul_map)
+    
+    do i=1,s1%n
+     real_mul_map%v(i)=r*s1%v(i)
+    enddo
+
+
+    do i=1,3
+    do j=1,3
+     real_mul_map%s%s(i,j)=r*s1%s%s(i,j)
+    enddo
+    enddo
+
+    c_master=localmaster
+
+  END FUNCTION real_mul_map
 
     FUNCTION real_mul_vec( r,S1 )
     implicit none
@@ -9609,7 +9743,7 @@ prec=1.d-8
     xnbefore=1e36_dp
     more=.false.
 !    eps=1e-5_dp
-     eps=abs(epsone)/2  !1.d5
+ 
     nrmax=1000
     xn=1e4_dp
 
@@ -9713,7 +9847,9 @@ prec=1.d-8
           if(xn.ge.epsone.and.(lielib_print(3)==1)) then
              write(6,'(a28,i4,g21.14)') " Norm of linear iteration # ",k,xn
           endif
-          if(xn.lt.eps.or.more) then
+ !         if(xn.lt.eps.or.more) then
+         if(xn.lt.epsone.or.more) then
+
              more=.true.
              if(xn.ge.xnbefore) goto 1000
              xnbefore=xn
@@ -10185,7 +10321,6 @@ endif
     dh%s(1,3)=spin_def*h_axis%v(2)
     dh%s(3,2)=spin_def*h_axis%v(1)
     dh%s(1,2)=-spin_def*h_axis%v(3)
-    dh%s(3,1)=-spin_def*h_axis%v(2)
     dh%s(2,3)=-spin_def*h_axis%v(1)
     
 !    c_spinor_spinmatrix=dh*ds
@@ -10340,7 +10475,7 @@ endif
 
 
     check=.true.
-    eps=1.d-5
+    eps=1.d-10
     nmax=1000
 
     call alloc(dh)
@@ -10365,7 +10500,7 @@ endif
     c=1.0_dp
     norm1=mybig
     do i=1,nmax
- 
+
        dh=h*dh
        c=c/i
 
@@ -10381,7 +10516,7 @@ endif
              check=.false.
           endif
        else
-          if(norm2>=norm1) exit
+         if(norm2>=norm1) exit
        endif
        norm1=norm2
     enddo
@@ -10398,6 +10533,25 @@ endif
  
     c_master=localmaster
   end   function c_exp_vectorfield_on_spinmatrix
+
+  subroutine c_full_norm_damap(m,norm) ! spin routine
+    implicit none
+    TYPE(c_damap), INTENT(IN) :: m
+    real(dp) norm
+    integer i,j
+
+    norm=0.0_dp
+    do i=1,m%n
+          norm=norm+full_abs( m%v(i) )
+    enddo
+
+    do i=1,3
+       do j=1,3
+          norm=norm+full_abs( m%s%s(i,j) )
+       enddo
+    enddo
+
+  end subroutine c_full_norm_damap
 
   subroutine c_full_norm_spinmatrix(s,norm) ! spin routine
     implicit none
@@ -11785,7 +11939,7 @@ subroutine extract_a0(a,a0)
       if(i/=ndpt.and.i/=ndptb) a0t%v(i)=a0t%v(i)+(1.0_dp.cmono.i)      
      enddo  
     if(ndpt/=0) then
-     if(.not.time_symplectic_choice) then
+     if(.not.time_lie_choice) then
          t1=0.0_dp
        do i=1,nd2-ndc2t
          t1=t1+(1.0_dp.cmono.i)*(a0t%v(ndptb).d.i)
@@ -12958,5 +13112,86 @@ call kill(mt);call kill(l); call kill(f);call kill(fs);
 call kill(mm);call kill(t,dt)
 
 end subroutine symplectify_for_sethna
+
+subroutine nth_root(m,mr,n)
+implicit none
+TYPE(c_damap) m,mr
+TYPE(c_damap) dm
+type(c_vector_field) f
+integer, parameter :: nn=36
+real(dp) mt(nn,nn),ma(6,6),bb(nn),im(nn,nn),mm(nn,nn)
+integer i,n,nt,k,a,b,j
+real(dp) xn,norm
+integer ind(6,6),k1(nn),k2(nn)
+
+call alloc(dm)
+call alloc(f)
+k=0
+do i=1,c_%nd2
+do j=1,c_%nd2
+ k=k+1
+ ind(i,j)=k
+k1(k)=i
+k2(k)=j
+enddo
+enddo
+
+
+
+f=c_logf_spin(m)
+
+xn=1.0_dp/n
+f=xn*f
+
+dm=exp(f)
+
+
+
+nt=nn  
+
+ma=dm
+
+
+do i=1,c_%nd2
+do j=1,c_%nd2
+ bb(ind(i,j))=m%e_ij(i,j)
+do a=1,c_%nd2
+do b=1,c_%nd2
+ mt(ind(i,j),ind(a,b))=ma(i,a)*ma(j,b)
+enddo
+enddo
+enddo
+enddo
+
+im=0;mm=0;
+do i=1,nt
+ im(i,i)=1
+enddo
+
+
+do i=0,n-1
+mm=im+mm
+im=matmul(im,mt)
+enddo
+
+ 
+  call matinv(mm,im,nt,nt,i)
+if(i/=0) then
+ write(6,*) "Could not inverse in nth_root",i
+ stop
+endif
+bb=matmul(im,bb)
+ 
+do i=1,nt
+ dm%e_ij(k1(i),k2(i))=bb(i)
+enddo
+
+mr=dm
+
+call kill(f)
+call kill(dm)
+
+end subroutine nth_root
+
 
   END MODULE  c_tpsa

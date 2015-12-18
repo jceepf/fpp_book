@@ -75,7 +75,7 @@ module S_status
 
   PRIVATE EQUALt,ADD,PARA_REMA,EQUALtilt
   !PRIVATE DTILTR,DTILTP,DTILTS
-  PRIVATE DTILTR_EXTERNAL,DTILTP_EXTERNAL
+  PRIVATE DTILTR_EXTERNAL,DTILTP_EXTERNAL,orthonormaliser,orthonormalisep
   PRIVATE CHECK_APERTURE_R,CHECK_APERTURE_P !,CHECK_APERTURE_S
   LOGICAL(lp), target:: electron
   real(dp), target :: muon=1.0_dp
@@ -139,6 +139,7 @@ module S_status
   integer :: aperture_pos_default=0
   private track_TREE_G_complexr,track_TREE_G_complexp,track_TREE_probe_complexr,track_TREE_probe_complexp
   integer :: size_tree=6+9
+  integer :: ind_spin(3,3),k1_spin(9),k2_spin(9)
 
   TYPE B_CYL
      integer firsttime
@@ -217,6 +218,11 @@ module S_status
   INTERFACE B2PERP
      MODULE PROCEDURE B2PERPR
      MODULE PROCEDURE B2PERPP
+  END INTERFACE
+
+  INTERFACE orthonormalise
+     MODULE PROCEDURE orthonormaliser
+     MODULE PROCEDURE orthonormalisep
   END INTERFACE
 
   INTERFACE DTILTD
@@ -1299,7 +1305,7 @@ CONTAINS
     INTEGER, INTENT(IN):: NO1,NP1
     INTEGER ND1,NDEL,NDPT1
     INTEGER,optional :: ND2,NPARA
-    INTEGER  ND2l,NPARAl,n_acc
+    INTEGER  ND2l,NPARAl,n_acc,no1c
     LOGICAL(lp) package
 !    call dd_p !valishev
     doing_ac_modulation_in_ptc=.false.
@@ -1367,7 +1373,8 @@ CONTAINS
     if(present(nd2)) nd2=nd2l
     if(present(npara)) npara=nparal
 ! etienne
-    if(use_complex_in_ptc) call c_init(NO1,nd1,np1+ndel,ndpt1,n_acc,ptc=my_false)  ! PTC false because we will not use the real FPP for acc modulation
+no1c=no1+complex_extra_order
+    if(use_complex_in_ptc) call c_init(NO1c,nd1,np1+ndel,ndpt1,n_acc,ptc=my_false)  ! PTC false because we will not use the real FPP for acc modulation
 !call c_init(c_%NO,c_%nd,c_%np,c_%ndpt,number_of_ac_plane,ptc=my_true)  
 !  subroutine c_init(NO1,NV1,np1,ndpt1,AC_rf,ptc)  !,spin
 !    implicit none
@@ -6388,16 +6395,24 @@ enddo
     TYPE(TREE_ELEMENT), INTENT(INOUT) :: T
     TYPE(c_damap), INTENT(INOUT) :: Ma
     INTEGER N,NP,i,k,j
-    real(dp) norm
+    real(dp) norm,mat(6,6)
     TYPE(taylor), ALLOCATABLE :: M(:)
 
-    ind_spin(1,1)=1;ind_spin(1,2)=2;ind_spin(1,3)=3;
-    ind_spin(2,1)=4;ind_spin(2,2)=5;ind_spin(2,3)=6;
-    ind_spin(3,1)=7;ind_spin(3,2)=8;ind_spin(3,3)=9;
+
     
     np=ma%n+9
-     
-    ind_spin=ind_spin+ma%n
+    ind_spin(1,1)=1+ma%n;ind_spin(1,2)=2+ma%n;ind_spin(1,3)=3+ma%n;
+    ind_spin(2,1)=4+ma%n;ind_spin(2,2)=5+ma%n;ind_spin(2,3)=6+ma%n;
+    ind_spin(3,1)=7+ma%n;ind_spin(3,2)=8+ma%n;ind_spin(3,3)=9+ma%n;    
+    k1_spin(1)=1;k2_spin(1)=1;
+    k1_spin(2)=1;k2_spin(2)=2;
+    k1_spin(3)=1;k2_spin(3)=3;
+    k1_spin(4)=2;k2_spin(4)=1;
+    k1_spin(5)=2;k2_spin(5)=2;
+    k1_spin(6)=2;k2_spin(6)=3;
+    k1_spin(7)=3;k2_spin(7)=1;
+    k1_spin(8)=3;k2_spin(8)=2;
+    k1_spin(9)=3;k2_spin(9)=3;
 
     ALLOCATE(M(NP))
     CALL ALLOC(M,NP)
@@ -6423,32 +6438,50 @@ enddo
     endif
 
     call SET_TREE_G(T,M)
-
+ 
+       mat=ma**(-1)
+       t%e_ij=matmul(matmul(mat,ma%e_ij),transpose(mat))
+ 
     deallocate(M)
 
   END SUBROUTINE SET_TREE_G_complex
 
-  SUBROUTINE track_TREE_probe_complexr(T,xs)
+  SUBROUTINE track_TREE_probe_complexr(T,xs,sta)
     use da_arrays
     IMPLICIT NONE
     TYPE(TREE_ELEMENT), INTENT(IN) :: T
     type(probe) xs
-    real(dp) x(size_tree),s0(3,3)
+    real(dp) x(size_tree),s0(3,3),r(3,3)
     integer i,j,k
-
+    type(internal_state) sta
     x=0.e0_dp
     do i=1,6
       x(i)=xs%x(i)
     enddo
 
-    call track_TREE_G_complex(T,X)
-    s0=0.0e0_dp
+    if(sta%radiation) then
+      x(1:6)=matmul(t%rad,x(1:6))
+    endif
 
+    call track_TREE_G_complex(T,X)
+
+    if(sta%spin) then  ! spin
+    s0=0.0e0_dp
+ 
+    do i=1,3
+    do j=1,3
+     r(i,j)=x(ind_spin(i,j))
+    enddo
+    enddo
+
+    call orthonormalise(r)
+    
     do k=1,3
      s0(k,1:3)=0.0e0_dp
      do i=1,3
      do j=1,3
-       s0(k,i)=x(ind_spin(i,j))*xs%s(k)%x(j)+s0(k,i)
+!       s0(k,i)=x(ind_spin(i,j))*xs%s(k)%x(j)+s0(k,i)
+        s0(k,i)=r(i,j)*xs%s(k)%x(j)+s0(k,i)
      enddo
     enddo
     enddo
@@ -6458,39 +6491,93 @@ enddo
        xs%s(k)%x(j)=s0(k,j)
      enddo
     enddo   
-
+    endif ! spin
     do i=1,6
       xs%x(i)=x(i)
     enddo
 
   end SUBROUTINE track_TREE_probe_complexr
 
-  SUBROUTINE track_TREE_probe_complexp(T,xs)
+  SUBROUTINE orthonormaliser(r)
+   implicit none
+   real(dp)  r(3,3),id(3,3),rt(3,3),eps,a,ab
+   integer nmax,i,j,k
+! Furmanizing the rotation 
+    eps=1.d-8
+    nmax=1000
+    id=0
+    do i=1,3
+      id(i,i)=1.5e0_dp
+    enddo
+    ab=1.d8
+    do i=1,nmax
+     rt=matmul(r,transpose(r))
+     r= matmul((id-0.5e0_dp*rt),r)
+
+     a=-3.e0_dp
+     do j=1,3
+     do k=1,3
+      a=a+abs(rt(j,k))
+     enddo
+     enddo
+     a=abs(a)
+     if(a<eps) then
+      if(a>=ab) exit
+      ab=a
+     endif
+    enddo
+    if(i>nrmax-10) then
+     write(6,*) i, a, "did not converge in orthonormaliser"
+      stop
+    endif 
+  end SUBROUTINE orthonormaliser
+
+  SUBROUTINE track_TREE_probe_complexp(T,xs,sta)
     use da_arrays
     IMPLICIT NONE
     TYPE(TREE_ELEMENT), INTENT(IN) :: T
     type(probe_8) xs
-    type(real_8) x(size_tree),s0(3,3)
+    type(real_8) x(size_tree),s0(3,3),r(3,3)
+    real(dp) m(6,6)
+    type(damap) dm
     integer i,j,k
+    type(internal_state) sta
+    
 
     call alloc(x,size_tree)
     do i=1,3
     do j=1,3
      call alloc(s0(i,j))
+     call alloc(r(i,j))
     enddo
     enddo
+
+    if(sta%envelope.and.c_%no>1) then
+    call alloc(dm)
+     dm=xs
+     m=(dm.sub.1)**(-1)
+        xs%e_ij=xs%e_ij+matmul(matmul(m,t%e_ij),transpose(m))
+    call kill(dm)
+     endif
 
     do i=1,6
       x(i)=xs%x(i)
     enddo
 
     call track_TREE_G_complex(T,X)
+    if(sta%spin) then  ! spin
+    do i=1,3
+    do j=1,3
+     r(i,j)=x(ind_spin(i,j))
+    enddo
+    enddo
 
+    call orthonormalise(r)
 
     do k=1,3
      do i=1,3
      do j=1,3
-       s0(k,i)=x(ind_spin(i,j))*xs%s(k)%x(j)+s0(k,i)
+       s0(k,i)=r(i,j)*xs%s(k)%x(j)+s0(k,i)
      enddo
     enddo
     enddo
@@ -6500,21 +6587,119 @@ enddo
        xs%s(k)%x(j)=s0(k,j)
      enddo
     enddo   
+endif ! spin
 
     do i=1,6
       xs%x(i)=x(i)
     enddo
 
+
+
     call kill(x,size_tree)
     do i=1,3
     do j=1,3
      call kill(s0(i,j))
+     call kill(r(i,j))
     enddo
     enddo
 
   end SUBROUTINE track_TREE_probe_complexp
 
+  SUBROUTINE orthonormalisep(r)
+   implicit none
+   type(real_8)  r(3,3),id(3,3),rt(3,3)
+    real(dp) eps,a,ab
+   integer nmax,i,j,k
+! Furmanizing the rotation  
+    do i=1,3
+    do j=1,3
+     call alloc(id(i,j))
+     call alloc(rt(i,j))
+    enddo
+    enddo
+    eps=1.d-8
+    nmax=1000
+    do i=1,3
+      id(i,i)=1.5e0_dp
+    enddo
+    ab=1.d8
+    do i=1,nmax
+    ! rt=matmul(r,transpose(r))
+    ! r= matmul((id-0.5e0_dp*rt),r)
 
+      call furman_rrt(r,r,rt)
+
+     a=-3.e0_dp
+     do j=1,3
+     do k=1,3
+      a=a+abs(rt(j,k))
+     enddo
+     enddo
+     a=abs(a)
+     if(a<eps) then
+      if(a>=ab) exit
+      ab=a
+     endif
+    enddo
+    if(i>nrmax-10) then
+     write(6,*) i, a, "did not converge in orthonormalisep"
+     ! stop
+    endif 
+    do i=1,3
+    do j=1,3
+     call kill(id(i,j))
+     call kill(rt(i,j))
+    enddo
+    enddo
+  end SUBROUTINE orthonormalisep
+
+  SUBROUTINE furman_rrt(r,s,rt)
+   implicit none
+   type(real_8)  r(3,3),s(3,3),rt(3,3),id(3,3),ik(3,3)
+   integer i,j,k
+
+    do i=1,3
+    do j=1,3
+     call alloc(id(i,j))
+     call alloc(ik(i,j))
+    enddo
+    enddo
+
+      do i=1,3
+       ik(i,i)=1.5e0_dp
+      do j=1,3
+      do k=1,3
+       id(i,k)=r(i,j)*r(k,j)+id(i,k)
+      enddo
+      enddo
+      enddo
+
+    do i=1,3
+    do j=1,3
+     rt(i,j)=id(i,j)
+     id(i,j)=0.e0_dp
+    enddo
+    enddo
+
+    do i=1,3
+    do j=1,3
+    do k=1,3
+      id(i,k)=(ik(i,j)-0.5e0_dp*rt(i,j))*r(j,k)+ id(i,k)
+    enddo
+    enddo
+    enddo
+
+
+
+    do i=1,3
+    do j=1,3
+     s(i,j)=id(i,j)
+     call kill(id(i,j))
+     call kill(ik(i,j))
+    enddo
+    enddo
+
+end   SUBROUTINE furman_rrt
 
   SUBROUTINE track_TREE_G_complexr(T,XI)
     use da_arrays
@@ -6595,5 +6780,6 @@ enddo
     call kill(xx)
 
   END SUBROUTINE track_TREE_G_complexp
+
 
 end module S_status

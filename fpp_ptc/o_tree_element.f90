@@ -46,7 +46,7 @@ module tree_element_MODULE
   logical :: firstfac=.true.
   integer, private, parameter :: nfac=20
   real(dp), private :: fac(0:nfac)
-  integer :: ind_spin(3,3)
+
 
   INTERFACE assignment (=)
      !
@@ -280,6 +280,8 @@ CONTAINS
     U%no=T%no
     U%FIX=T%FIX
     U%FIX0=T%FIX0
+    U%e_ij=T%e_ij
+    U%rad=T%rad
 
 
   END SUBROUTINE COPY_TREE
@@ -302,7 +304,7 @@ CONTAINS
     IMPLICIT NONE
     TYPE(TREE_ELEMENT), INTENT(INOUT) :: T
 
-    NULLIFY(T%CC,T%JL,T%JV,T%N,T%NP,T%no,t%fix,t%fix0)
+    NULLIFY(T%CC,T%JL,T%JV,T%N,T%NP,T%no,t%fix,t%fix0,t%e_ij,t%rad)
 
   END SUBROUTINE NULL_TREE
 
@@ -311,15 +313,21 @@ CONTAINS
     IMPLICIT NONE
     TYPE(TREE_ELEMENT), INTENT(INOUT) :: T
     INTEGER , INTENT(IN) :: N,np
-
+    integer i
     !IF(N==0) RETURN
 
-    ALLOCATE(T%CC(N),T%fix0(np),T%fix(np),T%JL(N),T%JV(N),T%N,T%np,T%no)
+    ALLOCATE(T%CC(N),T%fix0(np),T%fix(np),T%JL(N),T%JV(N),T%N,T%np,T%no,t%e_ij(c_%nd2,c_%nd2),T%rad(c_%nd2,c_%nd2))
     T%N=N
     T%np=np
     T%no=0
     T%fix=0.0_dp
     T%fix0=0.0_dp
+    T%e_ij=0.0_dp
+    T%rad=0.0_dp
+    do i=1,c_%nd2
+     T%rad(i,i)=1.0_dp
+    enddo
+
   END SUBROUTINE ALLOC_TREE
 
   SUBROUTINE SET_TREE(T,MA)
@@ -476,7 +484,7 @@ CONTAINS
     TYPE(TREE_ELEMENT), INTENT(INOUT) :: T
 
 
-    IF(ASSOCIATED(T%CC))   DEALLOCATE(T%CC,T%fix0,T%fix,T%JL,T%JV,T%N,T%NP,T%No)
+    IF(ASSOCIATED(T%CC))   DEALLOCATE(T%CC,T%fix0,T%fix,T%JL,T%JV,T%N,T%NP,T%No,t%e_ij,t%rad)
 
 
   END SUBROUTINE KILL_TREE

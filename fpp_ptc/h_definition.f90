@@ -261,6 +261,8 @@ module definition
      real(dp) ,  DIMENSION(:), POINTER :: fix,fix0
      integer,  DIMENSION(:), POINTER :: JL,JV
      INTEGER,POINTER :: N,NP,no
+     real(dp), pointer :: e_ij(:,:)
+     real(dp), pointer :: rad(:,:)
   end  type tree_element
   !@3 ---------------------------------------------</br>
  

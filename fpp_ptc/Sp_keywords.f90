@@ -495,9 +495,9 @@ nmark=0
 !     write(MF,*) phase0,compute_stoch_kick,l%start%charge, " PHASE0, compute_stoch_kick, CHARGE"
     write(MF,*) CAVITY_TOTALPATH,ALWAYS_EXACTMIS,ALWAYS_EXACT_PATCHING, &
          "CAVITY_TOTALPATH,ALWAYS_EXACTMIS,ALWAYS_EXACT_PATCHING"
-    write(line,*) SECTOR_NMUL,sector_nmul_max,&
+    write(line,*) sector_nmul_max,SECTOR_NMUL,&
          OLD_IMPLEMENTATION_OF_SIXTRACK,HIGHEST_FRINGE,&
-         " SECTOR_NMUL,SECTOR_NMUL_MAX,OLD_IMPLEMENTATION_OF_SIXTRACK,HIGHEST_FRINGE"
+         " SECTOR_NMUL_MAX,SECTOR_NMUL,OLD_IMPLEMENTATION_OF_SIXTRACK,HIGHEST_FRINGE"
     write(mf,'(a255)')line
     write(line,*) wedge_coeff,valishev, " wedge_coeff", " Valishev Multipole "
     write(mf,'(a255)')line
