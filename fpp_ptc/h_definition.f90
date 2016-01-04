@@ -258,11 +258,13 @@ module definition
   !@3 ---------------------------------------------</br>
   type  tree_element   !@1  USED FOR FAST TRACKING IN O_TREE_ELEMENT.F90
      real(dp) ,  DIMENSION(:), POINTER :: CC
-     real(dp) ,  DIMENSION(:), POINTER :: fix,fix0
+     real(dp) ,  DIMENSION(:), POINTER :: fixr,fix,fix0
      integer,  DIMENSION(:), POINTER :: JL,JV
      INTEGER,POINTER :: N,NP,no
      real(dp), pointer :: e_ij(:,:)
      real(dp), pointer :: rad(:,:)
+     real(dp), pointer :: ds,beta0,eps
+     logical, pointer :: symptrack,usenonsymp
   end  type tree_element
   !@3 ---------------------------------------------</br>
  

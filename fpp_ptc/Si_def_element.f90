@@ -2539,7 +2539,7 @@ ENDIF
     nullify(EL%SIAMESE_FRAME);
     nullify(EL%girder_FRAME);
     nullify(EL%doko);
-    nullify(EL%tree,EL%branch);
+    nullify(EL%forward,EL%backWARD,el%usef,el%useb);
   end SUBROUTINE null_EL
 
   SUBROUTINE null_ELp(EL)
@@ -2591,7 +2591,7 @@ ENDIF
     nullify(EL%PA);
     nullify(EL%P);
     nullify(EL%PARENT_FIBRE);
-    nullify(EL%tree,EL%branch);
+    nullify(EL%forward,EL%backWARD,el%usef,el%useb);
   end SUBROUTINE null_ELp
 
 
@@ -2726,14 +2726,16 @@ ENDIF
           DEALLOCATE(EL%WI)
        ENDIF
 
-       IF(ASSOCIATED(EL%tree))        then
-          call kill(EL%tree)     
-          DEALLOCATE(EL%tree)
+       IF(ASSOCIATED(EL%forward))        then
+          call kill(EL%forward)     
+          DEALLOCATE(EL%forward)
+          DEALLOCATE(EL%usef)
        ENDIF
 
-       IF(ASSOCIATED(EL%branch))        then
-          call kill(EL%branch)     
-          DEALLOCATE(EL%branch)
+       IF(ASSOCIATED(EL%backWARD))        then
+          call kill(EL%backWARD)     
+          DEALLOCATE(EL%backWARD)
+          DEALLOCATE(EL%useb)
        ENDIF
 
        IF(ASSOCIATED(EL%ramp))        then
@@ -2938,14 +2940,16 @@ ENDIF
           DEALLOCATE(EL%WI)
        ENDIF
 
-       IF(ASSOCIATED(EL%tree))        then
-          call kill(EL%tree)     
-          DEALLOCATE(EL%tree)
+       IF(ASSOCIATED(EL%forward))        then
+          call kill(EL%forward)     
+          DEALLOCATE(EL%forward)
+          DEALLOCATE(EL%usef)
        ENDIF
 
-       IF(ASSOCIATED(EL%branch))        then
-          call kill(EL%branch)     
-          DEALLOCATE(EL%branch)
+       IF(ASSOCIATED(EL%backWARD))        then
+          call kill(EL%backWARD)     
+          DEALLOCATE(EL%backWARD)
+          DEALLOCATE(EL%useb)
        ENDIF
 
        IF(ASSOCIATED(EL%ramp))        then
@@ -3439,25 +3443,31 @@ ENDIF
     !       ELP%PARENT_FIBRE=>EL%PARENT_FIBRE
     !    ENDIF
 
-       IF(ASSOCIATED(EL%branch))        then
-         if(associated(elp%branch)) then
-          call kill(ELp%branch)     
-          DEALLOCATE(ELp%branch)
+       IF(ASSOCIATED(EL%backWARD))        then
+         if(associated(elp%backWARD)) then
+          call kill(ELp%backWARD)     
+          DEALLOCATE(ELp%backWARD)
          endif
-         allocate(elp%branch)
-         call alloc_tree(elp%branch,el%branch%n,elp%branch%np)
-         call COPY_TREE(EL%branch,ELp%branch)
+         allocate(ELp%backWARD(3))
+         do i=1,3
+         call alloc_tree(ELp%backWARD(i),ELp%backWARD(i)%n,ELp%backWARD(i)%np)
+         enddo
+         call COPY_TREE_N(EL%backWARD,ELp%backWARD)
+         ELp%useb= EL%useb
        ENDIF
  
 
-       IF(ASSOCIATED(EL%tree))        then
-         if(associated(elp%tree)) then
-          call kill(ELp%tree)     
-          DEALLOCATE(ELp%tree)
+       IF(ASSOCIATED(EL%forward))        then
+         if(associated(elp%forward)) then
+          call kill(ELp%forward)     
+          DEALLOCATE(ELp%forward)
          endif
-         allocate(elp%tree)
-         call alloc_tree(elp%tree,el%tree%n,elp%tree%np)
-         call COPY_TREE(EL%tree,ELp%tree)
+         allocate(elp%forward(3))
+         do i=1,3
+         call alloc_tree(elp%forward(i),el%forward(i)%n,elp%forward(i)%np)
+         enddo
+         call COPY_TREE_N(EL%forward,ELp%forward)
+         ELp%usef= EL%usef
        ENDIF
 
   END SUBROUTINE copy_el_elp
@@ -3802,25 +3812,31 @@ ENDIF
     ENDIF
 
 
-       IF(ASSOCIATED(EL%branch))        then
-         if(associated(elp%branch)) then
-          call kill(ELp%branch)     
-          DEALLOCATE(ELp%branch)
+       IF(ASSOCIATED(EL%backWARD))        then
+         if(associated(elp%backWARD)) then
+          call kill(ELp%backWARD)     
+          DEALLOCATE(ELp%backWARD)
          endif
-         allocate(elp%branch)
-         call alloc_tree(elp%branch,el%branch%n,elp%branch%np)
-         call COPY_TREE(EL%branch,ELp%branch)
+         allocate(ELp%backWARD(3))
+         do i=1,3
+         call alloc_tree(ELp%backWARD(i),ELp%backWARD(i)%n,ELp%backWARD(i)%np)
+         enddo
+         call COPY_TREE_N(EL%backWARD,ELp%backWARD)
+         ELp%useb= EL%useb
        ENDIF
  
 
-       IF(ASSOCIATED(EL%tree))        then
-         if(associated(elp%tree)) then
-          call kill(ELp%tree)     
-          DEALLOCATE(ELp%tree)
+       IF(ASSOCIATED(EL%forward))        then
+         if(associated(elp%forward)) then
+          call kill(ELp%forward)     
+          DEALLOCATE(ELp%forward)
          endif
-         allocate(elp%tree)
-         call alloc_tree(elp%tree,el%tree%n,elp%tree%np)
-         call COPY_TREE(EL%tree,ELp%tree)
+         allocate(ELp%forward(3))
+         do i=1,3
+         call alloc_tree(ELp%forward(i),ELp%forward(i)%n,ELp%forward(i)%np)
+         enddo
+         call COPY_TREE_N(EL%forward,ELp%forward)
+         ELp%usef= EL%usef
        ENDIF
   END SUBROUTINE copy_elp_el
 
@@ -4168,25 +4184,31 @@ ENDIF
     !    ENDIF
 
 
-       IF(ASSOCIATED(EL%branch))        then
-         if(associated(elp%branch)) then
-          call kill(ELp%branch)     
-          DEALLOCATE(ELp%branch)
+       IF(ASSOCIATED(EL%backWARD))        then
+         if(associated(elp%backWARD)) then
+          call kill(ELp%backWARD)     
+          DEALLOCATE(ELp%backWARD)
          endif
-         allocate(elp%branch)
-         call alloc_tree(elp%branch,el%branch%n,elp%branch%np)
-         call COPY_TREE(EL%branch,ELp%branch)
+         allocate(ELp%backWARD(3))
+         do i=1,3
+         call alloc_tree(ELp%backWARD(i),ELp%backWARD(i)%n,ELp%backWARD(i)%np)
+         enddo
+         call COPY_TREE_N(EL%backWARD,ELp%backWARD)
+         ELp%useb= EL%useb
        ENDIF
  
 
-       IF(ASSOCIATED(EL%tree))        then
-         if(associated(elp%tree)) then
-          call kill(ELp%tree)     
-          DEALLOCATE(ELp%tree)
+       IF(ASSOCIATED(EL%forward))        then
+         if(associated(elp%forward)) then
+          call kill(ELp%forward)     
+          DEALLOCATE(ELp%forward)
          endif
-         allocate(elp%tree)
-         call alloc_tree(elp%tree,el%tree%n,elp%tree%np)
-         call COPY_TREE(EL%tree,ELp%tree)
+         allocate(ELp%forward(3))
+         do i=1,3
+         call alloc_tree(ELp%forward(i),ELp%forward(i)%n,ELp%forward(i)%np)
+         enddo
+         call COPY_TREE_N(EL%forward,ELp%forward)
+         ELp%usef= EL%usef
        ENDIF
 
   END SUBROUTINE copy_el_el

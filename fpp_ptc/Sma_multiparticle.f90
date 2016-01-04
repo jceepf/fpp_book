@@ -1140,10 +1140,10 @@ TA=T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==1.OR.T%PARENT_FIB
           call BBKICK(t%bb,X)
           if(t%bb%patch)call PATCH_BB(t%bb,X,k,EL%p%BETA0,ALWAYS_EXACT_PATCHING.or.EL%P%EXACT,my_false)
        endif
-       IF(ASSOCIATED(T%T)) CALL TRACK(T%T,X)
+!       IF(ASSOCIATED(T%T)) CALL TRACK(T%T,X)
     case(CASETF1,CASETF2)
 
-       IF(ASSOCIATED(T%T)) CALL TRACK(T%T,X)
+!       IF(ASSOCIATED(T%T)) CALL TRACK(T%T,X)
 
 
     END SELECT
@@ -1345,10 +1345,10 @@ TA=T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==1.OR.T%PARENT_FIB
           call BBKICK(t%bb,X)
           if(t%bb%patch)call PATCH_BB(t%bb,X,k,EL%p%BETA0,ALWAYS_EXACT_PATCHING.or.EL%P%EXACT,my_false)
        endif
-       IF(ASSOCIATED(T%T)) CALL TRACK(T%T,X)
+ !      IF(ASSOCIATED(T%T)) CALL TRACK(T%T,X)
     case(CASETF1,CASETF2)
 
-       IF(ASSOCIATED(T%T)) CALL TRACK(T%T,X)
+ !      IF(ASSOCIATED(T%T)) CALL TRACK(T%T,X)
 
 
 

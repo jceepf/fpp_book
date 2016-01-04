@@ -2365,7 +2365,7 @@ end subroutine c_get_indices
 !     call c_flofacg(s1,c_logf_spin,epso,n)
   if(complex_extra_order==1.and.special_extra_order_1) c_logf_spin=c_logf_spin.cut.no
     c_master=localmaster
-pause
+
   END FUNCTION c_logf_spin
 
   FUNCTION c_logf( s1,h,epso,n,tpsa )
@@ -7623,11 +7623,14 @@ endif
      do i=1,s2%n
       s2%v(i)=1.0_dp.cmono.i
      enddo
+     s2%s=1
     elseIF(S1.EQ.0)  then
      do i=1,s2%n
       s2%v(i)=(0.0_dp,0.0_dp)
      enddo
+     s2%s=0
    endif
+
      s2%e_ij=0.0_dp
   END SUBROUTINE c_IdentityEQUALMAP
 
@@ -13015,9 +13018,10 @@ end  subroutine normalise_vector_field_fourier
  
 end  subroutine normalise_vector_field_fourier_factored
 
-subroutine symplectify_for_sethna(m,ms)
+subroutine symplectify_for_sethna(m,ms,norma)
 implicit none
 TYPE(c_damap),intent(inout):: m,ms
+real(dp),optional:: norma
 TYPE(c_damap) mt,l
 type(damap) mm
 type(c_vector_field) f,fs
@@ -13028,7 +13032,7 @@ integer i,j,k,n(11),nv,nd2,al,ii,a
 integer, allocatable :: je(:)
 real(dp) dm,norm,normb
 
-call c_get_indices(n,6)
+call c_get_indices(n,0)
 nv=n(4)
 nd2=n(3)
 
@@ -13045,15 +13049,23 @@ do i=1,nd2/2
  Id(2*I-1,2*I-1)=1 ; id(2*I,2*I)=1;
 enddo
 
-mt=m
-call c_factor_map(mt,l,f,dir=-1)  
 
+if(nv-nd2==0) then
+mt=m
+ call c_factor_map(mt,l,f,dir=-1)  
 mat=l
+else
+mat=m
+l=mat
+mt=l**(-1)*m
+f=log(mt)
+endif
+
+
+
 matt=transpose(mat)
 
 mm=l
-call print(l,6)
-pause 333
 
 
 ! constructing Furman's contracting matrix from my review sec.3.8.2
@@ -13106,7 +13118,30 @@ do i=1,f%n
 
 enddo
 
-ms=exp(fs,l)
+l=exp(fs,l)
+
+
+if(present(norma)) then
+ms=m**(-1)*l
+
+norma=0.0_dp
+do i=1,ms%n
+ norma=norma+full_abs(ms%v(i))
+enddo
+
+ norma=abs(norma-ms%n)
+
+endif
+
+ms=l
+
+
+
+
+
+
+
+
 deallocate(je)
 call kill(mt);call kill(l); call kill(f);call kill(fs);
 call kill(mm);call kill(t,dt)
@@ -13124,6 +13159,10 @@ integer i,n,nt,k,a,b,j
 real(dp) xn,norm
 integer ind(6,6),k1(nn),k2(nn)
 
+if(n==1) then
+mr=m
+return
+endif
 call alloc(dm)
 call alloc(f)
 k=0

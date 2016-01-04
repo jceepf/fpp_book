@@ -224,7 +224,8 @@ TYPE ELEMENT
    !   integer, POINTER ::girder_index
    type(girder),pointer :: assembly
    type(ramping), pointer :: ramp
-   type(tree_element), pointer :: tree,branch
+   type(tree_element), pointer :: forward(:)=> null(),backward(:)=> null()
+   logical, pointer :: usef=> null(),useb=> null()
 END TYPE  ELEMENT
 
 
@@ -282,7 +283,8 @@ TYPE ELEMENTP
    TYPE(FIBRE), POINTER :: PARENT_FIBRE
    !   TYPE(fibre_appearance), POINTER :: doko
    type(ramping), pointer :: ramp
-   type(tree_element), pointer :: tree,branch
+   type(tree_element), pointer :: forward(:)=> null(),backward(:)=> null()
+   logical, pointer :: usef=> null(),useb=> null()
 END TYPE  ELEMENTP
 
 type fibre_appearance
@@ -387,7 +389,7 @@ TYPE INTEGRATION_NODE
    TYPE(FIBRE), POINTER :: PARENT_FIBRE
    !   TYPE(EXTRA_WORK), POINTER :: WORK
    TYPE(BEAM_BEAM_NODE), POINTER :: BB
-   TYPE(tree_element), POINTER :: T
+!   TYPE(tree_element), POINTER :: T
 END TYPE INTEGRATION_NODE
 
 TYPE BEAM_LOCATION

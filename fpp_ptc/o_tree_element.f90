@@ -7,7 +7,7 @@ module tree_element_MODULE
   public
   integer,private,parameter::ndd=6
 
-  PRIVATE track_TREE,track_TREEP,KILL_TREE,KILL_TREE_N,SET_TREE
+  PRIVATE track_TREE,track_TREEP,KILL_TREE,KILL_TREE_N   !,SET_TREE
   PRIVATE track_TREE_G,track_TREEP_g
   PRIVATE ALLOC_SPINOR_8,ALLOC_probe_8
   PRIVATE KILL_SPINOR_8,KILL_probe_8
@@ -278,11 +278,17 @@ CONTAINS
     U%N=T%N
     U%NP=T%NP
     U%no=T%no
+    U%FIXr=T%FIXr
+    U%ds=T%ds
+    U%beta0=T%beta0
     U%FIX=T%FIX
     U%FIX0=T%FIX0
     U%e_ij=T%e_ij
     U%rad=T%rad
 
+    U%eps=T%eps
+    U%symptrack=T%symptrack
+    U%usenonsymp=T%usenonsymp
 
   END SUBROUTINE COPY_TREE
 
@@ -304,7 +310,7 @@ CONTAINS
     IMPLICIT NONE
     TYPE(TREE_ELEMENT), INTENT(INOUT) :: T
 
-    NULLIFY(T%CC,T%JL,T%JV,T%N,T%NP,T%no,t%fix,t%fix0,t%e_ij,t%rad)
+    NULLIFY(T%CC,T%JL,T%JV,T%N,T%NP,T%no,t%fixr,t%fix,t%fix0,t%beta0,t%e_ij,t%rad,t%ds)
 
   END SUBROUTINE NULL_TREE
 
@@ -316,17 +322,25 @@ CONTAINS
     integer i
     !IF(N==0) RETURN
 
-    ALLOCATE(T%CC(N),T%fix0(np),T%fix(np),T%JL(N),T%JV(N),T%N,T%np,T%no,t%e_ij(c_%nd2,c_%nd2),T%rad(c_%nd2,c_%nd2))
+
+    ALLOCATE(T%CC(N),T%fix0(np),T%fix(np),T%fixr(np),T%JL(N),T%JV(N),T%N,T%ds,T%beta0,T%np,T%no, & 
+    t%e_ij(c_%nd2,c_%nd2),T%rad(c_%nd2,c_%nd2),t%usenonsymp, t%symptrack, t%eps)
     T%N=N
     T%np=np
     T%no=0
     T%fix=0.0_dp
     T%fix0=0.0_dp
+    T%fixr=0.0_dp
     T%e_ij=0.0_dp
+    T%ds=0.0_dp
+    T%beta0=0.0_dp
     T%rad=0.0_dp
     do i=1,c_%nd2
      T%rad(i,i)=1.0_dp
     enddo
+    t%eps=1.d-7
+    t%symptrack=.false.
+    t%usenonsymp=.false.
 
   END SUBROUTINE ALLOC_TREE
 
@@ -484,7 +498,8 @@ CONTAINS
     TYPE(TREE_ELEMENT), INTENT(INOUT) :: T
 
 
-    IF(ASSOCIATED(T%CC))   DEALLOCATE(T%CC,T%fix0,T%fix,T%JL,T%JV,T%N,T%NP,T%No,t%e_ij,t%rad)
+     IF(ASSOCIATED(T%CC))DEALLOCATE(T%CC,T%fix0,T%fix,T%fixr,t%ds,t%beta0,T%JL,T%JV,T%N,T%NP, &
+    T%No,t%e_ij,t%rad,t%eps,t%symptrack,t%usenonsymp)
 
 
   END SUBROUTINE KILL_TREE
@@ -512,7 +527,7 @@ CONTAINS
     integer n1,k
     REAL(DP) XT(lno),XF(6),XM(lno+1),XX
     INTEGER JC,I,IV
-    xi(1:t%np)=xi(1:t%np)-t%fix
+  !  xi(1:t%np)=xi(1:t%np)-t%fix
     n1=1
     if(present(n)) n1=n
     do k=1,n1
