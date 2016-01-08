@@ -45,6 +45,7 @@ MODULE c_TPSA
   logical(lp),target  :: c_real_warning =.true.
   logical(lp) :: c_mess_up_vector=.false. 
   real(dp) :: a_mess=0.d0 , b_mess=1.d0
+  integer :: i_piotr(3)= (/0,0,0/)
 
   PRIVATE null_it,Set_Up,de_Set_Up,LINE_L,RING_L,kill_DALEVEL,dealloc_DASCRATCH,set_up_level
   private insert_da,append_da,GETINTegrate,c_pek000,c_pok000,cDEQUALDACON
@@ -1563,7 +1564,7 @@ end subroutine c_get_indices
 
     do i=1,n
        call c_taylor_cycle(s1,ii=i,value=value,j=j)
-       x=imag(value)
+       x=aimag(value)
        c_aimag=c_aimag+(x.cmono.j)
    enddo
    
@@ -6168,7 +6169,7 @@ cgetvectorfield=0
   x=s1
   v=0
        if(abs(x)>prec) v=x
-       x=imag(s1)
+       x=aimag(s1)
        if(abs(x)>prec) v=v+i_*x
   c_clean=v
 
@@ -6197,7 +6198,7 @@ cgetvectorfield=0
        v=0.0_dp
        x=value
        if(abs(x)>prec) v=x
-       x=imag(value)
+       x=aimag(value)
        if(abs(x)>prec) v=v+i_*x
 !       if(abs(value)>prec) then
           t=t+(v.cmono.j)
@@ -7434,7 +7435,7 @@ endif
      endif
     localmaster=c_master
 
- 
+     c_bra_v_dm%n=s2%n
     call c_ASSmap(c_bra_v_dm)
      
     s22%n=s2%n
@@ -7949,12 +7950,18 @@ if(.not.c_normal_auto) then
      write(6,'(i2,2(1x,G21.14))') i, reval(i),imval(i)
     enddo
     call c_locate_planes(vr,vi,idef)
- write(6,'(a82)') " The order of the planes has been guessed using the algorithm in c_locate_planes "
- write(6,'(a41)') " Hopefully it is correct! Please check! "
- write(6,'(a18,100(i2,1x))') " Order guessed -> ",idef(1:ndharm)
+if(i_piotr(1)==0.and.nd<=ndharm) then
+  write(6,'(a82)') " The order of the planes has been guessed using the algorithm in c_locate_planes "
+  write(6,'(a41)') " Hopefully it is correct! Please check! "
+  write(6,'(a18,100(i2,1x))') " Order guessed -> ",idef(1:ndharm)
 
- write(6,*) " Manually identify the location of distinct tunes in the order you like "
+  write(6,*) " Manually identify the location of distinct tunes in the order you like "
  read(5,*) idef(1:ndharm)
+ else
+  do j=1,ndharm
+    idef(j)=i_piotr(j)
+  enddo
+ endif
 else
 !!  c_locate_planes tries to locate the planes: important if there is little coupling
 !! I suppose that this routine can be refined
@@ -8078,29 +8085,47 @@ subroutine c_locate_planes(vr,vi,idef)
 !$ asked to choose planes manually. 
     implicit none
     real(dp), intent(in) ::  vr(ndim2t,ndim2t),vi(ndim2t,ndim2t)
+    real(dp) t(ndim2t,ndim2t)
     integer idef(ndim2t/2)
     real(dp) r,rmax
     logical doit
-    integer j,k,kmax
+    integer j,k,jmax,i
 !    idef=0
 ! write(6,*) " nd2,ndc2t ",nd2,ndc2t 
 !pause 
 !      do j=2,nd2-ndc2t,2
-     do j=2,nd2-ndc2t-2*rf,2
-       rmax=0
-       kmax=0
+     do j=1,nd-ndct-rf
+ !      rmax=0
+ !      kmax=0
        do k=1,(nd2-ndc2t)/2
-         r=abs(vr(2*k-1,j))+abs(vr(2*k,j))+abs(vi(2*k-1,j))+abs(vi(2*k,j))
+         r=abs(vr(2*k-1,2*j))+abs(vr(2*k,2*j))+abs(vi(2*k-1,2*j))+abs(vi(2*k,2*j))
+         t(j,k)=r
 
-         if(r>rmax) then
-           rmax=r
-           kmax=k
-         endif
 
        enddo
-      idef(j/2)=2*kmax-1
+  !    idef(j/2)=2*kmax-1
     enddo
    
+
+do k=1,(nd2-ndc2t)/2
+       rmax=0
+       jmax=0
+     do j=1,nd-ndct*rf
+
+
+        r=t(j,k) 
+
+          if(r>rmax) then
+            rmax=r
+            jmax=j
+          endif
+
+       enddo
+
+       idef(k)=2*jmax-1
+     enddo
+
+
  !!!! checking   maybe equal tunes....
       doit=.false.
       do j=1,(nd2-ndc2t-2*rf )/2
@@ -9212,6 +9237,7 @@ end subroutine c_full_canonise
     type(c_damap), intent(in):: s1
     type(c_damap), intent(in) :: s2
     type(c_taylor) tt
+
       localmaster=c_master
 
  
@@ -9220,7 +9246,8 @@ end subroutine c_full_canonise
     call c_assmap(c_sub_map)
     
     do i=1,s1%n
-      tt=c_sub_map%v(i)- c_sub_map%v(i) 
+! etienne was completely wrong fixed 1/5/2016
+      tt=s1%v(i)- s2%v(i) 
       c_sub_map%v(i)=tt
     enddo
     c_sub_map%s=s1%s- s1%s 
@@ -13018,10 +13045,10 @@ end  subroutine normalise_vector_field_fourier
  
 end  subroutine normalise_vector_field_fourier_factored
 
-subroutine symplectify_for_sethna(m,ms,norma)
+subroutine symplectify_for_sethna(m,ms,eps_and_norm)
 implicit none
 TYPE(c_damap),intent(inout):: m,ms
-real(dp),optional:: norma
+real(dp),optional:: eps_and_norm
 TYPE(c_damap) mt,l
 type(damap) mm
 type(c_vector_field) f,fs
@@ -13030,7 +13057,7 @@ type(c_taylor) t,dt
 real(dp),allocatable::  mat(:,:), matt(:,:),S(:,:),id(:,:)
 integer i,j,k,n(11),nv,nd2,al,ii,a
 integer, allocatable :: je(:)
-real(dp) dm,norm,normb
+real(dp) dm,norm,normb,norma
 
 call c_get_indices(n,0)
 nv=n(4)
@@ -13118,24 +13145,45 @@ do i=1,f%n
 
 enddo
 
-l=exp(fs,l)
+mt=exp(fs,l)
 
 
-if(present(norma)) then
-ms=m**(-1)*l
+if(present(eps_and_norm)) then
+ m=m-(m.sub.0)
+ 
+ l=m-mt
+ norma=0.0_dp
+ k=0
 
-norma=0.0_dp
-do i=1,ms%n
- norma=norma+full_abs(ms%v(i))
+do i=1,l%n
+
+       j=1
+
+        do while(.true.) 
+
+          call  c_cycle(l%v(i),j,v ,je); if(j==0) exit;
+       
+          normb=abs(m%v(i).sub.je)
+          norm=abs(v)
+          if(norm>eps_and_norm) then
+          norma=norm/normb+norma
+      !    write(16,*) je
+      !    write(16,*) norma,norm,normb
+          k=k+1
+          endif
+
+
+        enddo
+
 enddo
-
- norma=abs(norma-ms%n)
+!write(6,*) k
+eps_and_norm=norma/k
 
 endif
 
-ms=l
 
 
+ms=mt
 
 
 
@@ -13174,7 +13222,6 @@ k1(k)=i
 k2(k)=j
 enddo
 enddo
-
 
 
 f=c_logf_spin(m)
