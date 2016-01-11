@@ -133,6 +133,7 @@ TYPE MAGNET_CHART
    !
    LOGICAL(lp), POINTER :: EXACT  => null()
    LOGICAL(lp), POINTER :: KILL_ENT_FRINGE => null(),KILL_EXI_FRINGE => null(), bend_fringe => null()
+   LOGICAL(lp), POINTER :: KILL_ENT_SPIN => null(),KILL_EXI_SPIN => null() 
    integer, pointer :: permFRINGE => null(),highest_fringe => null()                 !
    !
    INTEGER, POINTER :: METHOD => null(),NST => null()                   ! METHOD OF INTEGRATION 2,4,OR 6 YOSHIDA

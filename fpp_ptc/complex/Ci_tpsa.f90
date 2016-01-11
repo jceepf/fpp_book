@@ -7958,7 +7958,7 @@ if(i_piotr(1)==0.and.nd<=ndharm) then
   write(6,*) " Manually identify the location of distinct tunes in the order you like "
  read(5,*) idef(1:ndharm)
  else
-  do j=1,ndharm
+  do j=1,size(i_piotr)
     idef(j)=i_piotr(j)
   enddo
  endif

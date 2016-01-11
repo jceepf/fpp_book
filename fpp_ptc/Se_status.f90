@@ -300,6 +300,7 @@ CONTAINS
     nullify(P%EXACT);  !nullify(P%RADIATION);nullify(P%NOCAVITY);
     nullify(P%permFRINGE,p%highest_fringe);
     nullify(P%KILL_ENT_FRINGE);nullify(P%KILL_EXI_FRINGE);nullify(P%bend_fringe);  !nullify(P%TIME);
+    nullify(P%KILL_ENT_SPIN);nullify(P%KILL_EXI_SPIN);
     nullify(P%METHOD);nullify(P%NST);
     nullify(P%NMUL);  !nullify(P%spin);
     nullify(P%F);
@@ -336,6 +337,7 @@ CONTAINS
     ALLOCATE(P%EXACT);  !ALLOCATE(P%RADIATION);ALLOCATE(P%NOCAVITY);
         ALLOCATE(P%permFRINGE,p%highest_fringe);
     ALLOCATE(P%KILL_ENT_FRINGE);ALLOCATE(P%KILL_EXI_FRINGE);ALLOCATE(P%bend_fringe); !ALLOCATE(P%TIME);
+    ALLOCATE(P%KILL_ENT_SPIN);ALLOCATE(P%KILL_EXI_SPIN);
     ALLOCATE(P%METHOD);ALLOCATE(P%NST);P%METHOD=2;P%NST=1;
     ALLOCATE(P%NMUL);P%NMUL=0;
     !    ALLOCATE(P%spin);
@@ -344,6 +346,8 @@ CONTAINS
     p%highest_fringe=highest_fringe
     P%KILL_ENT_FRINGE=.FALSE.
     P%KILL_EXI_FRINGE=.FALSE.
+    P%KILL_ENT_SPIN=.FALSE.
+    P%KILL_EXI_SPIN=.FALSE.
     P%bend_fringe=.false.
     call alloc(p%f)
     ! if(junk) ccc=ccc+1
@@ -387,6 +391,8 @@ CONTAINS
     if(associated(p%highest_fringe))DEALLOCATE(p%highest_fringe);
     if(associated(p%KILL_ENT_FRINGE))DEALLOCATE(P%KILL_ENT_FRINGE);
     if(associated(p%KILL_EXI_FRINGE))DEALLOCATE(P%KILL_EXI_FRINGE);
+    if(associated(p%KILL_ENT_SPIN))DEALLOCATE(p%KILL_ENT_SPIN);
+    if(associated(p%KILL_EXI_SPIN))DEALLOCATE(p%KILL_EXI_SPIN);
     if(associated(p%bend_fringe))DEALLOCATE(P%bend_fringe); !DEALLOCATE(P%TIME);
     if(associated(p%METHOD))DEALLOCATE(P%METHOD);
     !DEALLOCATE(P%spin);
@@ -511,6 +517,8 @@ CONTAINS
 
     elp%KILL_ENT_FRINGE=el%KILL_ENT_FRINGE
     elp%KILL_EXI_FRINGE=el%KILL_EXI_FRINGE
+    elp%KILL_ENT_SPIN=elp%KILL_ENT_SPIN
+    elp%KILL_EXI_SPIN=el%KILL_EXI_SPIN
     elp%bend_fringe=el%bend_fringe
 
     elp%LD=el%LD
