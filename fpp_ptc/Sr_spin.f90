@@ -498,12 +498,21 @@ contains
     endif
 
     if(k%SPIN) then
+     if(EL%kind/=kind3) then
        CO(1)=COS(FAC*DS*OM(1)/2.0_dp)
        SI(1)=SIN(FAC*DS*OM(1)/2.0_dp)
        CO(2)=COS(FAC*DS*OM(2)/2.0_dp)
        SI(2)=SIN(FAC*DS*OM(2)/2.0_dp)
        CO(3)=COS(FAC*DS*OM(3))
        SI(3)=SIN(FAC*DS*OM(3))
+    else
+       CO(1)=COS(FAC*OM(1)/2.0_dp)
+       SI(1)=SIN(FAC*OM(1)/2.0_dp)
+       CO(2)=COS(FAC*OM(2)/2.0_dp)
+       SI(2)=SIN(FAC*OM(2)/2.0_dp)
+       CO(3)=COS(FAC*OM(3))
+       SI(3)=SIN(FAC*OM(3))
+    endif
 
        DO I=ISPIN0R,ISPIN1R
           ST=   CO(1)*p%S(I)%X(2)-SI(1)*p%S(I)%X(3)
@@ -871,12 +880,21 @@ contains
     endif
 
     if(k%SPIN) then
+     if(EL%kind/=kind3) then
        CO(1)=COS(FAC*DS*OM(1)/2.0_dp)
        SI(1)=SIN(FAC*DS*OM(1)/2.0_dp)
        CO(2)=COS(FAC*DS*OM(2)/2.0_dp)
        SI(2)=SIN(FAC*DS*OM(2)/2.0_dp)
        CO(3)=COS(FAC*DS*OM(3))
        SI(3)=SIN(FAC*DS*OM(3))
+    else
+       CO(1)=COS(FAC*OM(1)/2.0_dp)
+       SI(1)=SIN(FAC*OM(1)/2.0_dp)
+       CO(2)=COS(FAC*OM(2)/2.0_dp)
+       SI(2)=SIN(FAC*OM(2)/2.0_dp)
+       CO(3)=COS(FAC*OM(3))
+       SI(3)=SIN(FAC*OM(3))
+    endif
 
        !       ST=   CO(1)*P%S%X(2)-SI(1)*P%S%X(3)
        !       P%S%X(3)= CO(1)*P%S%X(3)+SI(1)*P%S%X(2)
@@ -965,7 +983,7 @@ contains
     CALL get_field(EL,B,E,phi,X,k,POS)
 
     SELECT CASE(EL%KIND)
-    case(KIND2,kind5:kind7,kindwiggler) ! Straight for all practical purposes
+    case(KIND2,kind3,kind5:kind7,kindwiggler) ! Straight for all practical purposes
        CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
        IF(k%TIME) THEN
           DLDS=1.0_dp/root(1.0_dp+2.0_dp*X(5)/P%BETA0+X(5)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
@@ -1120,7 +1138,7 @@ contains
 
     CALL get_field(EL,B,E,phi,X,k,POS)
     SELECT CASE(EL%KIND) 
-    case(KIND2,kind5:kind7,kindwiggler) ! Straight for all practical purposes
+    case(KIND2,kind3,kind5:kind7,kindwiggler) ! Straight for all practical purposes
        CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
        IF(k%TIME) THEN
           DLDS=1.0_dp/SQRT(1.0_dp+2.0_dp*X(5)/P%BETA0+X(5)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
@@ -1292,7 +1310,8 @@ contains
     E=0.0_dp
     phi=0.0_dp
     SELECT CASE(EL%KIND)
-    case(KIND2,kind5:kind7,KIND16:kind17,KIND20) ! Straight for all practical purposes
+    case(KIND2,kind3,kind5:kind7,KIND16:kind17,KIND20) ! Straight for all practical purposes
+
        if(present(pos)) then
           IF(POS<0) THEN
              call get_Bfield_fringe(EL,B,X,pos,k)   ! fringe effect
@@ -1381,7 +1400,7 @@ contains
     ENDDO
     phi=0.0_dp
     SELECT CASE(EL%KIND)
-    case(KIND2,kind5:kind7,KIND16:kind17,KIND20) ! Straight for all practical purposes
+    case(KIND2,kind3,kind5:kind7,KIND16:kind17,KIND20) ! Straight for all practical purposes
        if(present(pos)) then
           IF(POS<0) THEN
              call get_Bfield_fringe(EL,B,X,pos,k)   ! fringe effect
