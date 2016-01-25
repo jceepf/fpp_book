@@ -1302,9 +1302,10 @@ contains
     INTEGER,OPTIONAL,INTENT(IN) ::POS
     REAL(DP),INTENT(INOUT) :: B(3),E(3),phi
     REAL(DP),INTENT(INOUT) :: X(6)
-    REAL(DP) Z,VM,a(3),ad(2)
+    REAL(DP) Z,VM,a(3),ad(3)
     INTEGER I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+
     B=0.0_dp
     E=0.0_dp
     phi=0.0_dp
@@ -1388,7 +1389,7 @@ contains
     TYPE(REAL_8),INTENT(INOUT) :: B(3),E(3),phi
     TYPE(REAL_8), INTENT(INOUT) :: X(6)
     INTEGER I
-    TYPE(REAL_8) z,VM,ad(2),a(3)
+    TYPE(REAL_8) z,VM,ad(3),a(3)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     
     CALL alloc(VM,Z)
