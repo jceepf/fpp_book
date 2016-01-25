@@ -2092,8 +2092,8 @@ CALL FRINGECAV(EL,X,k,2)
     endif
 
     if(present(e)) then
-     E(1)=-ad(2)*x(3)/EL%P%CHARGE
-     E(2)= ad(2)*x(1)/EL%P%CHARGE
+     E(1)=-ad(2)*x(1)/EL%P%CHARGE
+     E(2)=-ad(2)*x(3)/EL%P%CHARGE
      E(3)=A(3)/EL%P%CHARGE
     endif
 
@@ -2155,8 +2155,8 @@ CALL FRINGECAV(EL,X,k,2)
     endif
 
     if(present(e)) then
-     E(1)=-ad(2)*x(3)/EL%P%CHARGE
-     E(2)= ad(2)*x(1)/EL%P%CHARGE
+     E(1)=-ad(2)*x(1)/EL%P%CHARGE
+     E(2)=-ad(2)*x(3)/EL%P%CHARGE
      E(3)=A(3)/EL%P%CHARGE
     endif
 
@@ -15713,8 +15713,8 @@ SUBROUTINE ZEROr_teapot(EL,I)
     endif
 
     if(present(e)) then
-     E(1)=-ad(2)*x(3)/EL%P%CHARGE
-     E(2)= ad(2)*x(1)/EL%P%CHARGE
+     E(1)=-ad(2)*x(1)/EL%P%CHARGE
+     E(2)=-ad(2)*x(3)/EL%P%CHARGE
      E(3)=EL%P%DIR*A(3)/EL%P%CHARGE
     endif
 
@@ -15760,8 +15760,8 @@ SUBROUTINE ZEROr_teapot(EL,I)
     endif
 
     if(present(e)) then
-     E(1)=-ad(2)*x(3)/EL%P%CHARGE
-     E(2)= ad(2)*x(1)/EL%P%CHARGE
+     E(1)=-ad(2)*x(1)/EL%P%CHARGE
+     E(2)=-ad(2)*x(3)/EL%P%CHARGE
      E(3)=EL%P%DIR*A(3)/EL%P%CHARGE
     endif
 

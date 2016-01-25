@@ -1358,7 +1358,15 @@ contains
       endif
 
     CASE(KIND21)     ! travelling wave cavity
-       WRITE(6,*) EL%KIND,EL%NAME," NOT DONE "
+       IF(EL%c4%P%DIR==1) THEN
+          Z= pos*el%l/el%p%nst
+       ELSE
+          Z=EL%L-pos*el%l/el%p%nst
+       ENDIF
+
+       call A_TRANS(EL%cav21,Z,X,k,A,AD,B,E)
+
+
     CASE(KIND22)     ! helical dipole
        IF(EL%HE22%P%DIR==1) THEN
           Z= pos*el%l/el%p%nst
@@ -1439,7 +1447,7 @@ contains
         CALL GET_BE_CAV(EL%C4,B,E,X,k)
       else
        call alloc(a,3)
-       call alloc(ad,2)
+       call alloc(ad,3)
        IF(EL%c4%P%DIR==1) THEN
           Z= pos*el%l/el%p%nst
        ELSE
@@ -1447,10 +1455,20 @@ contains
        ENDIF
        call  Abmad_TRANS(EL%C4,Z,X,k,A,AD,B,E) 
        call kill(a,3)
-       call kill(ad,2)
+       call kill(ad,3)
       endif
     CASE(KIND21)     ! travelling wave cavity
-       WRITE(6,*) EL%KIND,EL%NAME," NOT DONE "
+       call alloc(a,3)
+       call alloc(ad,3)
+       IF(EL%c4%P%DIR==1) THEN
+          Z= pos*el%l/el%p%nst
+       ELSE
+          Z=EL%L-pos*el%l/el%p%nst
+       ENDIF
+
+       call A_TRANS(EL%cav21,Z,X,k,A,AD,B,E)
+       call kill(a,3)
+       call kill(ad,3)
     CASE(KIND22)     ! helical dipole
        IF(EL%HE22%P%DIR==1) THEN
           Z= pos*el%l/el%p%nst
