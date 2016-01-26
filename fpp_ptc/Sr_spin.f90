@@ -1358,7 +1358,7 @@ contains
       endif
 
     CASE(KIND21)     ! travelling wave cavity
-       IF(EL%c4%P%DIR==1) THEN
+       IF(EL%cav21%P%DIR==1) THEN
           Z= pos*el%l/el%p%nst
        ELSE
           Z=EL%L-pos*el%l/el%p%nst
@@ -1460,7 +1460,7 @@ contains
     CASE(KIND21)     ! travelling wave cavity
        call alloc(a,3)
        call alloc(ad,3)
-       IF(EL%c4%P%DIR==1) THEN
+       IF(EL%cav21%P%DIR==1) THEN
           Z= pos*el%l/el%p%nst
        ELSE
           Z=EL%L-pos*el%l/el%p%nst
