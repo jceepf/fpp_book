@@ -66,7 +66,7 @@ integer, private :: nd2t=6,ndt=3,ndc2t=2,ndct=1,nd2harm,ndharm
 logical(lp), private ::   c_similarity=my_false
 logical(lp) :: symp =my_false
 logical(lp) :: c_normal_auto=my_true,c_verbose=my_true
-integer :: spin_tune_def=-1,spin_def=-1   !, private 
+integer :: spin_def_tune=-1,spin_def_L=-1, spin_def_cor=-1;   !, private 
 integer :: order_gofix=1
 logical(lp) :: time_lie_choice=my_false,courant_snyder_teng_edwards=my_true,dosymp=my_false
   private copy_damap_matrix,copy_matrix_matrix,invert_22,ALLOC_33t,kill_33t,matmul_33
@@ -8772,8 +8772,8 @@ end subroutine c_full_canonise
         egspin(3)=ri%s%s(1,1)-i_*ri%s%s(1,3)
         egspin(2)=1.0_dp
         egspin(1)=ri%s%s(1,1)+i_*ri%s%s(1,3)
-!!! tune is taken from egspin(1) or egspin(3)   spin_tune_def= +/- 1
-        n%spin_tune=aimag(log(egspin(2-spin_tune_def))/twopi)   
+!!! tune is taken from egspin(1) or egspin(3)   spin_def_tune= +/- 1
+        n%spin_tune=aimag(log(egspin(2-spin_def_tune))/twopi)   
 ! because  exp(a L_y) x = x- a z + O(a**2)
         ri=ri**(-1) ! exp(-alpha_0 L_y)   (3)
 
@@ -9072,11 +9072,11 @@ end subroutine c_full_canonise
      t2=t2+abs(je(i)-je(i+1)-m(j,kr))
     enddo
         if(k==1) then
-         t1=t1+iabs(-spin_tune_def-ms(kr))
-         t2=t2+iabs(-spin_tune_def+ms(kr))
+         t1=t1+iabs(-spin_def_tune-ms(kr))
+         t2=t2+iabs(-spin_def_tune+ms(kr))
         elseif(k==3) then
-         t1=t1+iabs(spin_tune_def-ms(kr))
-         t2=t2+iabs(spin_tune_def+ms(kr))
+         t1=t1+iabs(spin_def_tune-ms(kr))
+         t2=t2+iabs(spin_def_tune+ms(kr))
         else
          t1=t1+iabs(ms(kr))
          t2=t2+iabs(ms(kr))
@@ -9282,9 +9282,9 @@ end subroutine c_full_canonise
     
     call c_full_norm_spin(s1%s,i,norm)
     if(i/=0) then
-     c_1_vf%om%v(1)=s1%s%s(3,2)*spin_def
-     c_1_vf%om%v(2)=s1%s%s(1,3)*spin_def
-     c_1_vf%om%v(3)=s1%s%s(2,1)*spin_def
+     c_1_vf%om%v(1)=s1%s%s(3,2)*spin_def_L
+     c_1_vf%om%v(2)=s1%s%s(1,3)*spin_def_L
+     c_1_vf%om%v(3)=s1%s%s(2,1)*spin_def_L*spin_def_cor
     endif
     
     c_master=localmaster
@@ -10116,9 +10116,9 @@ prec=1.d-8
        c=-c
     enddo
 
-    om%v(1)=spin_def*h%s(3,2)
-    om%v(2)=spin_def*h%s(1,3)
-    om%v(3)=spin_def*h%s(2,1)
+    om%v(1)=spin_def_L*h%s(3,2)
+    om%v(2)=spin_def_L*h%s(1,3)
+    om%v(3)=spin_def_L*h%s(2,1)*spin_def_cor
 
     call kill(h)
     call kill(dh)
@@ -10259,7 +10259,7 @@ endif
       if(present(radian)) rad=radian
      tune=S%s(1,1)+i_*S%s(1,3)
 
-     tune=-i_*log(tune)*spin_def
+     tune=-i_*log(tune)*spin_def_L
 
      if(.not.rad) tune=tune/twopi
 
@@ -10348,12 +10348,12 @@ endif
       call c_ass_spinmatrix(c_spinor_spinmatrix)
       call alloc(dh)
 
-    dh%s(3,1)=-spin_def*h_axis%v(2)
-    dh%s(2,1)=spin_def*h_axis%v(3)
-    dh%s(1,3)=spin_def*h_axis%v(2)
-    dh%s(3,2)=spin_def*h_axis%v(1)
-    dh%s(1,2)=-spin_def*h_axis%v(3)
-    dh%s(2,3)=-spin_def*h_axis%v(1)
+    dh%s(3,1)=-spin_def_L*h_axis%v(2)
+    dh%s(2,1)=spin_def_L*h_axis%v(3)*spin_def_cor
+    dh%s(1,3)=spin_def_L*h_axis%v(2)
+    dh%s(3,2)=spin_def_L*h_axis%v(1)
+    dh%s(1,2)=-spin_def_L*h_axis%v(3)*spin_def_cor
+    dh%s(2,3)=-spin_def_L*h_axis%v(1)
     
 !    c_spinor_spinmatrix=dh*ds
 !    Lie operator order
@@ -10438,12 +10438,12 @@ endif
      c_exp_spinmatrix=1
   
     dh=0
-    dh%s(2,1)=spin_def*h_axis%v(3)
-    dh%s(1,3)=spin_def*h_axis%v(2)
-    dh%s(3,2)=spin_def*h_axis%v(1)
-    dh%s(1,2)=-spin_def*h_axis%v(3)
-    dh%s(3,1)=-spin_def*h_axis%v(2)
-    dh%s(2,3)=-spin_def*h_axis%v(1)
+    dh%s(2,1)=spin_def_L*h_axis%v(3)*spin_def_cor
+    dh%s(1,3)=spin_def_L*h_axis%v(2)
+    dh%s(3,2)=spin_def_L*h_axis%v(1)
+    dh%s(1,2)=-spin_def_L*h_axis%v(3)*spin_def_cor
+    dh%s(3,1)=-spin_def_L*h_axis%v(2)
+    dh%s(2,3)=-spin_def_L*h_axis%v(1)
 
     dhn=1
     c=1.0_dp
@@ -12396,7 +12396,7 @@ end subroutine extract_a2
     endif
        if(present(tune)) then
         tune=0.0_dp
-        tune=spin_tune_def*spin_def*tune0%v(2)   ! in phasors
+        tune=spin_def_tune*spin_def_L*tune0%v(2)   ! in phasors
        endif
 
     call kill(n_expo)
@@ -12776,6 +12776,28 @@ subroutine print_vector_field_fourier(s1,mf)
 
 end subroutine print_vector_field_fourier
 
+subroutine print_poisson_bracket_fourier(s1,mf)
+    implicit none
+    TYPE (c_vector_field_fourier), INTENT (INout) :: S1 
+    type(c_taylor) h
+    INTEGER I,mf
+    call alloc(h)
+     write(mf,*) 0,"th mode"
+!     call print(s1%f(0),mf)
+      h=cgetpb(s1%f(0))
+      call print(h,mf)
+    do i=1,n_fourier
+     write(mf,*) i,"th mode"
+      h=cgetpb(s1%f(i))
+      call print(h,mf)
+      h=cgetpb(s1%f(-i))
+      call print(h,mf)
+  !   call print(s1%f(i),mf)
+  !   call print(s1%f(-i),mf)
+    enddo
+    call kill(h)
+end subroutine print_poisson_bracket_fourier
+
 subroutine bra_vector_field_fourier(s1,s2,r)
     implicit none
     TYPE (c_vector_field_fourier), INTENT (INout) :: S1,s2,r
@@ -12866,7 +12888,6 @@ end subroutine mulc_vector_field_fourier
     enddo
 
   END SUBROUTINE c_evaluate_vector_field_fourier
-
 
   subroutine normalise_vector_field_fourier(H,F,K,F1)
     implicit none
