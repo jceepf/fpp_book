@@ -413,6 +413,7 @@ TYPE fibre_array
    integer, pointer :: pos  => null()
    real(dp),pointer :: v=> null() , vmax=> null(); 
    real(dp), pointer :: s(:)=> null()
+   real(dp), pointer :: err=> null()
 END TYPE fibre_array
 
 contains
@@ -427,7 +428,7 @@ contains
 
  do i=1,n
    allocate(a(i)%pos)
-   allocate(a(i)%v,a(i)%vmax,a(i)%s(m))
+   allocate(a(i)%v,a(i)%vmax,a(i)%err,a(i)%s(m))
    a(i)%s=0.0_dp
    a(i)%v=0.0_dp;a(i)%vmax=1.d38;
    a(i)%pos=0
@@ -442,7 +443,7 @@ contains
 
  do i=1,size(a)
    deallocate(a(i)%pos)
-   deallocate(a(i)%v,a(i)%vmax,a(i)%s)
+   deallocate(a(i)%v,a(i)%vmax,a(i)%err,a(i)%s)
  enddo
 
  end  subroutine kill_fibre_array
