@@ -1280,7 +1280,8 @@ contains
        elseif (EL%W%FORM(I) == hyper_xy_family_qu) THEN
           A =    EL%W%A(I)*sineh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*coseh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))*EL%W%K(2,i)/EL%W%K(3,i)**2 + A
-          B =   0.5_dp*EL%W%K(1,i)*EL%W%K(2,i)**2*EL%W%A(I)*sinhx_x(0.5_dp*EL%W%K(1,i)*(X(1)+EL%W%X0(i)))**2*sineh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+          B =   0.5_dp*EL%W%K(1,i)*EL%W%K(2,i)**2*EL%W%A(I)*sinhx_x(0.5_dp*EL%W%K(1,i)*(X(1)+EL%W%X0(i)))**2   &
+                *sineh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(3,i)**2*(X(1)+EL%W%X0(i))**2 + B
 
        elseif (EL%W%FORM(I) == hyper_x_family_qu) THEN
@@ -1365,7 +1366,8 @@ contains
        elseif (EL%W%FORM(I) == hyper_xy_family_qu) THEN
           A =    EL%W%A(I)*sinh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cosh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))*EL%W%K(2,i)/EL%W%K(3,i)**2 + A
-          B =   0.5_dp*EL%W%K(1,i)*EL%W%K(2,i)**2*EL%W%A(I)*sinhx_x(0.5_dp*EL%W%K(1,i)*(X(1)+EL%W%X0(i)))**2*sinh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+          B =   0.5_dp*EL%W%K(1,i)*EL%W%K(2,i)**2*EL%W%A(I)*sinhx_x(0.5_dp*EL%W%K(1,i)*(X(1)+EL%W%X0(i)))**2* &
+                sinh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(3,i)**2*(X(1)+EL%W%X0(i))**2 + B
        elseif (EL%W%FORM(I) == hyper_x_family_qu) THEN
           A =    EL%W%A(I)*sinh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cos(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
@@ -1430,10 +1432,10 @@ contains
                *sinx_x(EL%W%K(2,i)*(X(3)+EL%W%Y0(I))*0.5_dp)**2*EL%W%K(2,i)*(X(3)+EL%W%Y0(I))**2*0.5_dp &
                 *SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(1,i) + B
        elseif (EL%W%FORM(I) == hyper_y_family_qu) THEN
-          A =   -EL%W%A(I)*EL%W%K(1,i)*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*Sinhx_x(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
-                SIN(EL%W%K(3,i)*Z+EL%W%F(I))*(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))/EL%W%K(3,i) + A
-          B =    EL%W%A(I)*EL%W%K(1,i)**2*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*Sinhx_x(EL%W%K(2,i)*(X(3)+EL%W%Y0(I))*0.5_DP )**2 &
-                *SIN(EL%W%K(3,i)*Z+EL%W%F(I))*(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))**2*0.5_DP/EL%W%K(3,i) + B
+          A =   -EL%W%A(I)*EL%W%K(1,i)*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sineh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(2,i)/EL%W%K(3,i) + A
+          B =    EL%W%A(I)*EL%W%K(1,i)**2*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*coseh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I))) &
+                *SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(2,i)**2/EL%W%K(3,i) + B
        elseif (EL%W%FORM(I) == hyper_xy_family_qu) THEN
           A =   -EL%W%A(I)*EL%W%K(1,i)*coseh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sineh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 sin(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(3,i)**2 + A
@@ -1510,10 +1512,10 @@ ENDDO
                *sinx_x(EL%W%K(2,i)*(X(3)+EL%W%Y0(I))*0.5_dp)**2*EL%W%K(2,i)*(X(3)+EL%W%Y0(I))**2*0.5_dp &
                 *SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(1,i) + B
        elseif (EL%W%FORM(I) == hyper_y_family_qu) THEN
-          A =   -EL%W%A(I)*EL%W%K(1,i)*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*Sinhx_x(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
-                SIN(EL%W%K(3,i)*Z+EL%W%F(I))*(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))/EL%W%K(3,i) + A
-          B =    EL%W%A(I)*EL%W%K(1,i)**2*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*Sinhx_x(EL%W%K(2,i)*(X(3)+EL%W%Y0(I))*0.5_DP )**2 &
-                *SIN(EL%W%K(3,i)*Z+EL%W%F(I))*(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))**2*0.5_DP/EL%W%K(3,i) + B
+          A =   -EL%W%A(I)*EL%W%K(1,i)*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sinh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(2,i)/EL%W%K(3,i) + A
+          B =    EL%W%A(I)*EL%W%K(1,i)**2*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cosh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I))) &
+                *SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(2,i)**2/EL%W%K(3,i) + B
        elseif (EL%W%FORM(I) == hyper_xy_family_qu) THEN
           A =   -EL%W%A(I)*EL%W%K(1,i)*cosh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sinh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 sin(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(3,i)**2 + A
