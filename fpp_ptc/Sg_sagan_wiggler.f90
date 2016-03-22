@@ -1755,6 +1755,48 @@ ENDDO
                  COS(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(1,i) + B(2) 
           B(3) = -EL%W%A(I)*EL%W%K(3,i)*COSEH(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*SIN(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(1,i) + B(3)
+        elseif (EL%W%FORM(I) == hyper_y_family_qu) THEN
+          B(1) = EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(2,i))*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sineh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(1)
+          B(2) = EL%W%A(I)*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*coseh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                 COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(2) 
+          B(3) = -EL%W%A(I)*(EL%W%K(3,i)/EL%W%K(2,i))*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sineh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + B(3)
+        elseif (EL%W%FORM(I) == hyper_xy_family_qu) THEN
+          B(1) = EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(3,i))*coseh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sineh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(1)
+          B(2) = EL%W%A(I)*(EL%W%K(2,i)/EL%W%K(3,i))*sineh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*coseh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                 COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(2) 
+          B(3) = -EL%W%A(I)*sineh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sineh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + B(3)
+        elseif (EL%W%FORM(I) == hyper_x_family_qu) THEN
+          B(1) = EL%W%A(I)*coseh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sin(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(1)
+          B(2) = EL%W%A(I)*(EL%W%K(2,i)/EL%W%K(1,i))*sineh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cos(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                 COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(2) 
+          B(3) = -EL%W%A(I)*(EL%W%K(3,i)/EL%W%K(1,i))*sineh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sin(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + B(3)
+        elseif (EL%W%FORM(I) == hyper_y_family_sq) THEN
+          B(1) = -EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(2,i))*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*coseh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(1)
+          B(2) = EL%W%A(I)*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sineh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                 COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(2) 
+          B(3) = -EL%W%A(I)*(EL%W%K(3,i)/EL%W%K(2,i))*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*coseh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + B(3)
+    elseif (EL%W%FORM(I) == hyper_xy_family_sq) THEN
+          B(1) = EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(3,i))*sineh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*coseh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(1)
+          B(2) = EL%W%A(I)*(EL%W%K(2,i)/EL%W%K(3,i))*coseh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sineh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                 COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(2) 
+          B(3) = -EL%W%A(I)*coseh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*coseh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + B(3)
+        elseif (EL%W%FORM(I) == hyper_x_family_sq) THEN
+          B(1) = -EL%W%A(I)*sineh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cos(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(1)
+          B(2) = EL%W%A(I)*(EL%W%K(2,i)/EL%W%K(1,i))*coseh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sin(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                 COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(2) 
+          B(3) = EL%W%A(I)*(EL%W%K(3,i)/EL%W%K(1,i))*coseh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cos(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + B(3)
        else
           print *, 'ERROR IN BF_R: UNKNOWN FORM FOR WIGGLER TERM!'
           stop
@@ -1828,6 +1870,48 @@ ENDDO
                  COS(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(1,i) + B(2) 
           B(3) = -EL%W%A(I)*EL%W%K(3,i)*COSH(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*SIN(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(1,i) + B(3)
+        elseif (EL%W%FORM(I) == hyper_y_family_qu) THEN
+          B(1) = EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(2,i))*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sinh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(1)
+          B(2) = EL%W%A(I)*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cosh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                 COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(2) 
+          B(3) = -EL%W%A(I)*(EL%W%K(3,i)/EL%W%K(2,i))*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sinh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + B(3)
+        elseif (EL%W%FORM(I) == hyper_xy_family_qu) THEN
+          B(1) = EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(3,i))*cosh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sinh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(1)
+          B(2) = EL%W%A(I)*(EL%W%K(2,i)/EL%W%K(3,i))*sinh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cosh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                 COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(2) 
+          B(3) = -EL%W%A(I)*sinh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sinh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + B(3)
+        elseif (EL%W%FORM(I) == hyper_x_family_qu) THEN
+          B(1) = EL%W%A(I)*cosh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sin(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(1)
+          B(2) = EL%W%A(I)*(EL%W%K(2,i)/EL%W%K(1,i))*sinh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cos(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                 COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(2) 
+          B(3) = -EL%W%A(I)*(EL%W%K(3,i)/EL%W%K(1,i))*sinh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sin(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + B(3)
+        elseif (EL%W%FORM(I) == hyper_y_family_sq) THEN
+          B(1) = -EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(2,i))*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cosh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(1)
+          B(2) = EL%W%A(I)*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sinh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                 COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(2) 
+          B(3) = -EL%W%A(I)*(EL%W%K(3,i)/EL%W%K(2,i))*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cosh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + B(3)
+    elseif (EL%W%FORM(I) == hyper_xy_family_sq) THEN
+          B(1) = EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(3,i))*sinh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cosh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(1)
+          B(2) = EL%W%A(I)*(EL%W%K(2,i)/EL%W%K(3,i))*cosh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sinh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                 COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(2) 
+          B(3) = -EL%W%A(I)*cosh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cosh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + B(3)
+        elseif (EL%W%FORM(I) == hyper_x_family_sq) THEN
+          B(1) = -EL%W%A(I)*sinh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cos(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(1)
+          B(2) = EL%W%A(I)*(EL%W%K(2,i)/EL%W%K(1,i))*cosh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sin(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                 COS(EL%W%K(3,i)*Z+EL%W%F(I)) + B(2) 
+          B(3) = EL%W%A(I)*(EL%W%K(3,i)/EL%W%K(1,i))*cosh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cos(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + B(3)
        else
           print *, 'ERROR IN BF_R: UNKNOWN FORM FOR WIGGLER TERM!'
           stop
