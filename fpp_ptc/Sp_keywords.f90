@@ -2875,7 +2875,7 @@ if(dir) then   !BETA0,GAMMA0I,GAMBET,MASS ,AG
   call context(ELE0%name_vorname(2),dollar=my_true)
  endif
  ele0%an=0.0_dp
- ele0%an=0.0_dp
+ ele0%bn=0.0_dp
 if(f%p%nmul>0) then
   ele0%an(1:f%p%nmul)=f%an(1:f%p%nmul)
   ele0%bn(1:f%p%nmul)=f%bn(1:f%p%nmul)

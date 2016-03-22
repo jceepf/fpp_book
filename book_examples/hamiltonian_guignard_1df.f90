@@ -166,7 +166,7 @@ do i=1,ns
 
   logN=log(U)      ! (16)
 
-! Ckecking convergence of the logarithm
+! Checking convergence of the logarithm
 a=exp(-(logN.cut.2),(U.sub.1))  ! (17)
 do km=1,c_%nd2
  if(abs(full_abs(a%v(km))-1)>1.d-5) then

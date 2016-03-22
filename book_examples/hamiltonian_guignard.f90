@@ -240,7 +240,7 @@ endif
   h=getpb(Gh)    ! (17b)
 
 
-! Ckecking convergence of the logarithm
+! Checking convergence of the logarithm
 a=exp(-(Gh.cut.2),(U.sub.1))  ! (18)
 do k=1,c_%nd2
  if(abs(full_abs(a%v(k))-1)>1.d-5) then

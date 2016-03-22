@@ -79,7 +79,7 @@ private GETORDER_par,GETORDERMAP_par,GETORDERSPINMATRIX_par,liebraspinor
 integer,private,parameter::ndd=6
 private c_concat_vector_field_ray,CUTORDERVEC,kill_c_vector_field_fourier,alloc_c_vector_field_fourier
 private complex_mul_vec,equal_c_vector_field_fourier,c_IdentityEQUALVECfourier,c_vector_field_spinmatrix
-private c_add_map,c_sub_map
+private c_add_map,c_sub_map,c_read_spinor
 integer :: n_fourier=12,n_extra=0
 logical :: remove_tune_shift=.false.
 complex(dp) :: n_cai=-2*i_
@@ -479,12 +479,14 @@ real(dp) :: epso_factor =1000.d0 ! for log
        MODULE PROCEDURE c_rea
        module procedure c_read_spinmatrix
        module procedure c_read_map
+       MODULE PROCEDURE c_read_spinor
     END INTERFACE
 
     INTERFACE read
        MODULE PROCEDURE c_rea
        module procedure c_read_spinmatrix
        module procedure c_read_map
+       MODULE PROCEDURE c_read_spinor
     END INTERFACE
 
     INTERFACE daprint
@@ -5651,6 +5653,28 @@ cgetvectorfield=0
  
   END SUBROUTINE c_pri_spinor
 
+
+  SUBROUTINE  c_read_spinor(S1,MFILE) ! spin routine
+    implicit none
+    INTEGER,INTENT(IN)::MFILE
+    type (c_spinor),INTENT(IN)::S1
+    integer i
+    character(120) line
+
+     ! write(mfile,*) " Complex Spinor "
+      read(mfile,'(a120)') line
+    do i=1,3
+ 
+      read(mfile,'(a120)') line
+      read(mfile,'(a120)') line
+      read(mfile,'(a120)') line
+
+     call c_rea(s1%v(i),mfile)
+
+    enddo
+
+ 
+  END SUBROUTINE c_read_spinor
 
   SUBROUTINE  c_pri(S1,MFILE,DEPS)
     implicit none
