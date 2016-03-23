@@ -1302,7 +1302,7 @@ contains
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))*EL%W%K(2,i)/EL%W%K(3,i)**2 + A
 
           B =   EL%W%A(I)*sinhx_x(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*coseh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
-                SIN(EL%W%K(3,i)*Z+EL%W%F(I))*EL%W%K(2,i)**2/EL%W%K(3,i)**2 + B
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I))*(X(1)+EL%W%X0(i))*EL%W%K(2,i)**2/EL%W%K(3,i)**2 + B
         elseif (EL%W%FORM(I) == hyper_x_family_sq) THEN
           A =    EL%W%A(I)*coseh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sin(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))*EL%W%K(2,i)/EL%W%K(1,i)/EL%W%K(3,i) + A
@@ -1387,7 +1387,7 @@ contains
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))*EL%W%K(2,i)/EL%W%K(3,i)**2 + A
 
           B =   EL%W%A(I)*sinhx_x(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cosh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
-                SIN(EL%W%K(3,i)*Z+EL%W%F(I))*EL%W%K(2,i)**2/EL%W%K(3,i)**2 + B
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I))*(X(1)+EL%W%X0(i))*EL%W%K(2,i)**2/EL%W%K(3,i)**2 + B
         elseif (EL%W%FORM(I) == hyper_x_family_sq) THEN
           A =    EL%W%A(I)*cosh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sin(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))*EL%W%K(2,i)/EL%W%K(1,i)/EL%W%K(3,i) + A
