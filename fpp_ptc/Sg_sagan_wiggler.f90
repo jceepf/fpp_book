@@ -1290,6 +1290,7 @@ contains
 
           B =   -EL%W%A(I)*coseh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sin(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))*EL%W%K(2,i)**2/EL%W%K(1,i)**2/EL%W%K(3,i) + B
+
        elseif (EL%W%FORM(I) == hyper_y_family_sq) THEN
           A =    EL%W%A(I)*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sineh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(3,i) + A
@@ -1447,10 +1448,10 @@ contains
           B =   -EL%W%A(I)*EL%W%K(1,i)*EL%W%K(2,i)*sineh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*Sinx_x(EL%W%K(2,i)*(X(3)+EL%W%Y0(I))*0.5_DP )**2 &
                 *sin(EL%W%K(3,i)*Z+EL%W%F(I))*(X(3)+EL%W%Y0(I))**2*0.5_DP/EL%W%K(3,i) + B
        elseif (EL%W%FORM(I) == hyper_y_family_sq) THEN
-          A =   EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(3,i))*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*coseh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
-                SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(3,i) + A
+          A =   EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(2,i)/EL%W%K(3,i))*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*coseh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + A
 
-          B =   EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(3,i))**2*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sineh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+          B =   EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(2,i))**2*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sineh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(3,i) + B
        elseif (EL%W%FORM(I) == hyper_xy_family_sq) THEN
           A =   -EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(3,i)**2)*sineh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*coseh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
@@ -1527,10 +1528,10 @@ ENDDO
           B =   -EL%W%A(I)*EL%W%K(1,i)*EL%W%K(2,i)*sinh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*Sinx_x(EL%W%K(2,i)*(X(3)+EL%W%Y0(I))*0.5_DP )**2 &
                 *sin(EL%W%K(3,i)*Z+EL%W%F(I))*(X(3)+EL%W%Y0(I))**2*0.5_DP/EL%W%K(3,i) + B
        elseif (EL%W%FORM(I) == hyper_y_family_sq) THEN
-          A =   EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(3,i))*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cosh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
-                SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(3,i) + A
+          A =   EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(2,i)/EL%W%K(3,i))*sin(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cosh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+                SIN(EL%W%K(3,i)*Z+EL%W%F(I)) + A
 
-          B =   EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(3,i))**2*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sinh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
+          B =   EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(2,i))**2*cos(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*sinh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(3,i) + B
        elseif (EL%W%FORM(I) == hyper_xy_family_sq) THEN
           A =   -EL%W%A(I)*(EL%W%K(1,i)/EL%W%K(3,i)**2)*sinh(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*cosh(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
