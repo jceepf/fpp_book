@@ -2234,8 +2234,8 @@ CALL FRINGECAV(EL,X,k,2)
     TYPE(CAV4P),  INTENT(INOUT) :: D
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
-    call alloc(A,3)
-    call alloc(AD,2)
+    call alloc(A)
+    call alloc(AD)
     call alloc(PZ)
 
     CALL Abmad_TRANS(D,Z0,X,k,A,AD)
@@ -2284,8 +2284,8 @@ CALL FRINGECAV(EL,X,k,2)
     X(2)=X(2)+A(1)
     X(4)=X(4)+A(2)
 
-    call KILL(A,3)
-    call KILL(AD,2)
+    call KILL(A)
+    call KILL(AD)
     call KILL(PZ)
   END subroutine feval_CAV_bmadp
 

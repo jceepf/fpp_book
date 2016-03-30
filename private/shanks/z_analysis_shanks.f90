@@ -10,6 +10,7 @@ private integrate_crittendenr,integrate_crittendenp,conv_to_xpr,conv_to_xpp,conv
 ! This is a beam to be tracked
 integer, private :: dirb =1
   real(dp), private, allocatable :: bf(:,:,:), zp(:),dx0(:)
+  real(dp) LCM,LC,rhod,sagd,LD,angd,pxd,xd,scaled
 
   INTERFACE bfield
      MODULE PROCEDURE bfieldr
@@ -198,15 +199,13 @@ call c_full_canonise(a,L,a0=a0,a1=a1,a2=a2)  ! a= L*rot= a0*a1*a2*rot   L=a0*a1*
 a1=a0*(a1.sub.1)  
  
 id=a1**(-1)*id*a1
-call print(id%v(1),6)
 
-pause
  L=to_phasor()*id*from_phasor() 
 
  call c_factor_map(L,L,sverige(j)%f,1)  
-
  
-call analysis_shanks_3(j)
+call analysis_shanks_3(j) !  store pices of sverige(j)%f in the last slice of sverige
+
 
 
 sh=24
@@ -437,7 +436,7 @@ real(dp) brho
 type(work) w
 ns=133
 nfit=17
-call kanalnummer(mf,"C:\document\etienne_programs_new\read_m_u_m_t\crittenden\sarc_16_fitpars.txt")
+call kanalnummer(mf,"C:\document\etienne_programs_new\read_m_u_m_t\crittenden\sarc_18_fitpars_sent_30mar16.txt")
 
 
 allocate(bf(ns,3,nfit),zp(ns),dx0(ns))
@@ -449,12 +448,25 @@ dx0=0.d0
 do i=1,ns
 do j=1,3
 read(mf,*) zp(i),bf(i,j,1:nfit)
-
 enddo
 enddo
 zp=zp/100.d0
-bf=bf/w%brho
+bf=scaled*bf/w%brho
 
+
+rhod=30.75d0
+lcm=zp(ns)-zp(1)
+ld=2.3d0
+angd=ld/rhod
+lc=2*sin(angd/2)*rhod
+pxd=sin(angd/2)
+sagd=rhod*(1.d0-cos(angd/2))
+xd=(zp(1)-lc/2.d0)*tan(angd/2.d0)
+
+write(6,*) lc,lcm
+write(6,*) sagd
+write(6,*) xd,pxd
+dx0=sagd+0.05d0
 close(mf) 
 end subroutine read_crittenden
 
@@ -560,11 +572,11 @@ end subroutine read_crittenden
     call kill(b,3)
   end subroutine fxp
 
-  subroutine bfieldr(j,x,y,b)
+  subroutine bfieldr(i,x,y,b)
     implicit none
     integer i,j
     real(dp),intent(inout):: b(3),x,y
-do i=1,3
+do j=1,3
  b(j)=bf(i,j,1)+bf(i,j,2)*x+bf(i,j,3)*y
  b(j)=b(j)+bf(i,j,4)*x*y+bf(i,j,5)*x**2+bf(i,j,6)*y**2
  b(j)=b(j)+bf(i,j,7)*y*x**2+bf(i,j,8)*x*y**2+ bf(i,j,9)*x**3+bf(i,j,10)*y*x**3+bf(i,j,11)*y**2*x**3
@@ -574,12 +586,12 @@ enddo
   end subroutine bfieldr
 
 
-  subroutine bfieldp(j,x,y,b)
+  subroutine bfieldp(i,x,y,b)
     implicit none
     integer i,j
     type(real_8),intent(inout):: b(3),x,y
 
-do i=1,3
+do j=1,3
  b(j)=bf(i,j,1)+bf(i,j,2)*x+bf(i,j,3)*y
  b(j)=b(j)+bf(i,j,4)*x*y+bf(i,j,5)*x**2+bf(i,j,6)*y**2
  b(j)=b(j)+bf(i,j,7)*y*x**2+bf(i,j,8)*x*y**2+ bf(i,j,9)*x**3+bf(i,j,10)*y*x**3+bf(i,j,11)*y**2*x**3
@@ -741,11 +753,11 @@ real(dp) h,hcurv
 h=zp(2)-zp(1)
 hcurv=0.d0
           IS=1
-          nt=size(bf,1)
+          nt=(size(bf,1)-1)/2
           DO I=1,nt
              call rk4(is,h,hcurv,w,y,k)  
           ENDDO
-
+write(6,*) is,size(bf,1)
 end subroutine integrate_crittendenr
 
 subroutine integrate_crittendenp(y,w,k)
@@ -759,7 +771,7 @@ real(dp) h,hcurv
 h=zp(2)-zp(1)
 hcurv=0.d0
           IS=1
-          nt=size(bf,1)
+          nt=(size(bf,1)-1)/2
           DO I=1,nt
              call rk4(is,h,hcurv,w,y,k)  
           ENDDO
