@@ -50,49 +50,6 @@ contains
 
  
 
- subroutine analysis_shanks_3
-IMPLICIT NONE
-integer i
-
-do i=1,size(sverige)-1
-! 3nux
- sverige(i)%s(1)=(sverige(i)%f%v(2).sub.'2000')/3
-!  nux
- sverige(i)%s(2)=(sverige(i)%f%v(2).sub.'11')/2
-!  2nux+nuy
- sverige(i)%s(3)=(sverige(i)%f%v(2).sub.'101')/2
-!  2nux-nuy
- sverige(i)%s(4)=(sverige(i)%f%v(2).sub.'1001')/2
-!  nux+2nuy
- sverige(i)%s(5)=(sverige(i)%f%v(2).sub.'002')
-!  nux-2nuy
- sverige(i)%s(6)=(sverige(i)%f%v(2).sub.'0002')
-!  3nuy
- sverige(i)%s(7)=(sverige(i)%f%v(4).sub.'0020')/3
-!  nuy
- sverige(i)%s(8)=(sverige(i)%f%v(4).sub.'0011')/2
-!  chromx'
- sverige(i)%s(9)=(sverige(i)%f%v(2).sub.'01001')
-!  chromy'
-sverige(i)%s(10)=(sverige(i)%f%v(4).sub.'00011')
-!  2nux'
-sverige(i)%s(11)=(sverige(i)%f%v(2).sub.'00101')/2
-!  2nuy'
-sverige(i)%s(12)=(sverige(i)%f%v(4).sub.'10001')/2
-!  (nux+nuy)'
-sverige(i)%s(13)=(sverige(i)%f%v(2).sub.'00101')
-!  (nux-nuy)'
-sverige(i)%s(14)=(sverige(i)%f%v(2).sub.'00011')
-!  etax delta**2
-sverige(i)%s(15)=(sverige(i)%f%v(2).sub.'00002')
-!  etay delta**2
-sverige(i)%s(16)=(sverige(i)%f%v(4).sub.'00002')
-enddo
-
-end subroutine analysis_shanks_3
-
-
-
  subroutine locate_shanks(ring,ds,n)
 IMPLICIT NONE
 type(layout), pointer :: ring
@@ -148,7 +105,58 @@ enddo
   sverige(k+1)%t=>ring%t%start
 end subroutine locate_shanks
 
- subroutine analysis_shanks_fast(ring,state_no,one_turn)
+ subroutine analysis_shanks_3(k)
+IMPLICIT NONE
+integer, optional :: k
+integer i,i1,i2
+
+i1=1
+i2=size(sverige)-1 
+if(present(k)) then
+ i1=k
+ i2=k
+endif
+
+do i=i1,i2
+! 3nux
+ sverige(i)%s(1)=(sverige(i)%f%v(2).sub.'2000') !/3
+!  nux
+ sverige(i)%s(2)=(sverige(i)%f%v(2).sub.'11') !/2
+!  2nux+nuy
+ sverige(i)%s(3)=(sverige(i)%f%v(2).sub.'101') !/2
+!  2nux-nuy
+ sverige(i)%s(4)=(sverige(i)%f%v(2).sub.'1001') !/2
+!  nux+2nuy 
+ sverige(i)%s(5)=(sverige(i)%f%v(2).sub.'002')
+!  nux-2nuy
+ sverige(i)%s(6)=(sverige(i)%f%v(2).sub.'0002')
+!  3nuy
+ sverige(i)%s(7)=(sverige(i)%f%v(4).sub.'0020') !/3
+!  nuy
+ sverige(i)%s(8)=(sverige(i)%f%v(4).sub.'0011') !/2
+!  chromx'
+ sverige(i)%s(9)=(sverige(i)%f%v(2).sub.'01001')
+!  chromy'
+sverige(i)%s(10)=(sverige(i)%f%v(4).sub.'00011')
+!  2nux'
+sverige(i)%s(11)=(sverige(i)%f%v(2).sub.'01001') !/2
+!  2nuy'
+sverige(i)%s(12)=(sverige(i)%f%v(4).sub.'10001') !/2
+!  (nux+nuy)'
+sverige(i)%s(13)=(sverige(i)%f%v(2).sub.'00101')
+!  (nux-nuy)'
+sverige(i)%s(14)=(sverige(i)%f%v(2).sub.'00011')
+!  etax delta**2
+sverige(i)%s(15)=(sverige(i)%f%v(2).sub.'00002')
+!  etay delta**2
+sverige(i)%s(16)=(sverige(i)%f%v(4).sub.'00002')
+enddo
+
+end subroutine analysis_shanks_3
+
+
+
+ subroutine analysis_shanks_fast(ring,state_no)
 IMPLICIT NONE
 type(layout), pointer :: ring
 real(dp) x(6),xm,prec,c(2,2),d(2,2)
@@ -157,57 +165,73 @@ TYPE(C_TAYLOR) PHASE(2)
 type(c_damap) id,L,r,U,a,u_c,one_turn,a0,a1,a2
 type(c_normal_form) normal
 type(real_8) y(6),yb(6)
-integer n,i,j,km,mf
+integer n,i,j,km,mf,sh
 type(c_vector_field) logN,f
 type(c_taylor) x2
 logical :: dbeta=.true.
 prec=1.d-8
-
+ j=size(sverige)
 !call kanalnummer(mf,"x2.txt")
+
+!!!!!!!!!!!!!!!!!!!!!!   third order calculation !!!!!!!!!!!!!!!!!!!
 n=3
  call init_all(state_no,n,0)
- call alloc(id); call alloc(normal);call alloc(y);
+ call alloc(id,a, a0, a1, a2,L); call alloc(normal);call alloc(y);call alloc(sverige(j)%f);
 
  x=0.d0
-
  call find_orbit(ring,x,1,state_no,1e-5_dp)
  id=1
-
-
  y=id+x
-
  call propagate(ring,y,state_no,fibre1=1)
-
  id=y
  call c_normal(id,normal)
- j=size(sverige)
+
  
 
- normal%ker%f(1)=normal%ker
-normal%ker%f(1)=(1.d0/twopi)*normal%ker%f(1)
+normal%ker%f(1)=normal%ker   !ker%f(1:3)    rot=exp(ker%f(1).grad)exp(ker%f(2).grad)exp(ker%f(3).grad)
+normal%ker%f(1)=(1.d0/twopi)*normal%ker%f(1)   !tunes
 
 
+
+a=normal%a_t
+call c_full_canonise(a,L,a0=a0,a1=a1,a2=a2)  ! a= L*rot= a0*a1*a2*rot   L=a0*a1*a2 courant-snyder
+a1=a0*(a1.sub.1)  
+ 
+id=a1**(-1)*id*a1
+call print(id%v(1),6)
+
+pause
+ L=to_phasor()*id*from_phasor() 
+
+ call c_factor_map(L,L,sverige(j)%f,1)  
+
+ 
+call analysis_shanks_3(j)
+
+
+sh=24
 !  nux_total
- sverige(j)%s(1)=(normal%ker%f(1)%v(2).sub.'01000')
+ sverige(j)%s(sh+1)=(normal%ker%f(1)%v(2).sub.'01000')
 !  nux_total'
- sverige(j)%s(2)=(normal%ker%f(1)%v(2).sub.'01001')
+ sverige(j)%s(sh+2)=(normal%ker%f(1)%v(2).sub.'01001')
 !  nux_total [2]
- sverige(j)%s(3)=(normal%ker%f(1)%v(2).sub.'01002')
+ sverige(j)%s(sh+3)=(normal%ker%f(1)%v(2).sub.'01002')
 !  nuy_total
- sverige(j)%s(4)=(normal%ker%f(1)%v(4).sub.'00010')
+ sverige(j)%s(sh+4)=(normal%ker%f(1)%v(4).sub.'00010')
 !  nuy_total'
- sverige(j)%s(5)=(normal%ker%f(1)%v(4).sub.'00011')
+ sverige(j)%s(sh+5)=(normal%ker%f(1)%v(4).sub.'00011')
 !  nuy_total[2]
- sverige(j)%s(6)=(normal%ker%f(1)%v(4).sub.'00012')
+ sverige(j)%s(sh+6)=(normal%ker%f(1)%v(4).sub.'00012')
 !  nux_total function of Jx
- sverige(j)%s(7)=(normal%ker%f(1)%v(2).sub.'12000')
+ sverige(j)%s(sh+7)=(normal%ker%f(1)%v(2).sub.'12000')
 !  nux_total function of Jy
- sverige(j)%s(8)=(normal%ker%f(1)%v(2).sub.'01110')
+ sverige(j)%s(sh+8)=(normal%ker%f(1)%v(2).sub.'01110')
 !  nuy_total function of Jy
- sverige(j)%s(9)=(normal%ker%f(1)%v(4).sub.'00120')
+ sverige(j)%s(sh+9)=(normal%ker%f(1)%v(4).sub.'00120')
 ! write(6,*) sverige(j)%s(1:9)
- call kill(id); call kill(normal);call kill(y);
 
+
+ call kill(id,a, a0, a1, a2,L); call kill(normal);call kill(y);call kill(sverige(j)%f);
 
 n=2
  
@@ -268,8 +292,8 @@ d(1,2)=a1%v(1).sub.'01001'
 d(2,1)=a1%v(2).sub.'10001'
 d(2,2)=a1%v(2).sub.'01001'
 
-sverige(i)%s(17)=2*(c(1,1)*d(1,1)+c(1,2)*d(1,2))
-sverige(i)%s(18)=-(c(1,1)*d(2,1)+d(1,1)*c(2,1)+c(1,2)*d(2,2)+d(1,2)*d(2,2))
+sverige(i)%s(17)=2*(c(1,1)*d(1,1)+c(1,2)*d(1,2))   ! beta_x '
+sverige(i)%s(18)=-(c(1,1)*d(2,1)+d(1,1)*c(2,1)+c(1,2)*d(2,2)+d(1,2)*d(2,2)) ! alpha_x '
 
 c(1,1)=a1%v(3).sub.'0010' 
 c(1,2)=a1%v(3).sub.'0001'
@@ -279,15 +303,15 @@ d(1,1)=a1%v(3).sub.'00101'
 d(1,2)=a1%v(3).sub.'00011'
 d(2,1)=a1%v(4).sub.'00101'
 d(2,2)=a1%v(4).sub.'00011'
-sverige(i)%s(19)=2*(c(1,1)*d(1,1)+c(1,2)*d(1,2))
-sverige(i)%s(20)=-(c(1,1)*d(2,1)+d(1,1)*c(2,1)+c(1,2)*d(2,2)+d(1,2)*d(2,2))
+sverige(i)%s(19)=2*(c(1,1)*d(1,1)+c(1,2)*d(1,2)) ! beta_y '
+sverige(i)%s(20)=-(c(1,1)*d(2,1)+d(1,1)*c(2,1)+c(1,2)*d(2,2)+d(1,2)*d(2,2)) ! alpha_y '
  
      
 
-  sverige(i)%s(21)=(a0%v(1).sub.'00002')
-  sverige(i)%s(22)=(a0%v(2).sub.'00002')
-  sverige(i)%s(23)=(a0%v(3).sub.'00002')
-  sverige(i)%s(24)=(a0%v(4).sub.'00002')
+  sverige(i)%s(21)=(a0%v(1).sub.'00002')   ! etax [2]
+  sverige(i)%s(22)=(a0%v(2).sub.'00002') ! etapx [2]
+  sverige(i)%s(23)=(a0%v(3).sub.'00002') ! etay [2]
+  sverige(i)%s(24)=(a0%v(4).sub.'00002') ! etapy [2]
 
 
 !  x2=2.d0.cmono.'20'
@@ -400,6 +424,8 @@ subroutine c_canonise_shanks(at,a_cs,rot)
     a_cs=at*rot
     endif
     a_cs=a_cs.sub.1
+!    a=a_cs
+!    a_cs=a
 end subroutine c_canonise_shanks
 
 !!!!!!!!!!!!!!!!!! Jim Crittenden

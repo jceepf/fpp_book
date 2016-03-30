@@ -6203,6 +6203,35 @@ cgetvectorfield=0
 
   end subroutine c_ass_vector_field
 
+ SUBROUTINE  c_norm(S1,S2,prec)
+    implicit none
+    type (c_taylor),INTENT(INOUT)::S2
+    type (c_taylor), intent(INOUT):: s1
+    real(dp) prec
+    INTEGER ipresent,n,I,illa
+    complex(dp) value,v
+    INTEGER, allocatable :: j(:)
+    type (c_taylor) t
+
+    call alloc(t)
+    t=0.0_dp
+    ipresent=1
+    call c_dacycle(S1%I,ipresent,value,n)
+
+    allocate(j(nv))
+
+    do i=1,N
+       call c_dacycle(S1%I,i,value,illa,j)
+       v=0.0_dp
+       if(abs(value)>prec) v=abs(value)
+          t=t+(v.cmono.j)
+!       endif
+    ENDDO
+    s2=t
+    deallocate(j)
+    call kill(t)
+
+  END SUBROUTINE c_norm
 
   ! remove small numbers
 
