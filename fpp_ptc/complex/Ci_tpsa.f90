@@ -79,7 +79,7 @@ private GETORDER_par,GETORDERMAP_par,GETORDERSPINMATRIX_par,liebraspinor
 integer,private,parameter::ndd=6
 private c_concat_vector_field_ray,CUTORDERVEC,kill_c_vector_field_fourier,alloc_c_vector_field_fourier
 private complex_mul_vec,equal_c_vector_field_fourier,c_IdentityEQUALVECfourier,c_vector_field_spinmatrix
-private c_add_map,c_sub_map,c_read_spinor
+private c_add_map,c_sub_map,c_read_spinor,flatten_c_factored_lie_r
 integer :: n_fourier=12,n_extra=0
 logical :: remove_tune_shift=.false.
 complex(dp) :: n_cai=-2*i_
@@ -133,6 +133,7 @@ real(dp) :: epso_factor =1000.d0 ! for log
       MODULE PROCEDURE equalc_ray_ray
       MODULE PROCEDURE equal_c_vector_field_fourier
       MODULE PROCEDURE equalc_spinor_cspinor
+      MODULE PROCEDURE flatten_c_factored_lie_r ! same as       flatten_c_factored_lie
   end  INTERFACE
 
 
@@ -249,6 +250,14 @@ real(dp) :: epso_factor =1000.d0 ! for log
      MODULE PROCEDURE powmaps
   END INTERFACE
 
+
+  INTERFACE clean
+!     MODULE PROCEDURE c_clean
+     MODULE PROCEDURE c_clean_taylor
+     MODULE PROCEDURE c_clean_spinmatrix
+     MODULE PROCEDURE c_clean_damap
+     MODULE PROCEDURE c_clean_vector_field
+  end INTERFACE clean
   ! Exponential of Lie Operators
 
  
@@ -2255,7 +2264,14 @@ end subroutine c_get_indices
 
   END FUNCTION c_logt
 
-  SUBROUTINE  flatten_c_factored_lie(S1,S2)
+  SUBROUTINE  flatten_c_factored_lie_r(St,S1)
+  implicit none
+  type (c_factored_lie),INTENT(IN) :: S1
+  type (c_vector_field),INTENT(inOUT) :: ST
+  call flatten_c_factored_lie(S1,ST)
+end  SUBROUTINE  flatten_c_factored_lie_r
+
+  SUBROUTINE  flatten_c_factored_lie(S1,ST)
 !#general: manipulation
 !# Type c_factored_lie is a product of Lie exponents.
 !# Lie map=exp(s1%f(1).grad)...exp(s1%f(s1%n).grad) if s1%dir=1.
@@ -2264,16 +2280,18 @@ end subroutine c_get_indices
 !# if the map is a rotation.
 !# s2 = s1%f(1)+...+s1%f(s1%n)
   implicit none
-  type (c_factored_lie),INTENT(INOUT) :: S1
-  type (c_vector_field),INTENT(inOUT) :: S2
+  type (c_factored_lie),INTENT(IN) :: S1
+  type (c_vector_field),INTENT(inOUT) :: ST
   integer i,j
-
+  type (c_vector_field) S2
 !  This routine assumes commutation of all the factored Lie exponents
     
+    s2%n = s1%f(1)%n
+    call alloc(s2)
 
     s2%eps   = s1%f(1)%eps
     s2%nrmax = s1%f(1)%nrmax
-    s2%n = s1%f(1)%n
+    
  
     s2=0
     do j=1,s1%n
@@ -2282,8 +2300,9 @@ end subroutine c_get_indices
        s2%v(i)=s2%v(i)+s1%f(j)%v(i)
       enddo      
     enddo
+    st=s2
   if(complex_extra_order==1.and.special_extra_order_1) s2=s2.cut.no
-
+   call kill(s2)
   END SUBROUTINE flatten_c_factored_lie
 
   FUNCTION c_logf_spin( s1,h,epso,n,tpsa )
@@ -6246,7 +6265,7 @@ cgetvectorfield=0
 
     do i=1,3
     do j=1,3
-       call c_clean_taylor(s1%s(i,j),s2%s(i,j),prec)
+       call clean(s1%s(i,j),s2%s(i,j),prec)
     enddo
     enddo
 
@@ -6263,7 +6282,6 @@ cgetvectorfield=0
     do i=1,3
        call c_clean_taylor(s1%v(i),s2%v(i),prec)
     enddo
-
 
   END SUBROUTINE c_clean_spinor
 
@@ -13325,6 +13343,61 @@ call kill(f)
 call kill(dm)
 
 end subroutine nth_root
+
+!!!!!   stuff for arrays of nodes
+
+ subroutine alloc_node_array_tpsa(a)
+ implicit none
+ type(node_array), allocatable :: a(:)
+ integer i
+
+ do i=1,size(a)
+   call alloc(a(i)%f)
+   call alloc(a(i)%m)
+ enddo
+
+ end  subroutine alloc_node_array_tpsa
+
+ subroutine kill_node_array_tpsa(a)
+ implicit none
+ type(node_array), allocatable :: a(:)
+ integer i
+
+ do i=1,size(a)
+   call kill(a(i)%f)
+   call kill(a(i)%m)
+ enddo
+
+ end  subroutine kill_node_array_tpsa
+
+ subroutine kill_node_array(a)
+ implicit none
+ type(node_array), allocatable :: a(:)
+ integer i
+
+ do i=1,size(a)
+   deallocate(a(i)%pos,a(i)%f)
+   deallocate(a(i)%v,a(i)%vmax,a(i)%err,a(i)%s)
+ enddo
+
+ end  subroutine kill_node_array
+
+ subroutine alloc_node_array(a,n,m)
+ implicit none
+ type(node_array), allocatable :: a(:)
+ integer i,n,m
+
+ allocate(a(n))
+
+ do i=1,n
+   allocate(a(i)%pos,a(i)%f,a(i)%m)
+   allocate(a(i)%v,a(i)%vmax,a(i)%err,a(i)%s(m))
+   a(i)%s=0.0_dp
+   a(i)%v=0.0_dp;a(i)%vmax=1.d38;
+   a(i)%pos=0
+ enddo
+
+ end  subroutine alloc_node_array
 
 
   END MODULE  c_tpsa

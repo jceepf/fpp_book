@@ -18,18 +18,18 @@ module sagan_WIGGLER
   PRIVATE ZEROR_W,ZEROP_W,POINTERS_WP
   PRIVATE copy_W_WP,copy_WP_W,copy_W_W,INTR_SAGAN,INTp_SAGAN
   !  PRIVATE SET_R,SET_P,SET_W
-  PRIVATE ADJUSTR_WI,ADJUSTP_WI,get_z_wiR,get_z_wiP
+  PRIVATE ADJUSTR_WI,ADJUSTP_WI,get_z_wiR,get_z_wiP,kick_integral_r,kick_integral_p
   integer :: wiggler_sagan=6
 integer, parameter :: hyper_y_family_y = 1, hyper_xy_family_y = 2, hyper_x_family_y = 3
 integer, parameter :: hyper_y_family_x = 4, hyper_xy_family_x = 5, hyper_x_family_x = 6
 integer, parameter :: hyper_y_family_qu = 7, hyper_xy_family_qu = 8, hyper_x_family_qu = 9
 integer, parameter :: hyper_y_family_sq = 10, hyper_xy_family_sq = 11, hyper_x_family_sq = 12
-
+integer, parameter :: wiggler_fringe=24
 
   integer :: limit_sag(2) =(/4,18/) 
  
 
-  INTERFACE get_z_wi
+  INTERFACE get_z_wi 
      MODULE PROCEDURE get_z_wiR
      MODULE PROCEDURE get_z_wip
   END INTERFACE
@@ -139,6 +139,12 @@ integer, parameter :: hyper_y_family_sq = 10, hyper_xy_family_sq = 11, hyper_x_f
      MODULE PROCEDURE ADJUSTP_WI
   END INTERFACE
 
+  INTERFACE kick_integral
+     MODULE PROCEDURE kick_integral_r
+     MODULE PROCEDURE kick_integral_p
+  END INTERFACE
+
+
 contains
 
   SUBROUTINE ADJUSTR_WI(EL,X,k,J)
@@ -214,43 +220,280 @@ contains
 
   END SUBROUTINE ADJUSTP_WI
 
-  !  SUBROUTINE SET_R(EL)
-  !    IMPLICIT NONE
-  !    TYPE(undu_r),INTENT(INOUT):: EL
-  !    INTEGER I,MYPAUSE
-  !    IF(ASSOCIATED(EL%K)) THEN
-  !       DO I=1,SIZE(EL%A)
-  !          if(el%form(i)) then
-  !             EL%K(2,I)=SQRT(EL%K(1,I)**2+EL%K(3,I)**2)
-  !          else
-  !             EL%K(2,I)=SQRT(-EL%K(1,I)**2+EL%K(3,I)**2)
-  !          endif
-  !       ENDDO
-  !
-  !
-  !    ELSE
-  !       WRITE(6,*) " WIGGLER FIELD NOT DEFINED "
-  !       I=MYPAUSE(555)
-  !    ENDIF
-  !  END SUBROUTINE SET_R
 
-  !  SUBROUTINE SET_P(EL)
-  !    IMPLICIT NONE
-  !    TYPE(undu_p),INTENT(INOUT):: EL
-  !    INTEGER I,MYPAUSE
-  !    IF(ASSOCIATED(EL%K)) THEN
-  !       DO I=1,SIZE(EL%A)
-  !          if(el%form(i)) then
-  !             EL%K(2,I)=SQRT(EL%K(1,I)**2+EL%K(3,I)**2)
-  !          else
-  !             EL%K(2,I)=SQRT(-EL%K(1,I)**2+EL%K(3,I)**2)
-  !          endif
-  !       ENDDO
-  !    ELSE
-  !       WRITE(6,*) " WIGGLER FIELD NOT DEFINED "
-  !       I=MYPAUSE(556)
-  !    ENDIF
-  !  END SUBROUTINE SET_P
+subroutine kick_integral_r(el,v,kx,ky,symp)
+  implicit none    
+  real(dp), INTENT(INOUT) :: v(6),kx,ky
+  TYPE(sagan),INTENT(IN):: EL
+  real(dp), pointer :: e(:)
+  logical(lp) symp
+  real(dp) Ix1,Ix2,Iy1,Iy2,x,y
+  real(dp) a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18,a19,a20,a21,a22,a23,a24
+  real(dp) b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13,b14,b15,b16,b17,b18,b19,b20,b21,b22,b23,b24
+
+! KYMA undulator field integrals on 9/8/2014
+! from fitting I1y
+
+   e=>el%w%ex
+
+  a1 =     e(1)
+  a2 =     e(2)
+  a3 =     e(3)
+  a4 =     e(4)
+  a5 =     e(5)
+  a6 =     e(6)
+  a7 =     e(7)
+  a8 =     e(8)
+  a9 =     e(9)
+  a10 =    e(10)
+  a11 =    e(11)
+  a12 =    e(12)
+  a13 =    e(13)
+  a14 =    e(14)
+  a15 =    e(15)
+  a16 =    e(16)
+  a17 =    e(17)
+  a18 =    e(18)
+  a19 =    e(19)
+  a20 =    e(20)
+  a21 =    e(21)
+  a22 =    e(22)
+  a23 =    e(23)
+  a24 =    e(24)
+
+! from fitting I1x
+ 
+  e=>el%w%ey  
+
+  b1 =     e(1)
+  b2 =     e(2)
+  b3 =     e(3)
+  b4 =     e(4)
+  b5 =     e(5)
+  b6 =     e(6)
+  b7 =     e(7)
+  b8 =     e(8)
+  b9 =     e(9)
+  b10 =    e(10)
+  b11 =    e(11)
+  b12 =    e(12)
+  b13 =    e(13)
+  b14 =    e(14)
+  b15 =    e(15)
+  b16 =    e(16)
+  b17 =    e(17)
+  b18 =    e(18)
+  b19 =    e(19)
+  b20 =    e(20)
+  b21 =    e(21)
+  b22 =    e(22)
+  b23 =    e(23)
+  b24 =    e(24)
+
+
+if(.not.symp) then
+  Iy1=a1*sin(a2*v(1)+a3)*cosh(a2*v(3))+a4*sin(a5*v(1)+a6)*cosh(a5*v(3))+a7*sin(a8*v(1)+a9)*cosh(a8*v(3))+ &
+           a10*sin(a11*v(1)+a12)*cosh(a11*v(3))+a13*sin(a14*v(1)+a15)*cosh(a14*v(3))+a16*sin(a17*v(1)+a18)*cosh(a17*v(3))+ &
+           a19*sin(a20*v(1)+a21)*cosh(a20*v(3))+a22*sin(a23*v(1)+a24)*cosh(a23*v(3))
+
+  Ix1=a1*cos(a2*v(1)+a3)*sinh(a2*v(3))+a4*cos(a5*v(1)+a6)*sinh(a5*v(3))+a7*cos(a8*v(1)+a9)*sinh(a8*v(3))+ &
+           a10*cos(a11*v(1)+a12)*sinh(a11*v(3))+a13*cos(a14*v(1)+a15)*sinh(a14*v(3))+a16*cos(a17*v(1)+a18)*sinh(a17*v(3))+ &
+           a19*cos(a20*v(1)+a21)*sinh(a20*v(3))+a22*cos(a23*v(1)+a24)*sinh(a23*v(3))
+
+  Iy1=Iy1*1.0e-4_dp
+  Ix1=Ix1*1.0e-4_dp
+
+
+
+  Ix2=b1*sin(b2*v(1)+b3)*cosh(b2*v(3))+b4*sin(b5*v(1)+b6)*cosh(b5*v(3))+b7*sin(b8*v(1)+b9)*cosh(b8*v(3))+ &
+           b10*sin(b11*v(1)+b12)*cosh(b11*v(3))+b13*sin(b14*v(1)+b15)*cosh(b14*v(3))+b16*sin(b17*v(1)+b18)*cosh(b17*v(3))+ &
+           b19*sin(b20*v(1)+b21)*cosh(b20*v(3))+b22*sin(b23*v(1)+b24)*cosh(b23*v(3))
+  Iy2=b1*cos(b2*v(1)+b3)*sinh(b2*v(3))+b4*cos(b5*v(1)+b6)*sinh(b5*v(3))+b7*cos(b8*v(1)+b9)*sinh(b8*v(3))+ &
+           b10*cos(b11*v(1)+b12)*sinh(b11*v(3))+b13*cos(b14*v(1)+b15)*sinh(b14*v(3))+b16*cos(b17*v(1)+b18)*sinh(b17*v(3))+ &
+           b19*cos(b20*v(1)+b21)*sinh(b20*v(3))+b22*cos(b23*v(1)+b24)*sinh(b23*v(3))
+
+  Ix2=Ix2*1.0e-4_dp
+  Iy2=Iy2*1.0e-4_dp
+
+  kx=(-Iy1+Iy2)
+  ky=(-Ix1+Ix2)
+else
+
+x=v(1)
+y=v(3)
+
+kx=b13*sinh(b14*y)*cos(b14*x)*cos(b15)-b22*sinh(b23*y)*sin(b23*x)*sin(b24)-b16*sinh(b17*y)*sin(b17*x)*sin(b18)
+KX=KX-b19*sinh(b20*y)*sin(b20*x)*sin(b21)+b7*sinh(b8*y)*cos(b8*x)*cos(b9)-b13*sinh(b14*y)*sin(b14*x)*sin(b15)
+KX=KX+b16*sinh(b17*y)*cos(b17*x)*cos(b18)+b19*sinh(b20*y)*cos(b20*x)*cos(b21)+b4*sinh(b5*y)*cos(b5*x)*cos(b6)
+KX=KX+b1*sinh(b2*y)*cos(b2*x)*cos(b3)-b10*sinh(b11*y)*sin(b11*x)*sin(b12)-b7*sinh(b8*y)*sin(b8*x)*sin(b9)
+KX=KX+b22*sinh(b23*y)*cos(b23*x)*cos(b24)+b10*sinh(b11*y)*cos(b11*x)*cos(b12)-b4*sinh(b5*y)*sin(b5*x)*sin(b6)
+KX=KX-a10*sin(a11*x)*cos(a12)-a22*sin(a23*x)*cos(a24)-a7*sin(a8*x)*cos(a9)-a16*sin(a17*x)*cos(a18)-a13*sin(a14*x)*cos(a15)
+KX=KX-a19*sin(a20*x)*cos(a21)-a1*sin(a2*x)*cos(a3)-a4*sin(a5*x)*cos(a6)-b1*sinh(b2*y)*sin(b2*x)*sin(b3)-a1*cos(a2*x)*sin(a3)
+KX=KX-a4*cos(a5*x)*sin(a6)-a7*cos(a8*x)*sin(a9)-a10*cos(a11*x)*sin(a12)-a13*cos(a14*x)*sin(a15)-a16*cos(a17*x)*sin(a18)
+KX=KX-a19*cos(a20*x)*sin(a21)-a22*cos(a23*x)*sin(a24)
+
+ky=-a1*cos(a3)*sinh(a2*y)-a4*cos(a6)*sinh(a5*y)-a7*cos(a9)*sinh(a8*y)-a10*cos(a12)*sinh(a11*y)-a13*cos(a15)*sinh(a14*y)
+KY=KY-a16*cos(a18)*sinh(a17*y)-a19*cos(a21)*sinh(a20*y)-a22*cos(a24)*sinh(a23*y)+b1*cosh(b2*y)*sin(b2*x)*cos(b3)
+KY=KY+b1*cosh(b2*y)*cos(b2*x)*sin(b3)+b4*cosh(b5*y)*sin(b5*x)*cos(b6)+b4*cosh(b5*y)*cos(b5*x)*sin(b6)+b7*cosh(b8*y)*sin(b8*x)*cos(b9)
+KY=KY+b7*cosh(b8*y)*cos(b8*x)*sin(b9)+b10*cosh(b11*y)*sin(b11*x)*cos(b12)+b10*cosh(b11*y)*cos(b11*x)*sin(b12)
+KY=KY+b13*cosh(b14*y)*sin(b14*x)*cos(b15)+b13*cosh(b14*y)*cos(b14*x)*sin(b15)+b16*cosh(b17*y)*sin(b17*x)*cos(b18)
+KY=KY+b16*cosh(b17*y)*cos(b17*x)*sin(b18)+b19*cosh(b20*y)*sin(b20*x)*cos(b21) 
+KY=KY+b19*cosh(b20*y)*cos(b20*x)*sin(b21)+b22*cosh(b23*y)*sin(b23*x)*cos(b24)+b22*cosh(b23*y)*cos(b23*x)*sin(b24)
+
+kx=kx*1.e-4_dp
+ky=ky*1.e-4_dp
+endif
+
+end subroutine kick_integral_r
+
+
+subroutine kick_integral_p(el,v,kx,ky,symp)
+  implicit none    
+  type(real_8), INTENT(INOUT) :: v(6),kx,ky
+  TYPE(saganp),INTENT(IN):: EL
+  real(dp), pointer :: e(:)
+  logical(lp) symp
+  type(real_8) Ix1,Ix2,Iy1,Iy2,x,y
+  real(dp) a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18,a19,a20,a21,a22,a23,a24
+  real(dp) b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13,b14,b15,b16,b17,b18,b19,b20,b21,b22,b23,b24
+
+call ALLOC(Ix1,Ix2,Iy1,Iy2,x,y)
+
+! KYMA undulator field integrals on 9/8/2014
+! from fitting I1y
+
+   e=>el%w%ex
+
+  a1 =     e(1)
+  a2 =     e(2)
+  a3 =     e(3)
+  a4 =     e(4)
+  a5 =     e(5)
+  a6 =     e(6)
+  a7 =     e(7)
+  a8 =     e(8)
+  a9 =     e(9)
+  a10 =    e(10)
+  a11 =    e(11)
+  a12 =    e(12)
+  a13 =    e(13)
+  a14 =    e(14)
+  a15 =    e(15)
+  a16 =    e(16)
+  a17 =    e(17)
+  a18 =    e(18)
+  a19 =    e(19)
+  a20 =    e(20)
+  a21 =    e(21)
+  a22 =    e(22)
+  a23 =    e(23)
+  a24 =    e(24)
+
+! from fitting I1x
+ 
+  e=>el%w%ey  
+
+  b1 =     e(1)
+  b2 =     e(2)
+  b3 =     e(3)
+  b4 =     e(4)
+  b5 =     e(5)
+  b6 =     e(6)
+  b7 =     e(7)
+  b8 =     e(8)
+  b9 =     e(9)
+  b10 =    e(10)
+  b11 =    e(11)
+  b12 =    e(12)
+  b13 =    e(13)
+  b14 =    e(14)
+  b15 =    e(15)
+  b16 =    e(16)
+  b17 =    e(17)
+  b18 =    e(18)
+  b19 =    e(19)
+  b20 =    e(20)
+  b21 =    e(21)
+  b22 =    e(22)
+  b23 =    e(23)
+  b24 =    e(24)
+
+
+if(.not.symp) then
+  Iy1=a1*sin(a2*v(1)+a3)*cosh(a2*v(3))+a4*sin(a5*v(1)+a6)*cosh(a5*v(3))+a7*sin(a8*v(1)+a9)*cosh(a8*v(3))+ &
+           a10*sin(a11*v(1)+a12)*cosh(a11*v(3))+a13*sin(a14*v(1)+a15)*cosh(a14*v(3))+a16*sin(a17*v(1)+a18)*cosh(a17*v(3))+ &
+           a19*sin(a20*v(1)+a21)*cosh(a20*v(3))+a22*sin(a23*v(1)+a24)*cosh(a23*v(3))
+
+  Ix1=a1*cos(a2*v(1)+a3)*sinh(a2*v(3))+a4*cos(a5*v(1)+a6)*sinh(a5*v(3))+a7*cos(a8*v(1)+a9)*sinh(a8*v(3))+ &
+           a10*cos(a11*v(1)+a12)*sinh(a11*v(3))+a13*cos(a14*v(1)+a15)*sinh(a14*v(3))+a16*cos(a17*v(1)+a18)*sinh(a17*v(3))+ &
+           a19*cos(a20*v(1)+a21)*sinh(a20*v(3))+a22*cos(a23*v(1)+a24)*sinh(a23*v(3))
+
+  Iy1=Iy1*1.0e-4_dp
+  Ix1=Ix1*1.0e-4_dp
+
+
+
+  Ix2=b1*sin(b2*v(1)+b3)*cosh(b2*v(3))+b4*sin(b5*v(1)+b6)*cosh(b5*v(3))+b7*sin(b8*v(1)+b9)*cosh(b8*v(3))+ &
+           b10*sin(b11*v(1)+b12)*cosh(b11*v(3))+b13*sin(b14*v(1)+b15)*cosh(b14*v(3))+b16*sin(b17*v(1)+b18)*cosh(b17*v(3))+ &
+           b19*sin(b20*v(1)+b21)*cosh(b20*v(3))+b22*sin(b23*v(1)+b24)*cosh(b23*v(3))
+  Iy2=b1*cos(b2*v(1)+b3)*sinh(b2*v(3))+b4*cos(b5*v(1)+b6)*sinh(b5*v(3))+b7*cos(b8*v(1)+b9)*sinh(b8*v(3))+ &
+           b10*cos(b11*v(1)+b12)*sinh(b11*v(3))+b13*cos(b14*v(1)+b15)*sinh(b14*v(3))+b16*cos(b17*v(1)+b18)*sinh(b17*v(3))+ &
+           b19*cos(b20*v(1)+b21)*sinh(b20*v(3))+b22*cos(b23*v(1)+b24)*sinh(b23*v(3))
+
+  Ix2=Ix2*1.0e-4_dp
+  Iy2=Iy2*1.0e-4_dp
+
+  kx=(-Iy1+Iy2)
+  ky=(-Ix1+Ix2)
+else
+
+x=v(1)
+y=v(3)
+
+!kx=b13*sinh(b14*y)*cos(b14*x)*cos(b15)-b22*sinh(b23*y)*sin(b23*x)*sin(b24)-b16*sinh(b17*y)*sin(b17*x)*sin(b18)-b19*sinh(b20*y) &
+!*sin(b20*x)*sin(b21)+b7*sinh(b8*y)*cos(b8*x)*cos(b9)-b13*sinh(b14*y)*sin(b14*x)*sin(b15)+b16*sinh(b17*y)*cos(b17*x)*cos(b18)+ &
+!b19*sinh(b20*y)*cos(b20*x)*cos(b21)+b4*sinh(b5*y)*cos(b5*x)*cos(b6)+b1*sinh(b2*y)*cos(b2*x)*cos(b3)-b10*sinh(b11*y)*sin(b11*x)* &
+!sin(b12)-b7*sinh(b8*y)*sin(b8*x)*sin(b9)+b22*sinh(b23*y)*cos(b23*x)*cos(b24)+b10*sinh(b11*y)*cos(b11*x)*cos(b12)-b4*sinh(b5*y)* &
+!sin(b5*x)*sin(b6)-a10*sin(a11*x)*cos(a12)-a22*sin(a23*x)*cos(a24)-a7*sin(a8*x)*cos(a9)-a16*sin(a17*x)*cos(a18)-a13*sin(a14*x)* &
+!cos(a15)-a19*sin(a20*x)*cos(a21)-a1*sin(a2*x)*cos(a3)-a4*sin(a5*x)*cos(a6)-b1*sinh(b2*y)*sin(b2*x)*sin(b3)-a1*cos(a2*x)*sin(a3) &
+!-a4*cos(a5*x)*sin(a6)-a7*cos(a8*x)*sin(a9)-a10*cos(a11*x)*sin(a12)-a13*cos(a14*x)*sin(a15)-a16*cos(a17*x)*sin(a18)-a19*cos(a20*x) &
+!*sin(a21)-a22*cos(a23*x)*sin(a24)
+
+!ky=-a1*cos(a3)*sinh(a2*y)-a4*cos(a6)*sinh(a5*y)-a7*cos(a9)*sinh(a8*y)-a10*cos(a12)*sinh(a11*y)-a13*cos(a15)*sinh(a14*y)-a16* &
+!cos(a18)*sinh(a17*y)-a19*cos(a21)*sinh(a20*y)-a22*cos(a24)*sinh(a23*y)+b1*cosh(b2*y)*sin(b2*x)*cos(b3)+b1*cosh(b2*y)*cos(b2*x)* &
+!sin(b3)+b4*cosh(b5*y)*sin(b5*x)*cos(b6)+b4*cosh(b5*y)*cos(b5*x)*sin(b6)+b7*cosh(b8*y)*sin(b8*x)*cos(b9)+b7*cosh(b8*y)*cos(b8*x) &
+!*sin(b9)+b10*cosh(b11*y)*sin(b11*x)*cos(b12)+b10*cosh(b11*y)*cos(b11*x)*sin(b12)+b13*cosh(b14*y)*sin(b14*x)*cos(b15)+b13*cosh(b14*y) &
+!*cos(b14*x)*sin(b15)+b16*cosh(b17*y)*sin(b17*x)*cos(b18)+b16*cosh(b17*y)*cos(b17*x)*sin(b18)+b19*cosh(b20*y)*sin(b20*x)*cos(b21) &
+!+b19*cosh(b20*y)*cos(b20*x)*sin(b21)+b22*cosh(b23*y)*sin(b23*x)*cos(b24)+b22*cosh(b23*y)*cos(b23*x)*sin(b24)
+
+kx=b13*sinh(b14*y)*cos(b14*x)*cos(b15)-b22*sinh(b23*y)*sin(b23*x)*sin(b24)-b16*sinh(b17*y)*sin(b17*x)*sin(b18)
+KX=KX-b19*sinh(b20*y)*sin(b20*x)*sin(b21)+b7*sinh(b8*y)*cos(b8*x)*cos(b9)-b13*sinh(b14*y)*sin(b14*x)*sin(b15)
+KX=KX+b16*sinh(b17*y)*cos(b17*x)*cos(b18)+b19*sinh(b20*y)*cos(b20*x)*cos(b21)+b4*sinh(b5*y)*cos(b5*x)*cos(b6)
+KX=KX+b1*sinh(b2*y)*cos(b2*x)*cos(b3)-b10*sinh(b11*y)*sin(b11*x)*sin(b12)-b7*sinh(b8*y)*sin(b8*x)*sin(b9)
+KX=KX+b22*sinh(b23*y)*cos(b23*x)*cos(b24)+b10*sinh(b11*y)*cos(b11*x)*cos(b12)-b4*sinh(b5*y)*sin(b5*x)*sin(b6)
+KX=KX-a10*sin(a11*x)*cos(a12)-a22*sin(a23*x)*cos(a24)-a7*sin(a8*x)*cos(a9)-a16*sin(a17*x)*cos(a18)-a13*sin(a14*x)*cos(a15)
+KX=KX-a19*sin(a20*x)*cos(a21)-a1*sin(a2*x)*cos(a3)-a4*sin(a5*x)*cos(a6)-b1*sinh(b2*y)*sin(b2*x)*sin(b3)-a1*cos(a2*x)*sin(a3)
+KX=KX-a4*cos(a5*x)*sin(a6)-a7*cos(a8*x)*sin(a9)-a10*cos(a11*x)*sin(a12)-a13*cos(a14*x)*sin(a15)-a16*cos(a17*x)*sin(a18)
+KX=KX-a19*cos(a20*x)*sin(a21)-a22*cos(a23*x)*sin(a24)
+
+ky=-a1*cos(a3)*sinh(a2*y)-a4*cos(a6)*sinh(a5*y)-a7*cos(a9)*sinh(a8*y)-a10*cos(a12)*sinh(a11*y)-a13*cos(a15)*sinh(a14*y)
+KY=KY-a16*cos(a18)*sinh(a17*y)-a19*cos(a21)*sinh(a20*y)-a22*cos(a24)*sinh(a23*y)+b1*cosh(b2*y)*sin(b2*x)*cos(b3)
+KY=KY+b1*cosh(b2*y)*cos(b2*x)*sin(b3)+b4*cosh(b5*y)*sin(b5*x)*cos(b6)+b4*cosh(b5*y)*cos(b5*x)*sin(b6)+b7*cosh(b8*y)*sin(b8*x)*cos(b9)
+KY=KY+b7*cosh(b8*y)*cos(b8*x)*sin(b9)+b10*cosh(b11*y)*sin(b11*x)*cos(b12)+b10*cosh(b11*y)*cos(b11*x)*sin(b12)
+KY=KY+b13*cosh(b14*y)*sin(b14*x)*cos(b15)+b13*cosh(b14*y)*cos(b14*x)*sin(b15)+b16*cosh(b17*y)*sin(b17*x)*cos(b18)
+KY=KY+b16*cosh(b17*y)*cos(b17*x)*sin(b18)+b19*cosh(b20*y)*sin(b20*x)*cos(b21) 
+KY=KY+b19*cosh(b20*y)*cos(b20*x)*sin(b21)+b22*cosh(b23*y)*sin(b23*x)*cos(b24)+b22*cosh(b23*y)*cos(b23*x)*sin(b24)
+
+
+kx=kx*1.e-4_dp
+ky=ky*1.e-4_dp
+endif
+
+call kill(Ix1,Ix2,Iy1,Iy2,x,y)
+
+end subroutine kick_integral_p
+
+
 
   SUBROUTINE INTR(EL,X,k,mid)
     IMPLICIT NONE
@@ -630,6 +873,7 @@ contains
           DEALLOCATE(EL%offset)
           DEALLOCATE(EL%FORM)
           DEALLOCATE(EL%K)
+          DEALLOCATE(EL%ex,EL%ey)
        ENDIF
     elseif(i==0)       then
        NULLIFY(EL%A)
@@ -637,6 +881,7 @@ contains
        NULLIFY(EL%offset)
        NULLIFY(EL%FORM)
        NULLIFY(EL%K)
+          NULLIFY(EL%ex,EL%ey)
        ! nullifies pointers
        ! And also zeroes for security ordinary variables
     endif
@@ -657,6 +902,7 @@ contains
           DEALLOCATE(EL%offset)
           DEALLOCATE(EL%FORM)
           DEALLOCATE(EL%K)
+          DEALLOCATE(EL%ex,EL%ey)
        ENDIF
     elseif(i==0)       then
        NULLIFY(EL%A)
@@ -664,6 +910,7 @@ contains
        NULLIFY(EL%offset)
        NULLIFY(EL%FORM)
        NULLIFY(EL%K)
+          nullify(EL%ex,EL%ey)
        ! nullifies pointers
        ! And also zeroes for security ordinary variables
        !
@@ -746,6 +993,8 @@ contains
           ELP%y0(I)    =EL%y0(I)
           ELP%FORM(I) =EL%FORM(I)
        ENDDO
+        elp%ex=el%ex
+        elp%ey=el%ey
        ELP%offset   =EL%offset
     endif
 
@@ -772,6 +1021,8 @@ contains
           ELP%y0(I)    =EL%y0(I)
           ELP%FORM(I) =EL%FORM(I)
        ENDDO
+        elp%ex=el%ex
+        elp%ey=el%ey
        ELP%offset   =EL%offset
     endif
 
@@ -798,6 +1049,8 @@ contains
           ELP%F(I)    =EL%F(I)
           ELP%FORM(I) =EL%FORM(I)
        ENDDO
+        elp%ex=el%ex
+        elp%ey=el%ey
        ELP%offset   =EL%offset
     endif
 
@@ -854,7 +1107,9 @@ contains
     EL%F=0.0_dp
     EL%offset=0.0_dp
     EL%FORM=0
-
+    ALLOCATE(EL%ex(wiggler_fringe),EL%ey(wiggler_fringe))
+    EL%ex=0
+    EL%ey=0
   END SUBROUTINE INIT_SAGAN_POINTERS
 
   SUBROUTINE POINTERS_WP(EL,N)
@@ -874,7 +1129,9 @@ contains
     ALLOCATE(EL%FORM(N))
     EL%FORM=0
     CALL ALLOC(EL)
-
+    ALLOCATE(EL%ex(wiggler_fringe),EL%ey(wiggler_fringe))
+    EL%ex=0
+    EL%ey=0
     ! ALLOCATE INTERNAL POINTERS IF ANY
 
   END SUBROUTINE POINTERS_WP
@@ -1046,6 +1303,9 @@ contains
        S2%W%A(I)=S2%W%A(I)*(P0C_OLD/P0C_NEW)**power
     ENDDO
 
+    S2%W%ex(1:wiggler_fringe)=S2%W%ex(1:wiggler_fringe)*(P0C_OLD/P0C_NEW)**power
+    S2%W%ey(1:wiggler_fringe)=S2%W%ey(1:wiggler_fringe)*(P0C_OLD/P0C_NEW)**power
+
   end SUBROUTINE  scale_SAGANR
 
   SUBROUTINE  scale_SAGANP(S2,P0C_OLD,P0C_NEW,power)
@@ -1060,6 +1320,9 @@ contains
     DO I=1,SIZE(S2%W%A)
        S2%W%A(I)=S2%W%A(I)*(P0C_OLD/P0C_NEW)**power
     ENDDO
+
+    S2%W%ex(1:wiggler_fringe)=S2%W%ex(1:wiggler_fringe)*(P0C_OLD/P0C_NEW)**power
+    S2%W%ey(1:wiggler_fringe)=S2%W%ey(1:wiggler_fringe)*(P0C_OLD/P0C_NEW)**power
 
   end SUBROUTINE  scale_SAGANP
 
@@ -1931,19 +2194,19 @@ ENDDO
     real(dp),INTENT(INOUT):: X(6)
     TYPE(SAGAN),INTENT(IN):: EL
     real(dp),INTENT(IN):: L,Z
-    real(dp) A,B
+    real(dp) A,B,kx,ky
     TYPE(INTERNAL_STATE),OPTIONAL :: K
-
-
-
-
-
 
 
     CALL COMPZ(EL,Z,X,A,B)
     X(2)=X(2)+L*A
     X(4)=X(4)+L*B
 
+    if(el%p%permfringe) then
+     call kick_integral(el,x,kx,ky,el%p%kill_ent_fringe)
+     X(2)=X(2)+L*kx
+     X(4)=X(4)+L*ky
+    endif
 
   END SUBROUTINE KICKR
 
@@ -1952,7 +2215,7 @@ ENDDO
     TYPE(REAL_8),INTENT(INOUT):: X(6)
     TYPE(SAGANP),INTENT(IN):: EL
     TYPE(REAL_8),INTENT(IN):: L,Z
-    TYPE(REAL_8) A,B,AP,BP
+    TYPE(REAL_8) A,B,AP,BP,kx,ky
     TYPE(INTERNAL_STATE),OPTIONAL :: K
 
 
@@ -1962,6 +2225,14 @@ ENDDO
     CALL COMPZ(EL,Z,X,A,B)
     X(2)=X(2)+L*A
     X(4)=X(4)+L*B
+
+    if(el%p%permfringe) then
+     call alloc(kx,ky)
+     call kick_integral(el,x,kx,ky,el%p%kill_ent_fringe)
+     X(2)=X(2)+L*kx
+     X(4)=X(4)+L*ky
+     call kill(kx,ky)
+    endif
 
     call KILL(A,B,AP,BP)
 

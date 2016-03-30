@@ -416,7 +416,24 @@ TYPE fibre_array
    real(dp), pointer :: err=> null()
 END TYPE fibre_array
 
+
+TYPE node_array
+   type(integration_node), pointer :: t  => null()
+   integer, pointer :: pos  => null()
+   real(dp),pointer :: v=> null() , vmax=> null(); 
+   complex(dp), pointer :: s(:)=> null()
+   real(dp), pointer :: err=> null()
+   type(c_vector_field), pointer :: f => null()
+   type(c_damap), pointer :: m => null()
+END TYPE node_array
+
+
 contains
+
+
+
+
+
 
 
  subroutine alloc_fibre_array(a,n,m)
