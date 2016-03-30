@@ -226,7 +226,7 @@ subroutine kick_integral_r(el,v,kx,ky,symp)
   real(dp), INTENT(INOUT) :: v(6),kx,ky
   TYPE(sagan),INTENT(IN):: EL
   real(dp), pointer :: e(:)
-  logical(lp) symp
+  integer symp
   real(dp) Ix1,Ix2,Iy1,Iy2,x,y
   real(dp) a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18,a19,a20,a21,a22,a23,a24
   real(dp) b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13,b14,b15,b16,b17,b18,b19,b20,b21,b22,b23,b24
@@ -291,7 +291,7 @@ subroutine kick_integral_r(el,v,kx,ky,symp)
   b24 =    e(24)
 
 
-if(.not.symp) then
+if(symp==1) then
   Iy1=a1*sin(a2*v(1)+a3)*cosh(a2*v(3))+a4*sin(a5*v(1)+a6)*cosh(a5*v(3))+a7*sin(a8*v(1)+a9)*cosh(a8*v(3))+ &
            a10*sin(a11*v(1)+a12)*cosh(a11*v(3))+a13*sin(a14*v(1)+a15)*cosh(a14*v(3))+a16*sin(a17*v(1)+a18)*cosh(a17*v(3))+ &
            a19*sin(a20*v(1)+a21)*cosh(a20*v(3))+a22*sin(a23*v(1)+a24)*cosh(a23*v(3))
@@ -352,7 +352,7 @@ subroutine kick_integral_p(el,v,kx,ky,symp)
   type(real_8), INTENT(INOUT) :: v(6),kx,ky
   TYPE(saganp),INTENT(IN):: EL
   real(dp), pointer :: e(:)
-  logical(lp) symp
+  integer symp
   type(real_8) Ix1,Ix2,Iy1,Iy2,x,y
   real(dp) a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18,a19,a20,a21,a22,a23,a24
   real(dp) b1,b2,b3,b4,b5,b6,b7,b8,b9,b10,b11,b12,b13,b14,b15,b16,b17,b18,b19,b20,b21,b22,b23,b24
@@ -419,7 +419,7 @@ call ALLOC(Ix1,Ix2,Iy1,Iy2,x,y)
   b24 =    e(24)
 
 
-if(.not.symp) then
+if(symp==1) then
   Iy1=a1*sin(a2*v(1)+a3)*cosh(a2*v(3))+a4*sin(a5*v(1)+a6)*cosh(a5*v(3))+a7*sin(a8*v(1)+a9)*cosh(a8*v(3))+ &
            a10*sin(a11*v(1)+a12)*cosh(a11*v(3))+a13*sin(a14*v(1)+a15)*cosh(a14*v(3))+a16*sin(a17*v(1)+a18)*cosh(a17*v(3))+ &
            a19*sin(a20*v(1)+a21)*cosh(a20*v(3))+a22*sin(a23*v(1)+a24)*cosh(a23*v(3))
@@ -2202,8 +2202,8 @@ ENDDO
     X(2)=X(2)+L*A
     X(4)=X(4)+L*B
 
-    if(el%p%permfringe) then
-     call kick_integral(el,x,kx,ky,el%p%kill_ent_fringe)
+    if(el%p%permfringe>0) then
+     call kick_integral(el,x,kx,ky,el%p%permfringe)
      X(2)=X(2)+L*kx
      X(4)=X(4)+L*ky
     endif
@@ -2226,9 +2226,9 @@ ENDDO
     X(2)=X(2)+L*A
     X(4)=X(4)+L*B
 
-    if(el%p%permfringe) then
+    if(el%p%permfringe>0) then
      call alloc(kx,ky)
-     call kick_integral(el,x,kx,ky,el%p%kill_ent_fringe)
+     call kick_integral(el,x,kx,ky,el%p%permfringe)
      X(2)=X(2)+L*kx
      X(4)=X(4)+L*ky
      call kill(kx,ky)

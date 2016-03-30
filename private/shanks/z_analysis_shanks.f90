@@ -750,7 +750,7 @@ real(dp) h,hcurv
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     type(work) w
 
-h=zp(2)-zp(1)
+h=2*(zp(2)-zp(1))
 hcurv=0.d0
           IS=1
           nt=(size(bf,1)-1)/2
@@ -768,7 +768,7 @@ real(dp) h,hcurv
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     type(work) w
 
-h=zp(2)-zp(1)
+h=2*(zp(2)-zp(1))
 hcurv=0.d0
           IS=1
           nt=(size(bf,1)-1)/2
