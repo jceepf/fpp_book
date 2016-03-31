@@ -11,7 +11,7 @@ private integrate_crittendenr,integrate_crittendenp,conv_to_xpr,conv_to_xpp,conv
 integer, private :: dirb =1
   real(dp), private, allocatable :: bf(:,:,:), zp(:),dx0(:)
   real(dp) LCM,LC,rhod,sagd,LD,angd,pxd,xd,scaled
-
+logical :: canonical = .true.
   INTERFACE bfield
      MODULE PROCEDURE bfieldr
      MODULE PROCEDURE bfieldp
@@ -434,9 +434,9 @@ implicit None
 integer ns,nfit,i,mf,j
 real(dp) brho
 type(work) w
-ns=133
+ns=141
 nfit=17
-call kanalnummer(mf,"C:\document\etienne_programs_new\read_m_u_m_t\crittenden\sarc_18_fitpars_sent_30mar16.txt")
+call kanalnummer(mf,"C:\document\etienne_programs_new\read_m_u_m_t\crittenden\sarc_19_fitpars_sent31mar16.txt")
 
 
 allocate(bf(ns,3,nfit),zp(ns),dx0(ns))
@@ -454,6 +454,7 @@ zp=zp/100.d0
 bf=scaled*bf/w%brho
 
 
+
 rhod=30.75d0
 lcm=zp(ns)-zp(1)
 ld=2.3d0
@@ -466,8 +467,9 @@ xd=(zp(1)-lc/2.d0)*tan(angd/2.d0)
 write(6,*) lc,lcm
 write(6,*) sagd
 write(6,*) xd,pxd
-dx0=sagd+0.05d0
+!dx0=sagd     !+0.05d0
 close(mf) 
+
 end subroutine read_crittenden
 
 
@@ -583,6 +585,9 @@ do j=1,3
  b(j)=b(j)+bf(i,j,12)*x**4+bf(i,j,13)*y*x**4+bf(i,j,14)*y**2*x**4
  b(j)=b(j)+bf(i,j,15)*x**5+bf(i,j,16)*y*x**5+bf(i,j,17)*y**2*x**5
 enddo
+b(1)=2*y*x*1.1d0
+b(2)=x**2-y**2
+b(3)=0.d0
   end subroutine bfieldr
 
 
@@ -598,7 +603,9 @@ do j=1,3
  b(j)=b(j)+bf(i,j,12)*x**4+bf(i,j,13)*y*x**4+bf(i,j,14)*y**2*x**4
  b(j)=b(j)+bf(i,j,15)*x**5+bf(i,j,16)*y*x**5+bf(i,j,17)*y**2*x**5
 enddo
-
+b(1)=2*y*x*1.1d0
+b(2)=x**2-y**2
+b(3)=0.d0
   end subroutine bfieldp
 
  subroutine rk4_crittendenr(ti,h,hcurv,w,y,k)
@@ -744,20 +751,25 @@ enddo
 
 subroutine integrate_crittendenr(y,w,k)
 implicit none
-integer nt,is,i
+integer nt,is,i,mf
 real(dp) h,hcurv
     real(dp), INTENT(INOUT)::  y(6)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     type(work) w
 
+call kanalnummer(mf,'plot.dat')
 h=2*(zp(2)-zp(1))
 hcurv=0.d0
+if(canonical) call conv_to_xp_crittenden( hcurv,w%beta0,y,k)
           IS=1
           nt=(size(bf,1)-1)/2
           DO I=1,nt
              call rk4(is,h,hcurv,w,y,k)  
+            write(mf,*) i,y(1:2)
           ENDDO
+if(canonical) call conv_to_px_crittenden(hcurv,w%beta0,y,k)
 write(6,*) is,size(bf,1)
+close(mf)
 end subroutine integrate_crittendenr
 
 subroutine integrate_crittendenp(y,w,k)
@@ -770,11 +782,13 @@ real(dp) h,hcurv
 
 h=2*(zp(2)-zp(1))
 hcurv=0.d0
+if(canonical) call conv_to_xp_crittenden( hcurv,w%beta0,y,k)
           IS=1
           nt=(size(bf,1)-1)/2
           DO I=1,nt
              call rk4(is,h,hcurv,w,y,k)  
           ENDDO
+if(canonical) call conv_to_px_crittenden(hcurv,w%beta0,y,k)
 
 end subroutine integrate_crittendenp
 
