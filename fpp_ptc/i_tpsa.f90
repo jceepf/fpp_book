@@ -4076,7 +4076,6 @@ endif
 	END FUNCTION bessi_se
 
 	FUNCTION bessi0_se(x)
-     USE nrutil, ONLY : poly
 	IMPLICIT NONE
 	REAL(dp), INTENT(IN) :: x
 	REAL(dp) :: bessi0_se
