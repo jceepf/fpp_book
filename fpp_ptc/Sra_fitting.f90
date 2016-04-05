@@ -27,16 +27,20 @@ contains
 
 
 
-subroutine find_time_patch(kekb,my_default,ee,kf,kb)
+subroutine find_time_patch(kekb,my_default,ee,bmadpatch,kf,kb)
 implicit none
 type(layout), pointer :: kekb
 real(dp) ee,closed_orbit(6)
 integer, optional :: kf,kb
-integer kc,ke,i
+integer kc,ke,i,cc,jc
 type(internal_state) my_default,state
-type(fibre), pointer :: f
+type(fibre), pointer :: f,f1,f2
+logical, optional :: bmadpatch
+logical bm
 
 
+bm=.true.
+if(present(bmadpatch)) bm =bmadpatch
 ke=0
 kc=0
 f=> kekb%start
@@ -50,9 +54,27 @@ enddo
 
 state=(my_default+nocavity0)-radiation0-spin0-time0
 closed_orbit=0.d0
-call propagate(kekb,closed_orbit,state,fibre1=1)
+
+call find_orbit_x(kekb,closed_orbit,STATE,1.e-8_dp,fibre1=1)  
+
+!call propagate(kekb,closed_orbit,state,fibre1=1)
 closed_orbit(6)=0.d0
 
+f1=> kekb%start
+if(bm) then
+f=> kekb%start
+ do i=1,kekb%n
+   if(f%mag%kind==kind4) then 
+     cc=cc+1
+     if(cc==1) then 
+      f1=>f
+      jc=i
+     endif
+     f2=>f
+   endif
+   f=>f%next
+ enddo
+endif
 
 
 f=> kekb%start
@@ -61,6 +83,28 @@ do i=1,kekb%n
 call propagate(kekb,closed_orbit,state,fibre1=i,fibre2=i+1)
 
 if(abs(closed_orbit(6))>ee.or.f%next%mag%kind==kind4.or.f%mag%kind==kind4) then
+if(bm) then
+
+ if(f%next%mag%kind==kind4) then
+  f%patch%time=2
+  f%patch%B_T=closed_orbit(6)
+ ke=ke+1
+ elseif(f%mag%kind==kind4) then
+  if(associated(f,f2)) then
+   f%next%patch%time=1
+   f%patch%A_T=closed_orbit(6)
+  kc=kc+1
+  endif
+ closed_orbit(6)=0.d0
+ else
+  f%patch%time=2
+  f%patch%B_T=closed_orbit(6)
+  ke=ke+1
+  closed_orbit(6)=0.d0
+ endif
+
+else
+
  if(f%next%mag%kind==kind4) then
   f%next%patch%time=1
   f%next%patch%A_T=closed_orbit(6)
@@ -78,17 +122,22 @@ if(abs(closed_orbit(6))>ee.or.f%next%mag%kind==kind4.or.f%mag%kind==kind4) then
  endif
 
 endif
+
+
+
+endif
  
 
 f=>f%next
 enddo
 
+if(abs(closed_orbit(6))>ee) then
 f=> kekb%end
   f%patch%time=2
   f%patch%B_T=closed_orbit(6)
   ke=ke+1
   closed_orbit(6)=0.d0
-
+endif
 
 if(present(kb)) kb=ke
 if(present(kf)) kf=kc

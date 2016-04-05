@@ -10,8 +10,9 @@ private integrate_crittendenr,integrate_crittendenp,conv_to_xpr,conv_to_xpp,conv
 ! This is a beam to be tracked
 integer, private :: dirb =1
   real(dp), private, allocatable :: bf(:,:,:), zp(:),dx0(:)
-  real(dp) LCM,LC,rhod,sagd,LD,angd,pxd,xd,scaled
-logical :: canonical = .true.
+
+logical, private :: canonical = .true.
+
   INTERFACE bfield
      MODULE PROCEDURE bfieldr
      MODULE PROCEDURE bfieldp
@@ -429,47 +430,114 @@ end subroutine c_canonise_shanks
 
 !!!!!!!!!!!!!!!!!! Jim Crittenden
 
-subroutine read_crittenden(w)
+subroutine read_crittenden(no,file)
 implicit None
-integer ns,nfit,i,mf,j
+integer ns,nfit,i,mf,j,no
 real(dp) brho
+  real(dp) LCM,LC,rhod,sagd,LD,angd,pxd,xd,scaled,ed,charged,md 
+  real(dp) dc,angc
 type(work) w
-ns=141
+real(dp) x(6),y(6)
+character(*) file
+type(real_8) z(6),zh(6)
+type(damap) id
+type(gmap) g
+
 nfit=17
-call kanalnummer(mf,"C:\document\etienne_programs_new\read_m_u_m_t\crittenden\sarc_19_fitpars_sent31mar16.txt")
+canonical=.true.
+call kanalnummer(mf,file)
 
 
-allocate(bf(ns,3,nfit),zp(ns),dx0(ns))
+
 
 bf=0.d0
 zp=0.d0
 dx0=0.d0
 
+! 0.3075000E+04  0.2300000E+03  0.6000000E+01 -0.1000000E+01  0.5110000E-03  0.1410000E+03 
+
+read(mf,*) rhod,ld, Ed, charged,md,sagd
+ns=nint(sagd)
+allocate(bf(ns,3,nfit),zp(ns),dx0(ns))
+
+rhod=rhod/100
+ld=ld/100
+scaled=charged*1.e-4_dp
+electron=.true.
+muon=md/pmae
+call find_energy(w,ENERGY=ed)
+write(6,*) w%brho
+pause 125
 do i=1,ns
 do j=1,3
 read(mf,*) zp(i),bf(i,j,1:nfit)
 enddo
 enddo
-zp=zp/100.d0
+
+
+zp=zp/100.0_dp
 bf=scaled*bf/w%brho
 
 
 
-rhod=30.75d0
+!rhod=30.75d0
 lcm=zp(ns)-zp(1)
-ld=2.3d0
+!ld=2.3d0
 angd=ld/rhod
+
 lc=2*sin(angd/2)*rhod
 pxd=sin(angd/2)
 sagd=rhod*(1.d0-cos(angd/2))
-xd=(zp(1)-lc/2.d0)*tan(angd/2.d0)
+xd=(-lc/2.d0-zp(1))*tan(angd/2.d0)
 
-write(6,*) lc,lcm
-write(6,*) sagd
+angc=angd/2
+dc=(lcm-lc)/2
+write(6,*) lc,lcm,dc
+write(6,*) "sagd = ",sagd
+write(6,*) " initial"
 write(6,*) xd,pxd
-!dx0=sagd     !+0.05d0
+dx0=sagd     !+0.05d0
 close(mf) 
+write(6,*) "  "
 
+
+
+!x(1)=xd
+!x(2)=sin(angd/2.d0)
+ 
+call init(only_4d0,1,0)
+
+call alloc(id)
+call alloc(z);call alloc(zh);call alloc(g);
+x=0.d0
+
+do i=1,10
+id=1
+z=x+id
+call integrate_crittenden(z,w,angc,dc,default,zh)
+
+zh(1)=zh(1)-sagd
+call print(zh(1),6)
+call print(zh(2),6)
+pause 1
+id=zh
+g=id
+g=g.oo.(-1)
+
+do j=1,4
+x(j)=x(j)+(g%v(j).sub.'0')
+enddo
+
+!call print(g,6)
+enddo
+call kill(id)
+call kill(z)
+call kill(zh)
+call kill(g)
+
+call integrate_crittenden(x,w,angc,dc,default)
+
+stop
 end subroutine read_crittenden
 
 
@@ -585,9 +653,6 @@ do j=1,3
  b(j)=b(j)+bf(i,j,12)*x**4+bf(i,j,13)*y*x**4+bf(i,j,14)*y**2*x**4
  b(j)=b(j)+bf(i,j,15)*x**5+bf(i,j,16)*y*x**5+bf(i,j,17)*y**2*x**5
 enddo
-b(1)=2*y*x*1.1d0
-b(2)=x**2-y**2
-b(3)=0.d0
   end subroutine bfieldr
 
 
@@ -603,9 +668,6 @@ do j=1,3
  b(j)=b(j)+bf(i,j,12)*x**4+bf(i,j,13)*y*x**4+bf(i,j,14)*y**2*x**4
  b(j)=b(j)+bf(i,j,15)*x**5+bf(i,j,16)*y*x**5+bf(i,j,17)*y**2*x**5
 enddo
-b(1)=2*y*x*1.1d0
-b(2)=x**2-y**2
-b(3)=0.d0
   end subroutine bfieldp
 
  subroutine rk4_crittendenr(ti,h,hcurv,w,y,k)
@@ -748,11 +810,11 @@ b(3)=0.d0
 
     return
   end  subroutine rk4_crittendenp
-
-subroutine integrate_crittendenr(y,w,k)
+ 
+subroutine integrate_crittendenr(y,w,angc,dc,k)
 implicit none
 integer nt,is,i,mf
-real(dp) h,hcurv
+real(dp) h,hcurv,angc,dc,d(3)
     real(dp), INTENT(INOUT)::  y(6)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     type(work) w
@@ -760,36 +822,82 @@ real(dp) h,hcurv
 call kanalnummer(mf,'plot.dat')
 h=2*(zp(2)-zp(1))
 hcurv=0.d0
-if(canonical) call conv_to_xp_crittenden( hcurv,w%beta0,y,k)
+d=0
+d(3)=-dc
+
+
+if(canonical) then 
+CALL ROT_XZ(angc,y,w%BETA0,my_true,my_true)
+CALL TRANS(d,y,w%BETA0,my_true,my_true)
+call conv_to_xp_crittenden( hcurv,w%beta0,y,k)
+else
+call conv_to_px_crittenden(hcurv,w%beta0,y,k)
+CALL ROT_XZ(angc,y,w%BETA0,my_true,my_true)
+CALL TRANS(d,y,w%BETA0,my_true,my_true)
+call conv_to_xp_crittenden( hcurv,w%beta0,y,k)
+endif
           IS=1
           nt=(size(bf,1)-1)/2
           DO I=1,nt
              call rk4(is,h,hcurv,w,y,k)  
             write(mf,*) i,y(1:2)
           ENDDO
-if(canonical) call conv_to_px_crittenden(hcurv,w%beta0,y,k)
-write(6,*) is,size(bf,1)
+if(canonical) then
+call conv_to_px_crittenden(hcurv,w%beta0,y,k)
+CALL TRANS(d,y,w%BETA0,my_true,my_true)
+CALL ROT_XZ(angc,y,w%BETA0,my_true,my_true)
+else
+call conv_to_px_crittenden(hcurv,w%beta0,y,k)
+CALL TRANS(d,y,w%BETA0,my_true,my_true)
+CALL ROT_XZ(angc,y,w%BETA0,my_true,my_true)
+call conv_to_px_crittenden(hcurv,w%beta0,y,k)
+endif
+
 close(mf)
 end subroutine integrate_crittendenr
 
-subroutine integrate_crittendenp(y,w,k)
+subroutine integrate_crittendenp(y,w,angc,dc,k,yh)
 implicit none
 integer nt,is,i
-real(dp) h,hcurv
+real(dp) h,hcurv,angc,dc,d(3)
     TYPE(REAL_8), INTENT(INOUT)::  y(6)
+    TYPE(REAL_8), optional, INTENT(INOUT)::  yh(6)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     type(work) w
 
 h=2*(zp(2)-zp(1))
 hcurv=0.d0
-if(canonical) call conv_to_xp_crittenden( hcurv,w%beta0,y,k)
+d=0
+d(3)=-dc
+
+if(canonical) then 
+CALL ROT_XZ(angc,y,w%BETA0,my_true,my_true)
+CALL TRANS(d,y,w%BETA0,my_true,my_true)
+call conv_to_xp_crittenden( hcurv,w%beta0,y,k)
+else
+call conv_to_px_crittenden(hcurv,w%beta0,y,k)
+CALL ROT_XZ(angc,y,w%BETA0,my_true,my_true)
+CALL TRANS(d,y,w%BETA0,my_true,my_true)
+call conv_to_xp_crittenden( hcurv,w%beta0,y,k)
+endif
           IS=1
           nt=(size(bf,1)-1)/2
           DO I=1,nt
              call rk4(is,h,hcurv,w,y,k)  
+          if(i==nt/2) then
+            if(present(yh)) yh=y
+          endif
           ENDDO
-if(canonical) call conv_to_px_crittenden(hcurv,w%beta0,y,k)
-
+if(canonical) then
+call conv_to_px_crittenden(hcurv,w%beta0,y,k)
+CALL TRANS(d,y,w%BETA0,my_true,my_true)
+CALL ROT_XZ(angc,y,w%BETA0,my_true,my_true)
+else
+call conv_to_px_crittenden(hcurv,w%beta0,y,k)
+CALL TRANS(d,y,w%BETA0,my_true,my_true)
+CALL ROT_XZ(angc,y,w%BETA0,my_true,my_true)
+call conv_to_px_crittenden(hcurv,w%beta0,y,k)
+endif
 end subroutine integrate_crittendenp
 
 
