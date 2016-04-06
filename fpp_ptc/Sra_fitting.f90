@@ -27,7 +27,7 @@ contains
 
 
 
-subroutine find_time_patch(kekb,my_default,emax,bmadpatch,kf,kb)
+subroutine find_time_patch(kekb,my_default,emax,bmadpatch,wipeout,kf,kb)
 implicit none
 type(layout), pointer :: kekb
 real(dp) closed_orbit(6),ee
@@ -35,24 +35,28 @@ integer, optional :: kf,kb
 integer kc,ke,i,cc,jc
 type(internal_state) my_default,state
 type(fibre), pointer :: f,f1,f2
-logical, optional :: bmadpatch
-logical bm
+logical, optional :: bmadpatch,wipeout
+logical bm,wi
 real(dp), optional :: emax
 
 ee=1.d40
 if(present(emax)) ee=emax
 
 bm=.true.
+wi=.false.
 if(present(bmadpatch)) bm =bmadpatch
+if(present(bmadpatch)) wi =wipeout
 ke=0
 kc=0
-f=> kekb%start
-do i=1,kekb%n
- f%patch%time=0
- f%patch%a_t=0
- f%patch%b_t=0
-f=>f%next
-enddo
+if(wi) then
+ f=> kekb%start
+ do i=1,kekb%n
+  f%patch%time=0
+  f%patch%a_t=0
+  f%patch%b_t=0
+ f=>f%next
+ enddo
+endif
 
 
 state=(my_default+nocavity0)-radiation0-spin0-time0
@@ -90,12 +94,12 @@ if(bm) then
 
  if(f%next%mag%kind==kind4) then
   f%patch%time=2
-  f%patch%B_T=closed_orbit(6)
+  f%patch%B_T=closed_orbit(6)+f%patch%B_T
  ke=ke+1
  elseif(f%mag%kind==kind4) then
   if(associated(f,f2)) then
    f%next%patch%time=1
-   f%patch%A_T=closed_orbit(6)
+   f%patch%A_T=closed_orbit(6)+f%patch%A_T
   kc=kc+1
   endif
  closed_orbit(6)=0.d0
@@ -107,16 +111,16 @@ if(abs(closed_orbit(6))>ee.or.f%next%mag%kind==kind4.or.f%mag%kind==kind4) then
 
  if(f%next%mag%kind==kind4) then
   f%next%patch%time=1
-  f%next%patch%A_T=closed_orbit(6)
+  f%next%patch%A_T=closed_orbit(6)+f%next%patch%A_T
  kc=kc+1
  elseif(f%mag%kind==kind4) then
   f%patch%time=3
-  f%patch%B_T=closed_orbit(6)
+  f%patch%B_T=closed_orbit(6)+f%patch%B_T
   ke=ke+1
  closed_orbit(6)=0.d0
  else
   f%patch%time=2
-  f%patch%B_T=closed_orbit(6)
+  f%patch%B_T=closed_orbit(6)+f%patch%B_T
   ke=ke+1
   closed_orbit(6)=0.d0
  endif
@@ -135,7 +139,7 @@ if(bm) then
 else
 f=> kekb%end
   f%patch%time=2
-  f%patch%B_T=closed_orbit(6)
+  f%patch%B_T=closed_orbit(6)+f%patch%B_T
   ke=ke+1
 endif
  

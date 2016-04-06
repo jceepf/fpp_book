@@ -430,19 +430,21 @@ end subroutine c_canonise_shanks
 
 !!!!!!!!!!!!!!!!!! Jim Crittenden
 
-subroutine read_crittenden(no,file)
+subroutine read_crittenden(no,nof,file,filemap,filefield)
 implicit None
-integer ns,nfit,i,mf,j,no
+integer ns,nfit,i,mf,j,no,nof
 real(dp) brho
   real(dp) LCM,LC,rhod,sagd,LD,angd,pxd,xd,scaled,ed,charged,md 
   real(dp) dc,angc
 type(work) w
 real(dp) x(6),y(6)
-character(*) file
+character(*) file,filemap,filefield
 type(real_8) z(6),zh(6)
 type(damap) id
+type(c_damap) ids,id0
 type(gmap) g
-
+type(internal_state) state
+type(real_8) b(3)
 nfit=17
 canonical=.true.
 call kanalnummer(mf,file)
@@ -466,8 +468,7 @@ scaled=charged*1.e-4_dp
 electron=.true.
 muon=md/pmae
 call find_energy(w,ENERGY=ed)
-write(6,*) w%brho
-pause 125
+ 
 do i=1,ns
 do j=1,3
 read(mf,*) zp(i),bf(i,j,1:nfit)
@@ -476,7 +477,7 @@ enddo
 
 
 zp=zp/100.0_dp
-bf=scaled*bf/w%brho
+bf=scaled*bf     !/w%brho
 
 
 
@@ -517,9 +518,9 @@ z=x+id
 call integrate_crittenden(z,w,angc,dc,default,zh)
 
 zh(1)=zh(1)-sagd
-call print(zh(1),6)
-call print(zh(2),6)
-pause 1
+!call print(zh(1),6)
+!call print(zh(2),6)
+!pause 1
 id=zh
 g=id
 g=g.oo.(-1)
@@ -528,16 +529,71 @@ do j=1,4
 x(j)=x(j)+(g%v(j).sub.'0')
 enddo
 
-!call print(g,6)
 enddo
 call kill(id)
 call kill(z)
 call kill(zh)
 call kill(g)
 
-call integrate_crittenden(x,w,angc,dc,default)
+state=time0 !+spin0
+call init_all(state,no,0)
 
-stop
+call alloc(ids,id0)
+call alloc(z)
+
+write(6,*) " Initial ray "
+write(6,*) x
+write(6,*) "             "
+y=x
+call integrate_crittenden(y,w,angc,dc,state)
+write(6,*) " Exit ray "
+write(6,*) y
+write(6,*) "             "
+
+id0=1
+z=id0+x
+call integrate_crittenden(z,w,angc,dc,state)
+id0=z
+call symplectify_for_sethna(id0,ids)
+
+call kanalnummer(mf,filemap)
+write(mf,*) x
+write(mf,*) y
+call print(ids,mf)
+call print(id0,mf)
+
+close(mf)
+call kill(ids,id0)
+call kill(z)
+
+call kanalnummer(mf,filefield)
+
+call init(nof,2)
+
+call alloc(z)
+call alloc(b,3)
+
+z(1)=1.d0.mono.1
+z(3)=1.d0.mono.2
+!    read(mf,*) nst,L,hc, ORDER,REPEAT
+ write(mf,*) ld,1.0_dp/rhod,nof," f"
+ write(mf,*) ns,lcm,angc 
+ write(mf,*) dc,0,0
+!        read(mf,*) LD,hD, ORDER,REPEAT   ! L and Hc are geometric
+!    read(mf,*) nst,LC,angc,dc,xc,hc
+ do i=1,ns
+
+  call bfield(i,z(1),z(3),b)
+  write(mf,*) i
+  call print(b(1),mf)
+  call print(b(2),mf)
+  call print(b(3),mf)
+
+ enddo
+
+call kill(z)
+call kill(b,3)
+
 end subroutine read_crittenden
 
 
@@ -558,9 +614,10 @@ end subroutine read_crittenden
        beta0=1.0_dp;GAMMA0I=0.0_dp;
     endif
     
-    x(1)=x(1)-dx0(i)
+ 
  call bfield(i,x(1),x(3),b)
-    x(1)=x(1)+dx0(i)
+ 
+ b=b/w%brho
 
     d(1)=root(x(2)**2+x(4)**2+(1.0_dp+hcurv*x(1))**2)
     d(2)=(d(1)**3)/root(1.0_dp+2*x(5)/beta0+x(5)**2)
@@ -608,9 +665,10 @@ end subroutine read_crittenden
     else
        beta0=1.0_dp;GAMMA0I=0.0_dp;
     endif
-    x(1)=x(1)-dx0(i)
+
  call bfield(i,x(1),x(3),b)
-    x(1)=x(1)+dx0(i)
+  
+ b(1)=b(1)/w%brho; b(2)=b(2)/w%brho; b(3)=b(3)/w%brho;
 
     d(1)=SQRT(x(2)**2+x(4)**2+(1.0_dp+hcurv*x(1))**2)
     d(2)=(d(1)**3)/SQRT(1.0_dp+2*x(5)/beta0+x(5)**2)
@@ -646,6 +704,7 @@ end subroutine read_crittenden
     implicit none
     integer i,j
     real(dp),intent(inout):: b(3),x,y
+    x=x-dx0(i)
 do j=1,3
  b(j)=bf(i,j,1)+bf(i,j,2)*x+bf(i,j,3)*y
  b(j)=b(j)+bf(i,j,4)*x*y+bf(i,j,5)*x**2+bf(i,j,6)*y**2
@@ -653,6 +712,7 @@ do j=1,3
  b(j)=b(j)+bf(i,j,12)*x**4+bf(i,j,13)*y*x**4+bf(i,j,14)*y**2*x**4
  b(j)=b(j)+bf(i,j,15)*x**5+bf(i,j,16)*y*x**5+bf(i,j,17)*y**2*x**5
 enddo
+    x=x+dx0(i)
   end subroutine bfieldr
 
 
@@ -660,7 +720,7 @@ enddo
     implicit none
     integer i,j
     type(real_8),intent(inout):: b(3),x,y
-
+    x=x-dx0(i)
 do j=1,3
  b(j)=bf(i,j,1)+bf(i,j,2)*x+bf(i,j,3)*y
  b(j)=b(j)+bf(i,j,4)*x*y+bf(i,j,5)*x**2+bf(i,j,6)*y**2
@@ -668,6 +728,7 @@ do j=1,3
  b(j)=b(j)+bf(i,j,12)*x**4+bf(i,j,13)*y*x**4+bf(i,j,14)*y**2*x**4
  b(j)=b(j)+bf(i,j,15)*x**5+bf(i,j,16)*y*x**5+bf(i,j,17)*y**2*x**5
 enddo
+    x=x+dx0(i)
   end subroutine bfieldp
 
  subroutine rk4_crittendenr(ti,h,hcurv,w,y,k)
