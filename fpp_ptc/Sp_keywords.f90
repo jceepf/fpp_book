@@ -2583,6 +2583,13 @@ if(ele0%slowac_recut_even_electric_MIS(5)) read(mf,NML=CHARTname)  ! reading mis
     endif
    if(ele0%slowac_recut_even_electric_MIS(5)) call CHART_CHART0(s22%chart,my_false)
 
+   if(fib0%for_bac(1)) then
+   endif
+
+   if(fib0%for_bac(2)) then
+   endif
+
+
 
 
 n=n+1
@@ -2630,7 +2637,7 @@ end subroutine read_lattice
 
 
     select case(kind)
-    CASE(KIND0,KIND1,kind2,kind6,kind7,kind8,kind9,KIND11:KIND15,kind17,KIND22)
+    CASE(KIND0,KIND1,kind2,kind6,kind7,kind8,kind9,KIND11:KIND15,kind17)
   case(kind3)
      read(mf,NML=thin30name)
     case(kind4)
@@ -2648,6 +2655,9 @@ end subroutine read_lattice
 
     case(kind19)
 
+
+    case(kindhel)
+      read(mf,NML=helname)
     case(kind21)
      read(mf,NML=tCAVname)
     case(KINDWIGGLER)
@@ -2991,7 +3001,7 @@ end subroutine el_el0
 
 
     select case(el%kind)
-    CASE(KIND0,KIND1,kind2,kind6,kind7,kind8,kind9,KIND11:KIND15,kind17,KIND22)
+    CASE(KIND0,KIND1,kind2,kind6,kind7,kind8,kind9,KIND11:KIND15,kind17)
   case(kind3)
      call thin3_thin30(el,dir,mf)
     case(kind4)
@@ -3010,6 +3020,8 @@ end subroutine el_el0
     case(kind19)
 !       WRITE(MF,*) " ECOLLIMATOR HAS AN INTRINSIC APERTURE "
 !       CALL print_aperture(EL%ECOL19%A,mf)
+    case(kindhel)
+        call hel_hel0(EL,dir,mf)
     case(kind21)
         call tcav4_tcav40(EL,dir,mf)
 !       WRITE(MF,*) el%cav21%PSI,el%cav21%DPHAS,el%cav21%DVDS
@@ -3079,6 +3091,35 @@ endif
 endif
 end subroutine cav4_cav40
 
+subroutine  hel_hel0(f,dir,mf)
+implicit none
+type(element), target :: f
+logical(lp),optional ::  dir
+integer,optional :: mf
+
+if(present(dir)) then
+if(dir) then   !BETA0,GAMMA0I,GAMBET,MASS ,AG
+
+
+
+hel0%N_BESSEL=F%he22%N_BESSEL
+
+    if(present(mf)) then
+     write(mf,NML=helname)
+    endif   
+ 
+ else
+    if(present(mf)) then
+     read(mf,NML=helname)
+    endif   
+ 
+CALL SETFAMILY(f)
+ F%he22%N_BESSEL=hel0%N_BESSEL
+
+endif
+endif
+end subroutine hel_hel0
+
 subroutine  wig_wig0(f,dir,mf)
 implicit none
 type(element), target :: f
@@ -3101,6 +3142,8 @@ wig0%a(1:n)=f%wi%w%a(1:n)
 wig0%f(1:n)=f%wi%w%f(1:n)
 wig0%form(1:n)=f%wi%w%form(1:n)
 wig0%k(1:3,1:n)=f%wi%w%k(1:3,1:n)
+wig0%ex=f%wi%w%ex
+wig0%ey=f%wi%w%ey
     if(present(mf)) then
      write(mf,NML=wigname)
     endif   
@@ -3119,6 +3162,8 @@ wig0%k(1:3,1:n)=f%wi%w%k(1:3,1:n)
  F%wi%w%f(1:N)=wig0%f(1:N)
  F%wi%w%form(1:N)=wig0%form(1:N)
  F%wi%w%k(1:3,1:N)=wig0%k(1:3,1:N)
+ F%wi%w%ex=wig0%ex
+ F%wi%w%ey=wig0%ey
 
 endif
 endif

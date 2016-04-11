@@ -205,8 +205,11 @@ if((mod(i,100) == 0.or.i==als%n.or.i==1).or.no<=3) then
    write(mf,*);Write(mf,*) " Lie exponent of the nonlinear part "; write(mf,*);
    call print(h_poisson_bracket,mf,prec)
 
-  U_c=f*A*b  
-  D_tilde=to_phasor()*U_c**(-1)*D*U_c*from_phasor()  ! (D1)
+  !  The original code, in my book, uses U_c=f*A*b 
+  !  and D_tilde=to_phasor()*U_c**(-1)*D*U_c*from_phasor().
+  !  This messes up the phase advance loop if no>=4
+  U=f*A*b     
+  D_tilde=to_phasor()*U**(-1)*D*U*from_phasor()  ! (D1)
   O=log(D_tilde%s) ! (D2)
 
    write(mf,*);Write(mf,*) " Vertical spinor O_y of the canonised D~ "; write(mf,*);

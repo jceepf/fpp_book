@@ -41,6 +41,7 @@ module S_status
   !  integer, parameter :: KINDFITTED = KIND23+1
   !  integer, parameter :: KINDUSER1 = KIND23+2
   !  integer, parameter :: KINDUSER2 = KIND23+3
+  integer, parameter :: KINDhel = KIND22
   integer, parameter :: KINDwiggler = KIND23+2
   !  integer, parameter :: KINDmu      = KIND23+3
   integer, parameter :: KINDpa     = KIND23+3

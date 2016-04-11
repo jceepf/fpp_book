@@ -50,7 +50,8 @@ module definition
   logical(lp) :: doing_ac_modulation_in_ptc=.false.
   integer, target :: nb_ =0   ! global group index
   integer, parameter :: ndim2t=10   ! maximum complex size
-  !
+  integer, parameter :: wiggler_suntao=24
+  integer :: bmadparser = 0
   TYPE sub_taylor
      INTEGER j(lnv)
      INTEGER min,max

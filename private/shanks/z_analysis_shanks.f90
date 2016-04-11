@@ -468,7 +468,7 @@ scaled=charged*1.e-4_dp
 electron=.true.
 muon=md/pmae
 call find_energy(w,ENERGY=ed)
- 
+write(6,*) " brho = ",w%brho
 do i=1,ns
 do j=1,3
 read(mf,*) zp(i),bf(i,j,1:nfit)
