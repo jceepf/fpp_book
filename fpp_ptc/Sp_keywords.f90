@@ -2583,11 +2583,6 @@ if(ele0%slowac_recut_even_electric_MIS(5)) read(mf,NML=CHARTname)  ! reading mis
     endif
    if(ele0%slowac_recut_even_electric_MIS(5)) call CHART_CHART0(s22%chart,my_false)
 
-   if(fib0%for_bac(1)) then
-   endif
-
-   if(fib0%for_bac(2)) then
-   endif
 
 
 
@@ -2690,8 +2685,7 @@ if(dir) then   !BETA0,GAMMA0I,GAMBET,MASS ,AG
  fib0%DIR=f%DIR
  fib0%CHARGE=f%CHARGE
  fib0%patch=f%patch%patch+7*f%patch%energy+49*f%patch%time
- !fib0%pos=f%pos
- !fib0%loc=f%loc
+ 
     if(present(mf)) then
      write(mf,NML=fibrename)
     endif   
@@ -2710,6 +2704,7 @@ else
  !f%patch%patch=fib0%patch     ! f%patch%patch is not yet allocated
 endif
 endif
+
 end subroutine fib_fib0
 
 subroutine  patch_patch0(f,dir,mf)
@@ -2915,7 +2910,20 @@ ele0%slowac_recut_even_electric_MIS(2) = f%recut
 ele0%slowac_recut_even_electric_MIS(3) = f%even
 ele0%slowac_recut_even_electric_MIS(4) = f%electric
 ele0%slowac_recut_even_electric_MIS(5) = f%MIS
- 
+ ele0%usebf_skipptcbf_do1bf(1)=f%useb
+ ele0%usebf_skipptcbf_do1bf(2)=f%usef 
+ ele0%usebf_skipptcbf_do1bf(3)=f%skip_ptc_b 
+ ele0%usebf_skipptcbf_do1bf(4)=f%skip_ptc_f 
+ ele0%usebf_skipptcbf_do1bf(5)=f%do1mapb 
+ ele0%usebf_skipptcbf_do1bf(6)=f%do1mapf
+ ele0%filef=' '
+ ele0%fileb=' '
+if(associated(f%forward)) then
+ ele0%filef=f%forward(1)%file
+endif
+if(associated(f%backward)) then
+ ele0%fileb=f%backward(1)%file
+endif
     if(present(mf)) then
      write(mf,NML=ELEname)
     endif   
@@ -2979,6 +2987,13 @@ endif
  solve_electric=f%electric
    F%L=ele0%L
 
+ f%useb=ele0%usebf_skipptcbf_do1bf(1)
+ f%usef=ele0%usebf_skipptcbf_do1bf(2)
+ f%skip_ptc_b=ele0%usebf_skipptcbf_do1bf(3)
+ f%skip_ptc_f=ele0%usebf_skipptcbf_do1bf(4)
+ f%do1mapb=ele0%usebf_skipptcbf_do1bf(5) 
+ f%do1mapf=ele0%usebf_skipptcbf_do1bf(6)
+! dracula
    
     if(f%kind==kind3.or.f%kind==kind5) then   
         IF(.not.ASSOCIATED(f%B_SOL)) ALLOCATE(f%B_SOL);
