@@ -136,7 +136,7 @@ call print(phase(2),mft)
 
 if(state%nocavity) then
  write(mft,*);write(mft,*) "  Time "; write(mft,*);
- call c_clean_taylor(phase(3),phase(2),prec)
+ call c_clean_taylor(phase(3),phase(3),prec)   ! inconsequential error in book
  call print(phase(3),mft)
 endif
 
