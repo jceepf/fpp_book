@@ -176,7 +176,7 @@ module tpsalie
   END INTERFACE
 
 
-  INTERFACE print_for_bmad_parser
+  INTERFACE print_for_bmad
      MODULE PROCEDURE print_for_bmad_parsem
   END INTERFACE
 
@@ -778,6 +778,9 @@ contains
  !  adding orbit for bmad
        do i=1,nd2
         idf%v(i)=(1.d0.mono.i)-ref0(i)
+       enddo
+       do i=1,nd2 
+        t%v(i)=t%v(i)-(t%v(i).sub.'0')
        enddo
        t=t.o.idf 
        do i=1,nd2 

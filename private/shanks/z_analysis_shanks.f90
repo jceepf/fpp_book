@@ -603,7 +603,7 @@ call kanalnummer(mf,filebmad)
 !write(mf,*) x
 !write(mf,*) y
 id=ids
-call PRINT_for_bmad_parser(id,MF,ref0=x,ref1=y,prec=1.d-15)
+call PRINT_for_bmad(id,MF,ref0=x,ref1=y,prec=1.d-15)
 close(mf)
 
 call kill(ids,id0,a1)
