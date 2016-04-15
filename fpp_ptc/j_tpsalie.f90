@@ -786,8 +786,8 @@ contains
        do i=1,nd2 
         t%v(i)=t%v(i)+ref1(i)
        enddo
-     endif
        write(line,*) "ref_orbit=(",ref0(1),",",ref0(2),",",ref0(3),",",ref0(4),",",ref0(5),",",ref0(6),"),"
+     endif
        call context(line)
        line=adjustl(line)
        write(MFILE,'(a255)') line
