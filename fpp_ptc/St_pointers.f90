@@ -1282,6 +1282,7 @@ endif
           READ(MF,*) fixp,fact  !  SYMPLECTIC , factored
           if(.not.associated(my_ering%t)) call make_node_layout(my_ering)
           x_ref=0.0_DP
+          READ(MF,*) x_ref
           n_ac=0
           CALL CONTEXT(NAME)
           N_NAME=0
