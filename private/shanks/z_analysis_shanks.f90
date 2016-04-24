@@ -622,7 +622,7 @@ z(3)=1.d0.mono.2
 !    read(mf,*) nst,L,hc, ORDER,REPEAT
  write(mf,*) ld,1.0_dp/rhod,nof," f"
  write(mf,*) ns,lcm,angc 
- write(mf,*) dc,0,0
+ write(mf,*) -dc,0,0
 !        read(mf,*)                                                                                                                                                        LD,hD, ORDER,REPEAT   ! L and Hc are geometric
 !    read(mf,*) nst,LC,angc,dc,xc,hc
  do i=1,ns

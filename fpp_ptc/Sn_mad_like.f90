@@ -8,7 +8,7 @@ module Mad_like
   IMPLICIT NONE
   public
 
-  private QUADTILT, SOLTILT, EL_Q,EL_0,arbitrary_tilt
+  private QUADTILT, SOLTILT, EL_Q,EL_0,pancake_tilt
   private drft,r_r !,rot,mark
   PRIVATE SEXTTILT,OCTUTILT
   private HKICKTILT,VKICKTILT,GKICKTILT
@@ -338,8 +338,8 @@ module Mad_like
 
 
 
-  INTERFACE arbitrary
-     MODULE PROCEDURE arbitrary_tilt
+  INTERFACE pancake
+     MODULE PROCEDURE pancake_tilt
   end  INTERFACE
 
   !  Taylor map
@@ -3363,9 +3363,9 @@ CONTAINS
 
 
 
-  FUNCTION  arbitrary_tilt(NAME,file,no,T)
+  FUNCTION  pancake_tilt(NAME,file,no,T)
     implicit none
-    type (EL_LIST) arbitrary_tilt
+    type (EL_LIST) pancake_tilt
     CHARACTER(*), INTENT(IN):: NAME,file
     type (TILTING),optional, INTENT(IN):: T
     real(dp) L,ANGLE,HD,LD
@@ -3375,7 +3375,7 @@ CONTAINS
     TYPE(TAYLOR) B(3)  !,ax(2),ay(2)
 
    ! file_fitted=file
-    arbitrary_tilt=0
+    pancake_tilt=0
     if(len(file)<=vp) then
      filec=file
     else
@@ -3432,13 +3432,13 @@ CONTAINS
 
     !    IF(ANG/=zero.AND.R/=zero) THEN
     if(hc/=0.0_dp) then
-       arbitrary_tilt%LC=2.0_dp*SIN(ANGLE/2.0_dp)/hD
+       pancake_tilt%LC=2.0_dp*SIN(ANGLE/2.0_dp)/hD
     else
-       arbitrary_tilt%LC=LD
+       pancake_tilt%LC=LD
     endif
-    arbitrary_tilt%B0=hD                     !COS(ANG/two)/R
-    arbitrary_tilt%LD=LD
-    arbitrary_tilt%L=lc
+    pancake_tilt%B0=hD                     !COS(ANG/two)/R
+    pancake_tilt%LD=LD
+    pancake_tilt%L=lc
 
     IF(LEN(NAME)>nlp) THEN
        w_p=0
@@ -3447,25 +3447,25 @@ CONTAINS
        w_p%c(1)=name
        WRITE(w_p%c(2),'(a17,1x,a16)') ' IS TRUNCATED TO ', NAME(1:16)
        ! call ! WRITE_I
-       arbitrary_tilt%NAME=NAME(1:nlp)
+       pancake_tilt%NAME=NAME(1:nlp)
     ELSE
-       arbitrary_tilt%NAME=NAME
+       pancake_tilt%NAME=NAME
     ENDIF
     
     IF(NST<3.OR.MOD(NST,2)/=1) THEN
-       WRITE(6,*) "NUMBER OF SLICES IN 'arbitrary'  MUST BE ODD AND >= 3 ",NST
+       WRITE(6,*) "NUMBER OF SLICES IN 'pancake'  MUST BE ODD AND >= 3 ",NST
        STOP 101
     ENDIF
-    arbitrary_tilt%nst=(NST-1)/2
-    arbitrary_tilt%KIND=KINDPA
+    pancake_tilt%nst=(NST-1)/2
+    pancake_tilt%KIND=KINDPA
     IF(PRESENT(t)) then
        IF(T%NATURAL) THEN
-          arbitrary_tilt%tilt=t%tilt(1)
+          pancake_tilt%tilt=t%tilt(1)
        ELSE
-          arbitrary_tilt%tilt=t%tilt(0)
+          pancake_tilt%tilt=t%tilt(0)
        ENDIF
     ENDIF
-  END FUNCTION arbitrary_tilt
+  END FUNCTION pancake_tilt
   ! linked
 
 

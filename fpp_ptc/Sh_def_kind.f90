@@ -15293,19 +15293,21 @@ SUBROUTINE ZEROr_teapot(EL,I)
     IMPLICIT NONE
     real(dp), INTENT(INOUT) :: X(6)
     TYPE(PANCAKE),INTENT(INOUT):: EL
-    real(dp) d(3),a
+    real(dp) d(3) 
     INTEGER, INTENT(IN) :: J
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
     if(el%hc==0.0_dp) then
     d=0
-    d(1)=-el%xc
-    d(3)=-el%dc
+    d(1)=el%xc
+    d(3)=el%dc
     IF(J==1) then
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
        call conv_to_xp(el,x,k)
     else
+    d(1)=-el%xc
+    d(3)=el%dc
        call conv_to_px(el,x,k)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
@@ -15313,16 +15315,14 @@ SUBROUTINE ZEROr_teapot(EL,I)
     else
     d=0
     IF(J==1) then
-    d(1)=-el%xc
-    d(3)=-el%dc
-    a=-el%angc
-        CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
-        CALL ROT_XZ(a,x,el%p%BETA0,el%p%exact,k%time)
-       call conv_to_xp(el,x,k)
-    else
     d(1)=el%xc
     d(3)=el%dc
-    a=el%angc
+        CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
+        CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
+       call conv_to_xp(el,x,k)
+    else
+    d(1)=-el%xc
+    d(3)=el%dc
        call conv_to_px(el,x,k)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
@@ -15335,19 +15335,21 @@ SUBROUTINE ZEROr_teapot(EL,I)
     IMPLICIT NONE
     TYPE(REAL_8), INTENT(INOUT) :: X(6)
     TYPE(PANCAKEP),INTENT(INOUT):: EL
-    real(dp) d(3),a
+    real(dp) d(3) 
     INTEGER, INTENT(IN) :: J
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
     if(el%hc==0.0_dp) then
     d=0
-    d(1)=-el%xc
-    d(3)=-el%dc
+    d(1)=el%xc
+    d(3)=el%dc
     IF(J==1) then
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
        call conv_to_xp(el,x,k)
     else
+    d(1)=-el%xc
+    d(3)=el%dc
        call conv_to_px(el,x,k)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
@@ -15355,16 +15357,15 @@ SUBROUTINE ZEROr_teapot(EL,I)
     else
     d=0
     IF(J==1) then
-    d(1)=-el%xc
-    d(3)=-el%dc
-    a=-el%angc
-        CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
-        CALL ROT_XZ(a,x,el%p%BETA0,el%p%exact,k%time)
-       call conv_to_xp(el,x,k)
-    else
     d(1)=el%xc
     d(3)=el%dc
-    a=el%angc
+ 
+        CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
+        CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
+       call conv_to_xp(el,x,k)
+    else
+    d(1)=-el%xc
+    d(3)=el%dc
        call conv_to_px(el,x,k)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
