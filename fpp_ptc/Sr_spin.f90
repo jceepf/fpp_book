@@ -3829,10 +3829,10 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     Nullify(C);
 
     if(.not.ring%closed) then
-       w_p=0
-       w_p%nc=1
-       w_p%fc='((1X,a72))'
-       w_p%c(1)=" This line is not ring : FIND_ORBIT_LAYOUT_noda "
+       !w_p=0
+       !w_p%nc=1
+       !w_p%fc='((1X,a72))'
+       !w_p%c(1)=" This line is not ring : FIND_ORBIT_LAYOUT_noda "
        ! call !write_e(100)
     endif
     dix(:)=0.0_dp
@@ -3989,10 +3989,10 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
           !!       call TRACK_PROBE(Ring,xs,loct,loct+ring%t%n,stat)
           !!       y=xs%x
           !          if(.not.check_stable) then
-          !             w_p=0
-          !             w_p%nc=1
-          !             w_p%fc='((1X,a72))'
-          !             write(w_p%c(1),'(a30,i4)') " Lost in Fixed Point Searcher ",3
+          !             !w_p=0
+          !             !w_p%nc=1
+          !             !w_p%fc='((1X,a72))'
+          !             write(6,'(a30,i4)') " Lost in Fixed Point Searcher ",3
           !             ! call ! WRITE_I
 
           !             return
@@ -4137,10 +4137,10 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     Nullify(C);
 
     if(.not.ring%closed) then
-       w_p=0
-       w_p%nc=1
-       w_p%fc='((1X,a72))'
-       w_p%c(1)=" This line is not ring : FIND_ORBIT_LAYOUT_noda "
+       !w_p=0
+       !w_p%nc=1
+       !w_p%fc='((1X,a72))'
+       !w_p%c(1)=" This line is not ring : FIND_ORBIT_LAYOUT_noda "
        ! call !write_e(100)
     endif
     dix(:)=0.0_dp
@@ -4294,10 +4294,10 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
           !!       call TRACK_PROBE(Ring,xs,loct,loct+ring%t%n,stat)
           !!       y=xs%x
           !          if(.not.check_stable) then
-          !             w_p=0
-          !             w_p%nc=1
-          !             w_p%fc='((1X,a72))'
-          !             write(w_p%c(1),'(a30,i4)') " Lost in Fixed Point Searcher ",3
+          !             !w_p=0
+          !             !w_p%nc=1
+          !             !w_p%fc='((1X,a72))'
+          !             write(6,'(a30,i4)') " Lost in Fixed Point Searcher ",3
           !             ! call ! WRITE_I
 
           !             return
@@ -4904,6 +4904,7 @@ state=time0
 xs0=fix0
 m=1
 xs=xs0+m
+write(6,*) t1c%parent_fibre%mag%name,t1c%parent_fibre%mag%p%nst
 call propagate(xs,state,node1=t1c,node2=t2c)
 fix=xs%x
 ! For David

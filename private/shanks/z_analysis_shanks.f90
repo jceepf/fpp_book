@@ -431,7 +431,7 @@ end subroutine c_canonise_shanks
 
 !!!!!!!!!!!!!!!!!! Jim Crittenden
 
-subroutine read_crittenden(no,nof,betx,bety,del,x,sc,file,filemap,filebmad,filefield)
+subroutine read_crittenden(no,nof,betx,bety,del,x,y,sc,file,filemap,filebmad,filefield)
 implicit None
 integer ns,nfit,i,mf,j,no,nof,jc(6)
 real(dp) brho
@@ -456,24 +456,26 @@ call kanalnummer(mf,file)
 
 
 
+! 0.3075000E+04  0.2300000E+03  0.6000000E+01 -0.1000000E+01  0.5110000E-03  0.1410000E+03 
+
+read(mf,*) rhod,ld, Ed, charged,sagd
+ns=nint(sagd)
+allocate(bf(ns,3,nfit),zp(ns),dx0(ns))
+
+
+
 bf=0.d0
 zp=0.d0
 dx0=0.d0
 
-! 0.3075000E+04  0.2300000E+03  0.6000000E+01 -0.1000000E+01  0.5110000E-03  0.1410000E+03 
-
-read(mf,*) rhod,ld, Ed, charged,md,sagd
-ns=nint(sagd)
-allocate(bf(ns,3,nfit),zp(ns),dx0(ns))
 
 rhod=rhod/100
 ld=ld/100
 scaled=charged*1.e-4_dp
 electron=.true.
-muon=md/pmae
+muon=1.d0
 write(6,*) muon
 
-pause 7
 
 fac=1
 call find_energy(w,ENERGY=ed)
@@ -617,7 +619,7 @@ call alloc(z)
 call alloc(b,3)
  
 allocate(an(0:nof),bn(0:nof))
-z(1)=1.d0.mono.1
+z(1)=(1.d0.mono.1) !+sagd
 z(3)=1.d0.mono.2
 !    read(mf,*) nst,L,hc, ORDER,REPEAT
  write(mf,*) ld,1.0_dp/rhod,nof," f"
@@ -626,7 +628,7 @@ z(3)=1.d0.mono.2
 !        read(mf,*)                                                                                                                                                        LD,hD, ORDER,REPEAT   ! L and Hc are geometric
 !    read(mf,*) nst,LC,angc,dc,xc,hc
  do i=1,ns
-
+   
   call bfield(i,z(1),z(3),b)
   write(mf,*) i
   call print(b(1),mf)
@@ -677,8 +679,122 @@ deallocate(an,bn )
 call kill(z)
 call kill(b,3)
  close(mf)
-
+deallocate(bf ,zp ,dx0 )
 end subroutine read_crittenden
+
+subroutine read_crittenden_only(nof,sc,put_sagitta,file,filefield)
+implicit None
+integer ns,nfit,i,mf,j,nof
+real(dp) brho
+  real(dp) LCM,LC,rhod,sagd,LD,angd,pxd,xd,scaled,ed,charged,md,sc
+  real(dp) dc,angc,fac
+type(work) w
+character(*) file,filefield
+type(real_8) z(6),zh(6)
+type(real_8) b(3) 
+logical put_sagitta
+nfit=17
+
+call kanalnummer(mf,file)
+
+
+
+! 0.3075000E+04  0.2300000E+03  0.6000000E+01 -0.1000000E+01  0.5110000E-03  0.1410000E+03 
+
+read(mf,*) rhod,ld, Ed, charged,sagd
+ns=nint(sagd)
+allocate(bf(ns,3,nfit),zp(ns),dx0(ns))
+bf=0.d0
+zp=0.d0
+dx0=0.d0
+
+
+rhod=rhod/100
+ld=ld/100
+scaled=charged*1.e-4_dp
+electron=.true.
+muon=1.d0  !md/pmae
+!write(6,*) muon
+
+
+
+fac=1
+call find_energy(w,ENERGY=ed)
+fac=w%brho
+ed=ed/sc
+call find_energy(w,ENERGY=ed)
+fac=w%brho/fac
+write(6,*) " fac = ",fac
+write(6,*) " brho = ",w%brho
+scaled=scaled*fac
+pause
+do i=1,ns
+do j=1,3
+read(mf,*) zp(i),bf(i,j,1:nfit)
+enddo
+enddo
+
+
+zp=zp/100.0_dp
+bf=scaled*bf     !/w%brho
+
+lcm=zp(ns)-zp(1)
+!ld=2.3d0
+angd=ld/rhod
+
+lc=2*sin(angd/2)*rhod
+pxd=sin(angd/2)
+sagd=rhod*(1.d0-cos(angd/2))
+xd=(-lc/2.d0-zp(1))*tan(angd/2.d0)
+
+angc=angd/2
+dc=(lcm-lc)/2
+write(6,*) lc,lcm,dc
+write(6,*) "sagd = ",sagd
+write(6,*) " initial"
+write(6,*) xd,pxd
+if(put_sagitta) then
+dx0=0     !+0.05d0
+else
+dx0=sagd
+sagd=0
+endif
+close(mf) 
+write(6,*) "  "
+
+
+call kanalnummer(mf,filefield)
+
+call init(nof,2)
+
+call alloc(z)
+call alloc(b,3) 
+
+z(1)=(1.d0.mono.1) !+sagd
+z(3)=1.d0.mono.2
+!    read(mf,*) nst,L,hc, ORDER,REPEAT
+ write(mf,*) ld,1.0_dp/rhod,nof," f"
+ write(mf,*) ns,lcm,angc 
+ write(mf,*) -dc,sagd,0
+!        read(mf,*)                                                                                                                                                        LD,hD, ORDER,REPEAT   ! L and Hc are geometric
+!    read(mf,*) nst,LC,angc,dc,xc,hc
+ do i=1,ns
+   
+  call bfield(i,z(1),z(3),b)
+  write(mf,*) i
+  call print(b(1),mf)
+  call print(b(2),mf)
+  call print(b(3),mf)
+
+ enddo
+
+
+
+call kill(z)
+call kill(b,3)
+ close(mf)
+deallocate(bf ,zp ,dx0 )
+end subroutine read_crittenden_only
 
 
 

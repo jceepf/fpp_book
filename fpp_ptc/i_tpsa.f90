@@ -837,11 +837,10 @@ CONTAINS
 
     !    IF(first_time) THEN
     IF(last_tpsa==0) THEN
-       w_p=0
-       w_p%nc=1
-       w_p=(/" No TPSA package ever initialized "/)
-       w_p%fc='(1((1X,A72),/))'
-       ! call !write_e(111)
+ 
+       write(6,*) " No TPSA package ever initialized " 
+ 
+ 
     ENDIF
     !    if(old) then
     s1%i=0
@@ -2929,11 +2928,9 @@ endif
     !do i=nd2+ndel+1,nv
     do i=nd2par+1,nv
        if(jfil(i)/=0) then
-          w_p=0
-          w_p%nc=1
-          w_p%fc='(1((1X,A72),/))'
-          w_p%c(1)=" error in getchar for .para. "
-          ! call !write_e(0)
+ 
+         write(6,*) " error in getchar for .para. "
+ 
           stop
        endif
     enddo
@@ -2994,10 +2991,8 @@ endif
     !do i=nd2+ndel+1,nv
     do i=nd2par+1,nv
        if(jfil(i)/=0) then
-          w_p=0
-          w_p%nc=1
-          w_p%fc='(1((1X,A72),/))'
-          w_p%c(1)=" error in GETintnd2 for .para. "
+
+          write(6,*) " error in GETintnd2 for .para. "
           ! call !write_e(0)
           stop
        endif
@@ -3061,10 +3056,8 @@ endif
     !do i=nd2+ndel+1,nv
     do i=nd2partt+1,nv
        if(jfilt(i)/=0) then
-          w_p=0
-          w_p%nc=1
-          w_p%fc='(1((1X,A72),/))'
-          w_p%c(1)=" error in GETintnd2t for .part_taylor. "
+ 
+            write(6,*) " error in GETintnd2t for .part_taylor. "
           ! call !write_e(0)
           stop
        endif
@@ -3123,21 +3116,13 @@ endif
     select case (master)
     case(1:ndumt)
        if(iass0user(master)>scratchda(master)%n.or.scratchda(master)%n>newscheme_max) then
-          w_p=0
-          w_p%nc=1
-          w_p%fc='(1((1X,A72),/))'
-          w_p%fi='(3((1X,i4)))'
-          w_p%c(1)= "iass0user(master),scratchda(master)%n,newscheme_max"
-          w_p=(/iass0user(master),scratchda(master)%n,newscheme_max/)
-          ! call !write_e
           call ndum_warning_user
        endif
        iass0user(master)=0
     case(ndumt+1:)
-       w_p=0
-       w_p%nc=1
-       w_p=(/"Should not be here"/)
-       w_p%fc='(1((1X,A72),/))'
+ 
+         write(6,*) "Should not be here in check_snake" 
+  
        ! call !write_e(101)
     end select
     master=master-1
@@ -3511,10 +3496,8 @@ endif
     S1=0.0_dp
 
     IF(.not.ASSOCIATED(S2%N)) THEN
-       w_p=0
-       w_p%nc=1
-       w_p%fc='(1((1X,A72),/))'
-       w_p%c(1)=" ERROR IN REFILL_N: UNIVERSAL_TAYLOR DOES NOT EXIST"
+ 
+         write(6,*) " ERROR IN REFILL_N: UNIVERSAL_TAYLOR DOES NOT EXIST"
        ! call !write_e(123)
     ENDIF
     J=0
@@ -3585,12 +3568,10 @@ endif
     implicit none
     CHARACTER(*) STRING
 
-    w_p=0
-    w_p%nc=2
-    w_p%fc='((1X,A72,/),(1X,A72))'
-    w_p%c(1)= "ERROR IN :"
-    w_p%c(2)= STRING
-    ! call !write_e(3478)
+ 
+      write(6,*) "ERROR IN :"
+      write(6,*) STRING
+ 
 
   end subroutine crap1
 
@@ -3598,8 +3579,7 @@ endif
     implicit none
     integer i(1),j
 
-    w_p=0
-    w_p%nc=3
+ 
     write(6,*) " You are using a kind(1.0_dp) "
     write(6,*)" set real_warning to false to permit this "
     write(6,*)" write 1 to continue or -1 for a crash "
@@ -3615,17 +3595,10 @@ endif
     integer ipause,II(0:1)
 
 
-    w_p=0
-    w_p%nc=3
-    w_p%fc='(3((1X,A72),/))'
-    w_p%c(1)=  " *****************************************************************"
-    w_p%c(2)=  " *  Should never be here in New Linked List Scheme               *"
-    w_p%c(3)=  " *****************************************************************"
-    w_p=0
-    w_p%nc=1
-    w_p%fc='(1(1X,A72),/))'
-    w_p%c(1)= " do you want a crash? "
-    ! call !write_e
+ 
+ 
+      write(6,*)  " *  Should never be here in New Linked List Scheme               *"
+ 
     call read(ipause)
     ii(2000*ipause)=0
 
@@ -3809,9 +3782,7 @@ endif
     integer i
     if(associated(scratchda(1)%n)) then
        do i=1,ndumt
-          w_p=0
-          w_p%nc=1
-          w_p%fc='(1((1X,A72)))'
+
           write(6,'(a6,1x,i4,a5,1x,i4,1x,a7)') "Level ",i, " has ",scratchda(i)%n, "Taylors"
           !          write(w_p%c(1),'(a6,1x,i4,a5,1x,i4,1x,a7)') "Level ",i, " has ",scratchda(i)%n, "Taylors"
           !          ! call !write_e
@@ -3871,11 +3842,7 @@ endif
        master=master+1
     case(ndumt)
        write(6,*) " cannot indent anymore ",ndumt
-       w_p=0
-       w_p%nc=1
-       w_p=(/" cannot indent anymore "/)
-       w_p%fc='(1((1X,A72),/))'
-       ! call !write_e(100)
+
        master=sqrt(-dble(master))
     end select
     !    write(26,*) "   taylor ",master
@@ -4618,5 +4585,7 @@ else
 endif
 
 end function In_enz
+
+
 
 END MODULE  tpsa
