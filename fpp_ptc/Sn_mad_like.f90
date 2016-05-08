@@ -3385,13 +3385,12 @@ CONTAINS
 
     call kanalnummer(mf)
     open(unit=mf,file=file)
-    read(mf,*) LD,hD, ORDER,REPEAT   ! L and Hc are geometric
-    read(mf,*) nst,LC,angc 
-    read(mf,*) dc,xc,hc
-      ! s2%pa%angc=angc
-      ! s2%pa%xc=xc
-      ! s2%pa%dc=dc
-      ! s2%pa%h=h
+    read(mf,*) LD,hD  !,REPEAT   ! L and Hc are geometric
+    read(mf,*) nst, ORDER 
+    read(mf,*) LC,hc
+    read(mf,*) dc,xc,angc
+
+
     if(present(no)) order=no
     CALL INIT(ORDER,2)
     CALL ALLOC(B)

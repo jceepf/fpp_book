@@ -486,7 +486,7 @@ fac=w%brho/fac
 write(6,*) " fac = ",fac
 write(6,*) " brho = ",w%brho
 scaled=scaled*fac
-pause
+ 
 do i=1,ns
 do j=1,3
 read(mf,*) zp(i),bf(i,j,1:nfit)
@@ -622,9 +622,10 @@ allocate(an(0:nof),bn(0:nof))
 z(1)=(1.d0.mono.1) !+sagd
 z(3)=1.d0.mono.2
 !    read(mf,*) nst,L,hc, ORDER,REPEAT
- write(mf,*) ld,1.0_dp/rhod,nof," f"
- write(mf,*) ns,lcm,angc 
- write(mf,*) -dc,0,0
+ write(mf,*) ld,1.0_dp/rhod
+ write(mf,*) ns,nof
+ write(mf,*) lcm,0
+ write(mf,*) -dc,sagd,angc
 !        read(mf,*)                                                                                                                                                        LD,hD, ORDER,REPEAT   ! L and Hc are geometric
 !    read(mf,*) nst,LC,angc,dc,xc,hc
  do i=1,ns
@@ -727,7 +728,7 @@ fac=w%brho/fac
 write(6,*) " fac = ",fac
 write(6,*) " brho = ",w%brho
 scaled=scaled*fac
-pause
+ 
 do i=1,ns
 do j=1,3
 read(mf,*) zp(i),bf(i,j,1:nfit)
@@ -773,9 +774,16 @@ call alloc(b,3)
 z(1)=(1.d0.mono.1) !+sagd
 z(3)=1.d0.mono.2
 !    read(mf,*) nst,L,hc, ORDER,REPEAT
- write(mf,*) ld,1.0_dp/rhod,nof," f"
- write(mf,*) ns,lcm,angc 
- write(mf,*) -dc,sagd,0
+ write(mf,*) ld,1.0_dp/rhod
+ write(mf,*) ns,nof
+ write(mf,*) lcm,0
+ write(mf,*) -dc,sagd,angc
+
+  !  read(mf,*) LD,hD  !,REPEAT   ! L and Hc are geometric
+   !! read(mf,*) nst, ORDER 
+  !  read(mf,*) LC,hc
+  !  read(mf,*) dc,xc,angc
+
 !        read(mf,*)                                                                                                                                                        LD,hD, ORDER,REPEAT   ! L and Hc are geometric
 !    read(mf,*) nst,LC,angc,dc,xc,hc
  do i=1,ns
