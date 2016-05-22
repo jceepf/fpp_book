@@ -142,7 +142,7 @@ endif
     REAL(DP) r_in,del_in,DLAM,ang_in,ang_out,dx,targ_tune_alex(2),sexr0
     INTEGER ITE,n_in,POSR
     logical(lp) found_it
-    type(fibre),pointer ::p
+    type(fibre),pointer ::p,f1,f2,ft
     ! TRACKING RAYS
     INTEGER IBN,N_name
     REAL(DP) X(6),DT(3),x_ref(6),sc,NLAM,A1,B1,HPHA,B_TESLA,CUR1,CUR2
@@ -150,7 +150,7 @@ endif
     INTEGER HARMONIC_NUMBER
     ! changing magnet
     logical(lp) bend_like
-    logical exists
+    logical exists,noca
     ! remove_patches
     save my_default
 
@@ -1273,7 +1273,29 @@ endif
       !    if(n_coeff>0) then
       !       deallocate(n_co)
       !    endif
+       case('MAKEONETURNMAP','TRACKWITHONETURNMAP')
+          READ(MF,*) i1  ! position
+          READ(MF,*) I2  ! ORDER OF THE MAP
+          READ(MF,*) fixp,fact,noca  !  SYMPLECTIC , factored
+          if(.not.associated(my_ering%t)) call make_node_layout(my_ering)
+          
+           p=>my_ering%start
+           
+           do ii=1,i1
+             f1=>p
+            p=>p%next
+           enddo
+    
+             f2=>f1
+             x_ref=0.0_dp
+             ft=>my_ering%next%start
 
+             call FIND_ORBIT_x(x_ref,time0,1.d-7,fibre1=f1)
+  
+             call fill_tree_element_line(f1,f2,ft,i2,x_ref,fact,nocav=noca)
+
+                    ft%mag%forward(3)%symptrack=FIXP
+                    ft%magP%forward(3)%symptrack=FIXP
 
        case('MAKEMAP','TRACKWITHMAP')
           READ(MF,*) NAME

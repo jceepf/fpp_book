@@ -625,7 +625,8 @@ z(3)=1.d0.mono.2
  write(mf,*) ld,1.0_dp/rhod
  write(mf,*) ns,nof
  write(mf,*) lcm,0
- write(mf,*) -dc,sagd,angc
+ write(mf,*) -dc,0.d0,sagd
+write(mf,*) angc
 !        read(mf,*)                                                                                                                                                        LD,hD, ORDER,REPEAT   ! L and Hc are geometric
 !    read(mf,*) nst,LC,angc,dc,xc,hc
  do i=1,ns
@@ -777,7 +778,8 @@ z(3)=1.d0.mono.2
  write(mf,*) ld,1.0_dp/rhod
  write(mf,*) ns,nof
  write(mf,*) lcm,0
- write(mf,*) -dc,sagd,angc
+ write(mf,*) -dc,0.d0,sagd
+ write(mf,*) angc
 
   !  read(mf,*) LD,hD  !,REPEAT   ! L and Hc are geometric
    !! read(mf,*) nst, ORDER 
