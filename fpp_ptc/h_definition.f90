@@ -393,6 +393,7 @@ module definition
       type(c_damap) a_t !@1 transformation a (m=a n a^-1) 
       type(c_damap) n   !@1 transformation n (m=a n a^-1)      
       type(c_damap) As  !@1  For Spin   (m = As a n a^-1 As^-1)  
+      type(c_damap) Atot  !@1  For Spin   (m = Atot n Atot^-1)  
       integer NRES,M(NDIM2t/2,NRESO),ms(NRESO) !@1 stores resonances to be left in the map, including spin (ms)
       real(dp) tune(NDIM2t/2),damping(NDIM2t/2),spin_tune !@1 Stores simple information
       logical positive ! forces positive tunes (close to 1 if <0)

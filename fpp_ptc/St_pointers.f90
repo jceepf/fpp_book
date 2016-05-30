@@ -5,7 +5,7 @@ module pointer_lattice
   implicit none
   public
   ! stuff for main program
-  type(layout),pointer :: my_ering
+  type(layout),pointer :: my_ering,my_fring
   type(internal_state),pointer :: my_estate
 !  type(internal_state),pointer :: my_old_state
   integer ,pointer :: my_start, MY_ORDER, MY_NP,MY_END,my_start_t
@@ -1274,7 +1274,7 @@ endif
       !       deallocate(n_co)
       !    endif
        case('MAKEONETURNMAP','TRACKWITHONETURNMAP')
-          READ(MF,*) i1  ! position
+          READ(MF,*) i1,i3  ! position
           READ(MF,*) I2  ! ORDER OF THE MAP
           READ(MF,*) fixp,fact,noca  !  SYMPLECTIC , factored
           if(.not.associated(my_ering%t)) call make_node_layout(my_ering)
@@ -1288,14 +1288,33 @@ endif
     
              f2=>f1
              x_ref=0.0_dp
-             ft=>my_ering%next%start
+             call MOVE_TO_LAYOUT_I(m_u,my_fring,i3)
 
+             if(associated(my_ering,my_fring))then 
+                ft=>f1
+             else
+                ft=>my_fring%start       
+             endif
              call FIND_ORBIT_x(x_ref,time0,1.d-7,fibre1=f1)
   
              call fill_tree_element_line(f1,f2,ft,i2,x_ref,fact,nocav=noca)
 
                     ft%mag%forward(3)%symptrack=FIXP
                     ft%magP%forward(3)%symptrack=FIXP
+                    ft%mag%do1mapf=.true.
+                    ft%magp%do1mapf=.true.
+                    ft%mag%filef="one_turn_map.txt"
+             if(associated(ft,f1))then
+                f2=>f1%next
+               do i1=1,my_ering%n
+                if(associated(f2,f1)) exit
+                 f2%mag%skip_ptc_f=.true.
+                 f2%magp%skip_ptc_f=.true.
+                f2=>f2%next 
+               enddo
+                
+             endif 
+
 
        case('MAKEMAP','TRACKWITHMAP')
           READ(MF,*) NAME

@@ -15580,23 +15580,14 @@ subroutine rks_pancaker(ti,h,GR,y,k)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
   
     hh=h/2
-
-!if(SYMP_X) then
-!call  step_symp_xp_PANCAkEr(hh,tI,y,k,GR)
-
-!    tI=ti+GR%p%dir
-!call  step_symp_xp_PANCAkEr(hh,tI,y,k,GR)
-
-!    tI=ti+GR%p%dir
-
-!else
+ 
 call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
     tI=ti+GR%p%dir
 call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
     tI=ti+GR%p%dir
-!endif
+ 
     if(k%TIME) then
        Y(6)=Y(6)-(1-k%TOTALPATH)*GR%P%LD/GR%P%beta0/GR%P%nst
     else
@@ -15623,11 +15614,11 @@ subroutine rks_pancakep(ti,h,GR,y,k)
     
   
     hh=h/2
-
-    call step_symp_p_PANCAkE(hh,tI,y,k,GR)
+ 
+call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
     tI=ti+GR%p%dir
-    call step_symp_p_PANCAkE(hh,tI,y,k,GR)
+call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
     tI=ti+GR%p%dir
 

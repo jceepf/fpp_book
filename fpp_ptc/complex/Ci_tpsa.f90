@@ -57,7 +57,7 @@ MODULE c_TPSA
  private c_trxspinmatrix,c_inv_as,sqrtt,alloc_c_spinor,kill_c_spinor,c_complex_spinmatrix,c_trxspinmatrixda
  private c_spinmatrix_add_spinmatrix,c_exp_spinmatrix,unarySUB_spinor,c_spinor_add_spinor,c_taylor_spinor
  private c_IdentityEQUALSPINOR,c_spinmatrix_spinor,c_logt,c_pri_factored_lie,equalc_map_cmap
- private c_expflo_fac_inv,c_logc,c_complex_spinor,GETORDERSPINMATRIX,c_pri_spinor
+ private c_expflo_fac_inv,c_logc,c_complex_spinor,c_real_spinor,GETORDERSPINMATRIX,c_pri_spinor
  private c_spinor_cmap,c_adjoint_vec,c_adjoint,c_trxtaylor_da,c_spinmatrix_sub_spinmatrix
  PRIVATE CUTORDERMAP,CUTORDERspin,CUTORDERspinor,c_concat_tpsa,c_concat_spinor_ray
   type(C_dalevel) c_scratchda(ndumt)   !scratch levels of DA using linked list
@@ -208,6 +208,7 @@ real(dp) :: epso_factor =1000.d0 ! for log
      MODULE PROCEDURE c_complex_spinmatrix  ! c*Spinmatrix
      MODULE PROCEDURE c_taylor_spinor    ! taylor * spinor
      MODULE PROCEDURE c_complex_spinor   !  complex * spinor
+     MODULE PROCEDURE c_real_spinor      !  real(dp) * spinor
      MODULE PROCEDURE c_spinor_spinor    ! spinor x spinor 
      MODULE PROCEDURE c_trxspinmatrix    ! c_spinmatrix=  c_spinmatrix * c_map
      MODULE PROCEDURE c_spinmatrix_spinor  ! matrix * spinor
@@ -253,6 +254,7 @@ real(dp) :: epso_factor =1000.d0 ! for log
 
   INTERFACE clean
 !     MODULE PROCEDURE c_clean
+     MODULE PROCEDURE c_clean_spinor
      MODULE PROCEDURE c_clean_taylor
      MODULE PROCEDURE c_clean_spinmatrix
      MODULE PROCEDURE c_clean_damap
@@ -1367,6 +1369,7 @@ end subroutine c_get_indices
     call alloc(s1%a1)
     call alloc(s1%a_t)
     call alloc(s1%AS)
+    call alloc(s1%Atot)
     s1%as=1
     s1%nres=0
     s1%positive=.true.
@@ -1394,6 +1397,7 @@ end subroutine c_get_indices
     call kill(s1%a2)
     call kill(s1%a1)
     call kill(s1%AS)
+    call kill(s1%Atot)
     s1%positive=.true.
     s1%nres=0
     s1%m=0  ! orbital resonance
@@ -6793,11 +6797,12 @@ endif
     TYPE (c_ray) c_spinmatrix_mul_cray 
     TYPE (c_spinmatrix), INTENT (IN) :: S1
     TYPE (c_ray), INTENT (IN) :: S2 
-
+    TYPE (c_spinmatrix) temp
     integer i,j
 
-    
- 
+    call alloc(temp)
+    temp=s1
+    temp=temp.o.s2
     c_spinmatrix_mul_cray%s1=0.0_dp
     c_spinmatrix_mul_cray%s2=0.0_dp
     c_spinmatrix_mul_cray%s3=0.0_dp
@@ -6805,15 +6810,15 @@ endif
      do i=1,3
       do j=1,3
  
-          c_spinmatrix_mul_cray%s1(i)=s1%s(i,j)*s2%s1(j)+c_spinmatrix_mul_cray%s1(i)
-          c_spinmatrix_mul_cray%s2(i)=s1%s(i,j)*s2%s2(j)+c_spinmatrix_mul_cray%s2(i)
-          c_spinmatrix_mul_cray%s3(i)=s1%s(i,j)*s2%s3(j)+c_spinmatrix_mul_cray%s3(i)
+          c_spinmatrix_mul_cray%s1(i)=temp%s(i,j)*s2%s1(j)+c_spinmatrix_mul_cray%s1(i)
+          c_spinmatrix_mul_cray%s2(i)=temp%s(i,j)*s2%s2(j)+c_spinmatrix_mul_cray%s2(i)
+          c_spinmatrix_mul_cray%s3(i)=temp%s(i,j)*s2%s3(j)+c_spinmatrix_mul_cray%s3(i)
  
       enddo
      enddo
      c_spinmatrix_mul_cray%x=s2%x
  
-
+     call kill(temp)
   END FUNCTION c_spinmatrix_mul_cray
 
  FUNCTION c_spinmatrix_spinor(S1,S2) ! spin routine function
@@ -7105,6 +7110,29 @@ endif
 
   END FUNCTION c_complex_spinor
 
+ FUNCTION c_real_spinor(S1,S2) ! spin routine function
+    implicit none
+    TYPE (c_spinor) c_real_spinor 
+    TYPE (c_spinor), INTENT (IN) ::  S2
+    real(dp), INTENT (IN) :: S1
+    integer i
+
+    integer localmaster
+     IF(.NOT.C_STABLE_DA) then
+     c_real_spinor%v%i=0
+     RETURN
+     endif
+    localmaster=c_master
+
+    call c_ass_spinor(c_real_spinor)
+
+     do i=1,3
+          c_real_spinor%v(i)=s1*s2%v(i) 
+     enddo
+    
+    c_master=localmaster
+
+  END FUNCTION c_real_spinor
 
  FUNCTION c_spinor_spinor(S1,S2) ! spin routine function
     implicit none
@@ -7384,26 +7412,16 @@ endif
 
 
      
+
+    
+ !    c_concat_map_ray%s1=s2%s1   ! added spin 2016.6.29
+ !    c_concat_map_ray%s2=S2%s2
+ !    c_concat_map_ray%s3=S2%s3
+      c_concat_map_ray=s1%s*s2
+ ! order important because the first one puts s2%x into c_concat_map_ray%x
      do i=1,s1%n
       c_concat_map_ray%x(i)=s1%v(i).o.temp
      enddo
-    
-     c_concat_map_ray%s1=S2%s1
-     c_concat_map_ray%s2=S2%s2
-     c_concat_map_ray%s3=S2%s3
-
-!         temp%s=s1%s.dot.s2
-   !   temp%s=c_concat_spinmatrix_ray( S1%s, S2 )
-      
-   !  do i=1,3
-   !  do j=1,3
-   !    c_concat_map_ray%s1(i)=temp%s%s(i,j)*s2%s1(j)+c_concat_map_ray%s1(i)
-   !    c_concat_map_ray%s2(i)=temp%s%s(i,j)*s2%s2(j)+c_concat_map_ray%s2(i)
-   !    c_concat_map_ray%s3(i)=temp%s%s(i,j)*s2%s3(j)+c_concat_map_ray%s3(i)
-   !  enddo
-   !  enddo
-
-!     call orthogonalise_ray(c_concat_map_ray)
 
     call kill(temp)
     c_master=localmaster
@@ -8635,7 +8653,7 @@ subroutine c_full_canonise(at,a_cs,as,a0,a1,a2,rotation,phase,nu_spin)
 end subroutine c_full_canonise
 
 
- subroutine c_normal(xy,n,dospin,no_used)
+ subroutine c_normal(xy,n,dospin,no_used,rot,phase,nu_spin)
 !#general:  normal
 !# This routine normalises the map xy
 !# xy = n%a_t**(-1)*r*n%a_t 
@@ -8649,6 +8667,8 @@ end subroutine c_full_canonise
     type(c_damap) , intent(inout) :: xy
     type(c_damap) m1,ri,nonl,a1,a2,mt,AS
     type(c_normal_form), intent(inout) ::  n
+    type(c_damap), optional :: rot
+    type(c_taylor), optional :: phase(:),nu_spin
     integer,optional :: no_used
     integer i,j,k,l,kr,not
     integer, allocatable :: je(:)
@@ -8879,6 +8899,20 @@ end subroutine c_full_canonise
       
 
         n%n=c_simil(from_phasor(),m1,1)
+        n%Atot=n%as*n%a_t
+
+        if(present(rot)) then
+         rot=n%Atot**(-1)*xy*n%Atot
+        endif
+
+        if(present(phase)) then
+            if(present(rot)) then
+              m1=rot
+            else
+              m1=n%Atot**(-1)*xy*n%Atot
+            endif
+         call c_full_canonise(m1,a1,phase=phase,nu_spin=nu_spin) 
+        endif
 
      call c_check_rad(m1%e_ij,rad_in)
      if(rad_in) call c_normal_radiation(m1,n)
@@ -10141,28 +10175,49 @@ prec=1.d-8
     integer, optional :: n
     TYPE(c_spinmatrix) h
     integer i,nr
-    TYPE(c_spinmatrix) dh,dhn
+    TYPE(c_spinmatrix) dh,dhn,di
     complex(dp) c,cl
+    real(dp) depsb,depsa
+    logical pre
     call alloc(h)
     call alloc(dh)
     call alloc(dhn)
+    call alloc(di)
     !  this only works with a da-map
     nr=no
-    if(present(n)) nr=n
+      pre=present(n)
+    if(present(n)) then 
+      nr=n
+    endif
     dh=S
     h=0
     dhn=1
     dh%s(1,1)=dh%s(1,1)-1.0_dp
     dh%s(2,2)=dh%s(2,2)-1.0_dp
     dh%s(3,3)=dh%s(3,3)-1.0_dp
-
+    depsb=1.e38_dp
     c=1.0_dp
     do i=1,nr
        dhn=dhn*dh
        cl=c/i
-       h=h+cl*dhn
+       di=cl*dhn
+       if(pre.and.i>nr/2) then
+        call c_norm_spinmatrix(di,depsa)
+        if(depsa>=depsb) exit
+       endif
+       h=h+di
        c=-c
+       if(pre.and.i>nr/2) then
+        call c_norm_spinmatrix(di,depsa)
+        if(depsa>=depsb) exit
+           depsb=depsa
+       endif
     enddo
+
+    if(pre.and.i>nr-10) then
+      write(6,*) " did not converged in c_find_om_da ",i
+      stop
+     endif
 
     om%v(1)=spin_def_L*h%s(3,2)
     om%v(2)=spin_def_L*h%s(1,3)
@@ -10171,7 +10226,7 @@ prec=1.d-8
     call kill(h)
     call kill(dh)
     call kill(dhn)
-
+    call kill(di)
   end subroutine c_find_om_da
 
   subroutine c_find_as(n2,a) 
@@ -10313,32 +10368,37 @@ endif
 
   end subroutine c_find_spin_angle
 
-  function c_log_spinmatrix(s,exact) ! spin routine
+  function c_log_spinmatrix(s,exact,n) ! spin routine
     implicit none
     TYPE(c_spinor) c_log_spinmatrix
     TYPE(c_spinmatrix), INTENT(INout) :: s
     type(c_taylor) tune 
     type(c_damap) as
     logical(lp), optional :: exact
+    integer, optional :: n
     logical(lp) exa
     integer localmaster
     real(dp) d
-    integer k,n
+    integer k,n1
     IF(.NOT.C_STABLE_DA) then
      c_log_spinmatrix%v%i=0
      RETURN
      endif
     exa=my_false
-    n=no
+    n1=no
    if(present(exact)) exa=exact    
     localmaster=c_master
 
     call c_ass_spinor(c_log_spinmatrix)
-        
+
+    if(present(n)) then
+      call c_find_om_da(s,c_log_spinmatrix,n)
+    else    
+
      if(.not.exa) then
         call c_norm_spin(s,k,EPS=d)
         if(d<1.d-7) then
-         n=no+20
+         n1=no+2000
          k=1
         endif
      else
@@ -10348,7 +10408,7 @@ endif
 !pause 
 !etienne
     if(k==1) then
-      call c_find_om_da(s,c_log_spinmatrix,n)
+      call c_find_om_da(s,c_log_spinmatrix,n1)
     else
         call alloc(as)
         call alloc(tune)
@@ -10371,6 +10431,8 @@ endif
           call kill(as)
           call kill(tune)
      endif
+
+  endif
          c_master=localmaster
 
   end function c_log_spinmatrix

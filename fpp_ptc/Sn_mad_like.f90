@@ -3385,7 +3385,10 @@ CONTAINS
    xprime_pancake=xprime0
    end subroutine set_pancake_constants 
 
-  FUNCTION  pancake_tilt(NAME,file,no,T)
+  
+  ! linked
+
+ FUNCTION  pancake_tilt(NAME,file,no,T)
     implicit none
     type (EL_LIST) pancake_tilt
     CHARACTER(*),optional, INTENT(IN):: NAME,file
@@ -3394,7 +3397,7 @@ CONTAINS
     integer mf,nst,I,ORDER,ii
     integer, optional :: no
 !    LOGICAL(LP) REPEAT
-    TYPE(TAYLOR) B(nbe),bf(nbe),it  !,ax(2),ay(2)
+    TYPE(TAYLOR) B(nbe),ba(nbe),bf(nbe),bn(nbe),it  !,ax(2),ay(2)
 
     a=0.0_dp
    ! file_fitted=file
@@ -3428,15 +3431,29 @@ CONTAINS
 
     CALL ALLOC(B)
     CALL ALLOC(Bf)
+    CALL ALLOC(Ba)
+    CALL ALLOC(Bn)
     call alloc(it) 
 bf(1)=0.0_dp;bf(2)=0.0_dp;bf(3)=0.0_dp;
+ba(1)=0.0_dp;ba(2)=0.0_dp;ba(3)=0.0_dp;
 
 
 !    IF(REPEAT.AND.NST==0) NST=NSTD
 
     ALLOCATE(t_em(NST))  
 
-    DO I=1,NST
+    read(mf,*) ii 
+          CALL READ(Bf(1),mf);CALL READ(Bf(2),mf);CALL READ(Bf(3),mf);
+          Bf(1)=Bf(1)/BRHO
+          Bf(2)=Bf(2)/BRHO
+          Bf(3)=Bf(3)/BRHO
+    read(mf,*) ii 
+          CALL READ(Ba(1),mf);CALL READ(Ba(2),mf);CALL READ(Ba(3),mf);
+          Ba(1)=Ba(1)/BRHO
+          Ba(2)=Ba(2)/BRHO
+          Ba(3)=Ba(3)/BRHO
+
+    DO I=3,NST 
     read(mf,*) ii 
  
  
@@ -3445,27 +3462,65 @@ bf(1)=0.0_dp;bf(2)=0.0_dp;bf(3)=0.0_dp;
           B(1)=B(1)/BRHO
           B(2)=B(2)/BRHO
           B(3)=B(3)/BRHO
-          b(4)=-(b(3).i.2)  ! ax
-        
+
+         if(i==3) then
+          Bn(1)=Bf(1)
+          Bn(2)=Bf(2)
+          Bn(3)=Bf(3)
+          bn(4)=-(bn(3).i.2)  ! ax
           it=1.0_dp+hc*(1.0_dp.mono.1)
-          b(5)=(b(4)-bf(4))/ds-it*b(2)   !  d/dx (1+hx)A_s 
-          b(6)= it*b(1)   !  d/dy (1+hx)A_s  
-          b(7)=b(4).d.1   !  d/dx Ax
-          b(8)=b(4).d.2   !  d/dy Ax          
+          bn(5)=(4*b(4)-ba(4)-3*bf(4))/ds/2-it*bn(2)   !  d/dx (1+hx)A_s 
+          bn(6)= it*bn(1)   !  d/dy (1+hx)A_s  
+          bn(7)=bn(4).d.1   !  d/dx Ax
+          bn(8)=bn(4).d.2   !  d/dy Ax   
+          CALL SET_TREE_g(t_em(1),Bn)
+         elseif(i==nst) then
+          Bn(1)=B(1)
+          Bn(2)=B(2)
+          Bn(3)=B(3)
+          bn(4)=-(bn(3).i.2)  ! ax
+          it=1.0_dp+hc*(1.0_dp.mono.1)
+          bn(5)=(3*b(4)+bf(4)-4*ba(4))/ds/2-it*bn(2)   !  d/dx (1+hx)A_s 
+          bn(6)= it*bn(1)   !  d/dy (1+hx)A_s  
+          bn(7)=bn(4).d.1   !  d/dx Ax
+          bn(8)=bn(4).d.2   !  d/dy Ax   
+          CALL SET_TREE_g(t_em(i),Bn)
+         endif
+
+          Bn(1)=Ba(1)
+          Bn(2)=Ba(2)
+          Bn(3)=Ba(3)
+          bn(4)=-(bn(3).i.2)  ! ax
+          it=1.0_dp+hc*(1.0_dp.mono.1)
+          bn(5)=(b(4)-bf(4))/ds/2-it*bn(2)   !  d/dx (1+hx)A_s 
+          bn(6)= it*bn(1)   !  d/dy (1+hx)A_s  
+          bn(7)=bn(4).d.1   !  d/dx Ax
+          bn(8)=bn(4).d.2   !  d/dy Ax   
+          CALL SET_TREE_g(t_em(i-1),Bn)
  
-       CALL SET_TREE_g(t_em(i),B)
-          Bf(1)=B(1)
-          Bf(2)=B(2)
-          Bf(3)=B(3)  
-          Bf(4)=B(4)
-          Bf(5)=B(5)
-          Bf(6)=B(6)
-          Bf(7)=B(7)
-          Bf(8)=B(8)      
+          Bf(1)=Ba(1)
+          Bf(2)=Ba(2)
+          Bf(3)=Ba(3)  
+          Bf(4)=Ba(4)
+          Bf(5)=Ba(5)
+          Bf(6)=Ba(6)
+          Bf(7)=Ba(7)
+          Bf(8)=Ba(8)    
+  
+          Ba(1)=B(1)
+          Ba(2)=B(2)
+          Ba(3)=B(3)
+          Ba(4)=B(4)
+          Ba(5)=B(5)
+          Ba(6)=B(6)
+          Ba(7)=B(7)
+          Ba(8)=B(8)
 
     enddo
     call KILL(B)
     call KILL(Bf)
+    call KILL(Ba)
+    call KILL(Bn)
     call KILL(it) 
 
 
@@ -3513,7 +3568,6 @@ bf(1)=0.0_dp;bf(2)=0.0_dp;bf(3)=0.0_dp;
     ENDIF
   END FUNCTION pancake_tilt
   ! linked
-
 
   SUBROUTINE  EQUAL_L(R,S1)
     implicit none
