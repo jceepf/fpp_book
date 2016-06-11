@@ -2433,7 +2433,7 @@ end  SUBROUTINE  flatten_c_factored_lie_r
      call alloc(s1t)
     s1t=s1
     da=.true.
-    if(present(tpsa)) da=tpsa
+    if(present(tpsa)) da=.not.tpsa
     if(da) then
      do i=1,s1t%n
          s1t%v(i)=s1t%v(i)-(s1t%v(i).sub.'0')
@@ -6244,17 +6244,25 @@ endif
 
  end function c_clean
 
-  SUBROUTINE  c_clean_taylor(S1,S2,prec)
+  SUBROUTINE  c_clean_taylor(S1,S2,prec,r)
     implicit none
     type (c_taylor),INTENT(INOUT)::S2
     type (c_taylor), intent(INOUT):: s1
     real(dp) prec
-    INTEGER ipresent,n,I,illa
-    complex(dp) value,v
-    real(dp) x
+    INTEGER ipresent,n,I,illa,k
+    complex(dp) value,v,y
+    real(dp) x,xx
     INTEGER, allocatable :: j(:)
+    type(c_ray),optional :: r
     type (c_taylor) t
-
+    type(c_ray) s
+    
+    s%x=0
+    s%s1=0
+    s%s2=0
+    s%s3=0
+    s%x=1.0_dp
+    if(present(r)) s=r
     call alloc(t)
     t=0.0_dp
     ipresent=1
@@ -6265,10 +6273,20 @@ endif
     do i=1,N
        call c_dacycle(S1%I,i,value,illa,j)
        v=0.0_dp
+    if(present(r)) then
+       y=value
+      do k=1,nv
+       y=y*r%x(k)**j(k)
+      enddo
+     else
+      y=value
+    endif
+       xx=y
        x=value
-       if(abs(x)>prec) v=x
-       x=aimag(value)
-       if(abs(x)>prec) v=v+i_*x
+       if(abs(xx)>prec) v=x
+       xx=aimag(y)
+       x=aimag(value)      
+       if(abs(xx)>prec) v=v+i_*x
 !       if(abs(value)>prec) then
           t=t+(v.cmono.j)
 !       endif
@@ -6280,44 +6298,46 @@ endif
   END SUBROUTINE c_clean_taylor
 
 
-  SUBROUTINE  c_clean_spinmatrix(S1,S2,prec) ! spin routine
+  SUBROUTINE  c_clean_spinmatrix(S1,S2,prec,r) ! spin routine
     implicit none
     type (c_spinmatrix),INTENT(INOUT)::S2
     type (c_spinmatrix), intent(INOUT):: s1
     real(dp) prec
     integer i,j
-
+    type(c_ray),optional :: r
     do i=1,3
     do j=1,3
-       call clean(s1%s(i,j),s2%s(i,j),prec)
+       call clean(s1%s(i,j),s2%s(i,j),prec,r)
     enddo
     enddo
 
 
   END SUBROUTINE c_clean_spinmatrix
 
-  SUBROUTINE  c_clean_spinor(S1,S2,prec) ! spin routine
+  SUBROUTINE  c_clean_spinor(S1,S2,prec,r) ! spin routine
     implicit none
     type (c_spinor),INTENT(INOUT)::S2
     type (c_spinor), intent(INOUT):: s1
     real(dp) prec
+    type(c_ray),optional :: r
     integer i
 
     do i=1,3
-       call c_clean_taylor(s1%v(i),s2%v(i),prec)
+       call c_clean_taylor(s1%v(i),s2%v(i),prec,r)
     enddo
 
   END SUBROUTINE c_clean_spinor
 
-  SUBROUTINE  c_clean_damap(S1,S2,prec)
+  SUBROUTINE  c_clean_damap(S1,S2,prec,r)
     implicit none
     type (c_damap),INTENT(INOUT)::S2
     type (c_damap), intent(INOUT):: s1
     real(dp) prec
     integer i
+    type(c_ray),optional :: r
 
     do i=1,nd2
-       call c_clean_taylor(s1%v(i),s2%v(i),prec)
+       call c_clean_taylor(s1%v(i),s2%v(i),prec,r)
     enddo
     
     call c_clean_spinmatrix(s1%s,s2%s,prec)
@@ -6325,12 +6345,13 @@ endif
   END SUBROUTINE c_clean_damap
 
 
-  SUBROUTINE  c_clean_vector_field(S1,S2,prec)
+  SUBROUTINE  c_clean_vector_field(S1,S2,prec,r)
     implicit none
     type (c_vector_field),INTENT(INOUT)::S2
     type (c_vector_field), intent(INOUT):: s1
     real(dp) prec
     integer i
+    type(c_ray),optional :: r
 
     do i=1,nd2
        call c_clean_taylor(s1%v(i),s2%v(i),prec)
@@ -8786,6 +8807,11 @@ end subroutine c_full_canonise
                  lam=lam*eg(l)**je(l)
                enddo
              je(k)=je(k)+1
+!     write(6,*) k
+!     write(6,'(6(1x,i4))') je(1:6)
+!     write(6,*) v
+!     write(6,*) abs(v/(1-lam))
+!pause 1112
              n%g%f(i)%v(k)=n%g%f(i)%v(k)+(v.cmono.je)/(1.0_dp-lam)
             else ! Put in the kernel
              n%ker%f(i)%v(k)=n%ker%f(i)%v(k)+(v.cmono.je)
@@ -10222,21 +10248,19 @@ prec=1.d-8
        dhn=dhn*dh
        cl=c/i
        di=cl*dhn
-       if(pre.and.i>nr/2) then
-        call c_norm_spinmatrix(di,depsa)
-        if(depsa>=depsb) exit
-       endif
        h=h+di
        c=-c
-       if(pre.and.i>nr/2) then
         call c_norm_spinmatrix(di,depsa)
+       if(lielib_print(3)==1) write(6,*) i,depsa
+       if(pre.and.i>nr/2) then
         if(depsa>=depsb) exit
            depsb=depsa
        endif
     enddo
 
-    if(pre.and.i>nr-10) then
+    if(pre.and.i>nr-1) then
       write(6,*) " did not converged in c_find_om_da ",i
+      write(6,*) " Norms ",depsb,depsa
       stop
      endif
 
@@ -12989,15 +13013,16 @@ subroutine mulc_vector_field_fourier(s1,fac,r)
 
 end subroutine mulc_vector_field_fourier
 
-  SUBROUTINE  c_clean_vector_field_fourier(S1,S2,prec)
+  SUBROUTINE  c_clean_vector_field_fourier(S1,S2,prec,r)
     implicit none
     type (c_vector_field_fourier),INTENT(INOUT)::S2
     type (c_vector_field_fourier), intent(INOUT):: s1
     real(dp) prec
+    type(c_ray), optional :: r
     integer i
 
     do i=-n_fourier,n_fourier
-       call c_clean_vector_field(s1%f(i),s2%f(i),prec)
+       call c_clean_vector_field(s1%f(i),s2%f(i),prec,r)
     enddo
 
   END SUBROUTINE c_clean_vector_field_fourier
