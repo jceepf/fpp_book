@@ -690,6 +690,7 @@ endif
           IF(resplit_cutting==0) WRITE(6,*) " RESPLITTING NORMALLY"
           IF(resplit_cutting==1) WRITE(6,*) " CUTTING DRIFT USING LMAX"
           IF(resplit_cutting==2) WRITE(6,*) " CUTTING EVERYTHING USING LMAX"
+          IF(resplit_cutting==-2) WRITE(6,*) " CUTTING EVERYTHING USING LMAX EXCEPT DRIFTS"
           !       case('KIND7WITHMETHOD1')
           !          CALL PUT_method1_in_kind7(my_ering,1000)
        case('THINLENS=1')
