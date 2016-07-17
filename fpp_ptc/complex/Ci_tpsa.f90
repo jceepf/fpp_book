@@ -88,6 +88,9 @@ logical :: special_extra_order_1=.true.
 real(dp) :: epso_factor =1000.d0 ! for log
 logical(lp):: extra_terms_log=.false. 
 logical :: add_constant_part_concat=.true.
+private EQUAL_c_spinmatrix_probe,EQUAL_c_spinmatrix_3_by_3,EQUAL_3_by_3_probe,EQUAL_probe_c_spinmatrix
+private EQUAL_probe_3_by_3
+
 
   INTERFACE assignment (=)
      MODULE PROCEDURE EQUAL
@@ -111,6 +114,11 @@ logical :: add_constant_part_concat=.true.
     MODULE PROCEDURE c_IdentityEQUALVEC
     MODULE PROCEDURE c_IdentityEQUALfactored
     MODULE PROCEDURE c_IdentityEQUALVECfourier
+    MODULE PROCEDURE EQUAL_c_spinmatrix_probe
+    MODULE PROCEDURE EQUAL_c_spinmatrix_3_by_3
+    MODULE PROCEDURE EQUAL_3_by_3_probe
+    MODULE PROCEDURE EQUAL_probe_3_by_3
+    MODULE PROCEDURE EQUAL_probe_c_spinmatrix
 
     MODULE PROCEDURE matrixMAPr
     MODULE PROCEDURE r_matrixMAPr
@@ -1880,6 +1888,70 @@ end subroutine c_get_indices
     call kill(ct)
 
  end SUBROUTINE  equal_cmap_real8
+
+  subroutine EQUAL_c_spinmatrix_probe(S,R)
+!*
+    implicit none
+    TYPE(probe), INTENT(IN) :: R
+    TYPE(c_spinmatrix), INTENT(INOUT) :: S
+
+    s%s(1,1)=r%s(1)%x(1);    s%s(2,1)=r%s(1)%x(2);    s%s(3,1)=r%s(1)%x(3);
+    s%s(1,2)=r%s(2)%x(1);    s%s(2,2)=r%s(2)%x(2);    s%s(3,2)=r%s(2)%x(3);
+    s%s(1,3)=r%s(3)%x(1);    s%s(2,3)=r%s(3)%x(2);    s%s(3,3)=r%s(3)%x(3);
+
+  END subroutine EQUAL_c_spinmatrix_probe
+
+  subroutine EQUAL_probe_c_spinmatrix(R,S)
+!*
+    implicit none
+    TYPE(probe), INTENT(INout) :: R
+    TYPE(c_spinmatrix), INTENT(IN) :: S
+
+    r%s(1)%x(1)=s%s(1,1);    r%s(1)%x(2)=s%s(2,1);    r%s(1)%x(3)=s%s(3,1);
+    r%s(2)%x(1)=s%s(1,2);    r%s(2)%x(2)=s%s(2,2);    r%s(2)%x(3)=s%s(3,2);
+    r%s(3)%x(1)=s%s(1,3);    r%s(3)%x(2)=s%s(2,3);    r%s(3)%x(3)=s%s(3,3);
+
+  END subroutine EQUAL_probe_c_spinmatrix
+
+  subroutine EQUAL_c_spinmatrix_3_by_3(S,R)
+!*
+    implicit none
+    real(dp), INTENT(IN) :: R(3,3)
+    TYPE(c_spinmatrix), INTENT(INOUT) :: S
+    integer i,j
+    do i=1,3
+    do j=1,3
+    s%s(i,j)=r(i,j) 
+    enddo
+    enddo
+
+  END subroutine EQUAL_c_spinmatrix_3_by_3
+
+  subroutine EQUAL_3_by_3_probe(R,S)
+!*
+    implicit none
+    real(dp), INTENT(INout) :: R(3,3)
+    TYPE(probe), INTENT(IN) :: S
+    integer i,j
+
+    r(1,1)=s%s(1)%x(1);    r(2,1)=s%s(1)%x(2);    r(3,1)=s%s(1)%x(3);
+    r(1,2)=s%s(2)%x(1);    r(2,2)=s%s(2)%x(2);    r(3,2)=s%s(2)%x(3);
+    r(1,3)=s%s(3)%x(1);    r(2,3)=s%s(3)%x(2);    r(3,3)=s%s(3)%x(3);
+
+  END subroutine EQUAL_3_by_3_probe
+
+  subroutine EQUAL_probe_3_by_3(S,R)
+!*
+    implicit none
+    real(dp), INTENT(IN) :: R(3,3)
+    TYPE(probe), INTENT(INout) :: S
+    integer i,j
+
+    s%s(1)%x(1)=r(1,1);    s%s(1)%x(2)=r(2,1);    s%s(1)%x(3)=r(3,1);
+    s%s(2)%x(1)=r(1,2);    s%s(2)%x(2)=r(2,2);    s%s(2)%x(3)=r(3,2);
+    s%s(3)%x(1)=r(1,3);    s%s(3)%x(2)=r(2,3);    s%s(3)%x(3)=r(3,3);
+
+  END subroutine EQUAL_probe_3_by_3
 
   subroutine EQUAL_c_map_RAY8(DS,R)
 !*
@@ -13622,6 +13694,7 @@ end subroutine nth_root
  enddo
 
  end  subroutine alloc_node_array
+
 
 
   END MODULE  c_tpsa
