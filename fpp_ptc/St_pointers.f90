@@ -62,7 +62,7 @@ module pointer_lattice
      type(spinor), pointer :: sp(:,:)
      real(dp), pointer :: s(:,:,:,:)  !   spin matrices
      real(dp) em(2),mu(2),fix(6)
-     real(dp), pointer :: x_i(:,:,:)
+     real(dp), pointer :: x_i(:,:,:),phis(:,:,:)
   end  type logs
    
 
@@ -2901,7 +2901,8 @@ allocate(a%sp(0:ns-1,0:ns-1))
 allocate(a%s(0:ns-1,0:ns-1,3,3))
 allocate(a%as(num_iter,3,3))
 allocate(a%af(num_iter))
-allocate(a%x_i(0:ns-1,0:ns-1,6))
+allocate(a%x_i(0:ns-1,0:ns-1,1:6))
+allocate(a%phis(0:ns-1,0:ns-1,1:2))
 
 call alloc_explogs(a%h,n1,n2)
 call alloc_explogs(a%a,n1,n2)
@@ -2909,6 +2910,7 @@ call alloc_explogs(a%n,n1,n2)
 
 a%as=0.0_dp  
 a%x_i=0.0_dp
+a%phis=0.0_dp
 
 do i =1,num_iter
  call alloc_explogs(a%af(i),n1,n2)
@@ -3006,7 +3008,7 @@ endif
 
 if(present(U))  then
 spinmap%mu=twopi*tune(1:2)
-call alloc(c_id);
+ call alloc(c_map,c_id); call alloc(c_n); call alloc(n)
 c_id=U
 else
  call init_all(my_estate,1,0)
@@ -3035,13 +3037,15 @@ r%x(1)= sqrt(em(1))*cos(i*dphi1)
 r%x(2)=-sqrt(em(1))*sin(i*dphi1)
 r%x(3)= sqrt(em(2))*cos(j*dphi2)
 r%x(4)=-sqrt(em(2))*sin(j*dphi2)
+spinmap%phis(i,j,1)=i*dphi1
+spinmap%phis(i,j,2)=j*dphi2
  xs0=0
  r=c_id.o.r
  do k=1,6
    x(k)=r%x(k)+my_fix(k)
  enddo
 
- spinmap%x_i(i,j,1:6)=x(1:6)
+ spinmap%x_i(i,j,1:6)=r%x(1:6)
  spinmap%fix=my_fix
 
  xs0=x
@@ -3264,7 +3268,7 @@ call alloc(smi)
 call alloc_explogs(a,spinmap%h%n1,spinmap%h%n2)
 call alloc_explogs(b,spinmap%h%n1,spinmap%h%n2)
 
-call exp_logs(a,spinmap%h,spinmap%h,spinmap%mu)
+!call exp_logs(a,spinmap%h,spinmap%h,spinmap%mu)
 
 do k=1,3
  spm%v(k)=spinmap%h%h(k,0,0)
@@ -3343,6 +3347,7 @@ do i=1,3
  sm(i,i)=1.0_dp
 enddo
 
+if(.true.) then
 do i=1,num_iter
 
  sm=matmul(spinmap%as(i,1:3,1:3),sm)
@@ -3352,7 +3357,18 @@ do i=1,num_iter
  sm=matmul(sd,sm)
 
 enddo
+else
+do i=num_iter,1,-1
 
+ call evaluate_logs_a(spinmap,x,i,sd)
+
+ sm=matmul(sm,sd)
+
+ sm=matmul(sm,spinmap%as(i,1:3,1:3))
+
+
+enddo
+endif
 end subroutine evaluate_logs_a_all
 
 subroutine evaluate_logs_a(spinmap,x,m,sm)
@@ -3507,11 +3523,11 @@ end subroutine simil_logs
     real(dp) n1(3),n2(3)
     call kanalnummer(mf,file)
 
-!     do i=-a%n1,a%n1
-!     do j=-a%n2,a%n2
+     do i=-a%n1,a%n1
+     do j=-a%n2,a%n2
 
-     do i=-2,2
-     do j=-2,2
+!     do i=-2,2
+!     do j=-2,2
      if(iabs(i)+iabs(j)>2) cycle
 !     write(mf,'(2(i4,1x),6(1x,E15.8))') i,j,a%h(1:3,i,j)
 !     write(mf,'(2(5x),6(1x,E15.8))')    b%h(1:3,i,j)
