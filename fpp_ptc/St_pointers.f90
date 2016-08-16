@@ -2995,7 +2995,8 @@ type(spinor) nr
  
 ns=spinmap%ns
 em=spinmap%em
-
+write(6,*) em
+ 
 state=my_eSTATE-spin0
  
 if(present(fix)) then
