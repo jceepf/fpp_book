@@ -770,7 +770,7 @@ CONTAINS
              call set_s_e
          else 
  if(change_first) then  
-  write(6,*) " recomputing with new SECTOR_NMUL and sector_nmul_max ",SECTOR_NMUL,SECTOR_NMUL_max
+  if(lielib_print(11)==1) write(6,*) " recomputing with new SECTOR_NMUL and sector_nmul_max ",SECTOR_NMUL,SECTOR_NMUL_max
  change_first=.false.
  endif        
 
