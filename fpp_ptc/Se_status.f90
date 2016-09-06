@@ -45,7 +45,7 @@ module S_status
   integer, parameter :: KINDwiggler = KIND23+2
   !  integer, parameter :: KINDmu      = KIND23+3
   integer, parameter :: KINDpa     = KIND23+3
-  integer, parameter :: kindsuper1 = KIND23+4
+  integer, parameter :: kindsuperdrift = KIND23+4
   integer, parameter :: drift_kick_drift = kind2
   integer, parameter :: matrix_kick_matrix = kind7
   integer, parameter :: kick_sixtrack_kick = kind6

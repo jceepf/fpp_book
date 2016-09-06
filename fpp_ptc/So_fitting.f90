@@ -69,13 +69,13 @@ contains
   end SUBROUTINE lattice_GET_CHROM
 
 
-  SUBROUTINE lattice_GET_tune(R,my_state,mf)
+  SUBROUTINE lattice_GET_tune(R,my_state,mf,targ)
     IMPLICIT NONE
     TYPE(layout),target,INTENT(INOUT):: r
     TYPE(internal_state), intent(in):: my_state
     TYPE(internal_state) state
     integer mf
-    real(dp) closed(6)
+    real(dp) closed(6),targ(3)
     type(DAMAP) ID
     TYPE(NORMALFORM) NORM
     TYPE(REAL_8) Y(6)
@@ -100,6 +100,7 @@ contains
     CALL TRACK(R,Y,1,STATE)
     NORM=Y
     closed=y
+    targ(1:3)=NORM%tune(1:3)
     WRITE(6,'(6(1x,g21.14),a24)') CLOSED," <-- should be identical"
     if(mf==6) then
      WRITE(6,'(a19,3(1x,g21.14))') "Fractional Tunes = ",norm%tune(1:3)
@@ -2662,7 +2663,7 @@ eta2=0.0_dp
     logical(lp), OPTIONAL :: useknob,universe
     real(dp) gg,RHOI,XL,QUAD,THI,lm,dl,ggbt,xbend1,gf(7),sexr0,quad0,dq
     INTEGER M1,M2,M3, MK1,MK2,MK3,limit(2),parity,inc,nst_tot,ntec,ii,metb,sexk
-    integer incold ,parityold, nt,nsag,lim0(2)
+    integer incold ,parityold, nt,nsag,lim0(2),lims(2)
     integer, optional :: lim(2)
     logical(lp) MANUAL,eject,doit,DOBEND
     TYPE (fibre), POINTER :: C
@@ -2767,6 +2768,7 @@ endif
     limit= limit_int0 
  
     if(present(lim)) limit=lim
+    lims=limit
     if(sixtrack_compatible) then
        limit(1)=1000000
        limit(2)=1000001
@@ -2878,8 +2880,11 @@ endif
           parity=0
           inc=1
        endif
-             if(C%MAG%KIND==kindwiggler)  limit=limit_sag
-
+             if(C%MAG%KIND==kindwiggler)  then
+                limit=limit_sag
+             else
+               limit=lims
+             endif
        !       if(doit)  then
 
        select case(resplit_cutting)
@@ -3238,8 +3243,12 @@ endif
        case default
           stop 988
        end select
-             if(C%MAG%KIND==kindwiggler)  limit=lim0
-             
+ 
+             if(C%MAG%KIND==kindwiggler)  then
+                limit=limit_sag
+             else
+               limit=lims
+             endif             
 
        !      endif
        NST_tot=NST_tot+C%MAG%P%nst
