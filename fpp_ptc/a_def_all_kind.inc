@@ -31,23 +31,13 @@ END  TYPE DRIFT1P
 TYPE SUPERDRIFT1
    TYPE(MAGNET_CHART), POINTER :: P => null()
    real(dp) , POINTER ::L => null()                    !  Storage space for computed
- !  INTEGER, POINTER :: A_X1 => null(),A_X2 => null()   ! FOR ROTATION OF PI AT ENTRANCE = -1, DEFAULT = 1 ,
    REAL(DP),DIMENSION(:), POINTER:: D => null(),ang => null()     ! TRANSLATIONS  A_D(3) and Angles
-!   INTEGER(2), POINTER:: ENERGY => null()   ! IF TRUE, ENERGY PATCHES NEEDED
-!   INTEGER(2), POINTER:: TIME => null()     ! IF TRUE, TIME PATCHES NEEDED
-!   REAL(DP), POINTER:: A_T => null()        ! TIME SHIFT NEEDED SOMETIMES WHEN RELATIVE TIME IS USED
-!   REAL(DP), POINTER:: p0b => null(),b0b => null()     ! for bmad patching
 END  TYPE SUPERDRIFT1
 
 TYPE SUPERDRIFT1P
    TYPE(MAGNET_CHART), POINTER :: P => null()
    TYPE(REAL_8) , POINTER ::L => null()
-!   INTEGER, POINTER :: A_X1 => null(),A_X2 => null()   ! FOR ROTATION OF PI AT ENTRANCE = -1, DEFAULT = 1 ,
    REAL(DP),DIMENSION(:), POINTER:: D => null(),ang => null()     ! TRANSLATIONS  A_D(3) and Angles
-!   INTEGER(2), POINTER:: ENERGY => null()   ! IF TRUE, ENERGY PATCHES NEEDED
-!   INTEGER(2), POINTER:: TIME   => null()  ! IF TRUE, TIME PATCHES NEEDED
-   REAL(DP), POINTER:: A_T      => null() ! TIME SHIFT NEEDED SOMETIMES WHEN RELATIVE TIME IS USED
- !  REAL(DP), POINTER:: p0b => null(), b0b  => null() ! for bmad patching
 END  TYPE SUPERDRIFT1P
 
 TYPE DKD2
