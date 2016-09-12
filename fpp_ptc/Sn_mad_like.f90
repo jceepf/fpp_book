@@ -2019,7 +2019,7 @@ CONTAINS
     else
        superdrft=0
     endif
-    superdrft%NST=1
+   ! superdrft%NST=1
     superdrft%METHOD=2
 
     superdrft%L=L1

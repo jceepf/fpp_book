@@ -182,8 +182,8 @@ MODULE S_DEF_KIND
      MODULE PROCEDURE INTEP_PANCAKE
      MODULE PROCEDURE INTR_HE
      MODULE PROCEDURE INTP_HE
-     MODULE PROCEDURE INTER_superDRIFT1
-     MODULE PROCEDURE INTEP_superDRIFT1
+     MODULE PROCEDURE INTER_superdrift
+     MODULE PROCEDURE INTEP_superdrift
   END INTERFACE
 
   
@@ -348,6 +348,8 @@ MODULE S_DEF_KIND
   INTERFACE feval_teapot
      MODULE PROCEDURE feval_teapotr
      MODULE PROCEDURE feval_teapotP
+  !   MODULE PROCEDURE feval_teapotrorlov
+  !   MODULE PROCEDURE feval_teapotPorlov
   END INTERFACE
 
   INTERFACE rk2_cav
@@ -823,7 +825,7 @@ contains
   SUBROUTINE PATCH_driftR(C,X,k,PATCH,dir)
     implicit none
     ! MISALIGNS REAL FIBRES IN PTC ORDER FOR FORWARD AND BACKWARD FIBRES
-    TYPE(SUPERDRIFT1),INTENT(INOUT):: C
+    TYPE(superdrift),INTENT(INOUT):: C
     real(dp), INTENT(INOUT):: X(6)
     integer,intent(in) :: dir
     logical(lp),INTENT(IN):: PATCH
@@ -852,7 +854,7 @@ contains
 
   SUBROUTINE PATCH_driftp(C,X,k,PATCH,dir)
     implicit none
-    TYPE(SUPERDRIFT1p),INTENT(INOUT):: C
+    TYPE(superdriftp),INTENT(INOUT):: C
     TYPE(REAL_8), INTENT(INOUT):: X(6)
     integer,intent(in) :: dir
     logical(lp),INTENT(IN):: PATCH
@@ -934,10 +936,10 @@ contains
   END SUBROUTINE INTEP_DRIFT1
 
 
-  SUBROUTINE INTER_superDRIFT1(EL,X,k)
+  SUBROUTINE INTER_superdrift(EL,X,k)
     IMPLICIT NONE
     real(dp), INTENT(INOUT) :: X(6)
-    TYPE(SUPERDRIFT1),INTENT(IN):: EL
+    TYPE(superdrift),INTENT(IN):: EL
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     real(dp) DH,DD
 
@@ -955,12 +957,12 @@ contains
        ! call !write_e(357)
     END SELECT
 
-  END SUBROUTINE INTER_superDRIFT1
+  END SUBROUTINE INTER_superdrift
 
-  SUBROUTINE INTEP_superDRIFT1(EL,X,k)
+  SUBROUTINE INTEP_superdrift(EL,X,k)
     IMPLICIT NONE
     TYPE(REAL_8), INTENT(INOUT) :: X(6)
-    TYPE(SUPERDRIFT1p),INTENT(IN):: EL
+    TYPE(superdriftp),INTENT(IN):: EL
     TYPE(REAL_8) DH
     real(dp) DD
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
@@ -987,14 +989,14 @@ contains
 
     CALL KILL(DH)
 
-  END SUBROUTINE INTEP_superDRIFT1
+  END SUBROUTINE INTEP_superdrift
 
 
   SUBROUTINE SUPER_DRIFT_p(EL,X,k)
     IMPLICIT NONE
     type(real_8),INTENT(INOUT):: X(6)
  
-    TYPE(SUPERDRIFT1p),TARGET,INTENT(INOUT):: EL
+    TYPE(superdriftp),TARGET,INTENT(INOUT):: EL
     INTEGER I 
     integer(2) j 
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
@@ -1017,7 +1019,7 @@ contains
     IMPLICIT NONE
     real(dp),INTENT(INOUT):: X(6)
     TYPE(WORM),OPTIONAL,INTENT(INOUT):: MID
-    TYPE(SUPERDRIFT1),TARGET,INTENT(INOUT):: EL
+    TYPE(superdrift),TARGET,INTENT(INOUT):: EL
     INTEGER I 
     integer(2) j 
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
@@ -9665,20 +9667,20 @@ integer :: kkk=0
         if(k%TIME) then
            H=1.0_dp+EL%P%B0*X(1)
            DEL=x(5)-E(3)*EL%P%CHARGE
-           PZ=ROOT(1.0_dp+2*del/EL%P%BETA0+del**2-x(2)**2-x(4)**2)
+           PZ=sqrt(1.0_dp+2*del/EL%P%BETA0+del**2-x(2)**2-x(4)**2)
            F(1)=X(2)*H/PZ-orlov*x(1)*x(2)*EL%P%B0
-           F(3)=X(4)*H/PZ-orlov*x(1)*x(3)*EL%P%B0
-           F(2)=EL%P%B0*PZ+dir*B(1)+H*(1.0_dp/EL%P%BETA0+del)/pz*E(1)*EL%P%CHARGE-EL%P%B0*(x(2)**2+x(4)**2)/2.0_dp
+           F(3)=X(4)*H/PZ-orlov*x(1)*x(4)*EL%P%B0
+           F(2)=EL%P%B0*PZ+dir*B(1)+H*(1.0_dp/EL%P%BETA0+del)/pz*E(1)*EL%P%CHARGE+orlov*EL%P%B0*(x(2)**2+x(4)**2)/2.0_dp
            F(4)=dir*B(2)+H*(1.0_dp/EL%P%BETA0+del)/pz*E(2)*EL%P%CHARGE 
            F(5)=0.0_dp
            F(6)=H*(1.0_dp/EL%P%BETA0+del)/PZ+(k%TOTALPATH-1)/EL%P%BETA0  !! ld=L in sector bend
         else
            H=1.0_dp+EL%P%B0*X(1)
            DEL=x(5)-E(3)*EL%P%CHARGE
-           PZ=ROOT(1.0_dp+2*del+del**2-x(2)**2-x(4)**2)
-           F(1)=X(2)*H/PZ-orlov*x(1)*x(2) 
-           F(3)=X(4)*H/PZ-orlov*x(1)*x(3) 
-           F(2)=EL%P%B0*PZ+dir*B(1)+H*(1.0_dp+del)/pz*E(1)*EL%P%CHARGE-EL%P%B0*(x(2)**2+x(4)**2)/2.0_dp
+           PZ=sqrt(1.0_dp+2*del+del**2-x(2)**2-x(4)**2)
+           F(1)=X(2)*H/PZ-orlov*x(1)*x(2)*EL%P%B0
+           F(3)=X(4)*H/PZ-orlov*x(1)*x(4)*EL%P%B0
+           F(2)=EL%P%B0*PZ+dir*B(1)+H*(1.0_dp+del)/pz*E(1)*EL%P%CHARGE+orlov*EL%P%B0*(x(2)**2+x(4)**2)/2.0_dp
            F(4)=dir*B(2)+H*(1.0_dp+del)/pz*E(2)*EL%P%CHARGE 
            F(5)=0.0_dp
            F(6)=H*(1.0_dp+del)/PZ+(k%TOTALPATH-1) 
@@ -9731,9 +9733,9 @@ integer :: kkk=0
            DEL=x(5)-E(3)*EL%P%CHARGE
            PZ=sqrt(1.0_dp+2*del/EL%P%BETA0+del**2-x(2)**2-x(4)**2)
            F(1)=X(2)*H/PZ-orlov*x(1)*x(2)*EL%P%B0
-           F(3)=X(4)*H/PZ-orlov*x(1)*x(3)*EL%P%B0
-           F(2)=EL%P%B0*PZ+dir*B(1)+H*(1.0_dp/EL%P%BETA0+del)/pz*E(1)*EL%P%CHARGE-EL%P%B0*(x(2)**2+x(4)**2)/2.0_dp
-           F(4)=dir*B(2)+H*(1.0_dp/EL%P%BETA0+del)/pz*E(2)*EL%P%CHARGE
+           F(3)=X(4)*H/PZ-orlov*x(1)*x(4)*EL%P%B0
+           F(2)=EL%P%B0*PZ+dir*B(1)+H*(1.0_dp/EL%P%BETA0+del)/pz*E(1)*EL%P%CHARGE+orlov*EL%P%B0*(x(2)**2+x(4)**2)/2.0_dp
+           F(4)=dir*B(2)+H*(1.0_dp/EL%P%BETA0+del)/pz*E(2)*EL%P%CHARGE 
            F(5)=0.0_dp
            F(6)=H*(1.0_dp/EL%P%BETA0+del)/PZ+(k%TOTALPATH-1)/EL%P%BETA0  !! ld=L in sector bend
         else
@@ -9741,8 +9743,8 @@ integer :: kkk=0
            DEL=x(5)-E(3)*EL%P%CHARGE
            PZ=sqrt(1.0_dp+2*del+del**2-x(2)**2-x(4)**2)
            F(1)=X(2)*H/PZ-orlov*x(1)*x(2)*EL%P%B0
-           F(3)=X(4)*H/PZ-orlov*x(1)*x(3)*EL%P%B0
-           F(2)=EL%P%B0*PZ+dir*B(1)+H*(1.0_dp+del)/pz*E(1)*EL%P%CHARGE-EL%P%B0*(x(2)**2+x(4)**2)/2.0_dp
+           F(3)=X(4)*H/PZ-orlov*x(1)*x(4)*EL%P%B0
+           F(2)=EL%P%B0*PZ+dir*B(1)+H*(1.0_dp+del)/pz*E(1)*EL%P%CHARGE+orlov*EL%P%B0*(x(2)**2+x(4)**2)/2.0_dp
            F(4)=dir*B(2)+H*(1.0_dp+del)/pz*E(2)*EL%P%CHARGE 
            F(5)=0.0_dp
            F(6)=H*(1.0_dp+del)/PZ+(k%TOTALPATH-1) 
@@ -14015,7 +14017,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
 
  SUBROUTINE ZEROR_superdrift(EL,I)
     IMPLICIT NONE
-    TYPE(SUPERDRIFT1), INTENT(INOUT)::EL
+    TYPE(superdrift), INTENT(INOUT)::EL
     INTEGER, INTENT(IN)::I
     !integer k
     IF(I==-1) THEN
@@ -14038,7 +14040,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
 
  SUBROUTINE ZEROp_superdrift(EL,I)
     IMPLICIT NONE
-    TYPE(SUPERDRIFT1p), INTENT(INOUT)::EL
+    TYPE(superdriftp), INTENT(INOUT)::EL
     INTEGER, INTENT(IN)::I
     !integer k
     IF(I==-1) THEN
