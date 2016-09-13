@@ -2651,7 +2651,7 @@ eta2=0.0_dp
 
  end  subroutine point_m_u
 
-  SUBROUTINE  THIN_LENS_resplit(R,THIN,even,lim,lmax0,xbend,sexr,fib,useknob,universe) ! A re-splitting routine
+  SUBROUTINE  THIN_LENS_resplit(R,THIN,even,lim,limit_wiggler,lmax0,xbend,sexr,fib,useknob,universe) ! A re-splitting routine
     IMPLICIT NONE
     INTEGER NTE
     TYPE(layout),target, intent(inout) :: R
@@ -2661,10 +2661,11 @@ eta2=0.0_dp
     real(dp), OPTIONAL, intent(in) ::sexr
     type(fibre), OPTIONAL, target :: fib
     logical(lp), OPTIONAL :: useknob,universe
+    integer, optional :: limit_wiggler(2),lim(2)
     real(dp) gg,RHOI,XL,QUAD,THI,lm,dl,ggbt,xbend1,gf(7),sexr0,quad0,dq
     INTEGER M1,M2,M3, MK1,MK2,MK3,limit(2),parity,inc,nst_tot,ntec,ii,metb,sexk
     integer incold ,parityold, nt,nsag,lim0(2),lims(2)
-    integer, optional :: lim(2)
+
     logical(lp) MANUAL,eject,doit,DOBEND
     TYPE (fibre), POINTER :: C
     logical(lp),optional :: even
@@ -2882,7 +2883,11 @@ endif
           inc=1
        endif
              if(C%MAG%KIND==kindwiggler)  then
-                limit=limit_sag
+                if(present(limit_wiggler)) then
+                 limit=limit_wiggler
+                else
+                 limit=limit_sag
+                endif
              else
                limit=lims
              endif
@@ -2917,6 +2922,11 @@ endif
              ENDIF
              if(C%MAG%KIND==kind5.or.C%MAG%KIND==kind17) then
                 quad=quad+(C%MAG%b_sol)**2/4.0_dp !+abs(C%MAG%b_sol/2.0_dp)
+             endif
+             if(C%MAG%KIND==kind10) then
+               if(associated(c%mag%tp10%ae).and.associated(c%mag%tp10%be)) then
+                quad=quad+SQRT(c%mag%tp10%ae(2)**2+c%mag%tp10%be(2)**2)*volt_c/c%mag%p%p0c  
+              endif
              endif
              if(C%MAG%KIND==kindwiggler) then
                call eval_thin_q(C%MAG%wi,dQ,nsag)
@@ -3024,6 +3034,11 @@ endif
              ENDIF
              if(C%MAG%KIND==kind5.or.C%MAG%KIND==kind17) then
                 quad=quad+(C%MAG%b_sol)**2/4.0_dp   !+abs(C%MAG%b_sol/2.0_dp)
+             endif
+             if(C%MAG%KIND==kind10) then
+               if(associated(c%mag%tp10%ae).and.associated(c%mag%tp10%be)) then
+                quad=quad+SQRT(c%mag%tp10%ae(2)**2+c%mag%tp10%be(2)**2)*volt_c/c%mag%p%p0c  
+              endif
              endif
              if(C%MAG%KIND==kindwiggler) then
                call eval_thin_q(C%MAG%wi,dQ,nsag)
@@ -3142,6 +3157,11 @@ endif
              if(C%MAG%KIND==kind5.or.C%MAG%KIND==kind17) then
                 quad=quad+(C%MAG%b_sol)**2/4.0_dp   !+abs(C%MAG%b_sol/2.0_dp)
              endif
+             if(C%MAG%KIND==kind10) then
+               if(associated(c%mag%tp10%ae).and.associated(c%mag%tp10%be)) then
+                quad=quad+SQRT(c%mag%tp10%ae(2)**2+c%mag%tp10%be(2)**2)*volt_c/c%mag%p%p0c  
+              endif
+             endif
              if(C%MAG%KIND==kindwiggler) then
                call eval_thin_q(C%MAG%wi,dQ,nsag)
                quad=quad+dq
@@ -3246,7 +3266,11 @@ endif
        end select
  
              if(C%MAG%KIND==kindwiggler)  then
-                limit=limit_sag
+                if(present(limit_wiggler)) then
+                 limit=limit_wiggler
+                else
+                 limit=limit_sag
+                endif
              else
                limit=lims
              endif             
