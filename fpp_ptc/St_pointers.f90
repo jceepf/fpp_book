@@ -43,9 +43,12 @@ module pointer_lattice
   real(dp),target:: xfix(6) ,DELT0
   integer :: logs_exp=30, num_iter = 20
   !logical :: absolute = .false.
-! private ind1,ind2
-  integer, allocatable:: ind1(:),ind2(:)
-  
+ !private ind1,ind2,ipos,ireal,a_f,a_f0,yfit
+  integer, allocatable:: ind1(:),ind2(:),ipos(:)
+  logical, allocatable :: ireal(:)
+  real(dp), allocatable :: a_f(:),a_f0(:),yfit(:),dyfit(:,:)
+  integer sizeind1
+ 
    INTERFACE assignment (=)
         MODULE PROCEDURE     equal_spinor_fourier_spinor_fourier
         MODULE PROCEDURE     equal_matrix_fourier_matrix_fourier
@@ -68,7 +71,7 @@ type  vector_field_fourier
      real(dp)  mu(3),muf(3),em(3)                  ! tune and initial emitances
      complex(dp),  DIMENSION(:,:,:,:), POINTER :: f  !  vector field expansion f(1:3,-n1:n1,-n2:n2,-n3:n3)
 end  type vector_field_fourier
-
+   type(vector_field_fourier) af
 
 type  spinor_fourier 
      integer n1,n2,n3
@@ -97,7 +100,7 @@ end  type matrix_fourier
      real(dp) em(2),mu(2),fix(6)
      real(dp), pointer :: x_i(:,:,:),phis(:,:,:)
   end  type logs
-   
+
 
 contains
   subroutine set_lattice_pointers
@@ -3217,10 +3220,10 @@ type(spinor_fourier)  s
 integer mf,i,j,k,l
 
 do i=1,3
+write(mf,*) " term ",i
 do j=-s%n1,s%n1
 do k=-s%n2,s%n2
 do l=-s%n3,s%n3
-write(mf,*) " term ",i
 write(mf,'(4(i4,1x),2(1x,E15.8))') i,j,k,l,s%s(i,j,k,l)
 
 enddo
@@ -3231,8 +3234,47 @@ enddo
 
 end subroutine print_spinor_fourier
 
+subroutine print_vector_field(af,mf)
+implicit none
+type(vector_field_fourier)  af
+integer mf,i,j,k,l
 
+do i=1,3
+write(mf,*) " term ",i
+
+do j=-af%n1,af%n1
+do k=-af%n2,af%n2
+do l=-af%n3,af%n3
+
+write(mf,'(4(i4,1x),2(1x,E15.8))') i,j,k,l,af%f(i,j,k,l)
+
+enddo
+enddo
+enddo
+enddo
+
+
+end subroutine print_vector_field 
+
+subroutine print_a_f0(mf)
+implicit none
+integer mf,i
+
+do i=1,size(ind1)
+ write(mf,'(L1,1x,3(i4,1x),1(1x,E15.8))') ireal(i),ipos(i),ind1(i),ind2(i),a_f0(i)
+enddo
+
+end subroutine print_a_f0
  
+subroutine print_a_f(mf)
+implicit none
+integer mf,i
+
+do i=1,size(ind1)
+ write(mf,'(L1,1x,3(i4,1x),1(1x,E15.8))') ireal(i),ipos(i),ind1(i),ind2(i),a_f(i)
+enddo
+
+end subroutine print_a_f
 
 subroutine alloc_matrix_fourier(a,n1,n2,n3,s,h)
  implicit none
@@ -3304,7 +3346,7 @@ subroutine alloc_vector_field_fourier(a,n1,n2,n3,h,s)
 type(spinor_fourier),optional :: s
 type(vector_field_fourier),optional :: h
  integer,optional :: n1,n2,n3
-integer i1,i2,k
+integer i1,i2,k,i
  
 
 if(present(n1)) then
@@ -3330,42 +3372,95 @@ a%em=0.0_dp
 
 if(.not.allocated(ind1)) then
 
- k=2
- do  i1=1,a%n1
- do  i2=-a%n2,a%n2
-
-  k=k+1
- enddo
- enddo
-
- i1=0
+ k=1
+ do  i1=-a%n1,a%n1
  do  i2=-a%n2,a%n2
   k=k+1
+ if(i1==0.and.i2==0)goto 101
  enddo
 
- allocate(ind1(k),ind2(k))
+ enddo
 
- ind1(1)=0
- ind2(1)=0
-k=2
- do  i1=1,a%n1
+101  continue
+
+ k=k-1
+ allocate(ind1(6*k),ind2(6*k),a_f(6*k),a_f0(6*k),ipos(6*k),ireal(6*k))
+a_f=0.0_dp
+ireal=.true.
+k=1
+ do  i1=-a%n1,a%n1
  do  i2=-a%n2,a%n2
 
   ind1(k)=i1
   ind2(k)=i2
   k=k+1
+ if(i1==0.and.i2==0)goto 102
  enddo
+
 enddo
 
- i1=0
- do  i2=-a%n2,a%n2
-  ind1(k)=i1
-  ind2(k)=i2
-  k=k+1
- enddo
+102  continue
+k=k-1
+
+do i=1,k
+
+  ind1(k+i)=ind1(i)
+  ind2(k+i)=ind2(i)
+  ind1(2*k+i)=ind1(i)
+  ind2(2*k+i)=ind2(i)
+  ind1(3*k+i)=ind1(i)
+  ind2(3*k+i)=ind2(i)
+  ind1(4*k+i)=ind1(i)
+  ind2(4*k+i)=ind2(i)
+  ind1(5*k+i)=ind1(i)
+  ind2(5*k+i)=ind2(i)
+enddo
+
+ ireal(k+1:2*k)=.false.
+ ireal(3*k+1:4*k)=.false.
+ ireal(5*k+1:6*k)=.false.
+ ipos(1:2*k)=1
+ ipos(2*k+1:4*k)=2
+ ipos(4*k+1:6*k)=3
+
+sizeind1=size(ind1)
+
 endif
 
+a_f=0
+a_f0=0
+
 end subroutine alloc_vector_field_fourier
+
+
+subroutine set_a_f_a_f0
+implicit none
+integer i,k
+
+k=size(ind1)/6
+do i=1,k
+a_f(i)=real(af%f(1,ind1(i),ind2(i),0))
+enddo
+do i=k+1,2*k
+a_f(i)=aimag(af%f(1,ind1(i),ind2(i),0))
+enddo
+do i=2*k+1,3*k
+a_f(i)=real(af%f(2,ind1(i),ind2(i),0))
+enddo
+do i=3*k+1,4*k
+a_f(i)=aimag(af%f(2,ind1(i),ind2(i),0))
+enddo
+do i=4*k+1,5*k
+a_f(i)=real(af%f(3,ind1(i),ind2(i),0))
+enddo
+do i=5*k+1,6*k
+a_f(i)=aimag(af%f(3,ind1(i),ind2(i),0))
+enddo
+
+a_f0=a_f
+
+end subroutine set_a_f_a_f0
+
 
 subroutine kill_vector_field_fourier(a)
  implicit none
@@ -3647,12 +3742,16 @@ type(c_spinor) n
 type(spinor) nr
 
 
- allocate(spinmap%mr(0:ns(1)-1,ns(2),ns(3),3,3))
+ allocate(spinmap%mr(0:ns(1)-1,0:ns(2)-1,0:ns(3)-1,3,3))
  allocate(spinmap%phis(0:ns(1)-1,0:ns(2)-1,0:ns(3)-1,3))
  allocate(spinmap%x_i(0:ns(1)-1,0:ns(2)-1,0:ns(3)-1,1:6))
  allocate(spinmap%sp(0:ns(1)-1,0:ns(2)-1,0:ns(3)-1))
-
-
+ if(.not.allocated(yfit)) allocate( yfit(ns(1)*ns(2)*ns(3)) )
+ yfit=0
+write(6,*) sizeind1
+allocate(dyfit(size(yfit),sizeind1))
+dyfit=0
+pause 76
 spinmap%phis=0.0_dp
 spinmap%mr=0.0_dp
 spinmap%ns=ns
@@ -3813,11 +3912,11 @@ call kill(n)
 
 end subroutine get_logs
 
-subroutine change_vector_field_fourier(af,pos,k,epsi)
+subroutine change_vector_field_fourier(af,k,epsi,norm)
 implicit none
 type(vector_field_fourier) af
 type(matrix_fourier) ma
-integer i1,i2,i,k,pos,j1,j2
+integer i1,i2,i,k,j1,j2,pos,ifit
 real(dp) epsi
 complex(dp) mac(3,3)
 real(dp) phi(3),mar(3,3),norm,dmar(3,3),dnorm
@@ -3827,25 +3926,47 @@ if(abs(k)>size(ind1) ) then
  stop 100 
 endif
 
-if(k>0) then
-j1=ind1(k);j2=ind2(k);
-write(6,*) j1,j2
+ 
+ 
+af%f=0
+do i=1,sizeind1 
+ if(ireal(i)) then
+  af%f(ipos(i),ind1(i),ind2(i),0)  =  a_f(i)  +af%f(ipos(i),ind1(i),ind2(i),0)
+  af%f(ipos(i),-ind1(i),-ind2(i),0)=  a_f(i)  +af%f(ipos(i),-ind1(i),-ind2(i),0)
+ else
+  af%f(ipos(i),ind1(i),ind2(i),0)  =  i_*a_f(i)  +af%f(ipos(i),ind1(i),ind2(i),0)
+  af%f(ipos(i),-ind1(i),-ind2(i),0)=  -i_*a_f(i)  +af%f(ipos(i),-ind1(i),-ind2(i),0)
+ endif
+enddo
+ 
+do i=1,3
+ af%f(i,0,0,0)=af%f(i,0,0,0)/2
+enddo
+ 
+
+if(epsi>0) then
+if(ireal(k)) then
+j1=ind1(k);j2=ind2(k);pos=ipos(k);
+ 
  af%f(pos,j1,j2,0)=af%f(pos,j1,j2,0)+epsi
- af%f(pos,-j1,-j2,0)=af%f(pos,j1,j2,0)+epsi
-elseif(k<0) then
-j1=ind1(-k);j2=ind2(-k);
-write(6,*) j1,j2
+ af%f(pos,-j1,-j2,0)=af%f(pos,-j1,-j2,0)+epsi
+else 
+j1=ind1(k);j2=ind2(k);pos=ipos(k);
+ 
  af%f(pos,j1,j2,0)=af%f(pos,j1,j2,0)+i_*epsi
- af%f(pos,-j1,-j2,0)=af%f(pos,j1,j2,0)+i_*epsi
+ af%f(pos,-j1,-j2,0)=af%f(pos,-j1,-j2,0)-i_*epsi
 endif
+endif
+
 call alloc_matrix_fourier(ma,h=af)
 
 call make_matrix_fourier(af,ma)
 
 norm=0
 
-write(6,*) size(af%phis,1),size(af%phis,2)
-
+!write(6,*) size(af%phis,1),size(af%phis,2)
+yfit=0
+ifit=0
 do i1=0,size(af%phis,1)-1
 do i2=0,size(af%phis,2)-1
 
@@ -3854,11 +3975,7 @@ phi(1)=af%phis(i1,i2,0,1)
 phi(2)=af%phis(i1,i2,0,2)
 
 
- 
-write(6,*) ' '
-do i=1,3
- write(6,'(3(1x,g21.14))') af%mr(i1,i2,0,i,1:3)
-enddo
+
 
 
 
@@ -3866,25 +3983,24 @@ enddo
 
 call evaluate_matrix_fourier(phi,ma,mc=mac,mr=mar)
 
-write(6,*) ' '
-do i=1,3
- WRITE(6,'(3(1x,g21.14))') mar(i,1:3)
-enddo
+!write(6,*) ' '
+!do i=1,3
+! WRITE(6,'(3(1x,g21.14))') mar(i,1:3)
+!enddo
 
 dmar=mar-af%mr(i1,i2,0,1:3,1:3)
 call norm_spin_mat2(dmar,dnorm)
 norm=dnorm+norm
-!stop 999
-!af%mu(1:2) = af%muf(1:2) 
-!af%f=af%f*.0d0
-!call find_log(ma,af)
+
+ifit=ifit+1
+yfit(ifit)=dnorm
+
 
 enddo
 enddo
 
 norm=norm/size(af%phis,1)/size(af%phis,2)
 
-write(6,*) " norm = ",sqrt(norm)
 call kill_matrix_fourier(ma)
 end subroutine change_vector_field_fourier
 
@@ -3904,6 +4020,46 @@ enddo
 norm=norm/9.0_dp
 
 end subroutine norm_spin_mat2
+
+subroutine merit_fourier(a1, yfit1, dyda1, status)
+implicit none
+  real(dp) eps,del1
+  real(dp), intent(in) :: a1(:)
+  real(dp), intent(out) :: yfit1(:)
+  real(dp), intent(out) :: dyda1(:, :)
+
+  integer status
+  integer i,j,k
+write(6,*) size(yfit1),size(yfit)
+write(6,*) size(dyda1,1),size(dyfit,1)
+write(6,*) size(dyda1,2),size(dyfit,2)
+
+stop 753
+ del1=0.d0
+
+
+  eps=0.0_dp
+ call change_vector_field_fourier(af,0,eps,del1) 
+  yfit1=yfit
+
+  eps=1.d-8
+  call set_af_eps(eps,yfit1)
+  dyda1=dyfit
+
+end  subroutine merit_fourier
+
+subroutine set_af_eps(eps,yfit1)
+implicit none
+integer k
+real(dp) yfit1(:)
+real(dp) del1,eps
+
+do k=1,sizeind1
+ call change_vector_field_fourier(af,k,eps,del1) 
+dyfit(:,k)=(yfit-yfit1)/eps
+enddo
+
+end subroutine set_af_eps
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  subroutine alloc_logs(a,n1,n2,ns,em,no)
