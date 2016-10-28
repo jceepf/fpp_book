@@ -48,6 +48,7 @@ module pointer_lattice
   logical, allocatable :: ireal(:)
   real(dp), allocatable :: a_f(:),a_f0(:),yfit(:),dyfit(:,:)
   integer sizeind1
+  logical :: onefunc = .true.,skipzero=.true.
  
    INTERFACE assignment (=)
         MODULE PROCEDURE     equal_spinor_fourier_spinor_fourier
@@ -1333,6 +1334,7 @@ endif
           READ(MF,*) i1,i3  ! position
           READ(MF,*) I2  ! ORDER OF THE MAP
           READ(MF,*) fixp,fact,noca  !  SYMPLECTIC , factored
+    !      READ(MF,*) filename
           if(.not.associated(my_ering%t)) call make_node_layout(my_ering)
           
            p=>my_ering%start
@@ -1352,9 +1354,13 @@ endif
                 ft=>my_fring%start       
              endif
              call FIND_ORBIT_x(x_ref,time0,1.d-7,fibre1=f1)
-  
-             call fill_tree_element_line(f1,f2,ft,i2,x_ref,fact,nocav=noca)
-
+         !    name_root=filename
+        !     call context(name_root)
+       !      if(name_root(1:2)=='NO') then
+              call fill_tree_element_line(f1,f2,ft,i2,x_ref,fact,nocav=noca)
+       !      else
+        !      call fill_tree_element_line(f1,f2,ft,i2,x_ref,fact,nocav=noca,file=filename)
+      !       endif
                     ft%mag%forward(3)%symptrack=FIXP
                     ft%magP%forward(3)%symptrack=FIXP
                     ft%mag%do1mapf=.true.
@@ -3375,6 +3381,7 @@ if(.not.allocated(ind1)) then
  k=1
  do  i1=-a%n1,a%n1
  do  i2=-a%n2,a%n2
+ if(skipzero.and.i1==0.and.i2==0)goto 101
   k=k+1
  if(i1==0.and.i2==0)goto 101
  enddo
@@ -3390,7 +3397,7 @@ ireal=.true.
 k=1
  do  i1=-a%n1,a%n1
  do  i2=-a%n2,a%n2
-
+ if(skipzero.and.i1==0.and.i2==0)goto 102 
   ind1(k)=i1
   ind2(k)=i2
   k=k+1
@@ -3456,6 +3463,8 @@ enddo
 do i=5*k+1,6*k
 a_f(i)=aimag(af%f(3,ind1(i),ind2(i),0))
 enddo
+
+
 
 a_f0=a_f
 
@@ -3746,7 +3755,12 @@ type(spinor) nr
  allocate(spinmap%phis(0:ns(1)-1,0:ns(2)-1,0:ns(3)-1,3))
  allocate(spinmap%x_i(0:ns(1)-1,0:ns(2)-1,0:ns(3)-1,1:6))
  allocate(spinmap%sp(0:ns(1)-1,0:ns(2)-1,0:ns(3)-1))
+if(onefunc) then
+ if(.not.allocated(yfit)) allocate( yfit(1) )
+else
  if(.not.allocated(yfit)) allocate( yfit(ns(1)*ns(2)*ns(3)) )
+
+endif
  yfit=0
 write(6,*) sizeind1
 allocate(dyfit(size(yfit),sizeind1))
@@ -3918,7 +3932,7 @@ type(vector_field_fourier) af
 type(matrix_fourier) ma
 integer i1,i2,i,k,j1,j2,pos,ifit
 real(dp) epsi
-complex(dp) mac(3,3)
+complex(dp) mac(3,3),zer(3)
 real(dp) phi(3),mar(3,3),norm,dmar(3,3),dnorm
 
 if(abs(k)>size(ind1) ) then
@@ -3926,7 +3940,7 @@ if(abs(k)>size(ind1) ) then
  stop 100 
 endif
 
- 
+zer= af%f(1:3,0,0,0) 
  
 af%f=0
 do i=1,sizeind1 
@@ -3942,7 +3956,8 @@ enddo
 do i=1,3
  af%f(i,0,0,0)=af%f(i,0,0,0)/2
 enddo
- 
+
+if(skipzero)  af%f(1:3,0,0,0)=zer
 
 if(epsi>0) then
 if(ireal(k)) then
@@ -3992,14 +4007,16 @@ dmar=mar-af%mr(i1,i2,0,1:3,1:3)
 call norm_spin_mat2(dmar,dnorm)
 norm=dnorm+norm
 
+if(.not.onefunc) then
 ifit=ifit+1
 yfit(ifit)=dnorm
-
+endif
 
 enddo
 enddo
 
 norm=norm/size(af%phis,1)/size(af%phis,2)
+if(onefunc) yfit(1)=norm
 
 call kill_matrix_fourier(ma)
 end subroutine change_vector_field_fourier
@@ -4030,14 +4047,10 @@ implicit none
 
   integer status
   integer i,j,k
-write(6,*) size(yfit1),size(yfit)
-write(6,*) size(dyda1,1),size(dyfit,1)
-write(6,*) size(dyda1,2),size(dyfit,2)
-
-stop 753
+ 
  del1=0.d0
 
-
+a_f=a1
   eps=0.0_dp
  call change_vector_field_fourier(af,0,eps,del1) 
   yfit1=yfit
@@ -4045,6 +4058,20 @@ stop 753
   eps=1.d-8
   call set_af_eps(eps,yfit1)
   dyda1=dyfit
+
+write(6,*) size(yfit)
+write(6,*) size(yfit1)
+write(6,*) size(dyfit,1),size(dyfit,2)
+write(6,*) size(dyda1,1),size(dyda1,2)
+pause 6
+write(6,*) yfit
+pause 7
+do i=1,size(dyfit,1)
+do j=1,size(dyfit,2)
+write(6,*) i,j,dyfit(i,j)
+enddo
+enddo
+pause 7
 
 end  subroutine merit_fourier
 
