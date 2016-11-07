@@ -48,7 +48,7 @@ module pointer_lattice
   logical, allocatable :: ireal(:)
   real(dp), allocatable :: a_f(:),a_f0(:),yfit(:),dyfit(:,:)
   integer sizeind1
-  logical :: onefunc = .true.,skipzero=.true.
+  logical :: onefunc = .true.,skipzero=.false.,skipcomplex=.true.
  
    INTERFACE assignment (=)
         MODULE PROCEDURE     equal_spinor_fourier_spinor_fourier
@@ -3377,6 +3377,10 @@ a%em=0.0_dp
 
 
 if(.not.allocated(ind1)) then
+if(skipcomplex.and.skipzero) then
+write(6,*) " skipcomplex and skipzero are true "
+stop
+endif
 
  k=1
  do  i1=-a%n1,a%n1
@@ -3389,9 +3393,15 @@ if(.not.allocated(ind1)) then
  enddo
 
 101  continue
-
  k=k-1
+
+if(skipcomplex) then
+ allocate(ind1(6*k-3),ind2(6*k-3),a_f(6*k-3),a_f0(6*k-3),ipos(6*k-3),ireal(6*k-3))
+else
  allocate(ind1(6*k),ind2(6*k),a_f(6*k),a_f0(6*k),ipos(6*k),ireal(6*k))
+endif
+
+
 a_f=0.0_dp
 ireal=.true.
 k=1
@@ -3409,8 +3419,27 @@ enddo
 102  continue
 k=k-1
 
-do i=1,k
 
+
+if(skipcomplex) then
+  ind1(k+1:2*k-1)=ind1(1:k-1)
+  ind2(k+1:2*k-1)=ind2(1:k-1)
+  ind1(2*k:3*k-1)=ind1(1:k)
+  ind2(2*k:3*k-1)=ind2(1:k)
+  ind1(3*k:4*k-2)=ind1(1:k-1)
+  ind2(3*k:4*k-2)=ind2(1:k-1)
+  ind1(4*k-1:5*k-2)=ind1(1:k)
+  ind2(4*k-1:5*k-2)=ind2(1:k)
+  ind1(5*k-1:6*k-3)=ind1(1:k-1)
+  ind2(5*k-1:6*k-3)=ind2(1:k-1)
+ ireal(k+1:2*k-1)=.false.
+ ireal(3*k:4*k-2)=.false.
+ ireal(5*k-1:6*k-3)=.false.
+ ipos(1:2*k-1)=1
+ ipos(2*k:4*k-2)=2
+ ipos(4*k-1:6*k-3)=3
+else
+do i=1,k
   ind1(k+i)=ind1(i)
   ind2(k+i)=ind2(i)
   ind1(2*k+i)=ind1(i)
@@ -3422,20 +3451,23 @@ do i=1,k
   ind1(5*k+i)=ind1(i)
   ind2(5*k+i)=ind2(i)
 enddo
-
  ireal(k+1:2*k)=.false.
  ireal(3*k+1:4*k)=.false.
  ireal(5*k+1:6*k)=.false.
  ipos(1:2*k)=1
  ipos(2*k+1:4*k)=2
  ipos(4*k+1:6*k)=3
-
-sizeind1=size(ind1)
-
 endif
 
+
+
+
+sizeind1=size(ind1)
 a_f=0
 a_f0=0
+endif
+
+
 
 end subroutine alloc_vector_field_fourier
 
@@ -3443,6 +3475,29 @@ end subroutine alloc_vector_field_fourier
 subroutine set_a_f_a_f0
 implicit none
 integer i,k
+if(skipcomplex) then
+
+k=(size(ind1)+3)/6
+do i=1,k
+a_f(i)=real(af%f(1,ind1(i),ind2(i),0))
+enddo
+do i=k+1,2*k-1
+a_f(i)=aimag(af%f(1,ind1(i),ind2(i),0))
+enddo
+do i=2*k,3*k-1
+a_f(i)=real(af%f(2,ind1(i),ind2(i),0))
+enddo
+do i=3*k,4*k-2
+a_f(i)=aimag(af%f(2,ind1(i),ind2(i),0))
+enddo
+do i=4*k-1,5*k-2
+a_f(i)=real(af%f(3,ind1(i),ind2(i),0))
+enddo
+do i=5*k-1,6*k-3
+a_f(i)=aimag(af%f(3,ind1(i),ind2(i),0))
+enddo
+
+else
 
 k=size(ind1)/6
 do i=1,k
@@ -3463,7 +3518,7 @@ enddo
 do i=5*k+1,6*k
 a_f(i)=aimag(af%f(3,ind1(i),ind2(i),0))
 enddo
-
+endif
 
 
 a_f0=a_f
@@ -3691,7 +3746,7 @@ implicit none
 type(spinor_fourier), intent(in):: s1
 type(spinor_fourier), intent(inout):: s2
 
-if(.not.allocated(s2%s)) call alloc_spinor_fourier(s2,s=s1)
+if(.not.associated(s2%s)) call alloc_spinor_fourier(s2,s=s1)
 s2%n1=s1%n1
 s2%n2=s1%n2
 s2%n3=s1%n3
@@ -3930,11 +3985,11 @@ subroutine change_vector_field_fourier(af,k,epsi,norm)
 implicit none
 type(vector_field_fourier) af
 type(matrix_fourier) ma
-integer i1,i2,i,k,j1,j2,pos,ifit
+integer i1,i2,i,k,j1,j2,pos,ifit,mf,mft
 real(dp) epsi
 complex(dp) mac(3,3),zer(3)
 real(dp) phi(3),mar(3,3),norm,dmar(3,3),dnorm
-
+ 
 if(abs(k)>size(ind1) ) then
  write(6,*) " k,size(ind1),size(ind2)",k,size(ind1),size(ind2)
  stop 100 
@@ -3942,8 +3997,12 @@ endif
 
 zer= af%f(1:3,0,0,0) 
  
+
 af%f=0
+ 
+ 
 do i=1,sizeind1 
+ 
  if(ireal(i)) then
   af%f(ipos(i),ind1(i),ind2(i),0)  =  a_f(i)  +af%f(ipos(i),ind1(i),ind2(i),0)
   af%f(ipos(i),-ind1(i),-ind2(i),0)=  a_f(i)  +af%f(ipos(i),-ind1(i),-ind2(i),0)
@@ -3952,10 +4011,13 @@ do i=1,sizeind1
   af%f(ipos(i),-ind1(i),-ind2(i),0)=  -i_*a_f(i)  +af%f(ipos(i),-ind1(i),-ind2(i),0)
  endif
 enddo
+
  
 do i=1,3
  af%f(i,0,0,0)=af%f(i,0,0,0)/2
 enddo
+
+ 
 
 if(skipzero)  af%f(1:3,0,0,0)=zer
 
@@ -4017,6 +4079,7 @@ enddo
 
 norm=norm/size(af%phis,1)/size(af%phis,2)
 if(onefunc) yfit(1)=norm
+!write(6,*) " norm ",norm
 
 call kill_matrix_fourier(ma)
 end subroutine change_vector_field_fourier
@@ -4053,27 +4116,51 @@ implicit none
 a_f=a1
   eps=0.0_dp
  call change_vector_field_fourier(af,0,eps,del1) 
+write(6,*) "norm  ",del1
   yfit1=yfit
 
   eps=1.d-8
   call set_af_eps(eps,yfit1)
   dyda1=dyfit
 
-write(6,*) size(yfit)
-write(6,*) size(yfit1)
-write(6,*) size(dyfit,1),size(dyfit,2)
-write(6,*) size(dyda1,1),size(dyda1,2)
-pause 6
-write(6,*) yfit
-pause 7
-do i=1,size(dyfit,1)
-do j=1,size(dyfit,2)
-write(6,*) i,j,dyfit(i,j)
-enddo
-enddo
-pause 7
+!write(6,*) size(yfit)
+!write(6,*) size(yfit1)
+!write(6,*) size(dyfit,1),size(dyfit,2)
+!write(6,*) size(dyda1,1),size(dyda1,2)
+!pause 6
+
+!pause 7
+!do i=1,size(dyfit,1)
+!do j=1,size(dyfit,2)
+!write(6,*) i,j,dyfit(i,j)
+!enddo
+!enddo
+!pause 7
 
 end  subroutine merit_fourier
+
+subroutine merit_fourier1(a1, yfit1, dyda1, status)
+implicit none
+  real(dp) eps,del1
+  real(dp), intent(in) :: a1(:)
+  real(dp), intent(out) :: yfit1(:)
+  real(dp), intent(out) :: dyda1(:, :)
+
+  integer status
+  integer i,j,k
+ 
+ del1=0.d0
+
+
+  yfit1(1)=sin(a1(1)+2*a1(2))-0.1d0
+
+  eps=1.d-8
+
+  dyda1(1,1)= (sin(a1(1)+eps+2*a1(2))-0.1d0-yfit1(1))/eps
+  dyda1(1,2)= (sin(a1(1)+2*(a1(2)+eps))-0.1d0-yfit1(1))/eps
+
+
+end  subroutine merit_fourier1
 
 subroutine set_af_eps(eps,yfit1)
 implicit none
@@ -4772,6 +4859,152 @@ end subroutine print_explogs
 
   end subroutine norm_explogs
 
+
+!!!!!!!  stuff for demin  !!!!!!!
+
+subroutine remove_energy_patches(r)
+implicit none
+type(layout), target :: r
+type(fibre), pointer :: p
+integer i
+type(work) w
+
+w=0
+
+p=>r%start
+w=p
+
+do i=1,r%n
+ p%patch%energy=0
+ p=w
+ p=>p%next
+enddo
+ 
+end subroutine remove_energy_patches
+
+subroutine set_fcc(r,xr,norescale,state,del)
+implicit none
+type(layout), target :: r
+type(fibre), pointer :: p
+type(work) werk
+real(dp) del0,deld,x(6),xb(6),del,xr(6)
+integer nresc,i
+logical norescale
+type(internal_state) state
+
+if(norescale) then
+ call remove_energy_patches(r)
+endif
+
+x=xr
+p=>r%start
+werk=p
+del0=werk%energy
+deld=werk%p0c
+
+ 
+ nresc=0
+do i=1,r%n-1
+
+xb=x
+call track_probe_x(x,state,fibre1=p,fibre2=p%next)
+!write(mf,*) p%t2%s(1),x(5)
+
+if(norescale) then
+ if(abs(x(5)-xb(5))>del) then
+ nresc=nresc+1
+  call no_rescale_fcc(r,p,x)  
+ 
+  x=xb
+  call track_probe_x(x,state,fibre1=p,fibre2=p%next)
+ 
+  endif
+else
+ 
+  call rescale_fcc(r,p,x)  
+
+endif
+ 
+
+p=>p%next
+enddo
+
+p=>r%start
+x=xr
+ call track_probe_x(x,state,fibre1=p)
+write(6,*) x
+
+ werk=r%end
+if(norescale) then
+ write(6,*) " final energy = ",werk%energy
+write(6,*) "delta/p0c = ", (werk%energy-del0)/deld
+ x(5)=(werk%energy-del0)/deld
+write(6,*) nresc, " # of energy patches "
+else
+ write(6,*)  " final energy = ",werk%energy+werk%p0c*x(5)
+endif
+
+xr=x
+end subroutine set_fcc
+
+subroutine no_rescale_fcc(r,f,x)
+implicit none
+type(layout), target ::r
+type(fibre), target ::f
+type(fibre), pointer ::p
+real(dp) x5,x(6),e
+integer i
+type(work) w,we
+type(internal_state) state
+
+w=f
+we=f
+!write(6,*) w%energy,w%p0c,w%beta0
+
+e=w%energy+w%p0c*x(5)
+!write(6,*) e
+
+call find_energy(w,energy=e)
+
+!write(6,*) w%energy,w%p0c,w%beta0
+
+p=>f%next
+do i=1,r%n
+
+p=w
+
+if(associated(p,r%end)) exit
+p=>p%next
+enddo
+
+!x(2)= we%p0c*x(2)/w%p0c
+!x(4)= we%p0c*x(4)/w%p0c
+!x(5)=0.d0
+
+f%patch%energy=2
+
+end subroutine no_rescale_fcc
+
+subroutine rescale_fcc(r,f,x)
+implicit none
+type(layout), target ::r
+type(fibre), target ::f
+type(fibre), pointer ::p
+real(dp) x5,x(6),e
+integer i
+type(work) w
+type(internal_state) state
+
+w=f
+e=w%energy+w%p0c*x(5)
+call find_energy(w,energy=e)
+w%rescale=.true.
+w%power=-1
+f%next=w
+
+
+end subroutine rescale_fcc
+
 end module pointer_lattice
 
 
@@ -4842,6 +5075,8 @@ subroutine read_mad_command77(ptc_fichier)
 2001 continue
 
   write(6,*) " Warning: mad command file does not exit "
+
+
 
 end  subroutine read_mad_command77
 
