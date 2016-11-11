@@ -4900,7 +4900,7 @@ state=time0
 xs0=fix0
 m=1
 xs=xs0+m
-write(6,*) t1c%parent_fibre%mag%name,t1c%parent_fibre%mag%p%nst
+!write(6,*) t1c%parent_fibre%mag%name,t1c%parent_fibre%mag%p%nst
 call propagate(xs,state,node1=t1c,node2=t2c)
 fix=xs%x
 ! For David
@@ -5035,7 +5035,7 @@ call kill(xs);call kill(m)
  
 end subroutine fill_tree_element
 
-subroutine fill_tree_element_line(f1,f2,f,no,fix0,factor,nocav,file)   ! fix0 is the initial condition for the maps
+subroutine fill_tree_element_line(f1,f2,f,no,fix0,factor,nocav)   ! fix0 is the initial condition for the maps
 implicit none
 type(fibre), target :: f1,f2,f
 type(layout), pointer :: r
@@ -5051,7 +5051,7 @@ logical :: fact,noca
 logical,optional :: factor,nocav
 integer no,i
 type(fibre), pointer :: p
-character(*), optional :: file
+ 
 
 fact=.false. 
 noca=.false. 

@@ -1385,6 +1385,7 @@ endif
           READ(MF,*) fixp,fact  !  SYMPLECTIC , factored
           if(.not.associated(my_ering%t)) call make_node_layout(my_ering)
           x_ref=0.0_DP
+
           READ(MF,*) x_ref
           n_ac=0
           CALL CONTEXT(NAME)
@@ -1434,6 +1435,8 @@ endif
           READ(MF,*)  onemap  ! use one map : no cutting
           READ(MF,*) fixp,fact  !  SYMPLECTIC 
           READ(MF,*) skipcav  !  skip cavity 
+          icnmin=0
+          icnmax=0
           x_ref=0.0_DP
            n_ac=0
           if(.not.associated(my_ering%t)) call make_node_layout(my_ering)
@@ -1442,8 +1445,9 @@ endif
    
 
              IF(p%mag%kind/=kind0) THEN
+             icnmax=icnmax+1
               if(.not.skipcav.or.(p%mag%kind/=kind4.and.p%mag%kind/=kind21)) then
-                write(6,*) "  magnet found FOR MAP REPLACEMENT ",P%MAG%name
+              !  write(6,*) "  magnet found FOR MAP REPLACEMENT ",P%MAG%name
                  n_ac=n_ac+1
                 call fill_tree_element(p,I1,x_REF,onemap,fact)
                    IF(P%DIR==1) THEN
@@ -1465,12 +1469,16 @@ endif
                    ENDIF
   
               endif
+             else
+              icnmin=icnmin+1
              ENDIF
 
 
              p=>p%next
           enddo
-    
+         write(6,*) icnmax, " changed into Taylor maps "
+         write(6,*) icnmin, " markers "
+         write(6,*) my_ering%N, " total number of fibres "
        case('REMOVEALLMAP')
 
           p=>my_ering%start
