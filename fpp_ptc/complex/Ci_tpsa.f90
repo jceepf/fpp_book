@@ -1156,7 +1156,7 @@ end subroutine c_get_indices
     type (c_taylor),INTENT(INOUT)::S1
 
     !    IF(first_time) THEN
-    IF(last_tpsa==0) THEN
+    IF(c_last_tpsa==0) THEN
  
       write(6,*) " No TPSA package ever initialized c_allocda " 
  
@@ -6500,7 +6500,8 @@ endif
 
    ! order_gofix=no1
 
- 
+     call set_da_pointers()
+
      C_STABLE_DA=.true.
      C_watch_user=.true.
      read77=.true.
@@ -6581,6 +6582,7 @@ endif
 
 
  
+
     subroutine c_etcct(x,n1,y,n2,z)
 !*
     implicit none
