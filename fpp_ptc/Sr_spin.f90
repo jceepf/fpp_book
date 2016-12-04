@@ -4545,13 +4545,15 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
 
 
   ! time tracking
-  SUBROUTINE TRACK_time_new0(xT,DT,K)
+
+
+   SUBROUTINE TRACK_time_new(xT,DTt,K)
     ! Tracks a single particle   of the beam for a time DT
     implicit none
     TYPE(INTEGRATION_NODE), POINTER:: T
     TYPE(temporal_probe),INTENT(INOUT):: xT
-    REAL(DP), INTENT(IN) :: DT
-    REAL(DP) XTT(6),DT0,YL,DT_BEFORE,X(6),fac
+    REAL(DP), INTENT(IN) :: DTt
+    REAL(DP) DT0,DT_BEFORE,X(6),XB(6),fac,dt
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     LOGICAL(LP) END_OF_LINE
     END_OF_LINE=.FALSE.
@@ -4574,112 +4576,16 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
 
   
     XT%Ds=0.0_dp
-    DT0=XT%Xb(6)-XT%xs%X(6)
-    XT%Xb=XT%xs%X
-
-    YL=0.0_dp
-
-    DO WHILE(DT0<=DT)
-       XTT=XT%xs%X
-       DT_BEFORE=DT0
-       XT%Xb=XT%xs%X
-       !         WRITE(6,*) " POS ",T%s(1),t%pos_in_fibre
-       !         WRITE(6,*) " POS ",T%POS,T%CAS,T%PARENT_FIBRE%MAG%NAME
-       ! putting spin and radiation
-       CALL TRACK_NODE_PROBE(t,XT%XS,K) !,charge)
-       ! no spin and no radiation
-       !        CALL TRACK_NODE_SINGLE(t,XT%XS%X,K)  !,CHARGE
-
-       !
-       !
-       DT0=DT0+(XT%xs%X(6)-XTT(6))
-       T=>T%NEXT
-       IF(.NOT.ASSOCIATED(T%NEXT)) THEN
-          END_OF_LINE=.TRUE.
-          EXIT
-       ENDIF
-       if(.not.check_stable) exit
-
-    ENDDO
-
-    IF(.NOT.END_OF_LINE.and.check_stable) THEN
-       IF(DT0/=DT) THEN
-          XT%NODE=>T%PREVIOUS
-  !        DT0=DT-DT_BEFORE
-          fac=(dt-DT_BEFORE)/(dt0-DT_BEFORE)
-          X=fac*(XT%xs%X-XT%Xb)+XT%Xb
-       yl=fac*XT%NODE%parent_fibre%mag%l/XT%NODE%parent_fibre%mag%p%nst
-       ELSE
-          XT%NODE=>T
-       ENDIF
-    ELSE
-
-
-       IF(DT0<DT.and.check_stable) THEN
-          XT%NODE=>T%PREVIOUS
-          fac=(dt-DT_BEFORE)/(dt0-DT_BEFORE)
-          X=fac*(XT%xs%X-XT%Xb)+XT%Xb
-       yl=fac*XT%NODE%parent_fibre%mag%l/XT%NODE%parent_fibre%mag%p%nst
-       ELSE
-          XT%NODE=>T
-       ENDIF
-
-    ENDIF
-
-
-    XT%Ds=yl
-    XT%xs%X=x
-    !   xs%x=X
-    !    XT%NODE=>T
-    if(.not.CHECK_STABLE) then
-       !       write(6,*) "unstable "
-       lost_fibre=>t%parent_fibre
-       lost_node=>t
-       XT%xs%u=.true.
-    endif
-
-    call ptc_global_x_p(xt,k)
-
-  END SUBROUTINE TRACK_time_new0
-
-   SUBROUTINE TRACK_time_new(xT,DT,K)
-    ! Tracks a single particle   of the beam for a time DT
-    implicit none
-    TYPE(INTEGRATION_NODE), POINTER:: T
-    TYPE(temporal_probe),INTENT(INOUT):: xT
-    REAL(DP), INTENT(IN) :: DT
-    REAL(DP) XTT(6),DT0,DT_BEFORE,X(6),fac
-    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
-    LOGICAL(LP) END_OF_LINE
-    END_OF_LINE=.FALSE.
-
-    CALL RESET_APERTURE_FLAG
-
-    IF(K%TOTALPATH==0) then
-       write(6,*) " Must used totalpath in tracking state "
-       STOP 451
-    endif
-    IF(XT%xs%u) RETURN
-
-    !    X=xs%x
-
-    T=>XT%NODE
-    !    T%PARENT_FIBRE%MAG=K
-    !    T%PARENT_FIBRE%MAG%P%DIR=>T%PARENT_FIBRE%DIR
-    T%PARENT_FIBRE%MAG%P%CHARGE=>T%PARENT_FIBRE%CHARGE
-
-
-  
-    XT%Ds=0.0_dp
-    DT0=XT%Xb(6)-XT%xs%X(6)
-    XT%xs%X=XT%Xb
+    DT0=0.d0
+    dt=dtt+xt%dt0
+!    XT%xs%X=XT%Xb
 
     FAC=0.0_dp
 
     DO WHILE(DT0<=DT)
-       XTT=XT%xs%X
+
        DT_BEFORE=DT0
-       XT%Xb=XT%xs%X
+       Xb=XT%xs%X
        !         WRITE(6,*) " POS ",T%s(1),t%pos_in_fibre
        !         WRITE(6,*) " POS ",T%POS,T%CAS,T%PARENT_FIBRE%MAG%NAME
        ! putting spin and radiation
@@ -4689,7 +4595,7 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
 
        !
        !
-       DT0=DT0+(XT%xs%X(6)-XTT(6))
+       DT0=DT0+(XT%xs%X(6)-Xb(6))
        T=>T%NEXT
        IF(.NOT.ASSOCIATED(T%NEXT)) THEN
           END_OF_LINE=.TRUE.
@@ -4701,33 +4607,32 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
 
     IF(.NOT.END_OF_LINE.and.check_stable) THEN
        IF(DT0/=DT) THEN
-          XT%NODE=>T
-  !        DT0=DT-DT_BEFORE
+          XT%NODE=>T%previous
+          XT%Dt0=dt-DT_BEFORE
           fac=(dt-DT_BEFORE)/(dt0-DT_BEFORE)
     !      X=fac*(XT%xs%X-XT%Xb)+XT%Xb
      !  yl=fac*XT%NODE%parent_fibre%mag%l/XT%NODE%parent_fibre%mag%p%nst
        ELSE
-          XT%NODE=>T
+           stop 122
        ENDIF
     ELSE
 
 
        IF(DT0<DT.and.check_stable) THEN
-          XT%NODE=>T
+          XT%NODE=>T%previous
+          XT%Dt0=dt-DT_BEFORE
           fac=(dt-DT_BEFORE)/(dt0-DT_BEFORE)
   !        X=fac*(XT%xs%X-XT%Xb)+XT%Xb
   !     yl=fac*XT%NODE%parent_fibre%mag%l/XT%NODE%parent_fibre%mag%p%nst
        ELSE
-          XT%NODE=>T
+           stop 123
        ENDIF
 
     ENDIF
 
 
     XT%Ds=FAC
- !   XT%xs%X=x
-    !   xs%x=X
-    !    XT%NODE=>T
+
     if(.not.CHECK_STABLE) then
        !       write(6,*) "unstable "
        lost_fibre=>t%parent_fibre
@@ -4735,16 +4640,16 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
        XT%xs%u=.true.
     endif
 
-    call ptc_global_x_p_NEW(xt,k)
-
+    call ptc_global_x_p_NEW(xt,xb,k)
+    xt%xs=xb
   END SUBROUTINE TRACK_time_new
 
-  Subroutine ptc_global_x_p_new(xt,k)
+  Subroutine ptc_global_x_p_new(xt,xb,k)
     implicit none
     TYPE(temporal_probe),INTENT(INOUT):: xT
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     integer i
-    real(dp) p(3),pz,betinv,pos(3),dab(3),sc(2)
+    real(dp) p(3),pz,betinv,pos(3),dab(3),sc(2),xb(6)
 
     if(associated(XT%NODE%ENT)) then
        ! computing global position
@@ -4755,8 +4660,8 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
           XT%POS(i)=XT%POS(i) + XT%XS%X(1)*XT%NODE%EXI(1,I)     !
           XT%POS(i)=XT%POS(i) + XT%XS%X(3)*XT%NODE%EXI(2,I)     !
 !          XT%POS(i)=XT%POS(i) !+ XT%Ds*XT%NODE%PARENT_FIBRE%DIR*XT%NODE%ENT(3,I)     !
-          pos(i)=POS(i) + XT%Xb(1)*XT%NODE%ent(1,I)   
-          pos(i)=POS(i) + XT%Xb(3)*XT%NODE%ent(2,I)   
+          pos(i)=POS(i) + Xb(1)*XT%NODE%ent(1,I)   
+          pos(i)=POS(i) + Xb(3)*XT%NODE%ent(2,I)   
        ENDDO
        XT%pos(1:3) = XT%pos(1:3) + XT%NODE%B
        pos(1:3) = pos(1:3) + XT%NODE%A
@@ -4778,11 +4683,11 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
        P(3)=PZ
 
        pos=0.0_dp
-       Pos(1)=XT%Xb(2)*XT%NODE%PARENT_FIBRE%mag%p%p0c
-       Pos(2)=XT%Xb(4)*XT%NODE%PARENT_FIBRE%mag%p%p0c
+       Pos(1)=Xb(2)*XT%NODE%PARENT_FIBRE%mag%p%p0c
+       Pos(2)=Xb(4)*XT%NODE%PARENT_FIBRE%mag%p%p0c
        !       pz=XT%NODE%PARENT_FIBRE%mag%p%p0c* &
        !            (one+two*betinv*XT%XS%X(5)+XT%XS%X(5)**2)-xt%pos(4)**2-xt%pos(5)**2
-       pz=(1.0_dp+2.0_dp*betinv*XT%Xb(5)+XT%Xb(5)**2)-XT%Xb(2)**2-XT%Xb(4)**2
+       pz=(1.0_dp+2.0_dp*betinv*Xb(5)+Xb(5)**2)-Xb(2)**2-Xb(4)**2
        pz=XT%NODE%PARENT_FIBRE%mag%p%p0c*root(pz)*XT%NODE%PARENT_FIBRE%DIR
        Pos(3)=PZ
 
@@ -4911,7 +4816,7 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     p%xs%s(3)=0
     p%ds=0.0_dp
     p%pos=0.0_dp
-    p%xb=0.0_dp
+    p%dt0=0.0_dp
     nullify(p%node)
     nullify(p%xs%lost_node)
 
