@@ -3915,7 +3915,7 @@ endif
          fac=jc(l)+fac
         enddo
         fac=fac+1
-       if(ss>0) then
+       if(ss<0) then  !  fixed bug 2017 jan 9
         if(mod(j,2)==0) then  
           x=((value/fac).cmono.jc)*(1.0_dp.cmono.(j-1))+x
         else
