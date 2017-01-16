@@ -3732,7 +3732,8 @@ cm=0
        cm=j(i)+cm
     enddo
 
-if(c>0.or.cm>nv) then
+!if(c>0.or.cm>nv) then  ! 2017.1.16
+if(c>0.or.cm>no) then
 r1=0.0_dp
 else
     CALL c_dapek(S1%I,j,r1)
@@ -3780,7 +3781,9 @@ cm=0
     enddo
 
 
-if(c>0.or.cm>nv) then
+!if(c>0.or.cm>nv) then  ! 2017.1.16
+if(c>0.or.cm>no) then
+
 r1=0.0_dp
 else
     CALL c_dapek(S1%I,j,r1)
@@ -3936,18 +3939,19 @@ endif
 
   END FUNCTION getpb
 
-    FUNCTION cgetpb( S1, S2 )  
+    FUNCTION cgetpb( S1, s1p,S2 )  
     implicit none
     TYPE (c_taylor) cgetpb
-    TYPE (c_vector_field), INTENT (IN) :: S1
+    TYPE (c_vector_field),optional, INTENT (IN) :: S1
     INTEGER, optional,INTENT (IN) ::  S2
+    TYPE (c_damap),optional, INTENT (IN) :: S1p
     integer localmaster 
     localmaster=master
 
  
  
     call ass(cgetpb)
-     cgetpb=getpb( s1=S1, s2=S2 )/n_cai
+     cgetpb=getpb( s1=S1, s1p=s1p,s2=S2 )/n_cai
     c_master=localmaster
     END FUNCTION cgetpb
     
@@ -7983,14 +7987,12 @@ SUBROUTINE  c_EQUALcray(S2,S1)
     complex(dp),INTENT(inOUT)::S2(:,:)            !(ndim2,ndim2)
     type (c_damap),INTENT(IN)::S1
     integer i,j,JL(lnv)
- 
     IF(.NOT.C_STABLE_DA) RETURN
     call c_check_snake
 
     do i=1,lnv
        JL(i)=0
     enddo
-
     ! if(old) then
     do i=1,S1%n
        do j=1,S1%n
@@ -7999,8 +8001,7 @@ SUBROUTINE  c_EQUALcray(S2,S1)
           JL(j)=0
        enddo
     enddo
- 
- 
+
   END SUBROUTINE matrixMAPr
 
   SUBROUTINE  r_matrixMAPr(S2,S1)
@@ -8038,7 +8039,6 @@ SUBROUTINE  c_EQUALcray(S2,S1)
     type (c_damap),INTENT(inout)::S1
     integer i,j,JL(lnv)
     IF(.NOT.C_STABLE_DA) RETURN
-
     do i=1,lnv
        JL(i)=0
     enddo
@@ -8051,7 +8051,7 @@ SUBROUTINE  c_EQUALcray(S2,S1)
     do i=1,size(s2,1)
        do j=1,size(s2,2)
           JL(j)=1
-          call c_dapok(S1%v(i)%i,JL,s2(i,j))
+          call c_dapok(S1%v(i)%i,JL,s2(i,j))  
           JL(j)=0
        enddo
     enddo
@@ -9835,7 +9835,7 @@ endif
     implicit none
     TYPE (c_vector_field) map_mul_vec
     type(c_damap),intent(in):: r
-    type(c_damap) ri
+    type(c_damap) ri,r0
     TYPE (c_vector_field), INTENT (IN) :: S1
     integer localmaster,i,k
 
@@ -9844,8 +9844,9 @@ endif
      RETURN
      endif
     localmaster=c_master
-    call alloc(ri)
-     ri=r**(-1)
+    call alloc(ri,r0)
+     r0=r
+     ri=r0**(-1)
  
     !    call check(s1)
     map_mul_vec%n=s1%n
@@ -9859,7 +9860,7 @@ endif
     enddo
     enddo
     do k=1,s1%n
-     map_mul_vec%v(k)=map_mul_vec%v(k)*r
+     map_mul_vec%v(k)=map_mul_vec%v(k)*r0
     enddo
 
     map_mul_vec%nrmax=s1%nrmax
@@ -9867,7 +9868,7 @@ endif
 
 
     c_master=localmaster
-    call kill(ri)
+    call kill(ri,r0)
   END FUNCTION map_mul_vec
 
     function exp_ad(h,x)  !  exp(Lie bracket)

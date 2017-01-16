@@ -562,7 +562,9 @@ CONTAINS
              STABLE_DA=.false.
              xlost=0.0_dp
              xlost=x
-             messagelost="Lost in real kind=1 elliptic Aperture"
+             !messagelost="Lost in real kind=1 elliptic Aperture"
+             write(messagelost,*) "Se_status.f90 CHECK_APERTURE_R : Lost in real kind=1 elliptic aperture. ", &
+                                   "Orbit: X=",X(1)," Y=",X(3)," Ap.: DX=",E%DX," DY=",E%DY," R1=",E%R(1)," R2=",E%R(2)
           ENDIF
        CASE(2)  ! rectangle
           IF(ABS(X(1)-E%DX)>E%X.OR.ABS(X(3)-E%DY)>E%Y) THEN
@@ -570,7 +572,9 @@ CONTAINS
              STABLE_DA=.false.
              xlost=0.0_dp
              xlost=x
-             messagelost="Lost in real kind=2 rectangular Aperture"
+             !messagelost="Lost in real kind=2 rectangular Aperture"
+             write(messagelost,*) "Se_status.f90 CHECK_APERTURE_R : Lost in real kind=2 rectangular aperture. ", &
+                                  "Orbit: X=",X(1)," Y=",X(3)," Ap.: DX=",E%DX," DY=",E%DY," X=",E%X," Y=",E%Y
           ENDIF
        CASE(3)  ! RECTANGLE + ELLIPSE (CIRCLE)
           IF((ABS(X(1)-E%DX)>E%X).OR.(ABS(X(3)-E%DY)>E%Y).OR.  &
@@ -579,7 +583,9 @@ CONTAINS
              STABLE_DA=.false.
              xlost=0.0_dp
              xlost=x
-             messagelost="Lost in real kind=3 rect-ellipse Aperture"
+             !messagelost="Lost in real kind=3 rect-ellipse Aperture"
+             write(messagelost,*) "Se_status.f90 CHECK_APERTURE_R : Lost in real kind=3 rect-ellipse aperture. ", &
+                                  "Orbit: X=",X(1)," Y=",X(3)," Ap.: DX=",E%DX," DY=",E%DY," X=",E%X," Y=",E%Y," R=",E%R
           ENDIF
        CASE(4) ! MARGUERITE
           IF(((X(1)-E%DX)**2/E%R(2)**2+(X(3)-E%DY)**2/E%R(1)**2>1.0_dp).OR.  &
@@ -588,7 +594,9 @@ CONTAINS
              STABLE_DA=.false.
              xlost=0.0_dp
              xlost=x
-             messagelost="Lost in real kind=4 marguerite Aperture"
+             !messagelost="Lost in real kind=4 marguerite Aperture"
+             write(messagelost,*) "Se_status.f90 CHECK_APERTURE_R : Lost in real kind=4 marguerite Aperture. ", &
+                                  "Orbit: X=",X(1)," Y=",X(3)," Ap.: DX=",E%DX," DY=",E%DY," X=",E%X," Y=",E%Y," R=",E%R
           ENDIF
        CASE(5) ! RACETRACK
           IF( (abs(x(1)-e%dx)) > (e%r(1)+e%x)                  &
@@ -601,7 +609,9 @@ CONTAINS
              STABLE_DA=.false.
              xlost=0.0_dp
              xlost=x
-             messagelost="Lost in real kind=5 racetrack Aperture"
+             !messagelost="Lost in real kind=5 racetrack Aperture"
+             write(messagelost,*) "Se_status.f90 CHECK_APERTURE_R : Lost in real kind=5 racetrack Aperture. ", &
+                                  "Orbit: X=",X(1)," Y=",X(3)," Ap.: DX=",E%DX," DY=",E%DY," X=",E%X," Y=",E%Y," R=",E%R
           ENDIF
 
        CASE(6) ! PILES OF POINTS
@@ -1063,9 +1073,14 @@ CONTAINS
        if(muon==1.0_dp)  then
           write(mf,*)"This is an electron (positron actually if charge=1) "
        else
+         if(abs(1836.1526740143d0-muon)<1.d-8)then
+          write(mf,*) "This is a proton"
+         else
           write(mf,'((1X,a21,1x,G21.14,1x,A24))' ) "This a particle with ",muon, "times the electron mass "
+         endif
        endif
     else
+
        write(mf,*) "This is a proton "
     endif
     write(mf, '((1X,a20,1x,a5))' )  "      EXACT_MODEL = ", CONV(EXACT_MODEL    )

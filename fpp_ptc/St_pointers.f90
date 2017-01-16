@@ -5,8 +5,8 @@ module pointer_lattice
   implicit none
   public
   ! stuff for main program
-  type(layout),pointer :: my_ering,my_fring
-  type(internal_state),pointer :: my_estate
+  type(layout),pointer :: my_ering => null(), my_fring => null()
+  type(internal_state),pointer :: my_estate => null()
 !  type(internal_state),pointer :: my_old_state
   integer ,pointer :: my_start, MY_ORDER, MY_NP,MY_END,my_start_t
   real(dp), pointer :: my_fix(:),MY_DELTA
