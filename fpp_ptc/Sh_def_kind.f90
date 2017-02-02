@@ -152,7 +152,7 @@ MODULE S_DEF_KIND
   private track_slice4r,track_slice4p 
   private  ZEROr_sol5,ZEROp_sol5,fringe_helr,fringe_help
   logical(lp) :: tpsa_quad_sad=my_false
- logical :: piotr_freq=.false.,syphers=.true.
+ logical :: piotr_freq=.false.,syphers=.true.,freq_redefine = .false.
  real(dp) :: orlov=0.0_dp
 
 !logical :: SYMP_X=.TRUE.
@@ -1840,14 +1840,17 @@ CALL FRINGECAV(EL,X,k,2)
     !    EL%DELTA_E=x(5)
     IF(.NOT.PRESENT(MID)) then
        dir=EL%P%DIR*EL%P%CHARGE
-
-       O=twopi*EL%freq/CLIGHT
-
+       if(freq_redefine) then
+        O=EL%freq
+         else 
+        O=twopi*EL%freq/CLIGHT
+       endif
     if(.not.k%TIME.and.piotr_freq) then
        O=O/EL%p%beta0
     endif
 
        do ko=1,el%nf
+
 
           x(5)=x(5)-el%f(ko)*dir*EL%volt*volt_c*SIN(ko*O*(x(6)+EL%t)+EL%PHAS+EL%PH(KO) &
                +EL%phase0)/EL%P%P0C
@@ -1919,7 +1922,11 @@ CALL FRINGECAV(EL,X,k,2)
     !    EL%DELTA_E=x(5)
     call alloc(BBYTWT,BBXTW,BBYTW,x1,x3,O)
     dir=EL%P%DIR*EL%P%CHARGE
-    O=twopi*EL%freq/CLIGHT
+       if(freq_redefine) then
+        O=EL%freq
+         else 
+        O=twopi*EL%freq/CLIGHT
+       endif
 
     if(.not.k%TIME.and.piotr_freq) then
        O=O/EL%p%beta0
@@ -1995,7 +2002,11 @@ CALL FRINGECAV(EL,X,k,2)
     IF(EL%THIN) RETURN
 
 
-    O=EL%freq*twopi/CLIGHT
+       if(freq_redefine) then
+        O=EL%freq
+         else 
+        O=twopi*EL%freq/CLIGHT
+       endif
 
     if(.not.k%TIME.and.piotr_freq) then
        O=O/EL%p%beta0
@@ -2050,7 +2061,11 @@ CALL FRINGECAV(EL,X,k,2)
     
     CALL ALLOC(C1,S1,V,O)
 
-    O=EL%freq*twopi/CLIGHT
+       if(freq_redefine) then
+        O=EL%freq
+         else 
+        O=twopi*EL%freq/CLIGHT
+       endif
     if(.not.k%TIME.and.piotr_freq) then
        O=O/EL%p%beta0
     endif
@@ -2781,7 +2796,11 @@ CALL FRINGECAV(EL,X,k,2)
 
        
 
-    O=EL%freq*twopi/CLIGHT
+       if(freq_redefine) then
+        O=EL%freq
+         else 
+        O=twopi*EL%freq/CLIGHT
+       endif
 
     if(.not.k%TIME.and.piotr_freq) then
        O=O/EL%p%beta0
@@ -2837,7 +2856,11 @@ CALL FRINGECAV(EL,X,k,2)
      KBMAD=0 
     ENDIF
 
-    O=EL%freq*twopi/CLIGHT
+       if(freq_redefine) then
+        O=EL%freq
+         else 
+        O=twopi*EL%freq/CLIGHT
+       endif
     if(.not.k%TIME.and.piotr_freq) then
        O=O/EL%p%beta0
     endif
@@ -2880,7 +2903,11 @@ CALL FRINGECAV(EL,X,k,2)
 
     DIR=EL%P%DIR*EL%P%CHARGE
 
-    O=twopi*EL%freq/CLIGHT
+       if(freq_redefine) then
+        O=EL%freq
+         else 
+        O=twopi*EL%freq/CLIGHT
+       endif
 
     if(.not.k%TIME.and.piotr_freq) then
        O=O/EL%p%beta0
@@ -2980,7 +3007,11 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
 
     DIR=EL%P%DIR*EL%P%CHARGE
 
-    O=twopi*EL%freq/CLIGHT
+       if(freq_redefine) then
+        O=EL%freq
+         else 
+        O=twopi*EL%freq/CLIGHT
+       endif
 
     if(.not.k%TIME.and.piotr_freq) then
        O=O/EL%p%beta0
@@ -13202,7 +13233,11 @@ integer :: kkk=0
     CPSI=COS(EL%PSI)
     SPSI=SIN(EL%PSI)
 
-    O=EL%freq*twopi/CLIGHT
+       if(freq_redefine) then
+        O=EL%freq
+         else 
+        O=twopi*EL%freq/CLIGHT
+       endif
 
     if(.not.k%TIME.and.piotr_freq) then
        O=O/EL%p%beta0
@@ -13253,7 +13288,11 @@ integer :: kkk=0
     CPSI=COS(EL%PSI)
     SPSI=SIN(EL%PSI)
 
-    O=EL%freq*twopi/CLIGHT
+       if(freq_redefine) then
+        O=EL%freq
+         else 
+        O=twopi*EL%freq/CLIGHT
+       endif
 
     if(.not.k%TIME.and.piotr_freq) then
        O=O/EL%p%beta0
@@ -16314,7 +16353,11 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     IF(k%NOCAVITY.and.(.not.EL%always_on)) RETURN
 !    IF(k%NOCAVITY) RETURN
 
-    O=EL%freq*twopi/CLIGHT
+       if(freq_redefine) then
+        O=EL%freq
+         else 
+        O=twopi*EL%freq/CLIGHT
+       endif
 
     if(.not.k%TIME.and.piotr_freq) then
        O=O/EL%p%beta0
@@ -16361,7 +16404,11 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 !    IF(k%NOCAVITY) RETURN
 
     CALL ALLOC(C1,S1,C2,S2,V,O)
-    O=EL%freq*twopi/CLIGHT
+       if(freq_redefine) then
+        O=EL%freq
+         else 
+        O=twopi*EL%freq/CLIGHT
+       endif
 
     if(.not.k%TIME.and.piotr_freq) then
        O=O/EL%p%beta0

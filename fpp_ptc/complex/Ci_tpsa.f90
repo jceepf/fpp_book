@@ -356,6 +356,16 @@ private EQUAL_probe_3_by_3,equalc_cspinor_spinor,EQUAL_3_by_3_c_spinmatrix
 
   ! intrisic functions overloaded
 
+  INTERFACE c_phasor
+     MODULE PROCEDURE from_phasor
+  end INTERFACE c_phasor
+
+  INTERFACE ci_phasor
+     MODULE PROCEDURE to_phasor
+  end INTERFACE ci_phasor
+
+  ! Exponential of Lie Operators
+
   INTERFACE clean
 !     MODULE PROCEDURE c_clean
      MODULE PROCEDURE c_clean_spinor
@@ -3131,6 +3141,10 @@ FUNCTION cpbbra( S1, S2 )
      if(xn>1.5_dp) then
       n=1.e0_dp
       else
+      if(aimag(n_cai)/=-1) then
+       Write(6,*) "n_cai can only be -2i or -i "
+       stop
+      endif
       n=sqrt(2.e0_dp)
      endif
           do i=1,ndt
@@ -6584,8 +6598,14 @@ endif
 
   end subroutine c_init
 
-
- 
+  subroutine c_init_all(NO1,NV1,np1,ndpt1,AC_rf,ptc)  !,spin
+    implicit none
+    integer, intent(in) :: NO1,NV1
+    integer, optional :: np1,ndpt1,AC_RF
+    logical(lp), optional :: ptc  
+    call c_init(NO1,NV1,np1,ndpt1,AC_rf,ptc)
+     call init(NO,nd,np,ndpt) 
+ end   subroutine c_init_all
 
     subroutine c_etcct(x,n1,y,n2,z)
 !*

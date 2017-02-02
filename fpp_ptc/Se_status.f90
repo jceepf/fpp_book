@@ -74,7 +74,7 @@ module S_status
 
   LOGICAL(lp) :: firsttime_coef=.true.,read_sector_info=my_true
 
-  PRIVATE EQUALt,ADD,PARA_REMA,EQUALtilt
+  PRIVATE EQUALt,ADD,PARA_REMA,EQUALtilt,EQUALi
   !PRIVATE DTILTR,DTILTP,DTILTS
   PRIVATE DTILTR_EXTERNAL,DTILTP_EXTERNAL,orthonormaliser,orthonormalisep
   PRIVATE CHECK_APERTURE_R,CHECK_APERTURE_P !,CHECK_APERTURE_S
@@ -160,6 +160,7 @@ module S_status
 
   INTERFACE assignment (=)
      MODULE PROCEDURE EQUALt
+     MODULE PROCEDURE EQUALi
      MODULE PROCEDURE EQUALtilt
      MODULE PROCEDURE equal_p
      MODULE PROCEDURE equal_A
@@ -1197,12 +1198,62 @@ CONTAINS
 
 
 
+
+
+  SUBROUTINE  EQUALi(S2,i)
+    implicit none
+    type (INTERNAL_STATE),INTENT(OUT)::S2
+    integer, intent(in) :: i
+    
+    S2=default0
+    select case(i) 
+     case(0)
+      S2=default0
+    case(1)
+         S2=TOTALPATH0
+    case(2)
+         S2=TIME0
+    case(3)
+         S2=RADIATION0
+    case(4)
+         S2=NOCAVITY0
+    case(5)
+         S2=FRINGE0
+    case(6)
+         S2=STOCHASTIC0
+    case(7)
+         S2=ENVELOPE0
+    case(9)
+         S2=ONLY_4d0
+    case(10)
+         S2=DELTA0
+    case(11)
+         S2=SPIN0
+    case(12)
+         S2=MODULATION0
+    case(13)
+         S2=only_2d0
+    case default
+      S2%TOTALPATH = -1
+    end select
+ 
+  END SUBROUTINE EQUALi
+
+
+
   FUNCTION add( S1, S2 )
     implicit none
     TYPE (INTERNAL_STATE) add
     TYPE (INTERNAL_STATE), INTENT (IN) :: S1, S2
 
-
+    if(s2%totalpath/=0.and.s2%totalpath/=1) then 
+      add=s1
+      return
+    endif
+    if(s1%totalpath/=0.and.s1%totalpath/=1) then 
+      add=s1
+      return
+    endif
     add%TOTALPATH=0
     if((S1%TOTALPATH==1).OR.(S2%TOTALPATH==1)) add%TOTALPATH=1
 
@@ -1256,6 +1307,15 @@ CONTAINS
     TYPE (INTERNAL_STATE) sub
     TYPE (INTERNAL_STATE), INTENT (IN) :: S1, S2
     logical(lp) dum1,dum2,tt1,tt2
+
+    if(s2%totalpath/=0.and.s2%totalpath/=1) then 
+      sub=s1
+      return
+    endif
+    if(s1%totalpath/=0.and.s1%totalpath/=1) then 
+      sub=s1
+      return
+    endif
 
     tt1=s1%only_2d
     tt2=s2%only_2d
