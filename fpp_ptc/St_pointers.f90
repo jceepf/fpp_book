@@ -39,7 +39,7 @@ module pointer_lattice
   !  PRIVATE POWER_CAVITY,RADIA
   ! stuff from my fortran
   type(internal_state), target:: etat
-  integer,target:: START ,FIN,ORDER,np,start_t
+  integer,private,target:: START ,FIN,ORDER,np,start_t
   real(dp),target:: xfix(6) ,DELT0
   integer :: logs_exp=30, num_iter = 20
   !logical :: absolute = .false.

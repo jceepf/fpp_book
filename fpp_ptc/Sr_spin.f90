@@ -2486,8 +2486,7 @@ call kill(e)
 
 
     CALL TRACK_PROBE2(r,xs,K,i11,i22)
-
-
+      
   END SUBROUTINE TRACK_LAYOUT_FLAG_probe_spin12r
 
   SUBROUTINE TRACK_LAYOUT_FLAG_probe_spin12P(r,xS,k,fibre1,fibre2,node1,node2) ! fibre i1 to i2
@@ -2949,6 +2948,7 @@ call kill(e)
        xlost=xs%x
     endif
        xs%last_node=>c
+       xs%e=global_e
   END SUBROUTINE TRACK_NODE_FLAG_probe_R
 
   SUBROUTINE TRACK_NODE_FLAG_probe_P(C,XS,K)
@@ -3082,6 +3082,7 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
        xlost=xs%x
     endif
        xs%last_node=>c
+       xs%e=global_e
   END SUBROUTINE TRACK_NODE_FLAG_probe_P
 
 

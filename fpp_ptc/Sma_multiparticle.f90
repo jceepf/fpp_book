@@ -1064,51 +1064,72 @@ TA=T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==1.OR.T%PARENT_FIB
  
        SELECT CASE(EL%KIND)
        CASE(KIND0)
+         global_e= x(5)*el%p%p0c
        case(KIND1)
           CALL TRACK_SLICE(EL%D0,X,K)
+         global_e= x(5)*el%p%p0c
        case(KIND2)
           CALL TRACK_SLICE(EL%K2,X,K,t%POS_IN_FIBRE-2)
+         global_e= x(5)*el%p%p0c
        case(KIND3)
           CALL TRACK(EL%K3,X,K)
+         global_e= x(5)*el%p%p0c
        case(KIND4)
           CALL TRACK_SLICE(EL%C4,X,K,t%POS_IN_FIBRE-2)
+          global_e= x(5)*el%p%p0c
        case(KIND5)
           CALL TRACK_SLICE(EL%S5,X,K)
+          global_e= x(5)*el%p%p0c
        case(KIND6)
           CALL TRACK_SLICE(EL%T6,X,K)
+          global_e= x(5)*el%p%p0c
        case(KIND7)
           CALL TRACK_SLICE(EL%T7,X,K,t%POS_IN_FIBRE-2)
+          global_e= x(5)*el%p%p0c
        case(KIND8)
           CALL TRACK(EL%S8,X,K)
+          global_e= x(5)*el%p%p0c
        case(KIND9)
           CALL TRACK(EL%S9,X,K)
+          global_e= x(5)*el%p%p0c
        case(KIND10)
           CALL TRACK_SLICE(EL%TP10,X,K,t%POS_IN_FIBRE-2)
+          if(.not.el%electric)  global_e= x(5)*el%p%p0c
        case(KIND11:KIND14)
           CALL MONTI(EL%MON14,X,k,t%POS_IN_FIBRE-2)
+         global_e= x(5)*el%p%p0c
           !          CALL TRACK_SLICE(EL%MON14,X,K)
        case(KIND15)
           call SEPTTRACK(EL%SEP15,X,k,t%POS_IN_FIBRE-2)
+         !   global_e= x(5)*el%p%p0c done inside
           !          CALL TRACK_SLICE(EL%SEP15,X,K)
        case(KIND16,KIND20)
           CALL TRACK_SLICE(EL%K16,X,K,t%POS_IN_FIBRE-2)
+       global_e= x(5)*el%p%p0c
        case(KIND17)
           STOP 317
        case(KIND18)
           call RCOLLIMATORI(EL%RCOL18,X,k,t%POS_IN_FIBRE-2)
+       global_e= x(5)*el%p%p0c
        case(KIND19)
           CALL ECOLLIMATORI(EL%ECOL19,X,k,t%POS_IN_FIBRE-2)
+       global_e= x(5)*el%p%p0c
           !          CALL TRACK_SLICE(EL%ECOL19,X,K)
        case(KIND21)
           CALL TRACK_SLICE(EL%CAV21,X,k,t%POS_IN_FIBRE-2)
+       global_e= x(5)*el%p%p0c
        case(KIND22)
           CALL TRACK_SLICE(EL%he22,X,k,t%POS_IN_FIBRE-2)
+       global_e= x(5)*el%p%p0c
        case(KINDWIGGLER)
           CALL TRACK_SLICE(EL%WI,X,k,t%POS_IN_FIBRE-2)
+       global_e= x(5)*el%p%p0c
        case(KINDPA)
           CALL TRACK_SLICE(EL%PA,X,k,T%POS_IN_FIBRE-2)
+       global_e= x(5)*el%p%p0c
        case(kindsuperdrift)
           call track_slice(EL%sdr,X,k)
+       global_e= x(5)*el%p%p0c
        CASE DEFAULT
           WRITE(6,*) "NOT IMPLEMENTED ",EL%KIND
           stop 999
@@ -1256,18 +1277,25 @@ TA=T%PARENT_FIBRE%MAGP%p%dir*T%PARENT_FIBRE%MAGP%p%aperture%pos==1.OR.T%PARENT_F
        endif
        SELECT CASE(EL%KIND)
        CASE(KIND0)
+         global_e= x(5)*el%p%p0c
        case(KIND1)
           CALL TRACK_SLICE(EL%D0,X,K)
+         global_e= x(5)*el%p%p0c
        case(KIND2)
           CALL TRACK_SLICE(EL%K2,X,K,t%POS_IN_FIBRE-2)
+         global_e= x(5)*el%p%p0c
        case(KIND3)
           CALL TRACK(EL%K3,X,K)
+         global_e= x(5)*el%p%p0c
        case(KIND4)
           CALL TRACK_SLICE(EL%C4,X,K,t%POS_IN_FIBRE-2)
+         global_e= x(5)*el%p%p0c
        case(KIND5)
           CALL TRACK_SLICE(EL%S5,X,K)
+         global_e= x(5)*el%p%p0c
        case(KIND6)
           CALL TRACK_SLICE(EL%T6,X,K)
+         global_e= x(5)*el%p%p0c
        case(KIND7)
           IF((EL%T7%BN(2)%KIND==3.OR.EL%T7%L%KIND==3).AND.KNOB) THEN
              CALL GETMAT7(EL%T7)                                      ! RECOMPUTES ONLY IF KNOB (SPEED)
@@ -1292,40 +1320,54 @@ TA=T%PARENT_FIBRE%MAGP%p%dir*T%PARENT_FIBRE%MAGP%p%aperture%pos==1.OR.T%PARENT_F
                 IF(L)  EL%T7%L%KIND=3
              ENDIF
           ENDIF
+         global_e= x(5)*el%p%p0c
        case(KIND8)
           CALL TRACK(EL%S8,X,K)
+         global_e= x(5)*el%p%p0c
        case(KIND9)
           CALL TRACK(EL%S9,X,K)
+         global_e= x(5)*el%p%p0c
        case(KIND10)
           CALL MAKEPOTKNOB(EL%TP10,CHECK_KNOB,AN,BN)
           CALL TRACK_SLICE(EL%TP10,X,K,t%POS_IN_FIBRE-2)
           CALL UNMAKEPOTKNOB(EL%TP10,CHECK_KNOB,AN,BN)
+          if(.not.el%electric)  global_e= x(5)*el%p%p0c
        case(KIND11:KIND14)
           CALL MONTI(EL%MON14,X,k,t%POS_IN_FIBRE-2)
           !          CALL TRACK_SLICE(EL%MON14,X,K)
+         global_e= x(5)*el%p%p0c
        case(KIND15)
           call SEPTTRACK(EL%SEP15,X,k,t%POS_IN_FIBRE-2)
           !          CALL TRACK_SLICE(EL%SEP15,X,K)
+         global_e= x(5)*el%p%p0c
        case(KIND16,KIND20)
           CALL TRACK_SLICE(EL%K16,X,K,t%POS_IN_FIBRE-2)
+         global_e= x(5)*el%p%p0c
        case(KIND17)
           STOP 317
        case(KIND18)
           call RCOLLIMATORI(EL%RCOL18,X,k,t%POS_IN_FIBRE-2)
+         global_e= x(5)*el%p%p0c
           !          CALL TRACK_SLICE(EL%RCOL18,X,K)
        case(KIND19)
           CALL ECOLLIMATORI(EL%ECOL19,X,k,t%POS_IN_FIBRE-2)
           !          CALL TRACK_SLICE(EL%ECOL19,X,K)
+         global_e= x(5)*el%p%p0c
        case(KIND21)
           CALL TRACK_SLICE(EL%CAV21,X,k,t%POS_IN_FIBRE-2)
+         global_e= x(5)*el%p%p0c
        case(KINDWIGGLER)
           CALL TRACK_SLICE(EL%WI,X,k,t%POS_IN_FIBRE-2)
+         global_e= x(5)*el%p%p0c
        case(KIND22)
           CALL TRACK_SLICE(EL%he22,X,k,t%POS_IN_FIBRE-2)
+         global_e= x(5)*el%p%p0c
        case(KINDPA)
           CALL TRACK_SLICE(EL%PA,X,k,T%POS_IN_FIBRE-2)
+         global_e= x(5)*el%p%p0c
        case(kindsuperdrift)
           call track_slice(EL%sdr,X,k)
+         global_e= x(5)*el%p%p0c
        CASE DEFAULT
           WRITE(6,*) "NOT IMPLEMENTED ",EL%KIND
           stop 999

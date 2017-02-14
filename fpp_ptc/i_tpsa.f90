@@ -75,7 +75,17 @@ real(dp) :: switch_bessel=0.001d0
      MODULE PROCEDURE refill_uni
   end  INTERFACE
 
-
+  INTERFACE clean
+     MODULE PROCEDURE clean_taylor
+     MODULE PROCEDURE clean_pbfield
+     MODULE PROCEDURE clean_pbresonance
+     MODULE PROCEDURE clean_damap
+     MODULE PROCEDURE clean_vecfield
+     MODULE PROCEDURE clean_vecresonance
+     MODULE PROCEDURE clean_onelieexponent
+     MODULE PROCEDURE clean_complextaylor
+     MODULE PROCEDURE clean_gmap
+  END INTERFACE
 
   INTERFACE print_for_bmad_parser
      MODULE PROCEDURE print_for_bmad_parse
@@ -3974,6 +3984,8 @@ endif
 
   END SUBROUTINE clean_vecresonance
 
+
+
   SUBROUTINE  clean_onelieexponent(S1,S2,prec)
     implicit none
     type (onelieexponent),INTENT(INOUT)::S2
@@ -4017,6 +4029,7 @@ endif
 
   END SUBROUTINE clean_gmap
 
+ 
   !!! bessel
 
 		FUNCTION I_nr(n,x)
