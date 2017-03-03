@@ -17,11 +17,11 @@ MODULE c_TPSA
   integer,private::ndel ,nd2par,nd2part,nd2partt
   integer,private,dimension(lnv)::jfil,jfilt
 
-  private equal,DAABSEQUAL,Dequaldacon ,equaldacon ,Iequaldacon  !,AABSEQUAL 2002.10.17
+  private equal,DAABSEQUAL,Dequaldacon ,equaldacon ,Iequaldacon,derive  !,AABSEQUAL 2002.10.17
   private pow, GETORDER,CUTORDER,getchar,GETint,GETORDERMAP,c_exp_vectorfield_on_spinmatrix  !, c_bra_v_spinmatrix
   private getdiff,getdATRA  ,mul,dmulsc,dscmul,c_spinor_spinmatrix
   private mulsc,scmul,imulsc,iscmul,map_mul_vec
-  private div,ddivsc,dscdiv,divsc,scdiv,idivsc,iscdiv
+  private div,ddivsc,dscdiv,divsc,scdiv,idivsc,iscdiv,equalc_ray_r6r
   private unaryADD,add,daddsca,dscadd,addsc,scadd,iaddsc,iscadd 
   private unarySUB,subs,dsubsc,dscsub,subsc,scsub,isubsc,iscsub
   private c_allocda,c_killda,c_a_opt,K_opt,c_,c_allocdas,filter_part
@@ -140,6 +140,7 @@ private EQUAL_probe_3_by_3,equalc_cspinor_spinor,EQUAL_3_by_3_c_spinmatrix
       MODULE PROCEDURE c_EQUALVEC   !# c_vector_field=c_vector_field
       MODULE PROCEDURE equalc_cspinor_cspinor
       MODULE PROCEDURE equalc_ray_r6
+      MODULE PROCEDURE equalc_ray_r6r
       MODULE PROCEDURE equalc_r6_ray
       MODULE PROCEDURE equalc_ray_ray
       MODULE PROCEDURE equal_c_vector_field_fourier
@@ -1710,6 +1711,22 @@ end subroutine c_get_indices
 
   END SUBROUTINE equalc_ray_r6
 
+ SUBROUTINE  equalc_ray_r6r(S2,S1)
+!*
+    implicit none
+    type (c_ray),INTENT(inOUT)::S2
+    real(dp),INTENT(IN)::S1(:)
+    integer i
+
+
+    IF(.NOT.C_STABLE_DA) RETURN
+    
+     s2%x=0.0_dp
+     do i=1,size(s1)
+       s2%x(i)=s1(i)
+     enddo
+
+  END SUBROUTINE equalc_ray_r6r
 
  SUBROUTINE  equalc_r6_ray(S1,S2)
 !*
@@ -3371,6 +3388,7 @@ io=0
           if(j(i)>0) then
              dputchar=0.0_dp
              !             call var(dputchar,zero,0)
+    c_master=localmaster
              return
           endif
        endif
@@ -3379,6 +3397,7 @@ io=0
           if(io>no) then
              dputchar=0.0_dp
              !             call var(dputchar,zero,0)
+    c_master=localmaster
              return
           endif    
 
@@ -3426,6 +3445,7 @@ io=0
           if(j(i)>0) then
              dputcharr=0.0_dp
              !             call var(dputchar,zero,0)
+    c_master=localmaster
              return
           endif
        endif
@@ -3435,6 +3455,7 @@ io=0
           if(io>no) then
              dputcharr=0.0_dp
              !             call var(dputchar,zero,0)
+    c_master=localmaster
              return
           endif    
     dputcharr=0.0_dp
@@ -3479,6 +3500,7 @@ io=0
           if(j(i)>0) then
              !             call var(dputint,zero,0)
              dputint=0.0_dp
+    c_master=localmaster
              return
           endif
        endif
@@ -3488,6 +3510,7 @@ io=0
           if(io>no) then
              dputint=0.0_dp
              !             call var(dputchar,zero,0)
+    c_master=localmaster
              return
           endif    
 
@@ -3535,6 +3558,7 @@ io=0
           if(j(i)>0) then
              !             call var(dputint,zero,0)
              dputintr=0.0_dp
+    c_master=localmaster
              return
           endif
        endif
@@ -3543,6 +3567,7 @@ io=0
           if(io>no) then
              dputintr=0.0_dp
              !             call var(dputchar,zero,0)
+    c_master=localmaster
              return
           endif    
 
@@ -3571,10 +3596,12 @@ io=0
     j=0
     if(s2>nv) then
        c_dputint0=0.d0
+        c_master=localmaster
        return
     endif
     if(s2==0) then
        c_dputint0=s1
+       c_master=localmaster
        return
     endif
 
@@ -3608,10 +3635,12 @@ io=0
     j=0
     if(s2>nv) then
        c_dputint0r=0.0_dp
+    c_master=localmaster
        return
     endif
     if(s2==0) then
        c_dputint0r=ss
+    c_master=localmaster
        return
     endif
 
@@ -3968,7 +3997,107 @@ endif
      cgetpb=getpb( s1=S1, s1p=s1p,s2=S2 )/n_cai
     c_master=localmaster
     END FUNCTION cgetpb
+
+  FUNCTION getpb_from_transverse( S1,f,S1p, S2 )  
+    implicit none
+    TYPE (c_taylor) getpb_from_transverse
+    TYPE (c_vector_field),optional, INTENT (IN) :: S1
+    TYPE (c_damap),optional, INTENT (IN) :: S1p
+    INTEGER,optional, INTENT (IN) ::  S2
+    integer localmaster,n,i,j,l,fac,nd2here,ss,k
+    type(c_taylor) t,x
+    complex(dp) value
+    real(dp) c
+    integer, allocatable :: jc(:)
+    type(c_vector_field), INTENT (INout) :: f
+    IF(.NOT.C_STABLE_DA) then
+     getpb_from_transverse%i=0
+     RETURN
+    endif
+
+    localmaster=c_master
+
+    nd2here=4 !nd2-2*rf
+    ss=-1
+    if(present(s2)) ss=s2
+    allocate(jc(c_%nv))
+    jc=0
+    !    call check(s1)
+    call ass(getpb_from_transverse)
+    getpb_from_transverse=0.0_dp
+    call alloc(t,x)
+    f=0
+
+    do j=1,nd2here
+    if(present(s1)) then
+     t=s1%v(j)
+    elseif(present(s1p)) then
+     t=s1p%v(j)
+     if(.not.present(s2))ss=1
+     else
+     write(6,*) " error in getpb "
+     stop
+    endif
+    x=0 
+    call c_taylor_cycle(t,size=n)
+
+    do i=1,n
+       call c_taylor_cycle(t,ii=i,value=value,j=jc)
+        fac=0
+        do l=1,nd2here
+         fac=jc(l)+fac
+        enddo
+        fac=fac+1
+       if(ss<0) then  !  fixed bug 2017 jan 9
+        if(mod(j,2)==0) then  
+          x=((value/fac).cmono.jc)*(1.0_dp.cmono.(j-1))+x
+          jc(j-1)=jc(j-1)+1
+          value=value/fac
+        else
+          x=ss*((value/fac).cmono.jc)*(1.0_dp.cmono.(j+1))+x  
+          jc(j+1)=jc(j+1)+1  
+          value=ss*value/fac    
+        endif
+        do k=1,nd
+         l=2*k
+          call derive(jc,l,c)
+          f%v(2*k-1)=f%v(2*k-1)-((value*c).cmono.jc)
+          jc(2*k)=jc(2*k)+1
+         l=2*k-1
+          call derive(jc,l,c)
+          f%v(2*k)=f%v(2*k)+((value*c).cmono.jc)
+          jc(2*k-1)=jc(2*k-1)+1
+        enddo
+       else
+          x=((value/fac).cmono.jc)*(1.0_dp.cmono.(j))+x
+       endif
+    enddo
+    getpb_from_transverse=x+getpb_from_transverse
     
+
+    enddo ! j
+
+    call kill(t,x)
+    deallocate(jc)
+    c_master=localmaster
+
+  END FUNCTION getpb_from_transverse
+
+  subroutine derive(j,k,c)
+  implicit none
+   integer, intent(inout):: J(:)
+   integer, intent(in):: k
+   real(dp), intent(out) :: c
+
+   if(j(k)==0) then 
+     c=0.d0
+    j(k)=j(k)-1
+   else
+    c=j(k)
+    j(k)=j(k)-1
+   endif
+  end subroutine derive
+
       FUNCTION getvectorfield( S1,s2 )  
     implicit none
     TYPE (c_vector_field) getvectorfield
@@ -4017,6 +4146,7 @@ cgetvectorfield=0
      if(complex_extra_order==1.and.special_extra_order_1) cgetvectorfield=cgetvectorfield.cut.no
     END FUNCTION cgetvectorfield 
     
+
   FUNCTION GETdatra( S1, S2 )
     implicit none
     TYPE (c_taylor) GETdatra
@@ -8068,8 +8198,8 @@ SUBROUTINE  c_EQUALcray(S2,S1)
     enddo
 
     ! if(old) then
-    do i=1,size(s2,1)
-       do j=1,size(s2,2)
+    do i=1,s1%n  !size(s2,1)
+       do j=1,s1%n  !,size(s2,2)
           JL(j)=1
           call c_dapok(S1%v(i)%i,JL,s2(i,j))  
           JL(j)=0
@@ -8096,8 +8226,8 @@ SUBROUTINE  c_EQUALcray(S2,S1)
     enddo
 
     ! if(old) then
-    do i=1,size(s2,1)
-       do j=1,size(s2,2)
+    do i=1,s1%n  !size(s2,1)
+       do j=1,s1%n   !,size(s2,2)
           JL(j)=1
           x=s2(i,j)
           call c_dapok(S1%v(i)%i,JL,x)

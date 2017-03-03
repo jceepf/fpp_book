@@ -1484,6 +1484,7 @@ CONTAINS
           if(j(i)>0) then
              dputchar=0.0_dp
              !             call var(dputchar,zero,0)
+    master=localmaster
              return
           endif
        endif
@@ -1531,6 +1532,7 @@ CONTAINS
           if(j(i)>0) then
              !             call var(dputint,zero,0)
              dputint=0.0_dp
+    master=localmaster
              return
           endif
        endif
@@ -1563,6 +1565,7 @@ CONTAINS
     j=0
     if(s2>nv) then
        dputint0=S1
+    master=localmaster
        return
     endif
 
