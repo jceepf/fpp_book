@@ -9805,9 +9805,9 @@ integer :: kkk=0
            F(6)=(1.0_dp+del)/PZ*(1.0_dp+0.5_dp*(x(2)**2+x(4)**2)/pz**2)+(k%TOTALPATH-1)+EL%P%B0*x(1)   !! ld=L in sector bend
         endif
      ENDIF
+     global_e= DEL*el%p%p0c
      call KILL(PZ,DEL,H,B(1),B(2),B(3),VM)
      call KILL(E,3)
-     global_e= DEL*el%p%p0c
    END subroutine feval_teapotp
    subroutine rk2_teapotr(h,GR,y,k)
     IMPLICIT none
