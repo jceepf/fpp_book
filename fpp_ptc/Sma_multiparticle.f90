@@ -992,18 +992,19 @@ endif
 TA=T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==-1.OR.T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==0
           if(TA) call CHECK_APERTURE(T%PARENT_FIBRE%MAG%p%aperture,X)
      endif
+         global_e= x(5)*el%p%p0c
     CASE(CASEP2)
      if(associated(T%PARENT_FIBRE%MAG%p%aperture)) then
 TA=T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==1.OR.T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==0
           if(TA) call CHECK_APERTURE(T%PARENT_FIBRE%MAG%p%aperture,X)
      endif
        CALL TRACK_FIBRE_BACK(T%PARENT_FIBRE,X,K)
-
+         global_e= x(5)*el%p%p0c
     CASE(CASE1,CASE2)
   !     el=>T%PARENT_FIBRE%MAG
        if(s_aperture_CHECK.and.associated(el%p%A).AND.CHECK_MADX_APERTURE.and.t%cas==case2) &
             call check_S_APERTURE_out(el%p,t%POS_IN_FIBRE-2,x)
-
+ 
        SELECT CASE(EL%KIND)
        CASE(KIND0:KIND1,KIND3,KIND8:KIND9,KIND11:KIND15,KIND18:KIND19)
        case(KIND2)
@@ -1049,7 +1050,7 @@ TA=T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==1.OR.T%PARENT_FIB
           WRITE(6,*) "NOT IMPLEMENTED ",EL%KIND
           stop 666
        END SELECT
-
+        global_e= x(5)*el%p%p0c
     CASE(CASE0)
  !      el=>T%PARENT_FIBRE%MAG
        if(s_aperture_CHECK.and.associated(el%p%A).AND.CHECK_MADX_APERTURE)  &
@@ -1207,6 +1208,7 @@ TA=T%PARENT_FIBRE%MAGP%p%dir*T%PARENT_FIBRE%MAGP%p%aperture%pos==-1.OR.T%PARENT_
 *T%PARENT_FIBRE%MAGP%p%aperture%pos==0
           if(TA) call CHECK_APERTURE(T%PARENT_FIBRE%MAGP%p%aperture,X)
      endif
+        global_e= x(5)*el%p%p0c
     CASE(CASEP2)
      if(associated(T%PARENT_FIBRE%MAGP%p%aperture)) then
 TA=T%PARENT_FIBRE%MAGP%p%dir*T%PARENT_FIBRE%MAGP%p%aperture%pos==1.OR.T%PARENT_FIBRE%MAGP%p%dir  &
@@ -1214,7 +1216,7 @@ TA=T%PARENT_FIBRE%MAGP%p%dir*T%PARENT_FIBRE%MAGP%p%aperture%pos==1.OR.T%PARENT_F
           if(TA) call CHECK_APERTURE(T%PARENT_FIBRE%MAGP%p%aperture,X)
      endif
        CALL TRACK_FIBRE_BACK(T%PARENT_FIBRE,X,K)
-
+        global_e= x(5)*el%p%p0c
     CASE(CASE1,CASE2)
 !       el=>T%PARENT_FIBRE%MAGP
        if(s_aperture_CHECK.and.associated(el%p%A).AND.CHECK_MADX_APERTURE.and.t%cas==case2) &
@@ -1263,7 +1265,7 @@ TA=T%PARENT_FIBRE%MAGP%p%dir*T%PARENT_FIBRE%MAGP%p%aperture%pos==1.OR.T%PARENT_F
           WRITE(6,*) "NOT IMPLEMENTED ",EL%KIND
           stop 666
        END SELECT
-
+        global_e= x(5)*el%p%p0c
     CASE(CASE0)
  !      el=>T%PARENT_FIBRE%MAGP
        if(s_aperture_CHECK.and.associated(el%p%A).AND.CHECK_MADX_APERTURE) &
