@@ -5905,9 +5905,10 @@ endif
 
     if(DEPS==0.0_dp) k=0
     if(DEPS==3.0_dp) then
-     DEPS=0.0_dp
+    DEPS=0.0_dp
       do i=1,3
-        DEPS=DEPS+full_abs(s1%s(i,i))
+!        DEPS=DEPS+full_abs(s1%s(i,i))
+        DEPS=DEPS+(s1%s(i,i))   ! in case of minus 1 
        enddo
      if(DEPS==3.0_dp)  k=1
     endif
