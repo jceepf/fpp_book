@@ -3105,7 +3105,7 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
 
     !    el=>C%PARENT_FIBRE%MAG
     IF(.NOT.CHECK_STABLE) return
-
+    IF(C%PARENT_FIBRE%MAG%KIND==KINDSUPERDRIFT) call superdrift_SPIN(c,P) 
     if(C%PARENT_FIBRE%dir==1) then
        IF(C%CAS==CASE1) THEN
           call TRACK_rotate_spin(C,p,K)
@@ -3144,7 +3144,7 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     if(.not.(k%SPIN)) return
     !    el=>C%PARENT_FIBRE%MAGp
     IF(.NOT.CHECK_STABLE) return
-
+    IF(C%PARENT_FIBRE%MAG%KIND==KINDSUPERDRIFT) call superdrift_SPIN(c,P) 
 
     if(C%PARENT_FIBRE%dir==1) then
        IF(C%CAS==CASE1) THEN
@@ -3383,7 +3383,6 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     case(KINDWIGGLER)
     case(KINDPA)
     case(kindsuperdrift)
-       call superdrift_SPIN(c,P)
     CASE DEFAULT
        WRITE(6,*) "NOT IMPLEMENTED ",EL%KIND
        stop 666
@@ -3427,7 +3426,6 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     case(KINDWIGGLER)
     case(KINDPA)
     case(kindsuperdrift)
-       call superdrift_SPIN(c,P)
     CASE DEFAULT
        WRITE(6,*) "NOT IMPLEMENTED ",EL%KIND
        stop 666
