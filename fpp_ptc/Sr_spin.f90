@@ -21,7 +21,7 @@ module ptc_spin
   PRIVATE GET_BE_CAVR,GET_BE_CAVP ,GET_BE_CAV
   private rot_spin_x,rot_spin_xr,rot_spin_xp,rot_spin_z,rot_spin_zr,rot_spin_zp
   private rot_spin_yr,rot_spin_yp,rot_spin_y
-  private PATCH_SPINR,PATCH_SPINP,PATCH_SPIN
+  private PATCH_SPINR,PATCH_SPINP,PATCH_SPIN,superdrift_SPINR,superdrift_SPINp
   private MIS_SPINR,MIS_SPINP,MIS_SPIN
   private DTILT_SPINR,DTILT_SPINP,DTILT_SPIN
   PRIVATE TRACK_SPIN_FRONTR,TRACK_SPIN_FRONTP,TRACK_SPIN_FRONT
@@ -206,6 +206,12 @@ module ptc_spin
      MODULE PROCEDURE TRACK_FRINGE_spin_R
      MODULE PROCEDURE TRACK_FRINGE_spin_P
   END INTERFACE
+
+  INTERFACE superdrift_SPIN
+     MODULE PROCEDURE superdrift_SPINR
+     MODULE PROCEDURE superdrift_SPINP
+  END INTERFACE
+
 
   INTERFACE PUSH_SPIN
      MODULE PROCEDURE PUSH_SPINR
@@ -3376,6 +3382,8 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     case(KIND21,kind22)
     case(KINDWIGGLER)
     case(KINDPA)
+    case(kindsuperdrift)
+       call superdrift_SPIN(c,P)
     CASE DEFAULT
        WRITE(6,*) "NOT IMPLEMENTED ",EL%KIND
        stop 666
@@ -3418,6 +3426,8 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     case(KIND21,kind22)
     case(KINDWIGGLER)
     case(KINDPA)
+    case(kindsuperdrift)
+       call superdrift_SPIN(c,P)
     CASE DEFAULT
        WRITE(6,*) "NOT IMPLEMENTED ",EL%KIND
        stop 666
@@ -3596,8 +3606,46 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
 
   END SUBROUTINE TRACK_SPIN_BACKP
 
+ 
 
+  SUBROUTINE superdrift_SPINR(int,P)
+    implicit none
+    ! MISALIGNS REAL FIBRES IN PTC ORDER FOR FORWARD AND BACKWARD FIBRES
+    TYPE(integration_node),target, INTENT(INOUT):: int
+    TYPE(FIBRE),pointer:: c
+    TYPE(PROBE), INTENT(INOUT):: P
+    !    real(dp), INTENT(INOUT):: s(3)
+      c=>int%parent_fibre
+      if(c%dir==1.and.int%cas==case1) then
+       call rot_spin_x(P,C%mag%sdr%ANG(1))
+       call rot_spin_y(P,c%dir*C%mag%sdr%ANG(2)) ! 2016_5_9
+       call rot_spin_z(P,C%mag%sdr%ANG(3))
+      elseif(c%dir==-1.and.int%cas==case2) then
+       call rot_spin_z(P,C%mag%sdr%ANG(3))
+       call rot_spin_y(P,c%dir*C%mag%sdr%ANG(2))
+       call rot_spin_x(P,C%mag%sdr%ANG(1))
+      endif
 
+  END SUBROUTINE superdrift_SPINR
+
+  SUBROUTINE superdrift_SPINP(int,P)
+    implicit none
+    ! MISALIGNS REAL FIBRES IN PTC ORDER FOR FORWARD AND BACKWARD FIBRES
+    TYPE(integration_node),target, INTENT(INOUT):: int
+    TYPE(FIBRE),pointer:: c
+    TYPE(PROBE_8), INTENT(INOUT):: P
+       c=>int%parent_fibre
+      if(c%dir==1.and.int%cas==case1) then
+       call rot_spin_x(P,C%mag%sdr%ANG(1))
+       call rot_spin_y(P,c%dir*C%mag%sdr%ANG(2)) ! 2016_5_9
+       call rot_spin_z(P,C%mag%sdr%ANG(3))
+      elseif(c%dir==-1.and.int%cas==case2) then
+       call rot_spin_z(P,C%mag%sdr%ANG(3))
+       call rot_spin_y(P,c%dir*C%mag%sdr%ANG(2))
+       call rot_spin_x(P,C%mag%sdr%ANG(1))
+      endif
+
+  END SUBROUTINE superdrift_SPINP
 
   SUBROUTINE PATCH_SPINR(C,P,ENTERING)
     implicit none
