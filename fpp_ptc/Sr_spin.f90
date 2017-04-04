@@ -43,10 +43,10 @@ module ptc_spin
   private TRACK_wedge_spin_R,TRACK_wedge_spin_p,TRACK_wedge_spin, find_as,find_frac_r,find_n0
   !REAL(DP) :: AG=A_ELECTRON
   REAL(DP) :: bran_init=pi 
-  logical :: locate_with_no_cavity = .false.
-  integer  :: item_min=3
+  logical :: locate_with_no_cavity = .false.,full_way=.true.
+  integer  :: item_min=3,mfdebug
   !  INTEGER, PRIVATE :: ISPIN0P=0,ISPIN1P=3
-
+  
 
   INTERFACE assignment (=)
      MODULE PROCEDURE equal_temporal
@@ -2255,6 +2255,7 @@ call kill(e)
     TYPE (INTEGRATION_NODE),optional, POINTER :: node1,node2
     TYPE (fibre),optional, POINTER :: fibre1,fibre2
     TYPE (INTEGRATION_NODE), POINTER :: C,n1,n2,last
+    logical donew
     !    INTEGER,TARGET :: CHARGE
 
     !    if(present(node1))CHARGE=NODE1%PARENT_FIBRE%CHARGE
@@ -2285,19 +2286,23 @@ call kill(e)
           n2  =>n1%parent_fibre%parent_layout%t%end
        endif
     endif
+    
+    donew=(.not.full_way).and.(.not.present(node1)).and.(.not.present(node2))
 
-
-    DO  WHILE(.not.ASSOCIATED(C,n2))
-
-       CALL TRACK_NODE_PROBE(C,XS,K)
-       if(.not.check_stable) exit
-
-       C=>C%NEXT
-    ENDDO
-
-    if(associated(last).and.check_stable) then
+    if(donew) then   ! actually calling old stuff pre-node
+     call TRACK(xs%x,K,fibre1,fibre2=fibre2)
+    else
+     DO  WHILE(.not.ASSOCIATED(C,n2))
+        CALL TRACK_NODE_PROBE(C,XS,K)
+        if(.not.check_stable) exit
+ 
+        C=>C%NEXT
+     ENDDO
+     if(associated(last).and.check_stable) then
        CALL TRACK_NODE_PROBE(last,XS,K)
+     endif
     endif
+
 
     C_%STABLE_DA=.true.
 
@@ -2456,8 +2461,9 @@ call kill(e)
     integer,optional:: fibre1,fibre2,node1,node2
     integer i1,i2
     integer i11,i22
-    type(fibre), pointer:: p
 
+    type(fibre), pointer:: p
+ 
     if(.not.associated(r%t)) call MAKE_NODE_LAYOUT(r)
     i1=0
     i2=0
@@ -2477,7 +2483,7 @@ call kill(e)
        i22=p%t1%pos
        if(fibre2>r%n) i22=i22+int(real(fibre2,kind=dp)/real(r%n,kind=dp))*r%t%n
     endif
-
+ 
     IF(I22==0) then
        IF(R%CLOSED) THEN
           I22=I11+R%T%N
@@ -2489,10 +2495,10 @@ call kill(e)
     !     write(6,*) 'probe ',i11,i22
     IF(I22==I11.AND.I2>I1) I22=I11+R%T%N
     !     write(6,*) 'probe ',i11,i22
-
-
-    CALL TRACK_PROBE2(r,xs,K,i11,i22)
-      
+   
+ 
+     CALL TRACK_PROBE2(r,xs,K,i11,i22)
+          
   END SUBROUTINE TRACK_LAYOUT_FLAG_probe_spin12r
 
   SUBROUTINE TRACK_LAYOUT_FLAG_probe_spin12P(r,xS,k,fibre1,fibre2,node1,node2) ! fibre i1 to i2
@@ -2547,21 +2553,33 @@ call kill(e)
     real(dp),intent(INOUT) ::  x(6)
     TYPE(INTERNAL_STATE) K
     integer,optional:: fibre1,fibre2,node1,node2
+    integer i1,i2
+    logical donew
     !    logical(lp), optional ::u
     !    type(integration_node),optional, pointer :: t
+      donew=(.not.full_way).and.(.not.present(node1)).and.(.not.present(node2))
 
-    if(.not.associated(r%t)) call MAKE_NODE_LAYOUT(r)
+    if(donew) then
+      i1=fibre1
+      if(present(fibre2) )THEN
+         i2=FIBRE2
+      else
+         I2=r%n+i1
+      endif
+      if(i2<i1) then
+       i2=r%n+i2
+      endif
+     CALL TRACK(r,x,I1,I2,K)
+     else 
+       if(.not.associated(r%t)) call MAKE_NODE_LAYOUT(r)
 
-    xs%u=my_false
-    XS=X
-    !    if(present(t)) THEN
-    !       nullify(t)
-    !    ENDIF
-    !    IF(I22==I11.AND.I2>I1) I22=I11+R%T%N
-
-    CALL TRACK_PROBE(r,xs,K, fibre1,fibre2,node1,node2)
+        xs%u=my_false
+        XS=X
+         CALL TRACK_PROBE(r,xs,K, fibre1,fibre2,node1,node2)
+       X=XS%X
+    endif
     !    if(present(u)) u=xs%u
-    X=XS%X
+
     !    if(present(t)) THEN
     !       t=>xs%lost_node
     !       NULLIFY(xs%lost_node)
@@ -2863,6 +2881,9 @@ call kill(e)
     C%PARENT_FIBRE%MAG%P%ag => C%PARENT_FIBRE%ag
     C%PARENT_FIBRE%MAG%P%CHARGE=>C%PARENT_FIBRE%CHARGE
 
+  
+
+    if(full_way) then
      useptc=.true.
 
      
@@ -2947,6 +2968,32 @@ call kill(e)
     if(use_bmad_units) then 
       call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
     endif
+
+ else ! full_way
+ 
+
+
+    if(c%cas==0) then
+ 
+
+
+        CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
+
+
+    elseIF(c%cas==case1) then
+       CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
+    elseIF(c%cas==case2) then
+       CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
+    else
+       IF(c%cas==caseP1) THEN
+          CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
+       ELSEif(c%cas==caseP2) THEN
+          CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
+     ENDIF
+
+    endif
+
+endif ! full_way
     xs%u=.not.check_stable
     if(xs%u) then
        lost_fibre=>c%parent_fibre
