@@ -1096,9 +1096,9 @@ contains
        OM(I)=OM(I)-DLDS*0.5_dp*e_muon*(GAMMA*E(I)+(1-GAMMA)*EFD(I))
     ENDDO
 
-    IF(.not.k%TIME) THEN
-       x(5)=(2.0_dp*x(5)/p%beta0+x(5)**2)/(root(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)+1.0_dp)
-    endif
+    !IF(.not.k%TIME) THEN
+    !   del=(2.0_dp*del/p%beta0+del**2)/(sqrt(1.0_dp+2.0_dp*del/p%beta0+del**2)+1.0_dp)
+    !endif
 
     if((k%radiation.or.k%envelope)) then
        !      if(P%RADIATION) then
@@ -1253,9 +1253,9 @@ contains
        OM(I)=OM(I)-DLDS*0.5_dp*e_muon_scale*(GAMMA*E(I)+(1-GAMMA)*EFD(I))
     ENDDO
 
-    IF(.not.k%TIME) THEN
-       del=(2.0_dp*del/p%beta0+del**2)/(sqrt(1.0_dp+2.0_dp*del/p%beta0+del**2)+1.0_dp)
-    endif
+    !IF(.not.k%TIME) THEN
+    !   del=(2.0_dp*del/p%beta0+del**2)/(sqrt(1.0_dp+2.0_dp*del/p%beta0+del**2)+1.0_dp)
+    !endif
 
     if((k%radiation.or.k%envelope)) then
        !      if(P%RADIATION) then
@@ -2287,7 +2287,7 @@ call kill(e)
        endif
     endif
     
-    donew=(.not.full_way).and.(.not.present(node1)).and.(.not.present(node2))
+    donew=(.not.(full_way.or.k%full_way)).and.(.not.present(node1)).and.(.not.present(node2))
 
     if(donew) then   ! actually calling old stuff pre-node
      call TRACK(xs%x,K,fibre1,fibre2=fibre2)
@@ -2318,6 +2318,7 @@ call kill(e)
     TYPE (INTEGRATION_NODE),optional, POINTER :: node1,node2
     TYPE (fibre),optional, POINTER :: fibre1,fibre2
     TYPE (INTEGRATION_NODE), POINTER :: C,n1,n2,last
+    logical donew
     !    INTEGER,TARGET :: CHARGE
 
     !    if(present(node1))CHARGE=NODE1%PARENT_FIBRE%CHARGE
@@ -2350,17 +2351,34 @@ call kill(e)
     endif
 
 
-    DO  WHILE(.not.ASSOCIATED(C,n2))
+ !   DO  WHILE(.not.ASSOCIATED(C,n2))
 
-       CALL TRACK_NODE_PROBE(C,XS,K)
-       if(.not.check_stable) exit
+  !     CALL TRACK_NODE_PROBE(C,XS,K)
+  !     if(.not.check_stable) exit!
 
-       C=>C%NEXT
-    ENDDO
+!       C=>C%NEXT
+!    ENDDO
 
-    if(associated(last).and.check_stable) then
+!    if(associated(last).and.check_stable) then
+!       CALL TRACK_NODE_PROBE(last,XS,K)
+!    endif
+
+    donew=(.not.(full_way.or.k%full_way)).and.(.not.present(node1)).and.(.not.present(node2))
+
+    if(donew) then   ! actually calling old stuff pre-node
+     call TRACK(xs%x,K,fibre1,fibre2=fibre2)
+    else
+     DO  WHILE(.not.ASSOCIATED(C,n2))
+        CALL TRACK_NODE_PROBE(C,XS,K)
+        if(.not.check_stable) exit
+ 
+        C=>C%NEXT
+     ENDDO
+     if(associated(last).and.check_stable) then
        CALL TRACK_NODE_PROBE(last,XS,K)
+     endif
     endif
+
 
     C_%STABLE_DA=.true.
 
@@ -2557,7 +2575,7 @@ call kill(e)
     logical donew
     !    logical(lp), optional ::u
     !    type(integration_node),optional, pointer :: t
-      donew=(.not.full_way).and.(.not.present(node1)).and.(.not.present(node2))
+      donew=(.not.(full_way.or.k%full_way)).and.(.not.present(node1)).and.(.not.present(node2))
 
     if(donew) then
       i1=fibre1
@@ -2598,31 +2616,35 @@ call kill(e)
     type(real_8),target,intent(INOUT) ::  x(6)
     TYPE(INTERNAL_STATE) K
     integer,optional:: fibre1,fibre2,node1,node2
-    !  logical(lp), optional ::u
-    ! type(integration_node),optional, pointer :: t
-    if(.not.associated(r%t)) call MAKE_NODE_LAYOUT(r)
-    call alloc(xs)
-    xs%u=my_false
-    XS%x=X
-    ! if(present(t)) THEN
-    !    ALLOCATE(xs%lost_node)
-    !    t=>xs%lost_node
-    !    nullify(t)
-    ! ENDIF
+    integer i1,i2
+    logical donew
+ 
+      donew=(.not.(full_way.or.k%full_way)).and.(.not.present(node1)).and.(.not.present(node2))
 
-    !    IF(I22==I11.AND.I2>I1) I22=I11+R%T%N
+    if(donew) then
+      i1=fibre1
+      if(present(fibre2) )THEN
+         i2=FIBRE2
+      else
+         I2=r%n+i1
+      endif
+      if(i2<i1) then
+       i2=r%n+i2
+      endif
+     CALL TRACK(r,x,I1,I2,K)
+     else 
+       call alloc(xs)
+       if(.not.associated(r%t)) call MAKE_NODE_LAYOUT(r)
 
-    CALL TRACK_PROBE(r,xs,K, fibre1,fibre2,node1,node2)
-    !  if(present(u)) u=xs%u
-    !  if(present(t)) THEN
-    !     t=>xs%lost_node
+        xs%u=my_false
+        XS%X=X
+         CALL TRACK_PROBE(r,xs,K, fibre1,fibre2,node1,node2)
+        X=XS%X
+        call kill(xs)
+    endif
 
-    !       deallocate(xs%lost_node)
-    !     NULLIFY(xs%lost_node)
-    !  ENDIF
 
-    X=XS%X
-    call kill(xs)
+
   END SUBROUTINE TRACK_LAYOUT_FLAG_spin12p_x
 
   SUBROUTINE TRACK_LAYOUT_FLAG_spint12r_x(x,k, fibre1,fibre2,node1,node2) ! fibre i1 to i2
@@ -2883,7 +2905,7 @@ call kill(e)
 
   
 
-    if(full_way) then
+    if(full_way.or.k%full_way) then
      useptc=.true.
 
      
@@ -3031,6 +3053,8 @@ endif ! full_way
     C%PARENT_FIBRE%MAGP%P%ag => C%PARENT_FIBRE%ag
     C%PARENT_FIBRE%MAGp%P%CHARGE=>C%PARENT_FIBRE%CHARGE
 
+
+    if(full_way.or.k%full_way) then
     useptc=.true.
     if(.not.(k%nocavity.and.(ki==kind4.or.ki==kind21))) then
      if(C%PARENT_FIBRE%dir==1) then
@@ -3127,7 +3151,24 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     if(use_bmad_units) then 
       call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
     endif
+else
 
+
+    if(c%cas==0) then
+        CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
+    elseIF(c%cas==case1.or.c%cas==case2) then
+       CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
+    else
+       IF(c%cas==caseP1) THEN
+          CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
+       ELSEif(c%cas==caseP2) THEN
+          CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
+     ENDIF
+
+ 
+    endif
+
+endif
     xs%u=.not.check_stable
     if(xs%u) then
        lost_fibre=>c%parent_fibre
@@ -3659,16 +3700,23 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     TYPE(integration_node),target, INTENT(INOUT):: int
     TYPE(FIBRE),pointer:: c
     TYPE(PROBE), INTENT(INOUT):: P
+    real(dp) da
     !    real(dp), INTENT(INOUT):: s(3)
       c=>int%parent_fibre
       if(c%dir==1.and.int%cas==case1) then
-       call rot_spin_x(P,C%mag%sdr%ANG(1))
+       da=C%mag%sdr%ANG(1)+((C%mag%sdr%A_X1-1)/2)*pi
+       call rot_spin_x(P,da)
        call rot_spin_y(P,c%dir*C%mag%sdr%ANG(2)) ! 2016_5_9
        call rot_spin_z(P,C%mag%sdr%ANG(3))
+       da=((C%mag%sdr%A_X2-1)/2)*pi
+       call rot_spin_x(P,da)
       elseif(c%dir==-1.and.int%cas==case2) then
+       da=((C%mag%sdr%A_X2-1)/2)*pi
+       call rot_spin_x(P,da)
        call rot_spin_z(P,C%mag%sdr%ANG(3))
        call rot_spin_y(P,c%dir*C%mag%sdr%ANG(2))
-       call rot_spin_x(P,C%mag%sdr%ANG(1))
+       da=C%mag%sdr%ANG(1)+((C%mag%sdr%A_X1-1)/2)*pi
+       call rot_spin_x(P,da)
       endif
 
   END SUBROUTINE superdrift_SPINR
@@ -3679,15 +3727,22 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     TYPE(integration_node),target, INTENT(INOUT):: int
     TYPE(FIBRE),pointer:: c
     TYPE(PROBE_8), INTENT(INOUT):: P
+    real(dp) da
        c=>int%parent_fibre
       if(c%dir==1.and.int%cas==case1) then
-       call rot_spin_x(P,C%mag%sdr%ANG(1))
+       da=C%mag%sdr%ANG(1)+((C%mag%sdr%A_X1-1)/2)*pi
+       call rot_spin_x(P,da)
        call rot_spin_y(P,c%dir*C%mag%sdr%ANG(2)) ! 2016_5_9
        call rot_spin_z(P,C%mag%sdr%ANG(3))
+       da=((C%mag%sdr%A_X2-1)/2)*pi
+       call rot_spin_x(P,da)
       elseif(c%dir==-1.and.int%cas==case2) then
+       da=((C%mag%sdr%A_X2-1)/2)*pi
+       call rot_spin_x(P,da)
        call rot_spin_z(P,C%mag%sdr%ANG(3))
        call rot_spin_y(P,c%dir*C%mag%sdr%ANG(2))
-       call rot_spin_x(P,C%mag%sdr%ANG(1))
+       da=C%mag%sdr%ANG(1)+((C%mag%sdr%A_X1-1)/2)*pi
+       call rot_spin_x(P,da)
       endif
 
   END SUBROUTINE superdrift_SPINP
