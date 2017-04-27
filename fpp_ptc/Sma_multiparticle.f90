@@ -1487,10 +1487,6 @@ TA=T%PARENT_FIBRE%MAGP%p%dir*T%PARENT_FIBRE%MAGP%p%aperture%pos==1.OR.T%PARENT_F
        ENDIF
        DL=P%DIR*P%MAG%L/P%MAG%P%NST
        DLD=P%MAG%P%LD/P%MAG%P%NST
-! changed 2017.4.27 
- S=S+DLD
- LI=LI+DL
- SL=SL+P%DIR*DL
        CALL APPEND_EMPTY_THIN( L )
        L%END%TEAPOT_LIKE=TEAPOT_LIKE
        L%END%S(1)=S;L%END%S(2)=LI;L%END%S(3)=SL;L%END%S(4)=0.0_dp;    ! s(1) total ld
@@ -1536,7 +1532,10 @@ doit=p%mag%kind==kind16.and.p%mag%p%b0/=0.0_dp
         DLD=acos( ((ub(1)*uj(1)+ub(2)*uj(2)) /n0/nj)   )*r0
          ub=uj
  endif
-
+!  2017.4.27
+          S=S+DLD
+          LI=LI+DL
+          SL=SL+P%DIR*DL
           CALL APPEND_EMPTY_THIN( L )
           L%END%TEAPOT_LIKE=TEAPOT_LIKE
           L%END%S(1)=S;L%END%S(2)=LI;L%END%S(3)=SL;L%END%S(4)=DL;L%END%S(5)=DLD;L%END%ds_ac=DLD;
