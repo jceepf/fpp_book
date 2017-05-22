@@ -2577,7 +2577,8 @@ endif
        circum=circum+s
        IF(ABS(s)>accuracy) THEN
           ip=ip+1
-          p%patch%b_t=-s
+          p%patch%b_l=-s
+          p%patch%b_t=-s/P%BETA0
           p%patch%time=2
        ELSE
           p%patch%time=0

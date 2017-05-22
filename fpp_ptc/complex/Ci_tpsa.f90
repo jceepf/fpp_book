@@ -8950,7 +8950,7 @@ subroutine c_full_canonise(at,a_cs,as,a0,a1,a2,rotation,phase,nu_spin)
       att%s=0
 
       ar=1
-
+ 
     call extract_a0(att,a0t)
 
 !call print(phi%v(6),6)
@@ -9253,6 +9253,28 @@ endif
         egspin(3)=ri%s%s(1,1)-i_*ri%s%s(1,3)
         egspin(2)=1.0_dp
         egspin(1)=ri%s%s(1,1)+i_*ri%s%s(1,3)
+if(lielib_print(13)/=0) then
+  write(mdiss,*) " eg(1:4),spin_def_tune" ,spin_def_tune
+  write(mdiss,*)eg(1)
+  write(mdiss,*)eg(2)
+  write(mdiss,*)eg(3)
+  write(mdiss,*)eg(4)
+  write(mdiss,*) " egspin(1:3)" 
+  write(mdiss,*)egspin(1)
+  write(mdiss,*)egspin(2)
+  write(mdiss,*)egspin(3)
+endif
+if(lielib_print(13)/=0) then
+  write(mkers,*) " eg(1:4),spin_def_tune" ,spin_def_tune
+  write(mkers,*)eg(1)
+  write(mkers,*)eg(2)
+  write(mkers,*)eg(3)
+  write(mkers,*)eg(4)
+  write(mkers,*) " egspin(1:3)" 
+  write(mkers,*)egspin(1)
+  write(mkers,*)egspin(2)
+  write(mkers,*)egspin(3)
+endif
 !!! tune is taken from egspin(1) or egspin(3)   spin_def_tune= +/- 1
         n%spin_tune=aimag(log(egspin(2-spin_def_tune))/twopi)   
 ! because  exp(a L_y) x = x- a z + O(a**2)
@@ -9274,7 +9296,7 @@ endif
 
           nr=0
        do k=1,3
-if(lielib_print(13)/=0.and.k/=(2+spin_def_tune)) then 
+if(lielib_print(13)/=0) then 
   write(mdiss,*) " $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ " 
   write(mdiss,*) "Spin component ",k
   write(mdiss,*) " "
@@ -9300,20 +9322,21 @@ endif
                 if(coast(l)) cycle 
                   lam=lam*eg(l)**je(l)
                enddo
-if(lielib_print(13)/=0.and.k/=(2+spin_def_tune)) then 
-do kr=1,nd2
-je(kr)=-(-1)**kr*je(kr)
-enddo
+if(lielib_print(13)/=0) then 
+!do kr=1,nd2
+!je(kr)=-(-1)**kr*je(kr)
+!enddo
       write(mdiss,'(6(1x,i4))') je(1:nd2)
+      write(mdiss,*)lam
       write(mdiss,*) v
       write(mdiss,*) abs(v/(1-lam))
-do kr=1,nd2
-je(kr)=-(-1)**kr*je(kr)
-enddo
+!do kr=1,nd2
+!je(kr)=-(-1)**kr*je(kr)
+!enddo
 endif
              nr%v(k)=nr%v(k) +(v.cmono.je)/(1.0_dp-lam)   ! (9)
            else
-if(lielib_print(13)/=0.and.k/=(2+spin_def_tune)) then 
+if(lielib_print(13)/=0) then 
 do kr=1,nd2
 je(kr)=-(-1)**kr*je(kr)
 enddo      
@@ -9618,8 +9641,8 @@ endif
     do i=1,n,2
        if(coast(i)) cycle 
      j=(i+1)/2
-     t1=t1+abs(je(i)-je(i+1)+m(j,kr))
      t2=t2+abs(je(i)-je(i+1)-m(j,kr))
+     t1=t1+abs(je(i)-je(i+1)+m(j,kr))
     enddo
 !        if(k==1) then
 !         t1=t1+iabs(-spin_def_tune-ms(kr))
@@ -9632,17 +9655,28 @@ endif
 !         t2=t2+iabs(ms(kr))
 !        endif
        if(k==1) then
-         t1=t1+iabs(spin_def_tune-ms(kr))
-         t2=t2+iabs(spin_def_tune+ms(kr))
+        if(ms(kr)>0) then
+!         t2=t2+iabs(spin_def_tune)
+           if(t2==0) removeit=my_false
+        elseif(ms(kr)<0) then
+!         t1=t1+iabs(spin_def_tune)
+           if(t1==0) removeit=my_false
+        endif
         elseif(k==3) then
-         t1=t1+iabs(-spin_def_tune-ms(kr))
-         t2=t2+iabs(-spin_def_tune+ms(kr))
+        if(ms(kr)>0) then
+!         t1=t1+iabs(spin_def_tune)
+           if(t1==0) removeit=my_false
+        elseif(ms(kr)<0) then
+!         t2=t2+iabs(spin_def_tune)
+           if(t2==0) removeit=my_false
+        endif
         else
          t1=t1+iabs(ms(kr))
          t2=t2+iabs(ms(kr))
+          if(t1==0.or.t2==0) removeit=my_false
         endif
 
-      if(t1==0.or.t2==0) removeit=my_false
+
 
     end subroutine check_resonance_spin
 

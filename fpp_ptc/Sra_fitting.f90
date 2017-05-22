@@ -54,6 +54,8 @@ if(wi) then
   f%patch%time=0
   f%patch%a_t=0
   f%patch%b_t=0
+  f%patch%a_L=0
+  f%patch%b_L=0
  f=>f%next
  enddo
 endif
@@ -94,12 +96,14 @@ if(bm) then
 
  if(f%next%mag%kind==kind4) then
   f%patch%time=2
-  f%patch%B_T=closed_orbit(6)+f%patch%B_T
+  f%patch%B_L=closed_orbit(6)+f%patch%B_L
+  f%patch%B_T=closed_orbit(6)/F%beta0+f%patch%B_T
  ke=ke+1
  elseif(f%mag%kind==kind4) then
   if(associated(f,f2)) then
    f%next%patch%time=1
-   f%patch%A_T=closed_orbit(6)+f%patch%A_T
+   f%patch%A_L=closed_orbit(6)+f%patch%A_L
+   f%patch%A_T=closed_orbit(6)/F%beta0+f%patch%A_T
   kc=kc+1
   endif
  closed_orbit(6)=0.d0
@@ -111,16 +115,19 @@ if(abs(closed_orbit(6))>ee.or.f%next%mag%kind==kind4.or.f%mag%kind==kind4) then
 
  if(f%next%mag%kind==kind4) then
   f%next%patch%time=1
-  f%next%patch%A_T=closed_orbit(6)+f%next%patch%A_T
+  f%next%patch%A_L=closed_orbit(6)+f%next%patch%A_L
+  f%next%patch%A_T=closed_orbit(6)/F%beta0+f%next%patch%A_T
  kc=kc+1
  elseif(f%mag%kind==kind4) then
   f%patch%time=3
-  f%patch%B_T=closed_orbit(6)+f%patch%B_T
+  f%patch%B_L=closed_orbit(6)+f%patch%B_L
+  f%patch%B_T=closed_orbit(6)/F%beta0+f%patch%B_T
   ke=ke+1
  closed_orbit(6)=0.d0
  else
   f%patch%time=2
-  f%patch%B_T=closed_orbit(6)+f%patch%B_T
+  f%patch%B_L=closed_orbit(6)+f%patch%B_L
+  f%patch%B_T=closed_orbit(6)/F%beta0+f%patch%B_T
   ke=ke+1
   closed_orbit(6)=0.d0
  endif
@@ -135,11 +142,13 @@ enddo
 
 
 if(bm) then
-  f2%next%patch%A_T=closed_orbit(6)+f2%next%patch%A_T
+  f2%next%patch%A_L=closed_orbit(6)+f2%next%patch%A_L
+  f2%next%patch%A_T=closed_orbit(6)/F%beta0+f2%next%patch%A_T
 else
 f=> kekb%end
   f%patch%time=2
-  f%patch%B_T=closed_orbit(6)+f%patch%B_T
+  f%patch%B_L=closed_orbit(6)+f%patch%B_L
+  f%patch%B_T=closed_orbit(6)/F%beta0+f%patch%B_T
   ke=ke+1
 endif
  

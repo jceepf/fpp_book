@@ -607,9 +607,9 @@ CONTAINS
 
     IF(PATCHT/=0.AND.PATCHT/=2.AND.(K%TOTALPATH==0)) THEN
       if(K%time) then
-       X(6)=X(6)-C%PATCH%a_T/c%beta0
+       X(6)=X(6)-C%PATCH%a_T  !/c%beta0
       else
-       X(6)=X(6)-C%PATCH%a_T
+       X(6)=X(6)-C%PATCH%a_L 
       endif
     ENDIF
 
@@ -694,9 +694,9 @@ CONTAINS
 
     IF(PATCHT/=0.AND.PATCHT/=2.AND.(K%TOTALPATH==0)) THEN
       if(K%time) then
-       X(6)=X(6)-C%PATCH%a_T/c%beta0
+       X(6)=X(6)-C%PATCH%a_T    !/c%beta0
       else
-       X(6)=X(6)-C%PATCH%a_T
+       X(6)=X(6)-C%PATCH%a_L
       endif
     ENDIF
 
@@ -744,9 +744,9 @@ CONTAINS
 
     IF(PATCHT/=0.AND.PATCHT/=1.AND.(K%TOTALPATH==0)) THEN
       if(K%time) then
-       X(6)=X(6)-C%PATCH%b_T/c%beta0
+       X(6)=X(6)-C%PATCH%b_T   !/c%beta0
       else
-       X(6)=X(6)-C%PATCH%b_T
+       X(6)=X(6)-C%PATCH%b_L
       endif
     ENDIF
 
@@ -828,9 +828,9 @@ ENDIF
 
     IF(PATCHT/=0.AND.PATCHT/=1.AND.(K%TOTALPATH==0)) THEN
       if(K%time) then
-       X(6)=X(6)-C%PATCH%b_T/c%beta0
+       X(6)=X(6)-C%PATCH%b_T   !/c%beta0
       else
-       X(6)=X(6)-C%PATCH%b_T
+       X(6)=X(6)-C%PATCH%b_L
       endif
     ENDIF
 
@@ -2569,13 +2569,15 @@ pix1(3)=f%MAG%P%TILTD
 
 
 pix1=0.0_dp
+if(f%mag%p%exact) then
 if(f%dir==1) then
  pix1(2)=f%MAG%P%edge(1)
 else
  pix1(2)=f%MAG%P%edge(2)
 endif
- call GEO_ROT(exi0,pix1,1, exi0)
 
+ call GEO_ROT(exi0,pix1,1, exi0)
+endif
 
 
     IF(f%MAG%MIS) THEN
@@ -2800,12 +2802,14 @@ endif
 
 
 pix1=0.0_dp
+if(f%mag%p%exact) then
 if(f%dir==1) then
  pix1(2)=f%MAG%P%edge(2)
 else
  pix1(2)=f%MAG%P%edge(1)
 endif
  call GEO_ROT(exi0,pix1,1, exi0)
+endif
 
 if(f%mag%kind==kindpa) then
 
