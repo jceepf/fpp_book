@@ -3982,6 +3982,7 @@ endif
           x=((value/fac).cmono.jc)*(1.0_dp.cmono.(j))+x
        endif
     enddo
+
     getpb=x+getpb
 
 
