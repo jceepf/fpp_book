@@ -2224,6 +2224,15 @@ end subroutine c_get_indices
  
   END SUBROUTINE EQUAL
 
+!skowron to bypass strange gfortran error when using s2=s1     
+ SUBROUTINE  equal_c_tayls(S2,S1)
+    implicit none
+    type (c_taylor),INTENT(inOUT)::S2
+    type (c_taylor),INTENT(IN)::S1
+
+    call equal(s2,s1)
+
+  end SUBROUTINE  equal_c_tayls 
 
   SUBROUTINE  EQUALspinmatrix(S2,S1) ! spin routine
 !*
