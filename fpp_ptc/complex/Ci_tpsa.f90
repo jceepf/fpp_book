@@ -30,7 +30,7 @@ MODULE c_TPSA
   private GETintnd2t,equalc_cspinor_cspinor,c_AIMAG,c_real,equalc_ray_ray
   PRIVATE DEQUAL,REQUAL,varf,varf001,equalc_spinor_cspinor  !,CHARINT
   !  PUBLIC VAR,ASS
-  private pbbra,liebra,full_absT,c_asstaylor,getcharnd2s,GETintnd2s,GETintk
+  private pbbra,liebra,full_absT,c_asstaylor,getcharnd2s,GETintnd2s,GETintk,c_clean_taylorn
   private shiftda,shift000,cDEQUAL,pri,rea,cfu000,alloc_DA,alloc_c_spinmatrix,cpbbra
   private alloc_c_damap,c_DPEKMAP,c_DPOKMAP,kill_c_damap,kill_c_spinmatrix,c_etcct,c_spinmatrix_mul_cray
   private EQUALspinmatrix,c_trxtaylor,powmap,POWMAPs,alloc_c_vector_field,kill_c_vector_field
@@ -371,6 +371,7 @@ private EQUAL_probe_3_by_3,equalc_cspinor_spinor,EQUAL_3_by_3_c_spinmatrix
 !     MODULE PROCEDURE c_clean
      MODULE PROCEDURE c_clean_spinor
      MODULE PROCEDURE c_clean_taylor
+     MODULE PROCEDURE c_clean_taylorn
      MODULE PROCEDURE c_clean_spinmatrix
      MODULE PROCEDURE c_clean_damap
      MODULE PROCEDURE c_clean_vector_field
@@ -6566,6 +6567,20 @@ endif
   c_clean=v
 
  end function c_clean
+
+  SUBROUTINE  c_clean_taylorn(S1,S2,prec)
+    implicit none
+    type (c_taylor),INTENT(INOUT)::S2(:)
+    type (c_taylor), intent(INOUT):: s1(:)
+    real(dp) prec
+    integer i,m
+
+     m=min(size(s1),size(s2))
+     do i=1,m
+      call c_clean_taylor(s1(i),s2(i),prec)   
+     enddo
+    
+end   SUBROUTINE  c_clean_taylorn
 
   SUBROUTINE  c_clean_taylor(S1,S2,prec,r)
     implicit none
