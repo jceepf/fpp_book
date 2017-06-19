@@ -25,7 +25,7 @@ MODULE c_TPSA
   private unaryADD,add,daddsca,dscadd,addsc,scadd,iaddsc,iscadd 
   private unarySUB,subs,dsubsc,dscsub,subsc,scsub,isubsc,iscsub
   private c_allocda,c_killda,c_a_opt,K_opt,c_,c_allocdas,filter_part
-  private dexpt,dcost,dsint,dtant,DAPRINTTAYLORS
+  private dexpt,dcost,dsint,dtant,DAPRINTTAYLORS,c_clean_yu_w
   PRIVATE GETCHARnd2,GETintnd2,dputchar,dputint, filter,check_j,c_dputint0,c_dputint0r
   private GETintnd2t,equalc_cspinor_cspinor,c_AIMAG,c_real,equalc_ray_ray
   PRIVATE DEQUAL,REQUAL,varf,varf001,equalc_spinor_cspinor  !,CHARINT
@@ -375,6 +375,7 @@ private EQUAL_probe_3_by_3,equalc_cspinor_spinor,EQUAL_3_by_3_c_spinmatrix
      MODULE PROCEDURE c_clean_spinmatrix
      MODULE PROCEDURE c_clean_damap
      MODULE PROCEDURE c_clean_vector_field
+     MODULE PROCEDURE c_clean_yu_w
   end INTERFACE clean
   ! Exponential of Lie Operators
 
@@ -568,6 +569,7 @@ private EQUAL_probe_3_by_3,equalc_cspinor_spinor,EQUAL_3_by_3_c_spinmatrix
      MODULE PROCEDURE alloc_c_factored_lie
      MODULE PROCEDURE alloc_c_normal_form
      MODULE PROCEDURE alloc_c_spinor
+     MODULE PROCEDURE alloc_c_yu_w
   END INTERFACE
 
   INTERFACE ALLOC_nn
@@ -600,6 +602,7 @@ private EQUAL_probe_3_by_3,equalc_cspinor_spinor,EQUAL_3_by_3_c_spinmatrix
      MODULE PROCEDURE kill_c_vector_field_fourier
      MODULE PROCEDURE kill_c_normal_form
      MODULE PROCEDURE kill_c_spinor
+     MODULE PROCEDURE kill_c_yu_w
   END INTERFACE
 
   INTERFACE alloctpsa
@@ -1342,11 +1345,52 @@ end subroutine c_get_indices
     s1%e_ij=0.0_dp
   END SUBROUTINE alloc_c_damap
 
+
+
+  SUBROUTINE  alloc_c_yu_w(S1)
+!*
+    implicit none
+    type (c_yu_w),INTENT(INOUT) :: S1
+    INTEGER i,j
+
+     if(s1%n==0) then   
+       s1%n=(no-1)/2
+    endif
+    
+    allocate(s1%w(nd2t,0:s1%n))
+    
+    do i=1,nd2t
+    do j=0,s1%n
+     call alloc(s1%w(i,j))
+    enddo
+    enddo
+ 
+
+  END SUBROUTINE alloc_c_yu_w
+
+  SUBROUTINE  kill_c_yu_w(S1)
+!*
+    implicit none
+    type (c_yu_w),INTENT(INOUT) :: S1
+    INTEGER i,j
+    
+
+    
+    do i=1,nd2t
+    do j=0,s1%n
+     call kill(s1%w(i,j))
+    enddo
+    enddo
+    s1%n=0
+    deallocate(s1%w)
+
+  END SUBROUTINE kill_c_yu_w
+
   SUBROUTINE  alloc_c_vector_field(S1)
 !*
     implicit none
     type (c_vector_field),INTENT(INOUT) :: S1
-    INTEGER i,N
+    INTEGER i,n
 
 
     s1%eps   = eps_tpsalie
@@ -6581,6 +6625,21 @@ endif
      enddo
     
 end   SUBROUTINE  c_clean_taylorn
+
+  SUBROUTINE  c_clean_yu_w(S1,S2,prec)
+    implicit none
+    type (c_yu_w),INTENT(INOUT)::S2
+    type (c_yu_w), intent(INOUT):: s1
+    real(dp) prec
+    integer i,j
+
+     do i=1,size(s1%w,1)
+     do j=0,s1%n
+      call c_clean_taylor(s1%w(i,j),s2%w(i,j),prec)   
+     enddo
+     enddo
+    
+end   SUBROUTINE  c_clean_yu_w
 
   SUBROUTINE  c_clean_taylor(S1,S2,prec,r)
     implicit none
@@ -14554,6 +14613,109 @@ end subroutine nth_root
 
  end  subroutine alloc_node_array
 
+!!!!!!!!!!!!!!!!!!   Yu Li Hua  factorization   !!!!!!!!!!!!!!!!!! 
+
+subroutine get_c_yu_w(n,yu,a0,a1,a2,ugiven)
+implicit none
+type(c_normal_form), intent(inout) ::  n
+type(c_yu_w), intent(inout) :: yu
+type(c_damap),optional ::  ugiven,a0,a1,a2
+type(c_damap) u,b0,b1,bn,ui
+type(c_vector_field) f
+type(c_taylor) t,p
+integer i,j,k
+complex(dp), allocatable :: mu(:)
+integer, allocatable :: js(:) 
+
+!!! 
+
+allocate(mu(nd2t),js(nd2t))
 
 
+
+!nd2t # harmonic planes
+if(yu%n/=0) then
+ call kill(yu)
+endif
+call alloc(yu)
+
+ !   
+
+call alloc(u,b0,b1,bn,ui)
+call alloc(f);call alloc(t,p);
+
+if(present(ugiven) ) then
+ call c_canonise(n%a_t,u,a0=b0,a1=b1,a2=bn)
+ui=ci_phasor()*bn*c_phasor()
+u=ui**(-1)
+f=n%ker
+f=u*f
+ u=ugiven
+else
+ call c_canonise(n%a_t,u,a0=b0,a1=b1,a2=bn)
+ui=ci_phasor()*bn*c_phasor()
+u=ui**(-1)
+f=n%ker
+f=u*f
+endif
+
+
+
+
+do i=1,nd2t/2
+js=0
+js(2*i-1)=1
+ mu(2*i-1)=f%v(2*i-1).sub.js
+js=0
+js(2*i)=1
+ mu(2*i)=f%v(2*i).sub.js
+enddo
+
+
+js=0
+
+do i=1,size(yu%w,1)   ! should be nd2t # harmonic planes 
+  yu%w(i,0)=u%v(i)
+  t=yu%w(i,0)
+  p=1.d0
+ do j=1,yu%n
+   t=f*t
+   p=p*(1.d0+(1.d0.cmono.1))
+   yu%w(i,j)=t 
+  do k=0,j-1
+   js(1)=j-k
+  yu%w(i,j)=yu%w(i,j)-(p.sub.js)*mu(i)**(j-k)*yu%w(i,k)
+ enddo
+enddo
+enddo
+
+if(.not.present(ugiven)) then
+
+if(present(a0) ) a0=b0
+if(present(a1) ) a1=b1
+if(present(a2) ) a2=bn
+
+endif
+
+
+call kill(u,b0,b1,bn,ui)
+call kill(f);call kill(t,p);
+deallocate(mu,js)
+end subroutine get_c_yu_w
+
+subroutine transform_c_yu_w(yu,a)
+implicit none
+type(c_yu_w), intent(inout) :: yu
+type(c_damap) a 
+integer i,j
+
+do i=1,size(yu%w,1)
+ do j=0,yu%n
+  yu%w(i,j)=yu%w(i,j)*a
+ enddo
+enddo
+
+end subroutine transform_c_yu_w
+
+!!!!!!!!!!!!!!!!!!   End of Yu Li Hua  factorization   !!!!!!!!!!!!!!!!!! 
   END MODULE  c_tpsa
