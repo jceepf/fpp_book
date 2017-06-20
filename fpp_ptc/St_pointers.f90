@@ -749,6 +749,9 @@ endif
           IF(resplit_cutting==-2) WRITE(6,*) " CUTTING EVERYTHING USING LMAX EXCEPT DRIFTS"
           !       case('KIND7WITHMETHOD1')
           !          CALL PUT_method1_in_kind7(my_ering,1000)
+
+       case('RADIATIONBENDSPLIT','RADIATIONBEND')
+         read(mf,*) radiation_bend_split
        case('THINLENS=1')
           call THIN_LENS_restart(my_ering)
        case('MANUALTHINLENS')

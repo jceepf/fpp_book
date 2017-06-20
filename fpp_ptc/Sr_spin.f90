@@ -599,7 +599,9 @@ contains
        xpmap%v(6)=x(6)
        xpmap%v(2)=xp(1)
        xpmap%v(4)=xp(2)
+
        xpmap=xpmap**(-1)
+
        do i=1,6
           do j=1,6
              X1=(xpmap%v(i)).sub.'000010'   ! Still works if BMAD units are used because xpmax**(-1) is needed!!!
@@ -680,6 +682,7 @@ contains
 
     if(before.and.k%envelope) then
        denf=(1.0_dp+x(5))**5/SQRT((1.0_dp+X(5))**2-Xp(1)**2-Xp(2)**2)
+
        b30=b2
        b30=b30**1.5e0_dp
        b30=cflucf(el%p)*b30
