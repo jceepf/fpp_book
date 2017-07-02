@@ -14468,7 +14468,7 @@ ms=b2*ms*b1**(-1)
 m=b2*m*b1**(-1)
 
 
-
+deallocate(mat,matt,S,id)
 deallocate(je)
 call kill(mt,l,b1,b2); call kill(f);call kill(fs);
 call kill(mm);call kill(t,dt)

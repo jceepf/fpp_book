@@ -220,18 +220,18 @@ endif
     REAL(DP) XA,YA,DXA,DYA, DC_ac,A_ac,theta_ac,D_ac
     real(dp), allocatable :: an(:),bn(:) !,n_co(:)
     integer icnmin,icnmax,n_ac,inode !,n_coeff
-    logical :: log_estate=.true.,longprintt,onemap
+    logical :: longprintt,onemap
+!    logical :: log_estate=.true. 
     integer :: mftune=6,nc
     real(dp), allocatable :: tc(:)
     type(integration_node), pointer  :: t
 
      longprintt=longprint 
      longprint=.true.
-    if(log_estate) then
-       nullify(my_estate)
-!       nullify(my_old_state)
-       log_estate=.false.
-    endif
+!    if(log_estate) then
+!       nullify(my_estate)
+!       log_estate=.false.
+!    endif
 
     if(associated(my_estate)) then
 !      my_old_state=>my_estate
@@ -669,6 +669,10 @@ endif
           my_estate=my_estate+NOCAVITY0
        case('-NOCAVITY')
           my_estate=my_estate-NOCAVITY0
+       case('+ENVELOPE')
+          my_estate=my_estate+ENVELOPE0
+       case('-ENVELOPE')
+          my_estate=my_estate-ENVELOPE0
        case('+CAVITY')
           my_estate=my_estate-NOCAVITY0
        case('-CAVITY')
@@ -703,20 +707,12 @@ endif
           my_estate=my_estate-MODULATION0
        case('+SPIN')
           my_estate=my_estate+SPIN0
-       case('-SPIN')
-          my_estate=my_estate-SPIN0
-          !  case('+EXACTMIS')
-          !     my_estate=my_estate+EXACTMIS0
-          !  case('-EXACTMIS')
-          !     my_estate=my_estate-EXACTMIS0
 
-          !       case('DEFAULTTPSA')
-          !       read(mf,*) default_tpsa
-          !       if(default_tpsa) then
-          !        write(6,*) " Default TPSA is Chinese "
-          !       else
-          !        write(6,*) " Default TPSA is Germanic "
-          !       endif
+       case("PRINTSTATE")
+         READ(MF,*) K
+         CALL print(MY_ESTATE,K)
+       case("PRINTSTATEONSCREEN")
+         CALL print(MY_ESTATE,6)
 
        case('BERZ','GERMANIC','MARTIN')
           CALL change_package(2)
@@ -1333,6 +1329,88 @@ endif
       !    if(n_coeff>0) then
       !       deallocate(n_co)
       !    endif
+
+
+       case('MAPFORZHE')
+          READ(MF,*) i1,I2  ! position
+          READ(MF,*) MY_A_NO  ! ORDER OF THE MAP
+          READ(MF,*) filename
+          if(.not.associated(my_ering%t)) call make_node_layout(my_ering)
+          
+           p=>my_ering%start
+           f1=>p          
+           do ii=2,i1
+            p=>p%next
+             f1=>p
+           enddo
+
+           p=>my_ering%start
+           f2=>p 
+           do ii=2,i2
+             p=>p%next
+             f2=>p
+           enddo
+ 
+             x_ref=0.0_dp
+
+
+
+             call FIND_ORBIT_x(x_ref,my_estate,1.d-7,fibre1=f1)
+              call fill_tree_element_line_zhe(my_estate,f1,f2,MY_A_NO,x_ref,filename) 
+
+
+
+       case('MAKEMAPITOJ')
+          READ(MF,*) i1,I2,i3  ! position
+          READ(MF,*) MY_A_NO  ! ORDER OF THE MAP
+          READ(MF,*) fixp,fact,noca  !  SYMPLECTIC , factored
+    !      READ(MF,*) filename
+          if(.not.associated(my_ering%t)) call make_node_layout(my_ering)
+          
+           p=>my_ering%start
+           
+           p=>my_ering%start
+           f1=>p          
+           do ii=2,i1
+            p=>p%next
+             f1=>p
+           enddo
+
+           p=>my_ering%start
+           f2=>p 
+           do ii=2,i2
+             p=>p%next
+             f2=>p
+           enddo
+ 
+             x_ref=0.0_dp
+             call MOVE_TO_LAYOUT_I(m_u,my_fring,i3)
+
+             if(associated(my_ering,my_fring))then 
+                ft=>f1
+             else
+                ft=>my_fring%start       
+             endif
+             call FIND_ORBIT_x(x_ref,time0,1.d-7,fibre1=f1)
+  
+              call fill_tree_element_line(f1,f2,ft,MY_A_NO,x_ref,fact,nocav=noca)
+
+                    ft%mag%forward(3)%symptrack=FIXP
+                    ft%magP%forward(3)%symptrack=FIXP
+                    ft%mag%do1mapf=.true.
+                    ft%magp%do1mapf=.true.
+                    ft%mag%filef="one_turn_map.txt"
+             if(associated(ft,f1))then
+                p=>f1%next
+               do i1=1,my_ering%n
+                if(associated(f2,p)) exit
+                 p%mag%skip_ptc_f=.true.
+                 p%magp%skip_ptc_f=.true.
+                p=>p%next 
+               enddo
+                
+             endif 
+
        case('MAKEONETURNMAP','TRACKWITHONETURNMAP')
           READ(MF,*) i1,i3  ! position
           READ(MF,*) I2  ! ORDER OF THE MAP
@@ -1341,12 +1419,13 @@ endif
           if(.not.associated(my_ering%t)) call make_node_layout(my_ering)
           
            p=>my_ering%start
-           
-           do ii=1,i1
-             f1=>p
+           f1=>p          
+           do ii=2,i1
             p=>p%next
+             f1=>p
            enddo
-    
+
+
              f2=>f1
              x_ref=0.0_dp
              call MOVE_TO_LAYOUT_I(m_u,my_fring,i3)
@@ -1838,8 +1917,6 @@ endif
           READ(MF,*) NO,EMIT0
           READ(MF,*) FILENAME
           CALL lattice_PRINT_RES_FROM_A(my_ering,my_estate,NO,EMIT0,MRES,FILENAME)
-       case('PRINTSTATE')
-          CALL PRINT(my_estate,6)
        case('PRINTTWICE')
           print77=.false.
           read77=.false.
