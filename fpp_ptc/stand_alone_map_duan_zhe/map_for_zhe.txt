@@ -1,0 +1,8 @@
+select layout
+1
+print state on screen
+MAP FOR ZHE
+1 67
+7
+map_rad7.txt
+return
