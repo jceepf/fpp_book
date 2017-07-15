@@ -143,6 +143,7 @@ module S_status
   integer :: ind_spin(3,3),k1_spin(9),k2_spin(9)
   real(dp),TARGET ::INITIAL_CHARGE=1
   logical :: mcmillan=.false.
+  real(dp) :: radfac=1   ! to fudge radiation (lower it)
   TYPE B_CYL
      integer firsttime
      integer, POINTER ::  nmul,n_mono   !,nmul_e,n_mono_e
@@ -248,7 +249,7 @@ CONTAINS
   real(dp) function cradf(p)
     implicit none
     type (MAGNET_CHART), pointer:: P
-    cradf=crad*p%p0c**3
+    cradf=radfac*crad*p%p0c**3
   end function cradf
 
   real(dp) function cflucf(p)
@@ -10181,7 +10182,8 @@ endif
        mat=ma**(-1)
        t(1)%e_ij=matmul(matmul(mat,ma%e_ij),transpose(mat))
  
-    deallocate(M)
+     call kill(m); call kill(mg);
+    deallocate(M);    deallocate(Mg);
 
   END SUBROUTINE SET_TREE_G_complex
 
