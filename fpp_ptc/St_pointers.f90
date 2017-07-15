@@ -1780,12 +1780,19 @@ endif
           read(mf,*) targ_tune
           if(targ_tune(1)<=0.0_dp) targ_tune=tune(1:2)
           call lattice_fit_TUNE_gmap(my_ering,my_estate,epsf,pol_,NPOL,targ_tune,NP)
+
+       case('FITTUNERAD')
+          read(mf,*) epsf
+          read(mf,*) targ_tune
+          if(targ_tune(1)<=0.0_dp) targ_tune=tune(1:2)
+          call lattice_fit_TUNE_gmap_rad(my_ering,my_estate,epsf,pol_,NPOL,targ_tune,NP)
+
        case('DELTAFITTUNE')
           read(mf,*) epsf
           read(mf,*) targ_tune
           tempstate=my_estate+nocavity0
           call lattice_GET_tune(my_ering,tempstate,mftune,tune)
-          targ_tune(1:2)=targ_tune(1:2)+tune(1:2)
+          targ_tune(1:2)=targ_tune(1:2)+tune(1:2) 
           call lattice_fit_TUNE_gmap(my_ering,my_estate,epsf,pol_,NPOL,targ_tune,NP)
        case('FITTUNEAUTO')
           read(mf,*) epsf

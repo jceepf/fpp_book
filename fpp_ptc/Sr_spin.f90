@@ -6609,7 +6609,8 @@ end subroutine fill_tree_element_line_zhe
        mat=ma**(-1)
        t(1)%e_ij=matmul(matmul(mat,ma%e_ij),transpose(mat))
  
-    deallocate(M)
+    call kill(m); call kill(mg);
+    deallocate(M);    deallocate(Mg);
     call kill(L_ns , N_pure_ns , N_s , L_s)
 
   END SUBROUTINE SET_TREE_G_complex_zhe

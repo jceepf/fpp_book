@@ -16,7 +16,7 @@ module ptc_multiparticle
   private MAKE_NODE_LAYOUT_2 !,DRIFT_TO_TIME
   PRIVATE MODULATE_R,MODULATE_P
   PRIVATE TRACK_MODULATION_R,TRACK_MODULATION_P
- LOGICAL :: no_mis=.TRUE.
+ LOGICAL :: no_mis=.TRUE. 
   !  LOGICAL :: OLD_MOD=.TRUE.
 
   logical(lp),private, parameter :: dobb=.true.
@@ -958,6 +958,7 @@ endif
     !    TYPE(INTERNAL_STATE), INTENT(IN) :: K
     type(element),pointer :: el
     LOGICAL TA
+    type(work) w,we
     IF(.NOT.CHECK_STABLE) return
     !       CALL RESET_APERTURE_FLAG
     !    endif
@@ -987,6 +988,7 @@ endif
 
     SELECT CASE(T%CAS)
     CASE(CASEP1)
+
        CALL TRACK_FIBRE_FRONT(T%PARENT_FIBRE,X,K)
      if(associated(T%PARENT_FIBRE%MAG%p%aperture)) then
 TA=T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==-1.OR.T%PARENT_FIBRE%MAG%p%dir*T%PARENT_FIBRE%MAG%p%aperture%pos==0
