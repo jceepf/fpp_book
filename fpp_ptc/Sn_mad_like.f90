@@ -2649,6 +2649,7 @@ CONTAINS
     type(element),pointer :: s2
     type(elementp), pointer :: s2p
     type(fibre), pointer::el
+
     !    integer ntot,ntot_rad,ntot_REV,ntot_rad_REV
 
     nullify(el);

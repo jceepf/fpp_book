@@ -1800,10 +1800,6 @@ endif
           read(mf,*) namet(1), namet(2)
           if(targ_tune(1)<=0.0_dp) targ_tune=tune(1:2)
           call lattice_fit_TUNE_gmap_auto(my_ering,my_estate,EPSF,targ_tune,namet)
-       case('FITTUNECOUPLING')
-          read(mf,*) epsf
-          read(mf,*) targ_tune
-          call lattice_linear_res_gmap(my_ering,my_estate,epsf,pol_,NPOL,targ_tune,NP)
        case('SCANTUNE')
           STRAIGHT=.FALSE.
           read(mf,*) epsf

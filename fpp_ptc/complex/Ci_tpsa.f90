@@ -14718,4 +14718,35 @@ enddo
 end subroutine transform_c_yu_w
 
 !!!!!!!!!!!!!!!!!!   End of Yu Li Hua  factorization   !!!!!!!!!!!!!!!!!! 
+subroutine c_fast_canonise(u,u_c,phase,damping)
+implicit none
+type(c_damap), intent(inout) ::  u,u_c
+real(dp), optional, intent(inout) :: phase(:),damping(:)
+real(dp) b(6,6),ri(6,6),c,s,ang,damp
+ 
+integer i
+b=0
+ri=0
+
+b=u
+
+do i=1,c_%nd
+ ang=atan2(-b(2*i-1,2*i),b(2*i-1,2*i-1))
+ c=cos(ang); s=sin(ang);
+ damp=sqrt(b(2*i-1,2*i-1)*b(2*i,2*i)-b(2*i-1,2*i)*b(2*i,2*i-1))
+ ri(2*i-1,2*i-1)=c/damp
+ ri(2*i,2*i)=c/damp
+ ri(2*i-1,2*i)=s/damp
+ ri(2*i,2*i-1)=-s/damp
+
+ if(present(phase)) then
+  phase(i)=phase(i)-ang/twopi
+  damping(i)=damping(i)+log(damp)
+ endif
+ enddo
+
+ u_c=matmul(b,ri)
+
+end subroutine c_fast_canonise
+
   END MODULE  c_tpsa

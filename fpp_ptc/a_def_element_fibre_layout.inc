@@ -184,7 +184,7 @@ TYPE ELEMENT
    real(dp),   DIMENSION(:), POINTER:: AN => null(),BN => null()         !Multipole component
    real(dp),   POINTER:: FINT => null(),HGAP => null()         !FRINGE FUDGE FOR MAD
    real(dp),   POINTER:: H1 => null(),H2 => null()         !FRINGE FUDGE FOR MAD
-   real(dp),   POINTER:: VA => null(),VS => null()         !valishev-like multipole
+   real(dp),   POINTER:: VA => null(),VS => null()         ! use in quad fringe from sad
    !
    real(dp), POINTER :: VOLT => null(), FREQ => null(),PHAS => null(),DELTA_E => null(),LAG => null()       ! Cavity information
    real(dp), POINTER :: DC_ac => null(),A_ac => null(),theta_ac => null(),D_AC => null()      ! slow RF: amplitude and phase
@@ -231,6 +231,7 @@ TYPE ELEMENT
    logical, pointer :: usef=> null(),useb=> null()
    logical, pointer :: skip_ptc_f=> null(),skip_ptc_b=> null()
    logical, pointer :: do1mapf=> null(),do1mapb=> null()
+   real(dp), pointer :: ene   ! for tapering
 END TYPE  ELEMENT
 
 

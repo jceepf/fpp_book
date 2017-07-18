@@ -408,9 +408,7 @@ CONTAINS
        !       if(s2%kind==kinduser2) call scale_user2(s2%u2,S2%P%P0C,S1%P0C,S1%power)
        if(s2%kind==KINDwiggler) call scale_sagan(s2%wi,S2%P%P0C,S1%P0C,S1%power)
 
-    endif
-
-    if(S1%power/=-1) then       ! just rescaling  -1=ramping
+    else   ! ramping
        !       S2%P%BETA0=S1%BETA0
        !       S2%P%GAMMA0I=S1%GAMMA0I
        !       S2%P%GAMBET=S1%GAMBET
@@ -437,10 +435,9 @@ CONTAINS
        !       if(s2%kind==kinduser1) call scale_user1(s2%u1,S2%P%P0C,S1%P0C,S1%power)
        !       if(s2%kind==kinduser2) call scale_user2(s2%u2,S2%P%P0C,S1%P0C,S1%power)
        if(s2%kind==KINDwiggler) call scale_sagan(s2%wi,S2%P%P0C,S1%P0C,S1%power)
-    endif
+    else  ! ramping
 
 
-    if(S1%power/=-1) then       ! just rescaling  -1=ramping
        !       S2%P%BETA0=S1%BETA0
        !       S2%P%GAMMA0I=S1%GAMMA0I
        !       S2%P%GAMBET=S1%GAMBET
@@ -2477,7 +2474,7 @@ nullify(EL%filef,el%fileb);
     nullify(EL%AN);nullify(EL%BN);
     nullify(EL%FINT);nullify(EL%HGAP);
     nullify(EL%H1);nullify(EL%H2);
-    nullify(EL%VA);nullify(EL%VS);
+    nullify(EL%VA);nullify(EL%VS);nullify(EL%ene);
     nullify(EL%VOLT);nullify(EL%FREQ);nullify(EL%PHAS);nullify(EL%DELTA_E);
     nullify(EL%lag);
     nullify(EL%B_SOL);
@@ -2602,6 +2599,7 @@ nullify(EL%filef,el%fileb);
        IF(ASSOCIATED(EL%H2)) DEALLOCATE(EL%H2)
        IF(ASSOCIATED(EL%VA)) DEALLOCATE(EL%VA)
        IF(ASSOCIATED(EL%VS)) DEALLOCATE(EL%VS)
+              IF(ASSOCIATED(EL%ene)) DEALLOCATE(EL%ene)
        IF(ASSOCIATED(EL%VOLT)) DEALLOCATE(EL%VOLT)
        IF(ASSOCIATED(EL%lag)) DEALLOCATE(EL%lag)
        IF(ASSOCIATED(EL%FREQ)) DEALLOCATE(EL%FREQ)
@@ -2788,6 +2786,7 @@ nullify(EL%filef,el%fileb);
        ALLOCATE(EL%H2);EL%H2=0.0_dp;
        ALLOCATE(EL%VA);EL%VA=0.0_dp;
        ALLOCATE(EL%VS);EL%VS=0.0_dp;
+              ALLOCATE(EL%ene);EL%ene=0.0_dp;
        !       ALLOCATE(EL%theta_ac); EL%theta_ac= zero ;
        !       ALLOCATE(EL%a_ac);  EL%a_ac = zero;
        !       ALLOCATE(EL%DC_ac); EL%DC_ac= zero ;
@@ -3877,6 +3876,7 @@ nullify(EL%filef,el%fileb);
     ELP%H2=EL%H2
     ELP%VA=EL%VA
     ELP%VS=EL%VS
+        ELP%ene=EL%ene
     ELP%slow_ac=EL%slow_ac
         ELp%filef=EL%filef
         elp%fileb=EL%fileb
