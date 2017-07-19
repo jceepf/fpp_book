@@ -1075,8 +1075,8 @@ CONTAINS
 
        ALLOCATE(EL%SDR%D(3));EL%SDR%D=0.0_dp;
        ALLOCATE(EL%SDR%ANG(3));EL%SDR%ANG=0.0_dp;
-       ALLOCATE(EL%SDR%a_x1);EL%SDR%a_x1=0.0_dp;
-       ALLOCATE(EL%SDR%a_x2);EL%SDR%a_x2=0.0_dp;
+       ALLOCATE(EL%SDR%a_x1);EL%SDR%a_x1=1.0_dp;
+       ALLOCATE(EL%SDR%a_x2);EL%SDR%a_x2=1.0_dp;
 
     CASE(kind4)
        if(.not.ASSOCIATED(EL%C4)) THEN
@@ -1537,8 +1537,8 @@ CONTAINS
        EL%SDR%P=>EL%P
        EL%SDR%L=>EL%L
  
-       ALLOCATE(EL%SDR%a_x1);EL%SDR%a_x1=0.0_dp;
-       ALLOCATE(EL%SDR%a_x2);EL%SDR%a_x2=0.0_dp;
+       ALLOCATE(EL%SDR%a_x1);EL%SDR%a_x1=1.0_dp;
+       ALLOCATE(EL%SDR%a_x2);EL%SDR%a_x2=1.0_dp;
        ALLOCATE(EL%SDR%D(3));EL%SDR%D=0.0_dp;
        ALLOCATE(EL%SDR%ANG(3));EL%SDR%ANG=0.0_dp;
 

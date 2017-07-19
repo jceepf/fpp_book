@@ -822,32 +822,32 @@ MODULE S_DEF_KIND
 
 contains
 
-  SUBROUTINE PATCH_driftR(C,X,k,PATCH,dir)
+  SUBROUTINE PATCH_driftR(C,X,k,exact,dir)
     implicit none
     ! MISALIGNS REAL FIBRES IN PTC ORDER FOR FORWARD AND BACKWARD FIBRES
     TYPE(superdrift),INTENT(INOUT):: C
     real(dp), INTENT(INOUT):: X(6)
     integer,intent(in) :: dir
-    logical(lp),INTENT(IN):: PATCH
+    logical(lp),INTENT(IN):: exact
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
 
      if(dir==1) then
        X(3)=C%A_X1*X(3);X(4)=C%A_X1*X(4);
-       CALL ROT_YZ(C%ANG(1),X,C%P%BETA0,PATCH,k%TIME)
-       CALL ROT_XZ(C%ANG(2),X,C%P%BETA0,PATCH,k%TIME)
+       CALL ROT_YZ(C%ANG(1),X,C%P%BETA0,exact,k%TIME)
+       CALL ROT_XZ(C%ANG(2),X,C%P%BETA0,exact,k%TIME)
        CALL ROT_XY(C%ANG(3),X)  !,PATCH)
-       CALL TRANS(C%D,X,C%P%BETA0,PATCH,k%TIME)
+       CALL TRANS(C%D,X,C%P%BETA0,exact,k%TIME)
        X(3)=C%A_X2*X(3);X(4)=C%A_X2*X(4);
      else
              X(3)=C%A_X2*X(3);X(4)=C%A_X2*X(4);
              C%D(1)=-C%D(1)
              C%D(2)=-C%D(2)
              C%ANG(3)=-C%ANG(3)
-             CALL TRANS(C%D,X,C%P%BETA0,PATCH,k%TIME)
+             CALL TRANS(C%D,X,C%P%BETA0,exact,k%TIME)
              CALL ROT_XY(C%ANG(3),X)  !,OU)
-             CALL ROT_XZ(C%ANG(2),X,C%P%BETA0,PATCH,k%TIME)
-             CALL ROT_YZ(C%ANG(1),X,C%P%BETA0,PATCH,k%TIME)   ! ROTATIONS
+             CALL ROT_XZ(C%ANG(2),X,C%P%BETA0,exact,k%TIME)
+             CALL ROT_YZ(C%ANG(1),X,C%P%BETA0,exact,k%TIME)   ! ROTATIONS
              C%D(1)=-C%D(1)
              C%D(2)=-C%D(2)
              C%ANG(3)=-C%ANG(3)
@@ -857,30 +857,30 @@ contains
   END SUBROUTINE PATCH_driftR
 
 
-  SUBROUTINE PATCH_driftp(C,X,k,PATCH,dir)
+  SUBROUTINE PATCH_driftp(C,X,k,exact,dir)
     implicit none
     TYPE(superdriftp),INTENT(INOUT):: C
     TYPE(REAL_8), INTENT(INOUT):: X(6)
     integer,intent(in) :: dir
-    logical(lp),INTENT(IN):: PATCH
+    logical(lp),INTENT(IN):: exact
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
      if(dir==1) then
        X(3)=C%A_X1*X(3);X(4)=C%A_X1*X(4);
-       CALL ROT_YZ(C%ANG(1),X,C%P%BETA0,PATCH,k%TIME)
-       CALL ROT_XZ(C%ANG(2),X,C%P%BETA0,PATCH,k%TIME)
+       CALL ROT_YZ(C%ANG(1),X,C%P%BETA0,exact,k%TIME)
+       CALL ROT_XZ(C%ANG(2),X,C%P%BETA0,exact,k%TIME)
        CALL ROT_XY(C%ANG(3),X)  !,PATCH)
-       CALL TRANS(C%D,X,C%P%BETA0,PATCH,k%TIME)
+       CALL TRANS(C%D,X,C%P%BETA0,exact,k%TIME)
        X(3)=C%A_X2*X(3);X(4)=C%A_X2*X(4);
      else
              X(3)=C%A_X2*X(3);X(4)=C%A_X2*X(4);
              C%D(1)=-C%D(1)
              C%D(2)=-C%D(2)
              C%ANG(3)=-C%ANG(3)
-             CALL TRANS(C%D,X,C%P%BETA0,PATCH,k%TIME)
+             CALL TRANS(C%D,X,C%P%BETA0,exact,k%TIME)
              CALL ROT_XY(C%ANG(3),X)  !,OU)
-             CALL ROT_XZ(C%ANG(2),X,C%P%BETA0,PATCH,k%TIME)
-             CALL ROT_YZ(C%ANG(1),X,C%P%BETA0,PATCH,k%TIME)   ! ROTATIONS
+             CALL ROT_XZ(C%ANG(2),X,C%P%BETA0,exact,k%TIME)
+             CALL ROT_YZ(C%ANG(1),X,C%P%BETA0,exact,k%TIME)   ! ROTATIONS
              C%D(1)=-C%D(1)
              C%D(2)=-C%D(2)
              C%ANG(3)=-C%ANG(3)
