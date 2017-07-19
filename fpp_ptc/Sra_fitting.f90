@@ -4514,7 +4514,7 @@ enddo
 
 write(6,*) "tapering apparently succesful "
 
-if(present(file)) then
+if(present(file).and.file(1:6)/="nofile") then
 write(6,*) " printing tapered closed orbit on file ", file(1:len_trim(file))
 call kanalnummer(mf,file)
 

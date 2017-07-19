@@ -14722,7 +14722,7 @@ subroutine c_fast_canonise(u,u_c,phase,damping)
 implicit none
 type(c_damap), intent(inout) ::  u,u_c
 real(dp), optional, intent(inout) :: phase(:),damping(:)
-real(dp) b(6,6),ri(6,6),c,s,ang,damp
+real(dp) b(6,6),ri(6,6),ang,damp,t,cphi,sphi
  
 integer i
 b=0
@@ -14730,23 +14730,105 @@ ri=0
 
 b=u
 
-do i=1,c_%nd
- ang=atan2(-b(2*i-1,2*i),b(2*i-1,2*i-1))
- c=cos(ang); s=sin(ang);
- damp=sqrt(b(2*i-1,2*i-1)*b(2*i,2*i)-b(2*i-1,2*i)*b(2*i,2*i-1))
- ri(2*i-1,2*i-1)=c/damp
- ri(2*i,2*i)=c/damp
- ri(2*i-1,2*i)=s/damp
- ri(2*i,2*i-1)=-s/damp
+!damp=FindDet(b(1:nd2,1:nd2), nd2)**(1.0_dp/nd2)
+!write(6,*) damp
+
+ 
+      do i=1,nd2/2
+      if((i<=ndt).or.(i>nd-rf)) then
+     damp=sqrt(b(2*i-1,2*i-1)*b(2*i,2*i)-b(2*i-1,2*i)*b(2*i,2*i-1))
+       if(courant_snyder_teng_edwards) then
+        t=sqrt(b(2*i-1,2*i-1)**2+b(2*i-1,2*i)**2)
+        cphi=b(2*i-1,2*i-1)/t
+        sphi=b(2*i-1,2*i)/t
+       else
+        t=sqrt(b(2*i,2*i-1)**2+b(2*i,2*i)**2)
+        cphi=b(2*i,2*i)/t
+        sphi=-b(2*i,2*i-1)/t
+       endif
+       ri(2*i-1,2*i-1)=cphi/damp
+       ri(2*i,2*i)=cphi/damp
+       ri(2*i-1,2*i)=-sphi/damp
+       ri(2*i,2*i-1)=sphi/damp
+  
+    endif
+ 
+
+!!! Corrects the time variable with the d/dp_t term
+ !      if(ndpt/=0) then         
+ !       t= cphi + i_*sphi
+ !        t=-i_*log(t)
+ !        t=-(t.d.ndpt)/(2.0_dp,0.0_dp)
+ !        phi1%v(ndptb)=phi1%v(ndptb)+(-1)**(ndptb)*t*((1.0_dp.cmono.(2*i-1))**2+(1.0_dp.cmono.(2*i))**2)
+ !      endif
 
  if(present(phase)) then
+     ang=-atan2(sphi,cphi)
   phase(i)=phase(i)-ang/twopi
-  damping(i)=damping(i)+log(damp)
  endif
- enddo
+  if(present(damping)) then
+  damping(i)=damping(i)-log(damp)
+ endif
+      enddo
+
+
 
  u_c=matmul(b,ri)
 
 end subroutine c_fast_canonise
+
+!Function to find the determinant of a square matrix
+!Author : Louisda16th a.k.a Ashwith J. Rego
+!Description: The subroutine is based on two key points:
+!1] A determinant is unaltered when row operations are performed: Hence, using this principle,
+!row operations (column operations would work as well) are used
+!to convert the matrix into upper traingular form
+!2]The determinant of a triangular matrix is obtained by finding the product of the diagonal elements
+!
+REAL(dp) FUNCTION FindDet(mat, n)
+    IMPLICIT NONE
+    REAL(dp), DIMENSION(n,n) :: matrix,mat
+    INTEGER, INTENT(IN) :: n
+    REAL(dp) :: m, temp
+    INTEGER :: i, j, k, l
+    LOGICAL :: DetExists = .TRUE.
+    matrix=mat
+    l = 1
+    !Convert to upper triangular form
+    DO k = 1, n-1
+        IF (matrix(k,k) == 0) THEN
+            DetExists = .FALSE.
+            DO i = k+1, n
+                IF (matrix(i,k) /= 0) THEN
+                    DO j = 1, n
+                        temp = matrix(i,j)
+                        matrix(i,j)= matrix(k,j)
+                        matrix(k,j) = temp
+                    END DO
+                    DetExists = .TRUE.
+                    l=-l
+                    EXIT
+                ENDIF
+            END DO
+            IF (DetExists .EQV. .FALSE.) THEN
+                FindDet = 0
+                return
+            END IF
+        ENDIF
+        DO j = k+1, n
+            m = matrix(j,k)/matrix(k,k)
+            DO i = k+1, n
+                matrix(j,i) = matrix(j,i) - m*matrix(k,i)
+            END DO
+        END DO
+    END DO
+    
+    !Calculate determinant by finding product of diagonal elements
+    FindDet = l
+    DO i = 1, n
+        FindDet = FindDet * matrix(i,i)
+    END DO
+    
+END FUNCTION FindDet
 
   END MODULE  c_tpsa
