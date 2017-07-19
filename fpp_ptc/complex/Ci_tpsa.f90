@@ -14722,21 +14722,33 @@ subroutine c_fast_canonise(u,u_c,phase,damping)
 implicit none
 type(c_damap), intent(inout) ::  u,u_c
 real(dp), optional, intent(inout) :: phase(:),damping(:)
-real(dp) b(6,6),ri(6,6),ang,damp,t,cphi,sphi
+real(dp) b(6,6),ri(6,6),ang,damp(3),t,cphi,sphi,s(6,6)
  
 integer i
+
+s=0
+do i=1,nd
+s(2*i-1,2*i)=1 
+s(2*i,2*i-1)=-1 
+enddo
+
 b=0
 ri=0
-
 b=u
 
-!damp=FindDet(b(1:nd2,1:nd2), nd2)**(1.0_dp/nd2)
+s=matmul(matmul(b,s),transpose(b))
+
+do i=1,nd
+    damp(i)=sqrt(abs(s(2*i-1,2*i)))
+enddo
+
+!det=FindDet(b(1:nd2,1:nd2), nd2)**(1.0_dp/nd2)
 !write(6,*) damp
 
  
       do i=1,nd2/2
       if((i<=ndt).or.(i>nd-rf)) then
-     damp=sqrt(b(2*i-1,2*i-1)*b(2*i,2*i)-b(2*i-1,2*i)*b(2*i,2*i-1))
+ !    damp(i)=sqrt(b(2*i-1,2*i-1)*b(2*i,2*i)-b(2*i-1,2*i)*b(2*i,2*i-1))
        if(courant_snyder_teng_edwards) then
         t=sqrt(b(2*i-1,2*i-1)**2+b(2*i-1,2*i)**2)
         cphi=b(2*i-1,2*i-1)/t
@@ -14746,10 +14758,10 @@ b=u
         cphi=b(2*i,2*i)/t
         sphi=-b(2*i,2*i-1)/t
        endif
-       ri(2*i-1,2*i-1)=cphi/damp
-       ri(2*i,2*i)=cphi/damp
-       ri(2*i-1,2*i)=-sphi/damp
-       ri(2*i,2*i-1)=sphi/damp
+       ri(2*i-1,2*i-1)=cphi /damp(i)
+       ri(2*i,2*i)=cphi/damp(i)
+       ri(2*i-1,2*i)=-sphi /damp(i)
+       ri(2*i,2*i-1)=sphi /damp(i)
   
     endif
  
@@ -14767,7 +14779,7 @@ b=u
   phase(i)=phase(i)-ang/twopi
  endif
   if(present(damping)) then
-  damping(i)=damping(i)-log(damp)
+  damping(i)=damping(i)-log(damp(i))
  endif
       enddo
 
