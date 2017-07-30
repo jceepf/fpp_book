@@ -1554,7 +1554,7 @@ CONTAINS
     ENDIF
 
     IF(DISCRETE) THEN
-        write(6,*) " NO GEOMETRIC PATCHING POSSIBLE : MORE THAN 90 DEGREES BETWEEN FACES "
+       if(.not.present(patching))  write(6,*) " NO GEOMETRIC PATCHING POSSIBLE : MORE THAN 90 DEGREES BETWEEN FACES "
     ENDIF
 
     if(present(patching)) patching=.not.discrete

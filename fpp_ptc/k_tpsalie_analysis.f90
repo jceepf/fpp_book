@@ -1148,11 +1148,14 @@ contains
 
   SUBROUTINE  DAPRINTonelie(S1,MFILE,PREC)
     implicit none
-    INTEGER,INTENT(IN)::MFILE
+    INTEGER,OPTIONAL,INTENT(IN)::MFILE
     type (ONELIEEXPONENT),INTENT(IN)::S1
     REAL(DP),OPTIONAL,INTENT(INOUT)::PREC
+    integer mfi
+     mfi=6
+     if(present(mfile)) mfi=mfile
 
-    write(mfile,*) s1%eps, " Convergence Test Number"
+    write(mfi,*) s1%eps, " Convergence Test Number"
     !do i=1,nd2
     !write(mfile,*) s1%constant(i)
     !enddo
@@ -1180,9 +1183,11 @@ contains
 
   SUBROUTINE  DAPRINTvecres(S1,MFILE,PREC)
     implicit none
-    INTEGER,INTENT(IN)::MFILE
+    INTEGER,OPTIONAL,INTENT(IN)::MFILE
     type (vecresonance),INTENT(IN)::S1
     REAL(DP),OPTIONAL,INTENT(INOUT)::PREC
+
+
     CALL DAPRINT(s1%cos,MFILE,PREC)
     CALL DAPRINT(s1%sin,MFILE,PREC)
 
@@ -1199,12 +1204,15 @@ contains
 
   SUBROUTINE  DAPRINTdf(S1,MFILE,PREC)
     implicit none
-    INTEGER,INTENT(IN)::MFILE
+    INTEGER,OPTIONAL,INTENT(IN)::MFILE
     type (dragtfinn),INTENT(IN)::S1
     REAL(DP),OPTIONAL,INTENT(INOUT)::PREC
-    integer i
+    integer i,mfi   
+     mfi=6
+     if(present(mfile)) mfi=mfile
+
     do i=1,nd2
-       write(mfile,*) s1%constant(i)
+       write(mfi,*) s1%constant(i)
     enddo
     CALL DAPRINT(s1%linear,MFILE,PREC)
     CALL DAPRINT(s1%nonlinear,MFILE,PREC)
@@ -1226,12 +1234,14 @@ contains
 
   SUBROUTINE  DAPRINTrevdf(S1,MFILE,PREC)
     implicit none
-    INTEGER,INTENT(IN)::MFILE
+    INTEGER,OPTIONAL,INTENT(IN)::MFILE
     type (reversedragtfinn),INTENT(inout)::S1
     REAL(DP),OPTIONAL,INTENT(INOUT)::PREC
-    integer i
+    integer i,mfi
+     mfi=6
+     if(present(mfile)) mfi=mfile
     do i=1,nd2
-       write(mfile,*) s1%constant(i)
+       write(mfi,*) s1%constant(i)
     enddo
     CALL DAPRINT(s1%linear,MFILE,PREC)
     CALL DAPRINT(s1%nonlinear,MFILE,PREC)
@@ -1253,7 +1263,7 @@ contains
 
   SUBROUTINE  DAPRINTpbres(S1,MFILE,PREC)
     implicit none
-    INTEGER,INTENT(IN)::MFILE
+    INTEGER,OPTIONAL,INTENT(IN)::MFILE
     type (pbresonance),INTENT(IN)::S1
     REAL(DP),OPTIONAL,INTENT(INOUT)::PREC
     CALL DAPRINT(s1%cos,MFILE,PREC)

@@ -3263,7 +3263,7 @@ endif
 
   SUBROUTINE  print_for_bmad_parse(S1,MFILE,prec,ind)
     implicit none
-    INTEGER,INTENT(IN)::MFILE
+        INTEGER,OPTIONAL,INTENT(IN)::MFILE
     REAL(DP),OPTIONAL,INTENT(IN)::prec
     integer ,OPTIONAL,INTENT(IN)::ind
     type (TAYLOR),INTENT(IN)::S1
@@ -3276,15 +3276,16 @@ endif
 
   SUBROUTINE  pri(S1,MFILE,prec,ind)
     implicit none
-    INTEGER,INTENT(IN)::MFILE
+        INTEGER,OPTIONAL,INTENT(IN)::MFILE
     REAL(DP),OPTIONAL,INTENT(IN)::prec
     integer ,OPTIONAL,INTENT(IN)::ind
     type (TAYLOR),INTENT(IN)::S1
     REAL(DP) PREC1,depst,value
-    integer i,j,it,n,indo,k,kt,kl
+    integer i,j,it,n,indo,k,kt,kl,mfi
     integer, allocatable :: jc(:)
     character(255) line,line0
-
+    mfi=6
+    if(present(mfile)) mfi=mfile
     IF(PRESENT(prec)) THEN
        PREC1=-1.0_dp
        depst=prec
@@ -3354,7 +3355,7 @@ endif
          do j=1,len_trim(line0)
           if(line0(j:j)=='&') line0(j:j)=' '
          enddo
-        write(mfile,*) line0(1:len_trim(line0))
+        write(mfi,*) line0(1:len_trim(line0))
        endif
 
     enddo
@@ -3369,9 +3370,9 @@ endif
 
     ! if(old) then
     if(print77) then
-       CALL DAPRI77(s1%i,MFILE)
+       CALL DAPRI77(s1%i,mfi)
     else
-       CALL DAPRI(s1%i,MFILE)
+       CALL DAPRI(s1%i,mfi)
     endif
 
     !

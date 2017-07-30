@@ -45,7 +45,7 @@ module polymorphic_taylor
   private dcosht,dsinht,dtanht,SINX_XT,SINHX_XT,polymorpht
   ! PRIVATE EQUAL1D,EQUAL2D
   ! end complex stuff
-  private printpoly,printdouble,printsingle,dmulmapconcat
+  private printpoly,printdouble,printsingle,dmulmapconcat,nbiP
   private line,Mequaldacon
   character(120) line
   !integer npol
@@ -643,6 +643,13 @@ INTEGER, private, PARAMETER :: I4B = SELECTED_INT_KIND(9)
      !    MODULE PROCEDURE absoftdsindr  ! for non PC absoft
   END INTERFACE
 
+ INTERFACE norm_bessel_I
+     MODULE PROCEDURE nbiP
+  END INTERFACE
+
+ INTERFACE nbi
+     MODULE PROCEDURE nbiP
+  END INTERFACE
 
   INTERFACE log
      MODULE PROCEDURE dlogt
@@ -4146,7 +4153,7 @@ contains
     implicit none
     integer ipause, mypauses
     type (real_8),INTENT(INOUT)::S2
-    integer i
+    integer,optional :: i
     real(dp), optional :: prec
 
     if(s2%kind/=0) then
@@ -4179,7 +4186,7 @@ contains
   SUBROUTINE  printdouble(S2,i)
     implicit none
     real(dp),INTENT(INOUT)::S2
-    integer i
+     integer,optional :: i
 
     write(i,*)  s2
 
@@ -4188,7 +4195,7 @@ contains
   SUBROUTINE  printsingle(S2,i)
     implicit none
     real(sp),INTENT(INOUT)::S2
-    integer i
+    integer,optional :: i
 
     write(i,*)  s2
 

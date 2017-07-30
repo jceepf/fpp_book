@@ -195,6 +195,8 @@ CONTAINS
        call TRACK(EL%PA,X,k,MID)
     case(kindsuperdrift)
        call TRACK(EL%SDR,X,k,MID)
+    case(KINDABELL)
+       call TRACK(EL%AB,X,k,MID)
 
     case default
  
@@ -259,6 +261,8 @@ CONTAINS
        call TRACK(EL%PA,X,k)
     case(kindsuperdrift)
        call TRACK(EL%SDR,X,k)
+    case(KINDABELL)
+       call TRACK(EL%AB,X,k)
     case default
        write(6,'(1x,i4,a21)') el%kind," not supported TRACKP"
        ! call !write_e(0)
@@ -1455,6 +1459,28 @@ CONTAINS
        !       EL%mu%AN=>EL%AN
        !       EL%mu%BN=>EL%BN
        CALL POINTERS_pancake(EL%pa,T) !,angc,xc,dc,h) !,t_ax,t_ay)
+    CASE(KINDabell)
+       if(.not.ASSOCIATED(EL%ab)) THEN
+          ALLOCATE(EL%ab)
+          EL%ab=0
+       ELSE
+          EL%ab=-1
+          EL%ab=0
+       ENDIF
+       EL%ab%P=>EL%P
+       EL%ab%L=>EL%L
+       IF(EL%P%NMUL==0) CALL ZERO_ANBN(EL,1)
+       EL%ab%AN=>EL%AN
+       EL%ab%BN=>el%BN
+   !real(dp), POINTER :: DZ => null(), T(:) => null()
+   !complex(dp), POINTER :: B(:,:) => null()
+   !INTEGER , POINTER :: N,M => null()  
+       ALLOCATE(EL%ab%dz);EL%ab%dz=0
+       ALLOCATE(EL%ab%m);EL%ab%m=m_abell;
+       ALLOCATE(EL%ab%n);EL%ab%n=n_abell;
+       ALLOCATE(EL%ab%t(m_abell));EL%ab%t=0.0_dp;
+       ALLOCATE(EL%ab%b(m_abell,n_abell));EL%ab%t=0.0_dp; 
+       CALL POINTERS_abell(EL%ab) !,angc,xc,dc,h) !,t_ax,t_ay)
     END SELECT
   END SUBROUTINE SETFAMILYR
 
@@ -1878,64 +1904,7 @@ CONTAINS
        ENDIF
        EL%ECOL19%P=>EL%P
        EL%ECOL19%L=>EL%L
-!       nullify(EL%ECOL19%A);!ALLOCATE(EL%ECOL19%A);CALL ALLOC(EL%ECOL19%A)
-       !    CASE(KIND22)
-       !       if(.not.ASSOCIATED(EL%M22)) THEN
-       !          ALLOCATE(EL%M22)
-       !          el%M22=0
-       !       ELSE
-       !          el%M22=-1
-       !          el%M22=0
-       !       ENDIF
-       !       EL%M22%P=>EL%P
-       !       allocate(EL%M22%DELTAMAP)
-       !       EL%M22%DELTAMAP=.TRUE.
-       !       if(NTOT/=0) then
-       !          allocate(EL%M22%T)
-       !          CALL ALLOC_TREE(EL%M22%T,NTOT,ND2)
-       !       endif
-       !       if(NTOT_rad/=0) then
-       !          allocate(EL%M22%T_rad)
-       !          CALL ALLOC_TREE(EL%M22%T_rad,NTOT_rad,ND2)
-       !       endif
-       !       if(NTOT_REV/=0) then
-       !          allocate(EL%M22%T_REV)
-       !          CALL ALLOC_TREE(EL%M22%T_REV,NTOT_REV,ND2)
-       !       endif
-       !       if(NTOT_rad_REV/=0) then
-       !          allocate(EL%M22%T_rad_REV)
-       !          CALL ALLOC_TREE(EL%M22%T_rad_REV,NTOT_rad_REV,ND2)
-       !       endif
-       !    CASE(KINDUSER1)
-       !       if(.not.ASSOCIATED(EL%U1)) THEN
-       !          ALLOCATE(EL%U1)
-       !          EL%U1=0
-       !       ELSE
-       !          EL%U1=-1
-       !          EL%U1=0
-       !       ENDIF
-       !       EL%U1%P=>EL%P
-       !       EL%U1%L=>EL%L
-       !       IF(EL%P%NMUL==0) CALL ZERO_ANBN(EL,1)
-       !       EL%U1%AN=>EL%AN
-       !       EL%U1%BN=>EL%BN
-       !       CALL POINTERS_USER1(EL%U1)
-       !       CALL ALLOC(EL%U1)
-       !    CASE(KINDUSER2)
-       !       if(.not.ASSOCIATED(EL%U2)) THEN
-       !          ALLOCATE(EL%U2)
-       !          EL%U2=0
-       !       ELSE
-       !          EL%U2=-1
-       !          EL%U2=0
-       !       ENDIF
-       !       EL%U2%P=>EL%P
-       !       EL%U2%L=>EL%L
-       !       IF(EL%P%NMUL==0) CALL ZERO_ANBN(EL,1)
-       !       EL%U2%AN=>EL%AN
-       !       EL%U2%BN=>EL%BN
-       !       CALL POINTERS_USER2(EL%U2)
-       !       CALL ALLOC(EL%U2)
+
     CASE(KINDWIGGLER)
        if(.not.ASSOCIATED(EL%WI)) THEN
           ALLOCATE(EL%WI)
@@ -1967,10 +1936,33 @@ CONTAINS
 
        CALL POINTERS_pancake(EL%pa,T) !,angc,xc,dc,h)  !,t_ax,t_ay)
 
-       CALL ALLOC(EL%pa%SCALE)
+    CASE(KINDabell)
+       if(.not.ASSOCIATED(EL%ab)) THEN
+          ALLOCATE(EL%ab)
+          EL%ab=0
+       ELSE
+          EL%ab=-1
+          EL%ab=0
+       ENDIF
+       EL%ab%P=>EL%P
+       EL%ab%L=>EL%L
+       IF(EL%P%NMUL==0) CALL ZERO_ANBN(EL,1)
+       EL%ab%AN=>EL%AN
+       EL%ab%BN=>el%BN
+   !real(dp), POINTER :: DZ => null(), T(:) => null()
+   !complex(dp), POINTER :: B(:,:) => null()
+   !INTEGER , POINTER :: N,M => null()  
+
+       ALLOCATE(EL%ab%dz);EL%ab%dz=0
+       ALLOCATE(EL%ab%m);EL%ab%m=m_abell;
+       ALLOCATE(EL%ab%n);EL%ab%n=n_abell;
+       ALLOCATE(EL%ab%t(m_abell));EL%ab%t=0.0_dp;
+       ALLOCATE(EL%ab%b(m_abell,n_abell));EL%ab%b=0.0_dp; 
+       CALL POINTERS_abell(EL%ab) !,angc,xc,dc,h) !,t_ax,t_ay)
     END SELECT
 
   END SUBROUTINE SETFAMILYP
+
 
 
 
@@ -3320,29 +3312,11 @@ nullify(EL%filef,el%fileb);
        ELP%S5%PITCH_Y=EL%S5%PITCH_Y
     ENDIF
 
-    !    IF(EL%KIND==KIND17) THEN         !
-    !       !       if(.not.ASSOCIATED(ELP%S17)) ALLOCATE(ELP%S17)
-    !       if(.not.ASSOCIATED(ELP%B_SOL)) ALLOCATE(ELP%B_SOL       )
-    !       CALL ALLOC( ELP%B_SOL) !! *** This line added *** Sagan
-    !       ELP%B_SOL = EL%B_SOL
-    !       CALL SETFAMILY(ELP)
-    !    ENDIF
+
 
     IF(EL%KIND==KIND6) CALL SETFAMILY(ELP)
 
-    !    IF(EL%KIND==KIND22) THEN
-    !       i=0;j=0;k=0;l=0;
-    !       if(associated(EL%M22%T_REV)) i=EL%M22%T_REV%N
-    !       if(associated(EL%M22%T_rad_REV)) j=EL%M22%T_rad_REV%N
-    !       if(associated(EL%M22%T)) k=EL%M22%T%N
-    !       if(associated(EL%M22%T_rad)) l=EL%M22%T_rad%N
-    !       CALL SETFAMILY(ELP,NTOT=k,ntot_rad=l,NTOT_REV=i,ntot_rad_REV=j,ND2=6)
-    !       ELP%M22%DELTAMAP=EL%M22%DELTAMAP
-    !       if(associated(EL%M22%T))  CALL COPY_TREE(EL%M22%T,ELP%M22%T)
-    !       if(associated(EL%M22%T_rad)) CALL COPY_TREE(EL%M22%T_rad,ELP%M22%T_rad)
-    !       if(associated(EL%M22%T_REV)) CALL COPY_TREE(EL%M22%T_REV,ELP%M22%T_REV)
-    !       if(associated(EL%M22%T_rad_REV)) CALL COPY_TREE(EL%M22%T_rad_REV,ELP%M22%T_rad_REV)
-    !    ENDIF
+
 
     IF(EL%KIND==KIND7) THEN         !
        GEN=.FALSE.
@@ -3438,6 +3412,12 @@ nullify(EL%filef,el%fileb);
     IF(EL%KIND==KINDPA) THEN         !
        CALL SETFAMILY(ELP,t=EL%PA%B)  !,EL%PA%angc,EL%PA%xc,EL%PA%dc,EL%PA%h)  !,EL%PA%ax,EL%PA%ay)
        CALL COPY(EL%PA,ELP%PA)
+    ENDIF
+    IF(EL%KIND==KINDABELL) THEN 
+       M_ABELL=EL%ab%M
+       N_ABELL=EL%ab%N       !
+       CALL SETFAMILY(ELP)  !,EL%PA%angc,EL%PA%xc,EL%PA%dc,EL%PA%h)  !,EL%PA%ax,EL%PA%ay)
+       CALL COPY(EL%ab,ELP%ab)
     ENDIF
     !    IF(ASSOCIATED(EL%PARENT_FIBRE))        then
     !       ELP%PARENT_FIBRE=>EL%PARENT_FIBRE
@@ -3815,6 +3795,12 @@ nullify(EL%filef,el%fileb);
        CALL COPY(EL%PA,ELP%PA)
     ENDIF
 
+    IF(EL%KIND==KINDABELL) THEN 
+       M_ABELL=EL%ab%M
+       N_ABELL=EL%ab%N        !
+       CALL SETFAMILY(ELP)  !,EL%PA%angc,EL%PA%xc,EL%PA%dc,EL%PA%h)  !,EL%PA%ax,EL%PA%ay)
+       CALL COPY(EL%ab,ELP%ab)
+    ENDIF
 
        IF(ASSOCIATED(EL%backWARD))        then
          if(associated(elp%backWARD)) then
@@ -4191,7 +4177,12 @@ nullify(EL%filef,el%fileb);
        CALL SETFAMILY(ELP,t=EL%PA%B) !,EL%PA%angc,EL%PA%xc,EL%PA%dc,EL%PA%h)   !,EL%PA%ax,EL%PA%ay)
        CALL COPY(EL%PA,ELP%PA)
     ENDIF
-
+    IF(EL%KIND==KINDABELL) THEN 
+       M_ABELL=EL%ab%M
+       N_ABELL=EL%ab%N        !
+       CALL SETFAMILY(ELP)  !,EL%PA%angc,EL%PA%xc,EL%PA%dc,EL%PA%h)  !,EL%PA%ax,EL%PA%ay)
+       CALL COPY(EL%ab,ELP%ab)
+    ENDIF
     !    IF(ASSOCIATED(EL%PARENT_FIBRE))        then
     !       ELP%PARENT_FIBRE=>EL%PARENT_FIBRE
     !    ENDIF
@@ -4341,6 +4332,10 @@ nullify(EL%filef,el%fileb);
 
     IF(ELP%KIND==KINDPA) THEN
        CALL reset_PA(ELP%PA)
+    ENDIF
+
+    IF(ELP%KIND==KINDabell) THEN
+       CALL reset_abell(ELP%ab)
     ENDIF
 
 

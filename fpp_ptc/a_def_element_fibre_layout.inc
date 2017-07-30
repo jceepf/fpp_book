@@ -216,6 +216,7 @@ TYPE ELEMENT
    TYPE(CAV_TRAV), POINTER :: CAV21 => null()            ! CAVITY TRAVELLING WAVE
    TYPE(SAGAN), POINTER :: WI   => null()              ! USER DEFINED
    TYPE(PANCAKE), POINTER :: PA => null()          ! GENERAL B
+   TYPE(ABELL), POINTER :: AB    => null()            ! TYPE ABELL 
    TYPE(HELICAL_DIPOLE), POINTER :: HE22  => null()         !  
    TYPE(SUPERDRIFT), POINTER :: SDR      => null()     ! GENERAL DRIFT
    TYPE(FIBRE), POINTER :: PARENT_FIBRE => null()
@@ -286,6 +287,7 @@ TYPE ELEMENTP
    TYPE(SUPERDRIFTP), POINTER :: SDR  => null()         ! GENERAL DRIFT
    TYPE(SAGANP), POINTER :: WI         => null()        ! USER DEFINED
    TYPE(PANCAKEP), POINTER :: PA       => null()    ! GENERAL B
+      TYPE(ABELLP), POINTER :: AB    => null()            ! TYPE ABELL 
    TYPE(FIBRE), POINTER :: PARENT_FIBRE => null()
    !   TYPE(fibre_appearance), POINTER :: doko
    type(ramping), pointer :: ramp => null()
