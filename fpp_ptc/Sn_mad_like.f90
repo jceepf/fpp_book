@@ -52,7 +52,7 @@ module Mad_like
 
   real(dp), private ::  angc,xc,dc,hc,LC,HD,LD,vc
   integer, private :: nstc
-  logical ::   xprime_pancake = .true.
+  logical ::   xprime_pancake = .true.,xprime_abell=.false.
    character(vp) , private :: filec
   logical(lp) :: set_ap=my_false
   TYPE EL_LIST
@@ -2935,7 +2935,7 @@ CONTAINS
        s2%ab%dc=dc
        s2%ab%hc=hc
        s2%ab%vc=vc
-       s2%ab%xprime=xprime_pancake
+       s2%ab%xprime=xprime_abell
 
         endif
     endif
@@ -3472,18 +3472,17 @@ CONTAINS
    nstc=nst0
    end subroutine set_pancake_constants 
 
-   subroutine set_abell_constants(angc0,xc0,dc0,vc0,hc0,m_abell0,n_abell0)
+   subroutine set_abell_constants(angc0,xc0,dc0,vc0,hc0,xprime0,m_abell0,n_abell0)
    implicit none
    real(dp) angc0,xc0,dc0,hc0,hd0,ld0,vc0
-   integer m_abell0,n_abell0
-   character(vp) filec0
    logical xprime0
+   integer m_abell0,n_abell0
    angc=angc0
    xc=xc0
    dc=dc0
    hc=hc0
    vc=vc0
-   xprime_pancake=.false.
+   xprime_pancake=xprime0
    m_abell=m_abell0
    n_abell=n_abell0
    end subroutine set_abell_constants 

@@ -93,7 +93,7 @@ MODULE S_DEF_KIND
   PRIVATE rk4_pancaker,rk4_pancakeP
   PRIVATE FEVAL_pancaker,FEVAL_pancakeP,rks_pancaker,rks_pancakep,rks_pancake
   PRIVATE INTPANCAKER,INTPANCAKEP,conv_to_xpr,conv_to_xpp,conv_to_pxr
-  private conv_to_pxp
+  private conv_to_pxp, conv_to_pxpabell ,conv_to_xprabell,conv_to_xppabell,conv_to_pxrabell
   private ADJUSTR_TIME_CAV4,ADJUSTp_TIME_CAV4,INTER_CAV4,INTEp_CAV4
   private INTER_STREX,INTEP_STREX,INTER_SOL5,INTEP_SOL5,INTER_KTK,INTEP_KTK
   private fringe_STRAIGHTr,fringe_STRAIGHTP
@@ -825,10 +825,15 @@ private rk2abellr,rk4abellr,rk6abellr,rk2abellp,rk4abellp,rk6abellp
   INTERFACE conv_to_xp
      MODULE PROCEDURE conv_to_xpr
      MODULE PROCEDURE conv_to_xpp
+     MODULE PROCEDURE conv_to_xprabell
+     MODULE PROCEDURE conv_to_xppabell
   END INTERFACE
+
   INTERFACE conv_to_px
      MODULE PROCEDURE conv_to_pxr
      MODULE PROCEDURE conv_to_pxp
+     MODULE PROCEDURE conv_to_pxrabell
+     MODULE PROCEDURE conv_to_pxpabell
   END INTERFACE
 
 
@@ -14464,8 +14469,26 @@ SUBROUTINE ZEROr_teapot(EL,I)
      DEL=0.0_DP
      call B_FIELD(EL,vm,B,A,DA,X,Z,charge=.true.)
 
+
+
+
      e(3)=del
      DIR=EL%P%DIR   !*EL%P%CHARGE
+
+
+    if(el%xprime) then   !!!!   
+       b(1)=el%p%charge*dir*b(1)
+       b(2)=el%p%charge*dir*b(2)
+       b(3)=el%p%charge*b(3)
+       CALL f_M(f,x,k,b,EL%p,el%p%b0)
+        if(k%TIME) then
+          F(6)=f(6)+(k%TOTALPATH-1)/EL%P%BETA0
+            else
+          F(6)=f(6)+(k%TOTALPATH-1)
+        endif
+    else
+
+
      H=1.0_dp+EL%P%B0*X(1)
      IF(EL%P%EXACT) THEN
         if(k%TIME) then
@@ -14510,6 +14533,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
            F(6)=(1.0_dp+del)/PZ*(1.0_dp+0.5_dp*((X(2)-A(1))**2+(X(4)-A(2))**2)/pz**2)+(k%TOTALPATH-1)+EL%P%B0*x(1)   !! ld=L in sector bend
         endif
      ENDIF
+     endif
      global_e= DEL*el%p%p0c
    END subroutine feval_abellr
 
@@ -14536,6 +14560,18 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
 
      e(3)=del
      DIR=EL%P%DIR   !*EL%P%CHARGE
+    if(el%xprime) then   !!!!   
+       b(1)=el%p%charge*dir*b(1)
+       b(2)=el%p%charge*dir*b(2)
+       b(3)=el%p%charge*b(3)
+       CALL f_M(f,x,k,b,EL%p,el%p%b0)
+        if(k%TIME) then
+          F(6)=f(6)+(k%TOTALPATH-1)/EL%P%BETA0
+            else
+          F(6)=f(6)+(k%TOTALPATH-1)
+        endif
+    else
+
      H=1.0_dp+EL%P%B0*X(1)
      IF(EL%P%EXACT) THEN
         if(k%TIME) then
@@ -14580,6 +14616,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
            F(6)=(1.0_dp+del)/PZ*(1.0_dp+0.5_dp*((X(2)-A(1))**2+(X(4)-A(2))**2)/pz**2)+(k%TOTALPATH-1)+EL%P%B0*x(1)   !! ld=L in sector bend
         endif
      ENDIF
+endif
      global_e= DEL*el%p%p0c
      call kill(PZ,DEL,H,VM)
      call kill(E);call kill(B);call kill(A);
@@ -15950,7 +15987,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
 
     EL%SCALE=1.0_dp
     el%angc=0.0_dp; el%dc=0.0_dp; el%hc=0.0_dp; el%xc=0.0_dp;el%vc=0.0_dp;
-    el%xprime=.true.
+    el%xprime=.false.
 
   END SUBROUTINE POINTERS_ABELLR
 
@@ -15968,7 +16005,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
 
     EL%SCALE=1.0_dp
     el%angc=0.0_dp; el%dc=0.0_dp; el%hc=0.0_dp; el%xc=0.0_dp;el%vc=0.0_dp;
-    el%xprime=.true.
+    el%xprime=.false.
 
   END SUBROUTINE POINTERS_ABELLP
 
@@ -16290,6 +16327,11 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
        be(8)=EL%SCALE*el%p%charge*el%p%dir*be(8)
        CALL f_Mc(f,x,k,be,EL%p,el%hc)
     endif
+        if(k%TIME) then
+          F(6)=f(6)+(k%TOTALPATH-1)/EL%P%BETA0
+            else
+          F(6)=f(6)+(k%TOTALPATH-1)
+        endif
   END subroutine feval_PANCAkEr
 
   subroutine feval_PANCAkEP(POS,X,k,f,EL)
@@ -16325,7 +16367,11 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
        be(8)=EL%SCALE*el%p%charge*el%p%dir*be(8)
        CALL f_Mc(f,x,k,be,EL%p,el%hc)
     endif
-
+        if(k%TIME) then
+          F(6)=f(6)+(k%TOTALPATH-1)/EL%P%BETA0
+            else
+          F(6)=f(6)+(k%TOTALPATH-1)
+        endif
     CALL KILL(B); call kill(be)
 
   END subroutine feval_PANCAkEP
@@ -16533,6 +16579,81 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     return
   end  subroutine rk4_pancakeP
 
+  SUBROUTINE conv_to_xprABELL(EL,X,k)
+    IMPLICIT NONE
+    real(dp),INTENT(INOUT):: X(6)
+    TYPE(ABELL),INTENT(INOUT):: EL
+    real(dp) ti
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    if(k%TIME) then
+       ti=ROOT(1.0_dp+2.0_dp*X(5)/el%p%beta0+x(5)**2-X(2)**2-X(4)**2)
+       x(2)=(1.0_dp+el%hc*X(1))*x(2)/ti
+       x(4)=(1.0_dp+el%hc*X(1))*x(4)/ti
+    else
+       ti=ROOT((1.0_dp+x(5))**2-X(2)**2-X(4)**2)
+       x(2)=(1.0_dp+el%hc*X(1))*x(2)/ti
+       x(4)=(1.0_dp+el%hc*X(1))*x(4)/ti
+    endif
+
+  end SUBROUTINE conv_to_xprabell
+
+  SUBROUTINE conv_to_xppABELL(EL,X,k)
+    IMPLICIT NONE
+    type(real_8),INTENT(INOUT):: X(6)
+    TYPE(ABELLp),INTENT(INOUT):: EL
+    type(real_8) ti
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    call alloc(ti)
+    if(k%TIME) then
+       ti=sqrt(1.0_dp+2.0_dp*X(5)/el%p%beta0+x(5)**2-X(2)**2-X(4)**2)
+       x(2)=(1.0_dp+el%hc*X(1))*x(2)/ti
+       x(4)=(1.0_dp+el%hc*X(1))*x(4)/ti
+    else
+       ti=sqrt((1.0_dp+x(5))**2-X(2)**2-X(4)**2)
+       x(2)=(1.0_dp+el%hc*X(1))*x(2)/ti
+       x(4)=(1.0_dp+el%hc*X(1))*x(4)/ti
+    endif
+    call kill(ti)
+
+  end SUBROUTINE conv_to_xppabell
+
+  SUBROUTINE conv_to_pxrABELL(EL,X,k)
+    IMPLICIT NONE
+    real(dp),INTENT(INOUT):: X(6)
+    TYPE(ABELL),INTENT(INOUT):: EL
+    real(dp) ti
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    ti=ROOT((1.0_dp+el%hc*X(1))**2+X(2)**2+X(4)**2)
+    if(k%TIME) then
+       x(2)=x(2)*ROOT(1.0_dp+2.0_dp*X(5)/el%p%beta0+x(5)**2)/ti
+       x(4)=x(4)*ROOT(1.0_dp+2.0_dp*X(5)/el%p%beta0+x(5)**2)/ti
+    else
+       x(2)=x(2)*(1.0_dp+x(5))/ti
+       x(4)=x(4)*(1.0_dp+x(5))/ti
+    endif
+  end SUBROUTINE conv_to_pxrabell
+
+  SUBROUTINE conv_to_pxpABELL(EL,X,k)
+    IMPLICIT NONE
+    type(real_8),INTENT(INOUT):: X(6)
+    TYPE(ABELLp),INTENT(INOUT):: EL
+    type(real_8) ti
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    call alloc(ti)
+    ti=SQRT((1.0_dp+el%hc*X(1))**2+X(2)**2+X(4)**2)
+    if(k%TIME) then
+       x(2)=x(2)*sqrt(1.0_dp+2.0_dp*X(5)/el%p%beta0+x(5)**2)/ti
+       x(4)=x(4)*sqrt(1.0_dp+2.0_dp*X(5)/el%p%beta0+x(5)**2)/ti
+    else
+       x(2)=x(2)*(1.0_dp+x(5))/ti
+       x(4)=x(4)*(1.0_dp+x(5))/ti
+    endif
+    call kill(ti)
+
+  end SUBROUTINE conv_to_pxpabell
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   SUBROUTINE conv_to_xpr(EL,X,k)
     IMPLICIT NONE
     real(dp),INTENT(INOUT):: X(6)
@@ -16606,6 +16727,8 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
   end SUBROUTINE conv_to_pxp
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
   ! ETIENNE_PANCAKE
 
@@ -16624,22 +16747,22 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
       IF(EL%P%DIR==1) THEN
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
-   !      if(el%XPrime.and.EL%p%method/=1) call conv_to_xp(el,x,k)
+         if(el%XPrime) call conv_to_xp(el,x,k)
       ELSE
-   !      if(el%XPrime.and.EL%p%method/=1) call conv_to_xp(el,x,k)
+         if(el%XPrime) call conv_to_xp(el,x,k)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
       ENDIF
     else
     d(1)=-EL%P%DIR*el%xc ;d(3)=el%dc;d(2)=-EL%P%DIR*el%vc;
       IF(EL%P%DIR==1) THEN
-  !      if(el%XPrime.and.EL%p%method/=1)  call conv_to_px(el,x,k)
+        if(el%XPrime)  call conv_to_px(el,x,k)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
       ELSE
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
-  !      if(el%XPrime.and.EL%p%method/=1)  call conv_to_px(el,x,k)
+        if(el%XPrime)  call conv_to_px(el,x,k)
       ENDIF
     endif
     else  !<------ Sector geometry
@@ -16648,9 +16771,9 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
       IF(EL%P%DIR==1) THEN
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
-  !      if(el%XPrime.and.EL%p%method/=1) call conv_to_xp(el,x,k)
+        if(el%XPrime) call conv_to_xp(el,x,k)
       ELSE
-  !      if(el%XPrime.and.EL%p%method/=1) call conv_to_xp(el,x,k)
+        if(el%XPrime) call conv_to_xp(el,x,k)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
       ENDIF
@@ -16659,13 +16782,13 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
     d(1)=-EL%P%DIR*el%xc ;d(3)=el%dc;d(2)=-EL%P%DIR*el%vc;
       IF(EL%P%DIR==1) THEN
-  !      if(el%XPrime.and.EL%p%method/=1)  call conv_to_px(el,x,k)
+       if(el%XPrime)  call conv_to_px(el,x,k)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
       ELSE
          CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
-  !      if(el%XPrime.and.EL%p%method/=1)  call conv_to_px(el,x,k)
+        if(el%XPrime)  call conv_to_px(el,x,k)
       ENDIF
     endif
     endif
@@ -16686,22 +16809,22 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
       IF(EL%P%DIR==1) THEN
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
-   !      if(el%XPrime.and.EL%p%method/=1) call conv_to_xp(el,x,k)
+         if(el%XPrime) call conv_to_xp(el,x,k)
       ELSE
-   !      if(el%XPrime.and.EL%p%method/=1) call conv_to_xp(el,x,k)
+         if(el%XPrime) call conv_to_xp(el,x,k)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
       ENDIF
     else
     d(1)=-EL%P%DIR*el%xc ;d(3)=el%dc;d(2)=-EL%P%DIR*el%vc;
       IF(EL%P%DIR==1) THEN
-  !      if(el%XPrime.and.EL%p%method/=1)  call conv_to_px(el,x,k)
+        if(el%XPrime)  call conv_to_px(el,x,k)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
       ELSE
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
-  !      if(el%XPrime.and.EL%p%method/=1)  call conv_to_px(el,x,k)
+        if(el%XPrime)  call conv_to_px(el,x,k)
       ENDIF
     endif
     else  !<------ Sector geometry
@@ -16710,9 +16833,9 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
       IF(EL%P%DIR==1) THEN
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
-  !      if(el%XPrime.and.EL%p%method/=1) call conv_to_xp(el,x,k)
+        if(el%XPrime) call conv_to_xp(el,x,k)
       ELSE
-  !      if(el%XPrime.and.EL%p%method/=1) call conv_to_xp(el,x,k)
+        if(el%XPrime) call conv_to_xp(el,x,k)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
       ENDIF
@@ -16721,13 +16844,13 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
     d(1)=-EL%P%DIR*el%xc ;d(3)=el%dc;d(2)=-EL%P%DIR*el%vc;
       IF(EL%P%DIR==1) THEN
-  !      if(el%XPrime.and.EL%p%method/=1)  call conv_to_px(el,x,k)
+       if(el%XPrime)  call conv_to_px(el,x,k)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
       ELSE
          CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
-  !      if(el%XPrime.and.EL%p%method/=1)  call conv_to_px(el,x,k)
+        if(el%XPrime)  call conv_to_px(el,x,k)
       ENDIF
     endif
     endif
