@@ -96,7 +96,7 @@ namelist / tp100name / tp100
   TYPE ab_list
     integer n_m(2)
 	complex(dp) b(nmul_max,nmul_max)  
-	real(dp) dz_t(nmul_max+1)  
+	real(dp) dz_t(2*nmul_max+2)  
 	real(dp) scale_angc_xc_vc_dc_hc(6)
   END TYPE ab_list
 type(ab_list) ab0

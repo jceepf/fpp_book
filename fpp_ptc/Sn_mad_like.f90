@@ -1577,7 +1577,7 @@ CONTAINS
     E11=0.0_dp
     E22=0.0_dp
     L1=0.0_dp
-
+    ang1=0.0_dp
 
     IF(PRESENT(L)) L1=L ;
     if(present(list)) then

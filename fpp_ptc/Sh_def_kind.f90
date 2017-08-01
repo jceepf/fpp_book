@@ -14624,7 +14624,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
 
      DO  N=-EL%N/2,EL%N/2-1
       if(n==0) cycle
-      K_N=TWOPI*N/EL%N/EL%DZ
+      K_N=TWOPI*N/EL%N/EL%DZ(M)
       XN=K_N*X(1);YN=K_N*X(3)
         AM=K_N**(M-1)*X_IP(m-1)*EX
         AMB=CONJG(AM) 
@@ -14662,7 +14662,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
      ENDDO
     ENDDO
      DO  N=-EL%N/2,EL%N/2-1
-      K_N=TWOPI*N/EL%N/EL%DZ
+      K_N=TWOPI*N/EL%N/EL%DZ(0)
       XN=K_N*X(1);YN=K_N*X(3)
         nbm=NBI(0,XN,YN)   
         nbm1=NBI(1,XN,YN)   
@@ -14741,7 +14741,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
 
      DO  N=-EL%N/2,EL%N/2-1
       if(n==0) cycle
-      K_N=TWOPI*N/EL%N/EL%DZ
+      K_N=TWOPI*N/EL%N/EL%DZ(M)
       XN=K_N*X(1);YN=K_N*X(3)
         AM=K_N**(M-1)*X_IP(m-1)*EX
         AMB=CONJG(AM) 
@@ -14779,7 +14779,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
      ENDDO
     ENDDO
      DO  N=-EL%N/2,EL%N/2-1
-      K_N=TWOPI*N/EL%N/EL%DZ
+      K_N=TWOPI*N/EL%N/EL%DZ(0)
       XN=K_N*X(1);YN=K_N*X(3)
         nbm=NBI(0,XN,YN)   
         nbm1=NBI(1,XN,YN)   
@@ -15981,7 +15981,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
 !    ELP%m=EL%m
     ELP%B=EL%B
     ELP%T=EL%T
-    ELP%T=EL%DZ
+    ELP%DZ=EL%DZ
     ELP%SCALE  = EL%SCALE
     ELP%angc  = EL%angc
     ELP%dc  = EL%dc
@@ -16001,7 +16001,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
 !    ELP%m=EL%m
     ELP%B=EL%B
     ELP%T=EL%T
-    ELP%T=EL%DZ
+    ELP%DZ=EL%DZ
     ELP%SCALE  = EL%SCALE
     ELP%angc  = EL%angc
     ELP%dc  = EL%dc
@@ -16022,7 +16022,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
 !    ELP%m=EL%m
     ELP%B=EL%B
     ELP%T=EL%T
-    ELP%T=EL%DZ
+    ELP%DZ=EL%DZ
     ELP%SCALE  = EL%SCALE
     ELP%angc  = EL%angc
     ELP%dc  = EL%dc
