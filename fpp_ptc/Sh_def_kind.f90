@@ -129,7 +129,7 @@ MODULE S_DEF_KIND
  
   !  logical(lp) :: old_solenoid=.true.
   INTEGER :: N_CAV4_F=1
-  INTEGER :: m_abell=1,n_abell=1
+  INTEGER :: m_abell=1,n_abell=2
   INTEGER :: metcav=0, nstcav=0
   real(dp) :: xcav(1:6)=0.001d0, symplectic_check=1.d-10
    
@@ -14456,7 +14456,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
     real(dp), INTENT(INout) :: X(6)
     real(dp), INTENT(INOUT) :: F(6)
     real(dp), INTENT(INOUT) :: Z
-    REAL(DP) PZ,DEL,H,B(3),E(3),dir,VM,A(2),DA(3,2)   ! vm MAGNETIC POTENTIAL
+    REAL(DP) PZ,DEL,H,B(3),E(3),dir,VM,A(3),DA(3,2)   ! vm MAGNETIC POTENTIAL
     TYPE(abell),  INTENT(INout) :: EL
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
      
@@ -14518,7 +14518,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
     TYPE(REAL_8), INTENT(INout) :: X(6)
     TYPE(REAL_8),  INTENT(INOUT) :: F(6)
     TYPE(REAL_8),   INTENT(INOUT) :: Z
-    TYPE(REAL_8) PZ,DEL,H,B(3),E(3),VM,A(2),DA(3,2)   ! vm MAGNETIC POTENTIAL
+    TYPE(REAL_8) PZ,DEL,H,B(3),E(3),VM,A(3),DA(3,2)   ! vm MAGNETIC POTENTIAL
     REAL(DP) dir 
     TYPE(abellP),  INTENT(INout) :: EL
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
@@ -14594,8 +14594,8 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
     IMPLICIT NONE
     TYPE(ABELL), INTENT(INOUT)::EL
     REAL(DP), INTENT(IN) :: X(6),Z
-    REAL(DP), INTENT(OUT) :: B(3),A(2),DA(3,2),PSIM
-    COMPLEX(dp) X_IP(0:NMAX+1),AM,EX,AMB,AMI,CX,CY,C,D,DX,DY
+    REAL(DP), INTENT(OUT) :: B(3),A(3),DA(3,2),PSIM
+    COMPLEX(dp) X_IP(0:NMAX+1),AM,EX,AMB,AMI,CX,CY,C,D,DX,DY,dd
     REAL(dp) K_N,XN,YN
     INTEGER I,N,M,J
 
@@ -14607,7 +14607,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
     do i=1,3 
      B(i)=0.0_dp
     enddo
-    do i=1,2 
+    do i=1,3 
      A(i)=0.0_dp
     enddo
     DO I=1,3
@@ -14622,45 +14622,48 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
       EX=EXP(-I_*EL%T(M))
 
      DO  N=-EL%N/2,EL%N/2-1
+      if(n==0) cycle
       K_N=TWOPI*N/EL%N/EL%DZ
       XN=K_N*X(1);YN=K_N*X(3)
         AM=K_N**(M-1)*X_IP(m-1)*EX
         AMB=CONJG(AM) 
         D=(AM*X_IP(1)-AMB*CONJG(X_IP(1)))
+        Dd=(AM*X_IP(1)+AMB*CONJG(X_IP(1)))
         DX=(AM-AMB)  !  M FOR DERIVATIVE
         DY=(AM+AMB) !  I_ * M FOR DERIVATIVE
-        PSIM=PSIM+EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*(AM*X_IP(1)+AMB*CONJG(X_IP(1)))*NBI(M,XN,YN)      
-        B(1)=DY*M*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M,XN,YN)+B(1)
-        B(1)=(AM*X_IP(1)+AMB*CONJG(X_IP(1)))*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M+1,XN,YN)*XN*K_N +B(1)
-        B(2)=I_*DX*M*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M,XN,YN)+B(2)
-        B(2)=(AM*X_IP(1)+AMB*CONJG(X_IP(1)))*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M+1,XN,YN)*YN*K_N +B(2)
-        B(3)=I_*K_N*(AM*X_IP(1)+AMB*CONJG(X_IP(1)))*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M,XN,YN)+B(3)
-        AMI=I_*K_N*EL%B(M,N)*NBI(M,XN,YN)*(I_*AM*X_IP(1)/(M+1)-I_*AMB*CONJG(X_IP(1)))
-        C= K_N*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*(-AM*X_IP(1)/M+AMB*CONJG(X_IP(1))/M)
-        CX=K_N*EL%B(M,N)*0.5_DP*EXP(I_*K_N*Z)*(-DX)
-        CY=-I_*K_N*EL%B(M,N)*0.5_DP*EXP(I_*K_N*Z)*(DY)
-        DA(1,1)=DA(1,1)+(C+X(1)*CX)*NBI(M,XN,YN)+C*XN**2*NBI(M+1,XN,YN)
-        DA(1,2)=DA(1,2)+(X(1)*CY)*NBI(M,XN,YN)+C*XN*YN*NBI(M+1,XN,YN)
-        DA(2,1)=DA(2,1)+(X(3)*CX)*NBI(M,XN,YN)+C*XN*YN*NBI(M+1,XN,YN)
-        DA(2,2)=DA(2,2)+(C+X(3)*CY)*NBI(M,XN,YN)+C*YN**2*NBI(M+1,XN,YN)
+        PSIM=PSIM+EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*dd*NBI(M,XN,YN)      
+        B(1)=DY*M*EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*NBI(M,XN,YN)+B(1)
+        B(1)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M+1,XN,YN)*XN*K_N +B(1)
+        B(2)=I_*DX*M*EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*NBI(M,XN,YN)+B(2)
+        B(2)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M+1,XN,YN)*YN*K_N +B(2)
+        B(3)=I_*K_N*dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M,XN,YN)+B(3)
+        AMI=-K_N*0.5_dp*EXP(I_*K_N*Z)/M*EL%B(M,N)*NBI(M,XN,YN)*d  
+        C= -K_N*EL%B(M,N)*0.5_DP*EXP(I_*K_N*Z) 
+        CX=C*(DX*NBI(M,XN,YN)+d/M*XN*K_N*NBI(M+1,XN,YN))  !  dami/dx
+        CY=C*(I_*DY*NBI(M,XN,YN)+d/M*YN*K_N*NBI(M+1,XN,YN))  !  dami/dy
+        DA(1,1)=DA(1,1)+AMI+X(1)*CX
+        DA(1,2)=DA(1,2)+X(1)*CY
+        DA(2,1)=DA(2,1)+X(3)*CX
+        DA(2,2)=DA(2,2)+AMI+X(3)*CY
         A(1)=AMI*X(1)+A(1)
         A(2)=AMI*X(3)+A(2)
-        DX=M*DX  
-        DY=I_*M*DY
-        AMI=(EXP(I_*K_N*Z)*EL%B(M,N)/I_/M)
-        C=NBI(M,XN,YN)+(XN**2+YN**2)*NBI(M+1,XN,YN)
-        CX=3*K_N**2*X(1)*NBI(M+1,XN,YN) + (XN**2+YN**2)*XN*K_N*NBI(M+2,XN,YN)
-        CY=3*K_N**2*X(3)*NBI(M+1,XN,YN) + (XN**2+YN**2)*YN*K_N*NBI(M+2,XN,YN)
-        DA(3,1)=DA(3,1)+AMI*(DX*C+D*CX)
-        DA(3,2)=DA(3,2)+AMI*(DY*C+D*CY)
+        A(3)=A(3)-M/I_/K_N*AMI-0.5_DP*I_*EL%B(M,N)*EXP(I_*K_N*Z)*(XN**2+YN**2)*d/M*NBI(M+1,XN,YN)
+
+    DA(3,1)=+DA(3,1)-M*CX/I_/K_N +K_N*C*I_*( DX*(X(1)**2+X(3)**2) +d/M*2*X(1))*NBI(M+1,XN,YN)
+    DA(3,1)=C*I_*d/M*(XN**2+YN**2)*XN*NBI(M+2,XN,YN)+DA(3,1)
+    DA(3,2)=+DA(3,2)-M*CY/I_/K_N+K_N*C*I_*( I_*DY*(X(1)**2+X(3)**2) +d/M*2*X(3))*NBI(M+1,XN,YN)
+    DA(3,2)=C*I_*d/M*(XN**2+YN**2)*YN*NBI(M+2,XN,YN)+DA(3,2)
+
 
      ENDDO
     ENDDO
      DO  N=-EL%N/2,EL%N/2-1
       K_N=TWOPI*N/EL%N/EL%DZ
       XN=K_N*X(1);YN=K_N*X(3)
-        if(K_N/=0) THEN
+        if(N/=0) THEN
          PSIM=PSIM+EXP(I_*K_N*Z)*EL%B(0,N)*NBI(0,XN,YN)/K_N  
+         else
+          PSIM=PSIM+z*EL%B(0,N)*NBI(0,XN,YN)
         ENDIF
         B(1)=EXP(I_*K_N*Z)*XN*EL%B(0,N)*NBI(1,XN,YN)+B(1)
         B(2)=EXP(I_*K_N*Z)*YN*EL%B(0,N)*NBI(1,XN,YN)+B(2)
@@ -14671,8 +14674,8 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
         CY=C*YN*NBI(2,XN,YN)
         DA(1,1)=DA(1,1)-CX*X(3)
         DA(1,2)=DA(1,2)-CY*X(3)-AMI
-        DA(2,1)=DA(1,1)+CX*X(1)+AMI
-        DA(2,2)=DA(1,2)+CY*X(1) 
+        DA(2,1)=DA(2,1)+CX*X(1)+AMI
+        DA(2,2)=DA(2,2)+CY*X(1) 
         A(1)=-AMI*X(3)+A(1)
         A(2)=AMI*X(1)+A(2)
      ENDDO
@@ -14685,8 +14688,8 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
     TYPE(ABELLP), INTENT(INOUT)::EL
     TYPE(REAL_8), INTENT(IN) :: X(6)
     TYPE(REAL_8),  INTENT(In) :: Z
-    TYPE(REAL_8), INTENT(OUT) :: B(3),A(2),DA(3,2),PSIM
-    TYPE(double_complex) X_IP(0:NMAX+1),AM,EX,AMB,AMI,CX,CY,C,D,DX,DY
+    TYPE(REAL_8), INTENT(OUT) :: B(3),A(3),DA(3,2),PSIM
+    TYPE(double_complex) X_IP(0:NMAX+1),AM,EX,AMB,AMI,CX,CY,C,D,DX,DY,dd
     REAL(dp) K_N
     TYPE(REAL_8) XN,YN
     INTEGER I,N,M,J
@@ -14694,6 +14697,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
     CALL alloc(X_IP)
     CALL alloc(AM,EX,AMB,AMI,CX,CY,C,D,DX,DY)
     CALL alloc(XN,YN)
+    call alloc(dd)
 
     X_IP(0)=1.0_DP
     X_IP(1)=X(1)+I_*X(3)
@@ -14703,7 +14707,111 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
     do i=1,3 
      B(i)=0.0_dp
     enddo
-    do i=1,2 
+    do i=1,3 
+     A(i)=0.0_dp
+    enddo
+    DO I=1,3
+    DO J=1,2
+     DA(I,J)=0.0_DP
+    ENDDO
+    ENDDO
+    PSIM=0.0_DP
+    AMI=0.0_DP
+   !  CONJG 
+    DO  M=1,EL%M
+      EX=EXP(-I_*EL%T(M))
+
+     DO  N=-EL%N/2,EL%N/2-1
+      if(n==0) cycle
+      K_N=TWOPI*N/EL%N/EL%DZ
+      XN=K_N*X(1);YN=K_N*X(3)
+        AM=K_N**(M-1)*X_IP(m-1)*EX
+        AMB=CONJG(AM) 
+        D=(AM*X_IP(1)-AMB*CONJG(X_IP(1)))
+        Dd=(AM*X_IP(1)+AMB*CONJG(X_IP(1)))
+        DX=(AM-AMB)  !  M FOR DERIVATIVE
+        DY=(AM+AMB) !  I_ * M FOR DERIVATIVE
+        PSIM=PSIM+EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*dd*NBI(M,XN,YN)      
+        B(1)=DY*M*EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*NBI(M,XN,YN)+B(1)
+        B(1)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M+1,XN,YN)*XN*K_N +B(1)
+        B(2)=I_*DX*M*EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*NBI(M,XN,YN)+B(2)
+        B(2)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M+1,XN,YN)*YN*K_N +B(2)
+        B(3)=I_*K_N*dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M,XN,YN)+B(3)
+        AMI=-K_N*0.5_dp*EXP(I_*K_N*Z)/M*EL%B(M,N)*NBI(M,XN,YN)*d  
+        C= -K_N*EL%B(M,N)*0.5_DP*EXP(I_*K_N*Z) 
+        CX=C*(DX*NBI(M,XN,YN)+d/M*XN*K_N*NBI(M+1,XN,YN))  !  dami/dx
+        CY=C*(I_*DY*NBI(M,XN,YN)+d/M*YN*K_N*NBI(M+1,XN,YN))  !  dami/dy
+        DA(1,1)=DA(1,1)+AMI+X(1)*CX
+        DA(1,2)=DA(1,2)+X(1)*CY
+        DA(2,1)=DA(2,1)+X(3)*CX
+        DA(2,2)=DA(2,2)+AMI+X(3)*CY
+        A(1)=AMI*X(1)+A(1)
+        A(2)=AMI*X(3)+A(2)
+        A(3)=A(3)-M/I_/K_N*AMI-0.5_DP*I_*EL%B(M,N)*EXP(I_*K_N*Z)*(XN**2+YN**2)*d/M*NBI(M+1,XN,YN)
+
+    DA(3,1)=+DA(3,1)-M*CX/I_/K_N +K_N*C*I_*( DX*(X(1)**2+X(3)**2) +d/M*2*X(1))*NBI(M+1,XN,YN)
+    DA(3,1)=C*I_*d/M*(XN**2+YN**2)*XN*NBI(M+2,XN,YN)+DA(3,1)
+    DA(3,2)=+DA(3,2)-M*CY/I_/K_N+K_N*C*I_*( I_*DY*(X(1)**2+X(3)**2) +d/M*2*X(3))*NBI(M+1,XN,YN)
+    DA(3,2)=C*I_*d/M*(XN**2+YN**2)*YN*NBI(M+2,XN,YN)+DA(3,2)
+
+
+     ENDDO
+    ENDDO
+     DO  N=-EL%N/2,EL%N/2-1
+      K_N=TWOPI*N/EL%N/EL%DZ
+      XN=K_N*X(1);YN=K_N*X(3)
+        if(N/=0) THEN
+         PSIM=PSIM+EXP(I_*K_N*Z)*EL%B(0,N)*NBI(0,XN,YN)/K_N  
+         else
+          PSIM=PSIM+z*EL%B(0,N)*NBI(0,XN,YN)
+        ENDIF
+        B(1)=EXP(I_*K_N*Z)*XN*EL%B(0,N)*NBI(1,XN,YN)+B(1)
+        B(2)=EXP(I_*K_N*Z)*YN*EL%B(0,N)*NBI(1,XN,YN)+B(2)
+        B(3)=I_*EXP(I_*K_N*Z)*EL%B(0,N)*NBI(0,XN,YN)+B(3)
+        AMI=I_*EL%B(0,N)*NBI(1,XN,YN)*EXP(I_*K_N*Z)
+        C=I_*EL%B(0,N)*EXP(I_*K_N*Z)*K_N
+        CX=C*XN*NBI(2,XN,YN)
+        CY=C*YN*NBI(2,XN,YN)
+        DA(1,1)=DA(1,1)-CX*X(3)
+        DA(1,2)=DA(1,2)-CY*X(3)-AMI
+        DA(2,1)=DA(2,1)+CX*X(1)+AMI
+        DA(2,2)=DA(2,2)+CY*X(1) 
+        A(1)=-AMI*X(3)+A(1)
+        A(2)=AMI*X(1)+A(2)
+     ENDDO
+    CALL KILL(X_IP)
+    CALL KILL(AM,EX,AMB,AMI,CX,CY,C,D,DX,DY)
+    CALL KILL(XN,YN)
+    call KILL(dd)
+
+  END SUBROUTINE B_FIELDP
+
+
+  SUBROUTINE B_FIELDPold(EL,PSIM,B,A,DA,X,Z)
+    IMPLICIT NONE
+    TYPE(ABELLP), INTENT(INOUT)::EL
+    TYPE(REAL_8), INTENT(IN) :: X(6)
+    TYPE(REAL_8),  INTENT(In) :: Z
+    TYPE(REAL_8), INTENT(OUT) :: B(3),A(3),DA(3,2),PSIM
+    TYPE(double_complex) X_IP(0:NMAX+1),AM,EX,AMB,AMI,CX,CY,C,D,DX,DY,dd
+    REAL(dp) K_N
+    TYPE(REAL_8) XN,YN
+    INTEGER I,N,M,J
+
+    CALL alloc(X_IP)
+    CALL alloc(AM,EX,AMB,AMI,CX,CY,C,D,DX,DY)
+    CALL alloc(XN,YN)
+    call alloc(dd)
+
+    X_IP(0)=1.0_DP
+    X_IP(1)=X(1)+I_*X(3)
+    DO I=2,EL%M+1
+     X_IP(I)=X_IP(I-1)*X_IP(1)
+    ENDDO
+    do i=1,3 
+     B(i)=0.0_dp
+    enddo
+    do i=1,3 
      A(i)=0.0_dp
     enddo
     DO I=1,3
@@ -14723,32 +14831,32 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
         AM=K_N**(M-1)*X_IP(m-1)*EX
         AMB=CONJG(AM) 
         D=(AM*X_IP(1)-AMB*CONJG(X_IP(1)))
+        Dd=(AM*X_IP(1)+AMB*CONJG(X_IP(1)))
         DX=(AM-AMB)  !  M FOR DERIVATIVE
         DY=(AM+AMB) !  I_ * M FOR DERIVATIVE
-        PSIM=PSIM+EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*(AM*X_IP(1)+AMB*CONJG(X_IP(1)))*NBI(M,XN,YN)      
-        B(1)=DY*M*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M,XN,YN)+B(1)
-        B(1)=(AM*X_IP(1)+AMB*CONJG(X_IP(1)))*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M+1,XN,YN)*XN*K_N +B(1)
-        B(2)=I_*DX*M*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M,XN,YN)+B(2)
-        B(2)=(AM*X_IP(1)+AMB*CONJG(X_IP(1)))*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M+1,XN,YN)*YN*K_N +B(2)
-        B(3)=I_*K_N*(AM*X_IP(1)+AMB*CONJG(X_IP(1)))*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M,XN,YN)+B(3)
-        AMI=I_*K_N*EL%B(M,N)*NBI(M,XN,YN)*(I_*AM*X_IP(1)/(M+1)-I_*AMB*CONJG(X_IP(1)))
-        C= K_N*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*(-AM*X_IP(1)/M+AMB*CONJG(X_IP(1))/M)
-        CX=K_N*EL%B(M,N)*0.5_DP*EXP(I_*K_N*Z)*(-DX)
-        CY=-I_*K_N*EL%B(M,N)*0.5_DP*EXP(I_*K_N*Z)*(DY)
-        DA(1,1)=DA(1,1)+(C+X(1)*CX)*NBI(M,XN,YN)+C*XN**2*NBI(M+1,XN,YN)
-        DA(1,2)=DA(1,2)+(X(1)*CY)*NBI(M,XN,YN)+C*XN*YN*NBI(M+1,XN,YN)
-        DA(2,1)=DA(2,1)+(X(3)*CX)*NBI(M,XN,YN)+C*XN*YN*NBI(M+1,XN,YN)
-        DA(2,2)=DA(2,2)+(C+X(3)*CY)*NBI(M,XN,YN)+C*YN**2*NBI(M+1,XN,YN)
+        PSIM=PSIM+EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*dd*NBI(M,XN,YN)      
+        B(1)=DY*M*EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*NBI(M,XN,YN)+B(1)
+        B(1)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M+1,XN,YN)*XN*K_N +B(1)
+        B(2)=I_*DX*M*EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*NBI(M,XN,YN)+B(2)
+        B(2)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M+1,XN,YN)*YN*K_N +B(2)
+        B(3)=I_*K_N*dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*NBI(M,XN,YN)+B(3)
+        AMI=-K_N*0.5_dp*EXP(I_*K_N*Z)/M*EL%B(M,N)*NBI(M,XN,YN)*d  
+        C= -K_N*EL%B(M,N)*0.5_DP*EXP(I_*K_N*Z) 
+        CX=C*(DX*NBI(M,XN,YN)+d/M*XN*K_N*NBI(M+1,XN,YN))  !  dami/dx
+        CY=C*(I_*DY*NBI(M,XN,YN)+d/M*YN*K_N*NBI(M+1,XN,YN))  !  dami/dy
+        DA(1,1)=DA(1,1)+AMI+X(1)*CX
+        DA(1,2)=DA(1,2)+X(1)*CY
+        DA(2,1)=DA(2,1)+X(3)*CX
+        DA(2,2)=DA(2,2)+AMI+X(3)*CY
         A(1)=AMI*X(1)+A(1)
         A(2)=AMI*X(3)+A(2)
-        DX=M*DX  
-        DY=I_*M*DY
-        AMI=(EXP(I_*K_N*Z)*EL%B(M,N)/I_/M)
-        C=NBI(M,XN,YN)+(XN**2+YN**2)*NBI(M+1,XN,YN)
-        CX=3*K_N**2*X(1)*NBI(M+1,XN,YN) + (XN**2+YN**2)*XN*K_N*NBI(M+2,XN,YN)
-        CY=3*K_N**2*X(3)*NBI(M+1,XN,YN) + (XN**2+YN**2)*YN*K_N*NBI(M+2,XN,YN)
-        DA(3,1)=DA(3,1)+AMI*(DX*C+D*CX)
-        DA(3,2)=DA(3,2)+AMI*(DY*C+D*CY)
+        A(3)=A(3)-M/I_/K_N*AMI-0.5_DP*I_*EL%B(M,N)*EXP(I_*K_N*Z)*(XN**2+YN**2)*d/M*NBI(M+1,XN,YN)
+
+    DA(3,1)=+DA(3,1)-M*CX/I_/K_N +K_N*C*I_*( DX*(X(1)**2+X(3)**2) +d/M*2*X(1))*NBI(M+1,XN,YN)
+    DA(3,1)=C*I_*d/M*(XN**2+YN**2)*XN*NBI(M+2,XN,YN)+DA(3,1)
+    DA(3,2)=+DA(3,2)-M*CY/I_/K_N+K_N*C*I_*( I_*DY*(X(1)**2+X(3)**2) +d/M*2*X(3))*NBI(M+1,XN,YN)
+    DA(3,2)=C*I_*d/M*(XN**2+YN**2)*YN*NBI(M+2,XN,YN)+DA(3,2)
+
 
      ENDDO
     ENDDO
@@ -14767,15 +14875,17 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
         CY=C*YN*NBI(2,XN,YN)
         DA(1,1)=DA(1,1)-CX*X(3)
         DA(1,2)=DA(1,2)-CY*X(3)-AMI
-        DA(2,1)=DA(1,1)+CX*X(1)+AMI
-        DA(2,2)=DA(1,2)+CY*X(1) 
+        DA(2,1)=DA(2,1)+CX*X(1)+AMI
+        DA(2,2)=DA(2,2)+CY*X(1) 
         A(1)=-AMI*X(3)+A(1)
         A(2)=AMI*X(1)+A(2)
      ENDDO
     CALL KILL(X_IP)
     CALL KILL(AM,EX,AMB,AMI,CX,CY,C,D,DX,DY)
     CALL KILL(XN,YN)
-  END SUBROUTINE B_FIELDP
+    call KILL(dd)
+
+  END SUBROUTINE B_FIELDPold
 
   SUBROUTINE ZERO_ABELLP(EL,I)
     IMPLICIT NONE

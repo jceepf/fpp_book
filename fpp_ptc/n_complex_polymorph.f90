@@ -4167,7 +4167,8 @@ contains
        !w_p%fc='((1X,A72,/,1x,a72))'
        !w_p%fi='(1((1X,i4)))'
          write(6,*) " trouble in cpscmul"
-         write(6,*) "s1%kind "
+         write(6,*) "s1%kind ",s1%kind
+         read(5,*) localmaster
        !w_p=(/s1%kind/)
        ! call !write_e(0)
     end select
