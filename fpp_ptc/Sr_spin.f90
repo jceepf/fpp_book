@@ -1335,6 +1335,15 @@ contains
 
        call A_TRANS(EL%cav21,Z,X,k,A,AD,B,E)
 
+    CASE(kindabell)     ! travelling wave cavity
+       IF(EL%ab%P%DIR==1) THEN
+          Z= pos*el%l/el%p%nst
+       ELSE
+          Z=EL%L-pos*el%l/el%p%nst
+       ENDIF
+
+       call B_FIELD(EL%ab,x,Z,B_in=b)
+
 
     CASE(KIND22)     ! helical dipole
        IF(EL%HE22%P%DIR==1) THEN
@@ -1438,6 +1447,16 @@ contains
        call A_TRANS(EL%cav21,Z,X,k,A,AD,B,E)
        call kill(a,3)
        call kill(ad,3)
+
+    CASE(kindabell)     ! travelling wave cavity
+       IF(EL%ab%P%DIR==1) THEN
+          Z= pos*el%l/el%p%nst
+       ELSE
+          Z=EL%L-pos*el%l/el%p%nst
+       ENDIF
+
+       call B_FIELD(EL%ab,x,Z,B_in=b)
+
     CASE(KIND22)     ! helical dipole
        IF(EL%HE22%P%DIR==1) THEN
           Z= pos*el%l/el%p%nst
@@ -2087,7 +2106,40 @@ call kill(e)
           E(3)=N/DP1
           XP(1)=XPA(1)/N
           XP(2)=XPA(2)/N
+       ELSEif(el%kind==kindabell) then
+    
 
+
+
+          if(el%ab%xprime) then
+               N=SQRT(DP1**2-X(2)**2-X(4)**2)
+
+               E(1)=X(2)/DP1
+               E(2)=X(4)/DP1
+               E(3)=N/DP1
+               XPA(1)=X(2)
+               XPA(2)=X(4)
+               XP(1)=X(2)/N
+               XP(2)=X(4)/N
+          else
+             call B_FIELD(EL%ab,X,Z,A_in=av)
+             IF(EL%ab%P%DIR==1) THEN
+                Z= pos*el%l/el%p%nst
+             ELSE
+                Z=EL%L-pos*el%l/el%p%nst
+             ENDIF
+ 
+             Xpa(1)=X(2)-EL%P%CHARGE*AV(1)
+             Xpa(2)=X(4)-EL%P%CHARGE*AV(2)
+             N=SQRT(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+             E(1)=Xpa(1)/DP1
+             E(2)=Xpa(2)/DP1
+             E(3)=N/DP1
+             XP(1)=XPA(1)/N
+             XP(2)=XPA(2)/N
+
+             endif
        else
 
 
@@ -2193,6 +2245,41 @@ call kill(e)
           XP(2)=XPA(2)/N
           CALL KILL(AV,3)
 
+       ELSEif(el%kind==kindabell) then
+    
+
+
+
+          if(el%ab%xprime) then
+               N=SQRT(DP1**2-X(2)**2-X(4)**2)
+
+               E(1)=X(2)/DP1
+               E(2)=X(4)/DP1
+               E(3)=N/DP1
+               XPA(1)=X(2)
+               XPA(2)=X(4)
+               XP(1)=X(2)/N
+               XP(2)=X(4)/N
+          else
+             CALL ALLOC(AV,3)
+             call B_FIELD(EL%ab,X,Z,A_in=av)
+             IF(EL%ab%P%DIR==1) THEN
+                Z= pos*el%l/el%p%nst
+             ELSE
+                Z=EL%L-pos*el%l/el%p%nst
+             ENDIF
+ 
+             Xpa(1)=X(2)-EL%P%CHARGE*AV(1)
+             Xpa(2)=X(4)-EL%P%CHARGE*AV(2)
+             N=SQRT(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+             E(1)=Xpa(1)/DP1
+             E(2)=Xpa(2)/DP1
+             E(3)=N/DP1
+             XP(1)=XPA(1)/N
+             XP(2)=XPA(2)/N
+             CALL KILL(AV,3)
+             endif
        else
 
 

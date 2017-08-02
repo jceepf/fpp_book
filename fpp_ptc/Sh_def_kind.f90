@@ -14442,6 +14442,12 @@ SUBROUTINE ZEROr_teapot(EL,I)
        if(ASSOCIATED(EL%B)) then
           deallocate(EL%B)
        endif
+       if(ASSOCIATED(EL%E)) then
+          deallocate(EL%E)
+       endif
+       if(ASSOCIATED(EL%TE)) then
+          deallocate(EL%TE)
+       endif
           deallocate(EL%SCALE,el%angc,el%hc,el%dc,el%xc,el%vc,el%xprime)
     elseif(i==0)       then          ! nullifies
 
@@ -14449,6 +14455,8 @@ SUBROUTINE ZEROr_teapot(EL,I)
        NULLIFY(EL%M)
        NULLIFY(EL%B)
        NULLIFY(EL%T)
+       NULLIFY(EL%E)
+       NULLIFY(EL%TE)
        NULLIFY(EL%DZ)
        NULLIFY(EL%SCALE,el%angc,el%hc,el%dc,el%xc,el%vc,el%xprime)
 
@@ -14467,7 +14475,8 @@ SUBROUTINE ZEROr_teapot(EL,I)
      
      e=0.0_dp
      DEL=0.0_DP
-     call B_FIELD(EL,vm,B,A,DA,X,Z,charge=.true.)
+!     call B_FIELD(EL,vm,B,A,DA,X,Z,charge=.true.)
+
 
 
 
@@ -14477,6 +14486,9 @@ SUBROUTINE ZEROr_teapot(EL,I)
 
 
     if(el%xprime) then   !!!!   
+
+     call B_FIELD(EL,X,Z,B_in=b,charge=.true.)
+
        b(1)=el%p%charge*dir*b(1)
        b(2)=el%p%charge*dir*b(2)
        b(3)=el%p%charge*b(3)
@@ -14488,7 +14500,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
         endif
     else
 
-
+     call B_FIELD(EL,X,Z,A_in=a,DA_in=da,charge=.true.)
      H=1.0_dp+EL%P%B0*X(1)
      IF(EL%P%EXACT) THEN
         if(k%TIME) then
@@ -14556,11 +14568,12 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
      enddo
      e=0.0_dp
      DEL=0.0_DP
-     call B_FIELD(EL,vm,B,A,DA,X,Z,charge=.true.)
+!     call B_FIELD(EL,vm,B,A,DA,X,Z,charge=.true.)
 
      e(3)=del
      DIR=EL%P%DIR   !*EL%P%CHARGE
     if(el%xprime) then   !!!!   
+     call B_FIELD(EL,X,Z,B_in=b,charge=.true.)
        b(1)=el%p%charge*dir*b(1)
        b(2)=el%p%charge*dir*b(2)
        b(3)=el%p%charge*b(3)
@@ -14571,7 +14584,7 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
           F(6)=f(6)+(k%TOTALPATH-1)
         endif
     else
-
+     call B_FIELD(EL,X,Z,A_in=a,DA_in=da,charge=.true.)
      H=1.0_dp+EL%P%B0*X(1)
      IF(EL%P%EXACT) THEN
         if(k%TIME) then
@@ -14627,15 +14640,19 @@ endif
      enddo
    END subroutine feval_abellP
 
-  SUBROUTINE B_FIELDR(EL,PSIM,B,A,DA,X,Z,charge)
+  SUBROUTINE B_FIELDR(EL,X,Z,PSIE_in,E_in,PSIM_in,B_in,A_in,DA_in,charge)
     IMPLICIT NONE
     TYPE(ABELL), INTENT(INOUT)::EL
     logical, optional :: charge
-    REAL(DP), INTENT(IN) :: X(6),Z
-    REAL(DP), INTENT(OUT) :: B(3),A(3),DA(3,2),PSIM
+    real(dp), intent(inout) :: x(6)
+    real(dp), intent(in) :: z
+    REAL(DP), optional, INTENT(OUT) :: E_IN(3), B_IN(3),A_IN(3),DA_IN(3,2),PSIM_IN,PSIE_IN
+    REAL(DP)  B(3),A(3),DA(3,2),PSIM,PSIE,E(3)
     COMPLEX(dp) X_IP(0:NMAX+1),AM,EX,AMB,AMI,CX,CY,C,D,DX,DY,dd
+    COMPLEX(dp) DE,DXE,DYE,ddE,AME,EXE,AMBE,AMIE
     REAL(dp) K_N,XN,YN,nbm,nbm1,nbm2
     INTEGER I,N,M,J
+
 
     X_IP(0)=1.0_DP
     X_IP(1)=X(1)+I_*X(3)
@@ -14646,6 +14663,9 @@ endif
      B(i)=0.0_dp
     enddo
     do i=1,3 
+     E(i)=0.0_dp
+    enddo
+    do i=1,3 
      A(i)=0.0_dp
     enddo
     DO I=1,3
@@ -14654,11 +14674,12 @@ endif
     ENDDO
     ENDDO
     PSIM=0.0_DP
+    PSIE=0.0_DP
     AMI=0.0_DP
    !  CONJG 
     DO  M=1,EL%M
       EX=EXP(-I_*EL%T(M))
-
+      EXE=EXP(-I_*EL%TE(M))
      DO  N=-EL%N/2,EL%N/2-1
       if(n==0) cycle
       K_N=TWOPI*N/EL%N/EL%DZ(M)
@@ -14669,6 +14690,13 @@ endif
         Dd=(AM*X_IP(1)+AMB*CONJG(X_IP(1)))
         DX=(AM-AMB)  !  M FOR DERIVATIVE
         DY=(AM+AMB) !  I_ * M FOR DERIVATIVE
+        AME=K_N**(M-1)*X_IP(m-1)*EXE
+        AMBE=CONJG(AME) 
+        DE=(AME*X_IP(1)-AMBE*CONJG(X_IP(1)))
+        DdE=(AME*X_IP(1)+AMBE*CONJG(X_IP(1)))
+        DXE=(AME-AMBE)  !  M FOR DERIVATIVE
+        DYE=(AME+AMBE) !  I_ * M FOR DERIVATIVE
+
         nbm=NBI(M,XN,YN)   
         nbm1=NBI(M+1,XN,YN)   
         nbm2=NBI(M+2,XN,YN)    
@@ -14678,6 +14706,13 @@ endif
         B(2)=I_*DX*M*EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*nbm+B(2)
         B(2)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm1*YN*K_N +B(2)
         B(3)=I_*K_N*dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm+B(3)
+        PSIE=PSIE+EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*ddE*nbm      
+        E(1)=DYE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(1)
+        E(1)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*XN*K_N +E(1)
+        E(2)=I_*DXE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(2)
+        E(2)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
+        E(3)=I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
+
         AMI=-K_N*0.5_dp*EXP(I_*K_N*Z)/M*EL%B(M,N)*nbm*d  
         C= -K_N*EL%B(M,N)*0.5_DP*EXP(I_*K_N*Z) 
         CX=C*(DX*nbm+d/M*XN*K_N*nbm1)  !  dami/dx
@@ -14704,13 +14739,18 @@ endif
         nbm=NBI(0,XN,YN)   
         nbm1=NBI(1,XN,YN)   
         if(N/=0) THEN
-         PSIM=PSIM+EXP(I_*K_N*Z)*EL%B(0,N)*nbm/K_N  
+         PSIM=PSIM+EXP(I_*K_N*Z)*EL%B(0,N)*nbm/K_N 
+         PSIE=PSIE+EXP(I_*K_N*Z)*EL%E(0,N)*nbm/K_N  
          else
           PSIM=PSIM+z*EL%B(0,N)*nbm
+          PSIE=PSIE+z*EL%E(0,N)*nbm
         ENDIF
         B(1)=EXP(I_*K_N*Z)*XN*EL%B(0,N)*nbm1+B(1)
         B(2)=EXP(I_*K_N*Z)*YN*EL%B(0,N)*nbm1+B(2)
         B(3)=I_*EXP(I_*K_N*Z)*EL%B(0,N)*nbm+B(3)
+        E(1)=EXP(I_*K_N*Z)*XN*EL%E(0,N)*nbm1+E(1)
+        E(2)=EXP(I_*K_N*Z)*YN*EL%E(0,N)*nbm1+E(2)
+        E(3)=I_*EXP(I_*K_N*Z)*EL%E(0,N)*nbm+E(3)
         AMI=I_*EL%B(0,N)*nbm1*EXP(I_*K_N*Z)
         C=I_*EL%B(0,N)*EXP(I_*K_N*Z)*K_N
         CX=C*XN*NBI(2,XN,YN)
@@ -14724,35 +14764,76 @@ endif
      ENDDO
      if(present(charge)) then
      if(charge) then
+        PSIE=el%scale*el%p%charge*PSIE
+        PSIM=el%scale*el%p%charge*PSIM
       do i=1,3
-        a(i)=el%p%charge*a(i)
-        b(i)=el%p%charge*b(i)
-        PSIM=el%p%charge*PSIM
+        a(i)=el%scale*el%p%charge*a(i)
+        b(i)=el%scale*el%p%charge*b(i)
+        e(i)=el%scale*el%p%charge*e(i)
        do j=1,2
-        da(i,j)=el%p%charge*da(i,j)
+        da(i,j)=el%scale*el%p%charge*da(i,j)
       enddo
       enddo
      endif
      endif
+IF(PRESENT(PSIM_in) ) psim_in=psim 
+IF(PRESENT(PSIE_in) ) psiE_in=psiE   
+if(present(b_in)) then
+ do i=1,3
+  b_in(i)=b(i)
+ enddo
+endif
+if(present(E_in)) then
+ do i=1,3
+  E_in(i)=E(i)
+ enddo
+endif
+if(present(a_in)) then
+ do i=1,3
+  a_in(i)=a(i)
+ enddo
+endif
+if(present(da_in)) then
+ do i=1,3
+ do j=1,2
+  da_in(i,j)=da(i,j)
+ enddo
+ enddo
+endif
+
+
   END SUBROUTINE B_FIELDR
 
-
-  SUBROUTINE B_FIELDP(EL,PSIM,B,A,DA,X,Z,charge)
+  SUBROUTINE B_FIELDP(EL,X,Z,PSIE_in,E_in,PSIM_in,B_in,A_in,DA_in,charge)
     IMPLICIT NONE
     TYPE(ABELLP), INTENT(INOUT)::EL
     TYPE(REAL_8), INTENT(IN) :: X(6)
     logical, optional :: charge
     TYPE(REAL_8),  INTENT(In) :: Z
-    TYPE(REAL_8), INTENT(OUT) :: B(3),A(3),DA(3,2),PSIM
+    TYPE(REAL_8), optional, INTENT(OUT) :: E_IN(3), B_IN(3),A_IN(3),DA_IN(3,2),PSIM_IN,PSIE_IN
+    TYPE(REAL_8)  B(3),A(3),DA(3,2),PSIM,PSIE,E(3)
     TYPE(double_complex) X_IP(0:NMAX+1),AM,EX,AMB,AMI,CX,CY,C,D,DX,DY,dd
+    TYPE(double_complex) DE,DXE,DYE,ddE,AME,EXE,AMBE,AMIE
     REAL(dp) K_N
     TYPE(REAL_8) XN,YN,nbm,nbm1,nbm2
     INTEGER I,N,M,J
 
     CALL alloc(X_IP)
     CALL alloc(AM,EX,AMB,AMI,CX,CY,C,D,DX,DY)
+    CALL ALLOC(DE,DXE,DYE,ddE,AME,EXE,AMBE,AMIE)
     CALL alloc(XN,YN,nbm,nbm1,nbm2)
     call alloc(dd)
+    call alloc(B);  
+    call alloc(A);  
+    CALL alloc(PSIM)
+    call alloc(E); 
+    CALL alloc(PSIE)
+    DO I=1,3
+    DO J=1,2
+     CALL alloC(DA(I,J)) 
+    ENDDO
+    ENDDO
+
 
     X_IP(0)=1.0_DP
     X_IP(1)=X(1)+I_*X(3)
@@ -14763,6 +14844,9 @@ endif
      B(i)=0.0_dp
     enddo
     do i=1,3 
+     E(i)=0.0_dp
+    enddo
+    do i=1,3 
      A(i)=0.0_dp
     enddo
     DO I=1,3
@@ -14771,11 +14855,12 @@ endif
     ENDDO
     ENDDO
     PSIM=0.0_DP
+    PSIE=0.0_DP
     AMI=0.0_DP
    !  CONJG 
     DO  M=1,EL%M
       EX=EXP(-I_*EL%T(M))
-
+      EXE=EXP(-I_*EL%TE(M))
      DO  N=-EL%N/2,EL%N/2-1
       if(n==0) cycle
       K_N=TWOPI*N/EL%N/EL%DZ(M)
@@ -14786,15 +14871,29 @@ endif
         Dd=(AM*X_IP(1)+AMB*CONJG(X_IP(1)))
         DX=(AM-AMB)  !  M FOR DERIVATIVE
         DY=(AM+AMB) !  I_ * M FOR DERIVATIVE
+        AME=K_N**(M-1)*X_IP(m-1)*EXE
+        AMBE=CONJG(AME) 
+        DE=(AME*X_IP(1)-AMBE*CONJG(X_IP(1)))
+        DdE=(AME*X_IP(1)+AMBE*CONJG(X_IP(1)))
+        DXE=(AME-AMBE)  !  M FOR DERIVATIVE
+        DYE=(AME+AMBE) !  I_ * M FOR DERIVATIVE
+
         nbm=NBI(M,XN,YN)   
         nbm1=NBI(M+1,XN,YN)   
-        nbm2=NBI(M+2,XN,YN)   
+        nbm2=NBI(M+2,XN,YN)    
         PSIM=PSIM+EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*dd*nbm      
         B(1)=DY*M*EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*nbm+B(1)
         B(1)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm1*XN*K_N +B(1)
         B(2)=I_*DX*M*EXP(I_*K_N*Z)*0.5_DP*EL%B(M,N)*nbm+B(2)
         B(2)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm1*YN*K_N +B(2)
         B(3)=I_*K_N*dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm+B(3)
+        PSIE=PSIE+EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*ddE*nbm      
+        E(1)=DYE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(1)
+        E(1)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*XN*K_N +E(1)
+        E(2)=I_*DXE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(2)
+        E(2)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
+        E(3)=I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
+
         AMI=-K_N*0.5_dp*EXP(I_*K_N*Z)/M*EL%B(M,N)*nbm*d  
         C= -K_N*EL%B(M,N)*0.5_DP*EXP(I_*K_N*Z) 
         CX=C*(DX*nbm+d/M*XN*K_N*nbm1)  !  dami/dx
@@ -14821,13 +14920,18 @@ endif
         nbm=NBI(0,XN,YN)   
         nbm1=NBI(1,XN,YN)   
         if(N/=0) THEN
-         PSIM=PSIM+EXP(I_*K_N*Z)*EL%B(0,N)*nbm/K_N  
+         PSIM=PSIM+EXP(I_*K_N*Z)*EL%B(0,N)*nbm/K_N 
+         PSIE=PSIE+EXP(I_*K_N*Z)*EL%E(0,N)*nbm/K_N  
          else
           PSIM=PSIM+z*EL%B(0,N)*nbm
+          PSIE=PSIE+z*EL%E(0,N)*nbm
         ENDIF
         B(1)=EXP(I_*K_N*Z)*XN*EL%B(0,N)*nbm1+B(1)
         B(2)=EXP(I_*K_N*Z)*YN*EL%B(0,N)*nbm1+B(2)
         B(3)=I_*EXP(I_*K_N*Z)*EL%B(0,N)*nbm+B(3)
+        E(1)=EXP(I_*K_N*Z)*XN*EL%E(0,N)*nbm1+E(1)
+        E(2)=EXP(I_*K_N*Z)*YN*EL%E(0,N)*nbm1+E(2)
+        E(3)=I_*EXP(I_*K_N*Z)*EL%E(0,N)*nbm+E(3)
         AMI=I_*EL%B(0,N)*nbm1*EXP(I_*K_N*Z)
         C=I_*EL%B(0,N)*EXP(I_*K_N*Z)*K_N
         CX=C*XN*NBI(2,XN,YN)
@@ -14841,21 +14945,58 @@ endif
      ENDDO
      if(present(charge)) then
      if(charge) then
+        PSIE=el%scale*el%p%charge*PSIE
+        PSIM=el%scale*el%p%charge*PSIM
       do i=1,3
-        a(i)=el%p%charge*a(i)
-        b(i)=el%p%charge*b(i)
-        PSIM=el%p%charge*PSIM
+        a(i)=el%scale*el%p%charge*a(i)
+        b(i)=el%scale*el%p%charge*b(i)
+        e(i)=el%scale*el%p%charge*e(i)
        do j=1,2
-        da(i,j)=el%p%charge*da(i,j)
+        da(i,j)=el%scale*el%p%charge*da(i,j)
       enddo
       enddo
      endif
      endif
+IF(PRESENT(PSIM_in) ) psim_in=psim 
+IF(PRESENT(PSIE_in) ) psiE_in=psiE   
+if(present(b_in)) then
+ do i=1,3
+  b_in(i)=b(i)
+ enddo
+endif
+if(present(E_in)) then
+ do i=1,3
+  E_in(i)=E(i)
+ enddo
+endif
+if(present(a_in)) then
+ do i=1,3
+  a_in(i)=a(i)
+ enddo
+endif
+if(present(da_in)) then
+ do i=1,3
+ do j=1,2
+  da_in(i,j)=da(i,j)
+ enddo
+ enddo
+endif
+
     CALL KILL(X_IP)
     CALL KILL(AM,EX,AMB,AMI,CX,CY,C,D,DX,DY)
+    CALL KILL(DE,DXE,DYE,ddE,AME,EXE,AMBE,AMIE)
     CALL KILL(XN,YN,nbm,nbm1,nbm2)
     call KILL(dd)
-
+    call KILL(B);  
+    call KILL(A);  
+    CALL KILL(PSIM)
+    call KILL(E); 
+    CALL KILL(PSIE)
+    DO I=1,3
+    DO J=1,2
+     CALL KILL(DA(I,J)) 
+    ENDDO
+    ENDDO
   END SUBROUTINE B_FIELDP
 
 
@@ -14880,6 +15021,12 @@ endif
        if(ASSOCIATED(EL%B)) then
           deallocate(EL%B)
        endif
+       if(ASSOCIATED(EL%TE)) then
+          deallocate(EL%TE)
+       endif
+       if(ASSOCIATED(EL%E)) then
+          deallocate(EL%E)
+       endif
           call kill(EL%SCALE)
           deallocate(EL%SCALE,el%angc,el%hc,el%dc,el%xc,el%vc,el%xprime)
     elseif(i==0)       then          ! nullifies
@@ -14888,6 +15035,8 @@ endif
        NULLIFY(EL%M)
        NULLIFY(EL%B)
        NULLIFY(EL%T)
+       NULLIFY(EL%E)
+       NULLIFY(EL%TE)
        NULLIFY(EL%DZ)
        NULLIFY(EL%SCALE,el%angc,el%hc,el%dc,el%xc,el%vc,el%xprime)
     endif
@@ -16018,6 +16167,8 @@ endif
 !    ELP%m=EL%m
     ELP%B=EL%B
     ELP%T=EL%T
+    ELP%E=EL%E
+    ELP%TE=EL%TE
     ELP%DZ=EL%DZ
     ELP%SCALE  = EL%SCALE
     ELP%angc  = EL%angc
@@ -16038,6 +16189,8 @@ endif
 !    ELP%m=EL%m
     ELP%B=EL%B
     ELP%T=EL%T
+    ELP%E=EL%E
+    ELP%TE=EL%TE
     ELP%DZ=EL%DZ
     ELP%SCALE  = EL%SCALE
     ELP%angc  = EL%angc
@@ -16059,6 +16212,8 @@ endif
 !    ELP%m=EL%m
     ELP%B=EL%B
     ELP%T=EL%T
+    ELP%E=EL%E
+    ELP%TE=EL%TE
     ELP%DZ=EL%DZ
     ELP%SCALE  = EL%SCALE
     ELP%angc  = EL%angc
