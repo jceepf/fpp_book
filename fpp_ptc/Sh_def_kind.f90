@@ -14681,7 +14681,7 @@ endif
       EX=EXP(-I_*EL%T(M))
       EXE=EXP(-I_*EL%TE(M))
      DO  N=-EL%N/2,EL%N/2-1
-      if(n==0) cycle
+
       K_N=TWOPI*N/EL%N/EL%DZ(M)
       XN=K_N*X(1);YN=K_N*X(3)
         AM=K_N**(M-1)*X_IP(m-1)*EX
@@ -14713,6 +14713,23 @@ endif
         E(2)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
         E(3)=I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
 
+        if(n==0) then
+        AMI=-0.5_dp*EXP(I_*K_N*Z)/M*EL%B(M,N)*nbm*d  
+        C= -EL%B(M,N)*0.5_DP*EXP(I_*K_N*Z) 
+        CX=C*(DX*nbm+d/M*XN*K_N*nbm1)  !  dami/dx
+        CY=C*(I_*DY*nbm+d/M*YN*K_N*nbm1)  !  dami/dy
+        DA(1,1)=DA(1,1)+AMI+X(1)*CX
+        DA(1,2)=DA(1,2)+X(1)*CY
+        DA(2,1)=DA(2,1)+X(3)*CX   
+        DA(2,2)=DA(2,2)+AMI+X(3)*CY
+        A(1)=AMI*X(1)+A(1)
+        A(2)=AMI*X(3)+A(2)
+          A(3)=A(3)-M/I_*AMI-0.5_DP*I_*EL%B(M,N)*EXP(I_*K_N*Z)*(XN**2+YN**2)*d/M*nbm1
+          DA(3,1)=+DA(3,1)+K_N*C*I_*( DX*(X(1)**2+X(3)**2) +d/M*2*X(1))*nbm1
+          DA(3,1)=C*I_*d/M*(XN**2+YN**2)*XN*nbm2+DA(3,1)
+          DA(3,2)=+DA(3,2)+K_N*C*I_*( I_*DY*(X(1)**2+X(3)**2) +d/M*2*X(3))*nbm1
+          DA(3,2)=C*I_*d/M*(XN**2+YN**2)*YN*nbm2+DA(3,2)
+        else
         AMI=-K_N*0.5_dp*EXP(I_*K_N*Z)/M*EL%B(M,N)*nbm*d  
         C= -K_N*EL%B(M,N)*0.5_DP*EXP(I_*K_N*Z) 
         CX=C*(DX*nbm+d/M*XN*K_N*nbm1)  !  dami/dx
@@ -14723,12 +14740,12 @@ endif
         DA(2,2)=DA(2,2)+AMI+X(3)*CY
         A(1)=AMI*X(1)+A(1)
         A(2)=AMI*X(3)+A(2)
-        A(3)=A(3)-M/I_/K_N*AMI-0.5_DP*I_*EL%B(M,N)*EXP(I_*K_N*Z)*(XN**2+YN**2)*d/M*nbm1
-
-    DA(3,1)=+DA(3,1)-M*CX/I_/K_N +K_N*C*I_*( DX*(X(1)**2+X(3)**2) +d/M*2*X(1))*nbm1
-    DA(3,1)=C*I_*d/M*(XN**2+YN**2)*XN*nbm2+DA(3,1)
-    DA(3,2)=+DA(3,2)-M*CY/I_/K_N+K_N*C*I_*( I_*DY*(X(1)**2+X(3)**2) +d/M*2*X(3))*nbm1
-    DA(3,2)=C*I_*d/M*(XN**2+YN**2)*YN*nbm2+DA(3,2)
+          A(3)=A(3)-M/I_/K_N*AMI-0.5_DP*I_*EL%B(M,N)*EXP(I_*K_N*Z)*(XN**2+YN**2)*d/M*nbm1
+          DA(3,1)=+DA(3,1)-M*CX/I_/K_N +K_N*C*I_*( DX*(X(1)**2+X(3)**2) +d/M*2*X(1))*nbm1
+          DA(3,1)=C*I_*d/M*(XN**2+YN**2)*XN*nbm2+DA(3,1)
+          DA(3,2)=+DA(3,2)-M*CY/I_/K_N+K_N*C*I_*( I_*DY*(X(1)**2+X(3)**2) +d/M*2*X(3))*nbm1
+          DA(3,2)=C*I_*d/M*(XN**2+YN**2)*YN*nbm2+DA(3,2)
+        endif
 
 
      ENDDO
@@ -14862,7 +14879,7 @@ endif
       EX=EXP(-I_*EL%T(M))
       EXE=EXP(-I_*EL%TE(M))
      DO  N=-EL%N/2,EL%N/2-1
-      if(n==0) cycle
+ 
       K_N=TWOPI*N/EL%N/EL%DZ(M)
       XN=K_N*X(1);YN=K_N*X(3)
         AM=K_N**(M-1)*X_IP(m-1)*EX
@@ -14894,6 +14911,24 @@ endif
         E(2)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
         E(3)=I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
 
+
+        if(n==0) then
+        AMI=-0.5_dp*EXP(I_*K_N*Z)/M*EL%B(M,N)*nbm*d  
+        C= -EL%B(M,N)*0.5_DP*EXP(I_*K_N*Z) 
+        CX=C*(DX*nbm+d/M*XN*K_N*nbm1)  !  dami/dx
+        CY=C*(I_*DY*nbm+d/M*YN*K_N*nbm1)  !  dami/dy
+        DA(1,1)=DA(1,1)+AMI+X(1)*CX
+        DA(1,2)=DA(1,2)+X(1)*CY
+        DA(2,1)=DA(2,1)+X(3)*CX
+        DA(2,2)=DA(2,2)+AMI+X(3)*CY
+        A(1)=AMI*X(1)+A(1)
+        A(2)=AMI*X(3)+A(2)
+          A(3)=A(3)-M/I_*AMI-0.5_DP*I_*EL%B(M,N)*EXP(I_*K_N*Z)*(XN**2+YN**2)*d/M*nbm1
+          DA(3,1)=+DA(3,1)+K_N*C*I_*( DX*(X(1)**2+X(3)**2) +d/M*2*X(1))*nbm1
+          DA(3,1)=C*I_*d/M*(XN**2+YN**2)*XN*nbm2+DA(3,1)
+          DA(3,2)=+DA(3,2)+K_N*C*I_*( I_*DY*(X(1)**2+X(3)**2) +d/M*2*X(3))*nbm1
+          DA(3,2)=C*I_*d/M*(XN**2+YN**2)*YN*nbm2+DA(3,2)
+        else
         AMI=-K_N*0.5_dp*EXP(I_*K_N*Z)/M*EL%B(M,N)*nbm*d  
         C= -K_N*EL%B(M,N)*0.5_DP*EXP(I_*K_N*Z) 
         CX=C*(DX*nbm+d/M*XN*K_N*nbm1)  !  dami/dx
@@ -14904,12 +14939,14 @@ endif
         DA(2,2)=DA(2,2)+AMI+X(3)*CY
         A(1)=AMI*X(1)+A(1)
         A(2)=AMI*X(3)+A(2)
-        A(3)=A(3)-M/I_/K_N*AMI-0.5_DP*I_*EL%B(M,N)*EXP(I_*K_N*Z)*(XN**2+YN**2)*d/M*nbm1
+          A(3)=A(3)-M/I_/K_N*AMI-0.5_DP*I_*EL%B(M,N)*EXP(I_*K_N*Z)*(XN**2+YN**2)*d/M*nbm1
+          DA(3,1)=+DA(3,1)-M*CX/I_/K_N +K_N*C*I_*( DX*(X(1)**2+X(3)**2) +d/M*2*X(1))*nbm1
+          DA(3,1)=C*I_*d/M*(XN**2+YN**2)*XN*nbm2+DA(3,1)
+          DA(3,2)=+DA(3,2)-M*CY/I_/K_N+K_N*C*I_*( I_*DY*(X(1)**2+X(3)**2) +d/M*2*X(3))*nbm1
+          DA(3,2)=C*I_*d/M*(XN**2+YN**2)*YN*nbm2+DA(3,2)
+        endif
+ 
 
-    DA(3,1)=+DA(3,1)-M*CX/I_/K_N +K_N*C*I_*( DX*(X(1)**2+X(3)**2) +d/M*2*X(1))*nbm1
-    DA(3,1)=C*I_*d/M*(XN**2+YN**2)*XN*nbm2+DA(3,1)
-    DA(3,2)=+DA(3,2)-M*CY/I_/K_N+K_N*C*I_*( I_*DY*(X(1)**2+X(3)**2) +d/M*2*X(3))*nbm1
-    DA(3,2)=C*I_*d/M*(XN**2+YN**2)*YN*nbm2+DA(3,2)
 
 
      ENDDO
@@ -15795,6 +15832,56 @@ endif
 
   END SUBROUTINE KILLTEAPOT
 
+!!!!!!!!!!!!!!!!!!!!!!!!         new xprime force routine      !!!!!!!!!!!!!!!!!!!!!!!
+  subroutine fxr_new(f,x,k,b,e,ve,p,hcurv)   ! CAN BE USED BY ANY ELEMENT INCLUDING ABELL
+    implicit none
+
+
+    real(dp) ,intent(in) :: b(3),e(3),ve,hcurv
+    type(MAGNET_CHART), pointer:: p
+    real(dp) ,intent(inout) :: x(6)
+    real(dp), intent(out):: f(6)
+    TYPE(INTERNAL_STATE) state !,OPTIONAL :: K
+    real(dp)  d(2),c(3),BETA0,de,delt,del,g(2),xp,yp,rho,k,ed,det
+
+    if(state%time) then
+       beta0=p%beta0; 
+    else
+       beta0=1.0_dp; 
+    endif
+
+    xp=x(2);yp=x(4);
+    de=x(5)-ve
+    delt=root(1.0_dp + 2*de/beta0 + de**2)
+    del=(1.0_dp/beta0 + de)/delt
+    k=(1.0_dp+hcurv*x(1))
+    rho=root(x(2)**2+x(4)**2+k**2)
+    ed=e(1)*xp + e(2)*yp + e(3)*k
+    
+    g(1)=k*hcurv*xp**2/rho**3*delt
+    g(2)=k*hcurv*xp*yp/rho**3*delt
+    
+    d(1)=xp/rho*del*ed + g(1) - rho*del*e(1) + delt*k*hcurv/rho - yp*b(3) + k*b(2)
+    d(2)=yp/rho*del*ed + g(2) - rho*del*e(2) +                  + yp*b(3) - k*b(1)
+    
+    c(1)=delt*(1/rho-xp**2/rho**3)
+    c(2)=delt*(1/rho-yp**2/rho**3)
+    c(3)=xp*yp*delt/rho**3
+    det=c(1)*c(2)-c(3)**2
+   
+    f(1)=xp
+    f(3)=yp
+    f(2)=(c(2)*d(1)+c(3)*d(2))/det
+    f(4)=(c(3)*d(1)+c(1)*d(2))/det
+    f(5)=0.0_dp
+
+    f(6)=del*rho 
+ 
+        if(state%TIME) then
+          F(6)=f(6)+(state%TOTALPATH-1)/BETA0
+        endif
+
+  end subroutine fxr_new
 !!!!!!!!!!!!!! Pancake starts here !!!!!!!!!!!!!!!
  subroutine fxr_canonical(f,x,k,b,p,hc,g,h)
     implicit none
