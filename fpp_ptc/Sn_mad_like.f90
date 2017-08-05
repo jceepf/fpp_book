@@ -50,7 +50,7 @@ module Mad_like
   REAL(DP)  MAD_TREE_LD , MAD_TREE_ANGLE
   type(tree_element), allocatable :: t_em(:) !,t_ax(:),t_ay(:)
 
-  real(dp), private ::  angc,xc,dc,hc,LC,HD,LD,vc
+  real(dp), private ::  angc=0,xc=0,dc=0,hc=0,LC=0,HD=0,LD=0,vc=0
   integer, private :: nstc
   logical ::   xprime_pancake = .true.,xprime_abell=.false.
    character(vp) , private :: filec
