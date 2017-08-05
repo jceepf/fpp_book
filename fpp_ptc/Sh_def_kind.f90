@@ -14784,7 +14784,7 @@ endif
         A(1)=-AMI*X(3)+A(1)
         A(2)=AMI*X(1)+A(2)
      ENDDO
-
+if(.false.) then
    b=0.d0
    a=0.d0
    da=0
@@ -14803,7 +14803,7 @@ da(3,2)=-2*sin(z)*sin(x(1)+2*x(3))
 !da(1,2)=-b(3)/2
 !da(2,1)= b(3)/2
 !da(3,1)=-b(2)
-
+endif
      if(present(charge)) then 
      if(charge) then
       DIR=EL%P%DIR; DIR(3)=1;
