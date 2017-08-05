@@ -16974,11 +16974,11 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
     ti=ROOT((1.0_dp+el%hc*X(1))**2+X(2)**2+X(4)**2)
     if(k%TIME) then
-       x(2)=x(2)*ROOT(1.0_dp+2.0_dp*(X(5)-ve)/el%p%beta0+(X(5)-ve)**2)/ti + a(1)
-       x(4)=x(4)*ROOT(1.0_dp+2.0_dp*(X(5)-ve)/el%p%beta0+(X(5)-ve)**2)/ti + a(2)
+       x(2)=x(2)*ROOT(1.0_dp+2.0_dp*(X(5)-ve)/el%p%beta0+(X(5)-ve)**2)/ti + 0*a(1)
+       x(4)=x(4)*ROOT(1.0_dp+2.0_dp*(X(5)-ve)/el%p%beta0+(X(5)-ve)**2)/ti + 0*a(2)
     else
-       x(2)=x(2)*(1.0_dp+(X(5)-ve))/ti + a(1)
-       x(4)=x(4)*(1.0_dp+(X(5)-ve))/ti + a(2)
+       x(2)=x(2)*(1.0_dp+(X(5)-ve))/ti + 0*a(1)
+       x(4)=x(4)*(1.0_dp+(X(5)-ve))/ti + 0*a(2)
     endif
 
   end SUBROUTINE conv_to_pxrabell
