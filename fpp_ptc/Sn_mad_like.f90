@@ -52,7 +52,7 @@ module Mad_like
 
   real(dp), private ::  angc=0,xc=0,dc=0,hc=0,LC=0,HD=0,LD=0,vc=0
   integer, private :: nstc
-  logical ::   xprime_pancake = .true.,xprime_abell=.false.
+  logical ::   xprime_pancake = .true.,xprime_abell=.true.
    character(vp) , private :: filec
   logical(lp) :: set_ap=my_false
   TYPE EL_LIST
