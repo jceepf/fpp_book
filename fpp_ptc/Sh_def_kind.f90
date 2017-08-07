@@ -158,7 +158,7 @@ MODULE S_DEF_KIND
   private  ZEROr_sol5,ZEROp_sol5,fringe_helr,fringe_help
   logical(lp) :: tpsa_quad_sad=my_false
  logical :: piotr_freq=.false.,syphers=.true.,freq_redefine = .false.,junkabell=.false.
- 
+integer :: put_a_abell = 1
 private rk2abellr,rk4abellr,rk6abellr,rk2abellp,rk4abellp,rk6abellp
 
 
@@ -14715,11 +14715,11 @@ endif
         B(2)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm1*YN*K_N +B(2)
         B(3)=I_*K_N*dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm+B(3)
         PSIE=PSIE+EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*ddE*nbm      
-        E(1)=DYE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(1)
-        E(1)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*XN*K_N +E(1)
-        E(2)=I_*DXE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(2)
-        E(2)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
-        E(3)=I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
+        E(1)=-DYE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(1)
+        E(1)=-ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*XN*K_N +E(1)
+        E(2)=-I_*DXE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(2)
+        E(2)=-ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
+        E(3)=-I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
 
         if(n==0) then
         AMI=-0.5_dp*EXP(I_*K_N*Z)/M*EL%B(M,N)*nbm*d  
@@ -14773,9 +14773,9 @@ endif
         B(1)=EXP(I_*K_N*Z)*XN*EL%B(0,N)*nbm1+B(1)
         B(2)=EXP(I_*K_N*Z)*YN*EL%B(0,N)*nbm1+B(2)
         B(3)=I_*EXP(I_*K_N*Z)*EL%B(0,N)*nbm+B(3)
-        E(1)=EXP(I_*K_N*Z)*XN*EL%E(0,N)*nbm1+E(1)
-        E(2)=EXP(I_*K_N*Z)*YN*EL%E(0,N)*nbm1+E(2)
-        E(3)=I_*EXP(I_*K_N*Z)*EL%E(0,N)*nbm+E(3)
+        E(1)=-EXP(I_*K_N*Z)*XN*EL%E(0,N)*nbm1+E(1)
+        E(2)=-EXP(I_*K_N*Z)*YN*EL%E(0,N)*nbm1+E(2)
+        E(3)=-I_*EXP(I_*K_N*Z)*EL%E(0,N)*nbm+E(3)
         AMI=I_*EL%B(0,N)*nbm1*EXP(I_*K_N*Z)
         C=I_*EL%B(0,N)*EXP(I_*K_N*Z)*K_N
         CX=C*XN*NBI(2,XN,YN)
@@ -14940,11 +14940,11 @@ endif
         B(2)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm1*YN*K_N +B(2)
         B(3)=I_*K_N*dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm+B(3)
         PSIE=PSIE+EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*ddE*nbm      
-        E(1)=DYE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(1)
-        E(1)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*XN*K_N +E(1)
-        E(2)=I_*DXE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(2)
-        E(2)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
-        E(3)=I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
+        E(1)=-DYE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(1)
+        E(1)=-ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*XN*K_N +E(1)
+        E(2)=-I_*DXE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(2)
+        E(2)=-ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
+        E(3)=-I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
 
         if(n==0) then
         AMI=-0.5_dp*EXP(I_*K_N*Z)/M*EL%B(M,N)*nbm*d  
@@ -14998,9 +14998,9 @@ endif
         B(1)=EXP(I_*K_N*Z)*XN*EL%B(0,N)*nbm1+B(1)
         B(2)=EXP(I_*K_N*Z)*YN*EL%B(0,N)*nbm1+B(2)
         B(3)=I_*EXP(I_*K_N*Z)*EL%B(0,N)*nbm+B(3)
-        E(1)=EXP(I_*K_N*Z)*XN*EL%E(0,N)*nbm1+E(1)
-        E(2)=EXP(I_*K_N*Z)*YN*EL%E(0,N)*nbm1+E(2)
-        E(3)=I_*EXP(I_*K_N*Z)*EL%E(0,N)*nbm+E(3)
+        E(1)=-EXP(I_*K_N*Z)*XN*EL%E(0,N)*nbm1+E(1)
+        E(2)=-EXP(I_*K_N*Z)*YN*EL%E(0,N)*nbm1+E(2)
+        E(3)=-I_*EXP(I_*K_N*Z)*EL%E(0,N)*nbm+E(3)
         AMI=I_*EL%B(0,N)*nbm1*EXP(I_*K_N*Z)
         C=I_*EL%B(0,N)*EXP(I_*K_N*Z)*K_N
         CX=C*XN*NBI(2,XN,YN)
@@ -15887,7 +15887,7 @@ endif
     endif
 
     xp=x(2);yp=x(4);
-    de=x(5)-ve
+    de=x(5)+ve
     delt=root(1.0_dp + 2*de/beta0 + de**2)
     del=(1.0_dp/beta0 + de)/delt
     k=(1.0_dp+hcurv*x(1))
@@ -15944,7 +15944,7 @@ endif
     endif
 
     xp=x(2);yp=x(4);
-    de=x(5)-ve
+    de=x(5)+ve
     delt=sqrt(1.0_dp + 2*de/beta0 + de**2)
     del=(1.0_dp/beta0 + de)/delt
     k=(1.0_dp+hcurv*x(1))
@@ -16930,13 +16930,13 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     z=ent*el%l
     call B_FIELD(EL,X,Z,PSIE_IN=VE,A_in=a,charge=.true.)
     if(k%TIME) then
-       ti=ROOT(1.0_dp+2.0_dp*(X(5)-ve)/el%p%beta0+(X(5)-ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
-       x(2)=(1.0_dp+el%hc*X(1))*(X(2)-1.000_dp*a(1))/ti
-       x(4)=(1.0_dp+el%hc*X(1))*(X(4)-1.000_dp*a(2))/ti
+       ti=ROOT(1.0_dp+2.0_dp*(X(5)+ve)/el%p%beta0+(X(5)+ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
+       x(2)=(1.0_dp+el%hc*X(1))*(X(2)-put_a_abell*a(1))/ti
+       x(4)=(1.0_dp+el%hc*X(1))*(X(4)-put_a_abell*a(2))/ti
     else
-       ti=ROOT((1.0_dp+x(5)-ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
-       x(2)=(1.0_dp+el%hc*X(1))*(X(2)-1.000_dp*a(1))/ti
-       x(4)=(1.0_dp+el%hc*X(1))*(X(4)-1.000_dp*a(2))/ti
+       ti=ROOT((1.0_dp+x(5)+ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
+       x(2)=(1.0_dp+el%hc*X(1))*(X(2)-put_a_abell*a(1))/ti
+       x(4)=(1.0_dp+el%hc*X(1))*(X(4)-put_a_abell*a(2))/ti
     endif
 
   end SUBROUTINE conv_to_xprabell
@@ -16956,13 +16956,13 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
     call B_FIELD(EL,X,Z,PSIE_IN=VE,A_in=a,charge=.true.)
     if(k%TIME) then
-       ti=sqrt(1.0_dp+2.0_dp*(X(5)-ve)/el%p%beta0+(X(5)-ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
-       x(2)=(1.0_dp+el%hc*X(1))*(X(2)-1.000_dp*a(1))/ti
-       x(4)=(1.0_dp+el%hc*X(1))*(X(4)-1.000_dp*a(2))/ti
+       ti=sqrt(1.0_dp+2.0_dp*(X(5)+ve)/el%p%beta0+(X(5)+ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
+       x(2)=(1.0_dp+el%hc*X(1))*(X(2)-put_a_abell*a(1))/ti
+       x(4)=(1.0_dp+el%hc*X(1))*(X(4)-put_a_abell*a(2))/ti
     else
-       ti=sqrt((1.0_dp+x(5)-ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
-       x(2)=(1.0_dp+el%hc*X(1))*(X(2)-1.000_dp*a(1))/ti
-       x(4)=(1.0_dp+el%hc*X(1))*(X(4)-1.000_dp*a(2))/ti
+       ti=sqrt((1.0_dp+x(5)+ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
+       x(2)=(1.0_dp+el%hc*X(1))*(X(2)-put_a_abell*a(1))/ti
+       x(4)=(1.0_dp+el%hc*X(1))*(X(4)-put_a_abell*a(2))/ti
     endif
     call kill(ti,ve,z)
     call kill(a)
@@ -16981,11 +16981,11 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
     ti=ROOT((1.0_dp+el%hc*X(1))**2+X(2)**2+X(4)**2)
     if(k%TIME) then
-       x(2)=x(2)*ROOT(1.0_dp+2.0_dp*(X(5)-ve)/el%p%beta0+(X(5)-ve)**2)/ti + 1.000_dp*a(1)
-       x(4)=x(4)*ROOT(1.0_dp+2.0_dp*(X(5)-ve)/el%p%beta0+(X(5)-ve)**2)/ti + 1.000_dp*a(2)
+       x(2)=x(2)*ROOT(1.0_dp+2.0_dp*(X(5)+ve)/el%p%beta0+(X(5)+ve)**2)/ti + put_a_abell*a(1)
+       x(4)=x(4)*ROOT(1.0_dp+2.0_dp*(X(5)+ve)/el%p%beta0+(X(5)+ve)**2)/ti + put_a_abell*a(2)
     else
-       x(2)=x(2)*(1.0_dp+(X(5)-ve))/ti + 1.000_dp*a(1)
-       x(4)=x(4)*(1.0_dp+(X(5)-ve))/ti + 1.000_dp*a(2)
+       x(2)=x(2)*(1.0_dp+(X(5)+ve))/ti + put_a_abell*a(1)
+       x(4)=x(4)*(1.0_dp+(X(5)+ve))/ti + put_a_abell*a(2)
     endif
 
   end SUBROUTINE conv_to_pxrabell
@@ -17004,11 +17004,11 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
     ti=sqrt((1.0_dp+el%hc*X(1))**2+X(2)**2+X(4)**2)
     if(k%TIME) then
-       x(2)=x(2)*sqrt(1.0_dp+2.0_dp*(X(5)-ve)/el%p%beta0+(X(5)-ve)**2)/ti + 1.000_dp*a(1)
-       x(4)=x(4)*sqrt(1.0_dp+2.0_dp*(X(5)-ve)/el%p%beta0+(X(5)-ve)**2)/ti + 1.000_dp*a(2)
+       x(2)=x(2)*sqrt(1.0_dp+2.0_dp*(X(5)+ve)/el%p%beta0+(X(5)+ve)**2)/ti + put_a_abell*a(1)
+       x(4)=x(4)*sqrt(1.0_dp+2.0_dp*(X(5)+ve)/el%p%beta0+(X(5)+ve)**2)/ti + put_a_abell*a(2)
     else
-       x(2)=x(2)*(1.0_dp+(X(5)-ve))/ti + 1.000_dp*a(1)
-       x(4)=x(4)*(1.0_dp+(X(5)-ve))/ti + 1.000_dp*a(2)
+       x(2)=x(2)*(1.0_dp+(X(5)+ve))/ti + put_a_abell*a(1)
+       x(4)=x(4)*(1.0_dp+(X(5)+ve))/ti + put_a_abell*a(2)
     endif
 
     call kill(ti,ve,z)
