@@ -1439,11 +1439,14 @@ contains
 
   END SUBROUTINE allocpolyn
 
-  SUBROUTINE  printpoly(S2,i)
+  SUBROUTINE  printpoly(S2,mf)
     implicit none
     type (double_complex),INTENT(INOUT)::S2
-    integer,optional :: i
     integer ipause,mypauses
+    integer,optional :: mf
+    integer i
+    i=6
+    if(present(mf)) i=mf
 
     if(s2%kind/=0) then
 

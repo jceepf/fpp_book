@@ -29,7 +29,7 @@ MODULE S_DEF_KIND
   PRIVATE EDGE_TRUE_PARALLELR,EDGE_TRUE_PARALLELP
 
   PRIVATE ZEROR_KTK,ZEROP_KTK,ZEROR_STREX,ZEROP_STREX,ZERO_CAV4R,ZERO_CAV4P,ZEROr_enge,ZEROp_enge
-  PRIVATE ZEROR_superdrift,  ZEROP_superdrift,ZERO_ABELLR,ZERO_ABELLP,B_FIELDR,B_FIELDP
+  PRIVATE ZEROR_superdrift,  ZEROP_superdrift,ZERO_ABELLR,ZERO_ABELLP,B_E_FIELDR,B_E_FIELDP
   PRIVATE ZEROR_KICKT3,ZEROP_KICKT3
   PRIVATE ALLOCKTK,KILLKTK
   PRIVATE GETMATR,GETMATD !,GETMAT
@@ -131,7 +131,7 @@ MODULE S_DEF_KIND
   !  logical(lp) :: old_solenoid=.true.
   INTEGER :: N_CAV4_F=1
   INTEGER :: m_abell=1,n_abell=2
-  logical ::  ABELL_NEW=.TRUE.
+ ! logical ::  ABELL_NEW=.TRUE.
   INTEGER :: metcav=0, nstcav=0
   real(dp) :: xcav(1:6)=0.001d0, symplectic_check=1.d-10
    
@@ -159,7 +159,7 @@ MODULE S_DEF_KIND
   logical(lp) :: tpsa_quad_sad=my_false
  logical :: piotr_freq=.false.,syphers=.true.,freq_redefine = .false.
 integer :: put_a_abell = 1
-private rk2abellr,rk4abellr,rk6abellr,rk2abellp,rk4abellp,rk6abellp
+private rk2abellr,rk4abellr,rk6abellr,rk2abellp,rk4abellp,rk6abellp,get_z_abr,get_z_abp
 
 
   INTERFACE TRACK_SLICE
@@ -212,6 +212,11 @@ private rk2abellr,rk4abellr,rk6abellr,rk2abellp,rk4abellp,rk6abellp
   END INTERFACE
 
  
+  INTERFACE get_z_ab
+     MODULE PROCEDURE get_z_abr
+     MODULE PROCEDURE get_z_abp
+  END INTERFACE
+
 
   INTERFACE ADJUST_ABELL
      MODULE PROCEDURE ADJUST_ABELLR
@@ -239,9 +244,9 @@ private rk2abellr,rk4abellr,rk6abellr,rk2abellp,rk4abellp,rk6abellp
   END INTERFACE
 
 
-  INTERFACE B_FIELD
-     MODULE PROCEDURE B_FIELDR
-     MODULE PROCEDURE B_FIELDP
+  INTERFACE B_E_FIELD
+     MODULE PROCEDURE B_E_FIELDR
+     MODULE PROCEDURE B_E_FIELDP
   END INTERFACE
 
 
@@ -2305,6 +2310,43 @@ CALL FRINGECAV(EL,X,k,2)
     call KILL(AD)
     call KILL(PZ)
   END subroutine feval_CAV_bmadp
+
+
+  SUBROUTINE get_z_abr(EL,i,z)
+    IMPLICIT NONE
+    TYPE(abell),INTENT(INOUT):: EL
+    integer i
+    real(dp),INTENT(INOUT):: z
+    real(dp) d
+
+    D=EL%L/EL%P%NST
+    IF(EL%P%DIR==1) THEN
+       Z=(i-1)*d
+    ELSE
+       Z=EL%L-(i-1)*d
+    ENDIF
+
+  end SUBROUTINE get_z_abr
+
+  SUBROUTINE get_z_abp(EL,i,z)
+    IMPLICIT NONE
+    TYPE(abellp),INTENT(INOUT):: EL
+    integer i
+    TYPE(REAL_8),INTENT(INOUT):: z
+    TYPE(REAL_8) d
+
+    CALL ALLOC(D)
+
+    D=EL%L/EL%P%NST
+    IF(EL%P%DIR==1) THEN
+       Z=(i-1)*d
+    ELSE
+       Z=EL%L-(i-1)*d
+    ENDIF
+
+    CALL KILL(D)
+
+  end SUBROUTINE get_z_abp
 
   SUBROUTINE INTEr_abell_SLICE(EL,X,k,j)
     IMPLICIT NONE
@@ -14482,49 +14524,50 @@ SUBROUTINE ZEROr_teapot(EL,I)
 
     if(el%xprime) then   !!!!   
 
-     if(ABELL_NEW) then
-      call B_FIELD(EL,X,Z,PSIE_IN=VE,E_IN=E,B_in=b,charge=.true.)
-           DEL=x(5)-ve
+ !    if(ABELL_NEW) then
+      call B_E_FIELD(EL,X,Z,PSIE_IN=VE,E_IN=E,B_in=b,kick=.true.)
+           DEL=x(5)+VE
       call fx_new(f,x,k,b,e,ve,EL%P,EL%P%B0) 
-     else
-      call B_FIELD(EL,X,Z,B_in=b,charge=.true.)
-           DEL=x(5)-ve
-       CALL fx(f,x,k,b,EL%p,el%p%b0)
+  !   else
+ !     call B_E_FIELD(EL,X,Z,B_in=b,kick=.true.)
+ !          DEL=x(5)+VE
+ !      CALL fx(f,x,k,b,EL%p,el%p%b0)
 
-        if(k%TIME) then
-          F(6)=f(6)+(k%TOTALPATH-1)/EL%P%BETA0
-            else
-          F(6)=f(6)+(k%TOTALPATH-1)
-        endif
-     endif
+  !      if(k%TIME) then
+  !        F(6)=f(6)+(k%TOTALPATH-1)/EL%P%BETA0
+  !          else
+  !        F(6)=f(6)+(k%TOTALPATH-1)
+  !      endif
+  !   endif
     else
-call B_FIELD(EL,X,Z,PSIE_IN=VE,E_IN=E,B_in=b,A_in=a,DA_in=da,charge=.true.)
+call B_E_FIELD(EL,X,Z,PSIE_IN=VE,E_IN=E,B_in=b,A_in=a,DA_in=da,kick=.true.)
 
      H=1.0_dp+EL%P%B0*X(1)
-     IF(EL%P%EXACT) THEN
+
+      IF(EL%P%EXACT) THEN
         if(k%TIME) then
 
-           DEL=x(5)-VE
-           PZ=ROOT(1.0_dp+2*del/EL%P%BETA0+del**2-(X(2)-A(1))**2-(X(4)-A(2))**2)
+           DEL=x(5)+VE
+           PZ=root(1.0_dp+2*del/EL%P%BETA0+del**2-(X(2)-A(1))**2-(X(4)-A(2))**2)
            F(1)=(X(2)-A(1))*H/PZ
            F(3)=(X(4)-A(2))*H/PZ
-           F(2)=EL%P%B0*PZ+(H/PZ)*((1.0_dp/EL%P%BETA0+del)*e(1)+ (X(2)-A(1))*DA(1,1)+(X(4)-A(2))*DA(2,1) ) + DA(3,1)
-           F(4)= (H/PZ)*((1.0_dp/EL%P%BETA0+del)*e(2)+ (X(2)-A(1))*DA(1,2)+(X(4)-A(2))*DA(2,2) ) + DA(3,2)
+           F(2)=EL%P%B0*PZ+(H/PZ)*((1.0_dp/EL%P%BETA0+del)*(-e(1))+ (X(2)-A(1))*DA(1,1)+(X(4)-A(2))*DA(2,1) ) + DA(3,1)
+           F(4)= (H/PZ)*((1.0_dp/EL%P%BETA0+del)*(-e(2))+ (X(2)-A(1))*DA(1,2)+(X(4)-A(2))*DA(2,2) ) + DA(3,2)
            F(5)=0.0_dp
            F(6)=H*(1.0_dp/EL%P%BETA0+del)/PZ+(k%TOTALPATH-1)/EL%P%BETA0  !! ld=L in sector bend
         else
-           DEL=x(5)-VE
-           PZ=ROOT(1.0_dp+2*del+del**2-(X(2)-A(1))**2-(X(4)-A(2))**2)
+           DEL=x(5)+VE
+           PZ=root(1.0_dp+2*del+del**2-(X(2)-A(1))**2-(X(4)-A(2))**2)
            F(1)=(X(2)-A(1))*H/PZ
            F(3)=(X(4)-A(2))*H/PZ
-           F(2)=EL%P%B0*PZ+(H/PZ)*((1.0_dp+del)*e(1)+ (X(2)-A(1))*DA(1,1)+(X(4)-A(2))*DA(2,1) ) + DA(3,1)
-           F(4)= (H/PZ)*((1.0_dp+del)*e(2)+ (X(2)-A(1))*DA(1,2)+(X(4)-A(2))*DA(2,2) ) + DA(3,2)
+           F(2)=EL%P%B0*PZ+(H/PZ)*((1.0_dp+del)*(-e(1))+ (X(2)-A(1))*DA(1,1)+(X(4)-A(2))*DA(2,1) ) + DA(3,1)
+           F(4)= (H/PZ)*((1.0_dp+del)*(-e(2))+ (X(2)-A(1))*DA(1,2)+(X(4)-A(2))*DA(2,2) ) + DA(3,2)
            F(5)=0.0_dp
            F(6)=H*(1.0_dp+del)/PZ+(k%TOTALPATH-1)  !! ld=L in sector bend
         endif
      ELSE
         if(k%TIME) then
-           DEL=x(5)-ve
+           DEL=x(5)+VE
            PZ=ROOT(1.0_dp+2*del/EL%P%BETA0+del**2)
            F(1)=(X(2)-A(1))*H/PZ
            F(3)=(X(4)-A(2))*H/PZ 
@@ -14534,7 +14577,7 @@ call B_FIELD(EL,X,Z,PSIE_IN=VE,E_IN=E,B_in=b,A_in=a,DA_in=da,charge=.true.)
            F(6)=(1.0_dp/EL%P%BETA0+del)/PZ*(1.0_dp+0.5_dp*((X(2)-A(1))**2+(X(4)-A(2))**2)/pz**2)+(k%TOTALPATH-1)/EL%P%BETA0 &
            +EL%P%B0*x(1)/EL%P%BETA0  !! ld=L in sector bend
         else
-           DEL=x(5)-ve
+           DEL=x(5)+VE
            PZ=1.0_dp+del
            F(1)=(X(2)-A(1))*H/PZ
            F(3)=(X(4)-A(2))*H/PZ
@@ -14567,50 +14610,48 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
      enddo
      e=0.0_dp
      DEL=0.0_DP
-!     call B_FIELD(EL,vm,B,A,DA,X,Z,charge=.true.)
+!     call B_E_FIELD(EL,vm,B,A,DA,X,Z,kick=.true.)
 
 
     if(el%xprime) then   !!!!   
-     if(ABELL_NEW) then
-
-      call B_FIELD(EL,X,Z,PSIE_IN=VE,E_IN=E,B_in=b,charge=.true.)
-           DEL=x(5)-ve
+ !    if(ABELL_NEW) then
+      call B_E_FIELD(EL,X,Z,PSIE_IN=VE,E_IN=E,B_in=b,kick=.true.)
+           DEL=x(5)+VE
       call fx_new(f,x,k,b,e,ve,EL%P,EL%P%B0) 
+  !   else
+ !     call B_E_FIELD(EL,X,Z,B_in=b,kick=.true.)
+ !          DEL=x(5)+VE
+ !      CALL fx(f,x,k,b,EL%p,el%p%b0)
 
-    else
-      call B_FIELD(EL,X,Z,B_in=b,charge=.true.)
-           DEL=x(5)-ve
-       CALL fx(f,x,k,b,EL%p,el%p%b0)
-
-        if(k%TIME) then
-          F(6)=f(6)+(k%TOTALPATH-1)/EL%P%BETA0
-            else
-          F(6)=f(6)+(k%TOTALPATH-1)
-        endif
-     endif
+  !      if(k%TIME) then
+  !        F(6)=f(6)+(k%TOTALPATH-1)/EL%P%BETA0
+  !          else
+  !        F(6)=f(6)+(k%TOTALPATH-1)
+  !      endif
+  !   endif
     else
  
-call B_FIELD(EL,X,Z,PSIE_IN=VE,E_IN=E,B_in=b,A_in=a,DA_in=da,charge=.true.)
-  !   call B_FIELD(EL,X,Z,A_in=a,DA_in=da,charge=.true.)
+call B_E_FIELD(EL,X,Z,PSIE_IN=VE,E_IN=E,B_in=b,A_in=a,DA_in=da,kick=.true.)
+  !   call B_E_FIELD(EL,X,Z,A_in=a,DA_in=da,kick=.true.)
      H=1.0_dp+EL%P%B0*X(1)
      IF(EL%P%EXACT) THEN
         if(k%TIME) then
 
-           DEL=x(5)-VE
+           DEL=x(5)+VE
            PZ=sqrt(1.0_dp+2*del/EL%P%BETA0+del**2-(X(2)-A(1))**2-(X(4)-A(2))**2)
            F(1)=(X(2)-A(1))*H/PZ
            F(3)=(X(4)-A(2))*H/PZ
-           F(2)=EL%P%B0*PZ+(H/PZ)*((1.0_dp/EL%P%BETA0+del)*e(1)+ (X(2)-A(1))*DA(1,1)+(X(4)-A(2))*DA(2,1) ) + DA(3,1)
-           F(4)= (H/PZ)*((1.0_dp/EL%P%BETA0+del)*e(2)+ (X(2)-A(1))*DA(1,2)+(X(4)-A(2))*DA(2,2) ) + DA(3,2)
+           F(2)=EL%P%B0*PZ+(H/PZ)*((1.0_dp/EL%P%BETA0+del)*(-e(1))+ (X(2)-A(1))*DA(1,1)+(X(4)-A(2))*DA(2,1) ) + DA(3,1)
+           F(4)= (H/PZ)*((1.0_dp/EL%P%BETA0+del)*(-e(2))+ (X(2)-A(1))*DA(1,2)+(X(4)-A(2))*DA(2,2) ) + DA(3,2)
            F(5)=0.0_dp
            F(6)=H*(1.0_dp/EL%P%BETA0+del)/PZ+(k%TOTALPATH-1)/EL%P%BETA0  !! ld=L in sector bend
         else
-           DEL=x(5)-VE
+           DEL=x(5)+VE
            PZ=sqrt(1.0_dp+2*del+del**2-(X(2)-A(1))**2-(X(4)-A(2))**2)
            F(1)=(X(2)-A(1))*H/PZ
            F(3)=(X(4)-A(2))*H/PZ
-           F(2)=EL%P%B0*PZ+(H/PZ)*((1.0_dp+del)*e(1)+ (X(2)-A(1))*DA(1,1)+(X(4)-A(2))*DA(2,1) ) + DA(3,1)
-           F(4)= (H/PZ)*((1.0_dp+del)*e(2)+ (X(2)-A(1))*DA(1,2)+(X(4)-A(2))*DA(2,2) ) + DA(3,2)
+           F(2)=EL%P%B0*PZ+(H/PZ)*((1.0_dp+del)*(-e(1))+ (X(2)-A(1))*DA(1,1)+(X(4)-A(2))*DA(2,1) ) + DA(3,1)
+           F(4)= (H/PZ)*((1.0_dp+del)*(-e(2))+ (X(2)-A(1))*DA(1,2)+(X(4)-A(2))*DA(2,2) ) + DA(3,2)
            F(5)=0.0_dp
            F(6)=H*(1.0_dp+del)/PZ+(k%TOTALPATH-1)  !! ld=L in sector bend
         endif
@@ -14648,10 +14689,10 @@ endif
       CALL KILL(VE)
    END subroutine feval_abellP
 
-  SUBROUTINE B_FIELDR(EL,X,Z,PSIE_in,E_in,PSIM_in,B_in,A_in,DA_in,charge)
+  SUBROUTINE B_E_FIELDR(EL,X,Z,PSIE_in,E_in,PSIM_in,B_in,A_in,DA_in,kick)
     IMPLICIT NONE
     TYPE(ABELL), INTENT(INOUT)::EL
-    logical, optional :: charge
+    logical, optional :: kick
     real(dp), intent(inout) :: x(6)
     real(dp), intent(in) :: z
     REAL(DP), optional, INTENT(OUT) :: E_IN(3), B_IN(3),A_IN(3),DA_IN(3,2),PSIM_IN,PSIE_IN
@@ -14715,11 +14756,11 @@ endif
         B(2)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm1*YN*K_N +B(2)
         B(3)=I_*K_N*dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm+B(3)
         PSIE=PSIE+EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*ddE*nbm      
-        E(1)=-DYE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(1)
-        E(1)=-ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*XN*K_N +E(1)
-        E(2)=-I_*DXE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(2)
-        E(2)=-ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
-        E(3)=-I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
+        E(1)=DYE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(1)
+        E(1)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*XN*K_N +E(1)
+        E(2)=I_*DXE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(2)
+        E(2)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
+        E(3)=I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
 
         if(n==0) then
        AMI=-0.5_dp*EXP(I_*K_N*Z)/M*EL%B(M,N)*nbm*d  
@@ -14767,15 +14808,15 @@ endif
          PSIM=PSIM+EXP(I_*K_N*Z)*EL%B(0,N)*nbm/K_N 
          PSIE=PSIE+EXP(I_*K_N*Z)*EL%E(0,N)*nbm/K_N  
          else
-          PSIM=PSIM+z*EL%B(0,N)*nbm
-          PSIE=PSIE+z*EL%E(0,N)*nbm
+          PSIM=PSIM+I_*z*EL%B(0,N)*nbm
+          PSIE=PSIE+I_*z*EL%E(0,N)*nbm
         ENDIF
         B(1)=EXP(I_*K_N*Z)*XN*EL%B(0,N)*nbm1+B(1)
         B(2)=EXP(I_*K_N*Z)*YN*EL%B(0,N)*nbm1+B(2)
         B(3)=I_*EXP(I_*K_N*Z)*EL%B(0,N)*nbm+B(3)
-        E(1)=-EXP(I_*K_N*Z)*XN*EL%E(0,N)*nbm1+E(1)
-        E(2)=-EXP(I_*K_N*Z)*YN*EL%E(0,N)*nbm1+E(2)
-        E(3)=-I_*EXP(I_*K_N*Z)*EL%E(0,N)*nbm+E(3)
+        E(1)=EXP(I_*K_N*Z)*XN*EL%E(0,N)*nbm1+E(1)
+        E(2)=EXP(I_*K_N*Z)*YN*EL%E(0,N)*nbm1+E(2)
+        E(3)=I_*EXP(I_*K_N*Z)*EL%E(0,N)*nbm+E(3)
         AMI=I_*EL%B(0,N)*nbm1*EXP(I_*K_N*Z)
         C=I_*EL%B(0,N)*EXP(I_*K_N*Z)*K_N
         CX=C*XN*NBI(2,XN,YN)
@@ -14787,25 +14828,34 @@ endif
         A(1)=-AMI*X(3)+A(1)
         A(2)=AMI*X(1)+A(2)
      ENDDO
-
-     if(present(charge)) then 
-     if(charge) then
+!psie=sin(z+x(1)+x(3)**2+0.5d0)
+!e(1)=-cos(z+x(1)+x(3)**2+0.5d0)
+!e(2)=-cos(z+x(1)+x(3)**2+0.5d0)*2*x(3)
+!e(3)=-cos(z+x(1)+x(3)**2+0.5d0)
+ PSIE=el%scale*PSIE*volt_c/EL%P%P0C
+ PSIm=el%scale*PSIM 
+ do i=1,3
+   e(i)=el%scale*e(i)*volt_c/EL%P%P0C
+   b(i)=el%scale*b(i) 
+ enddo
+     if(present(kick)) then 
+     if(kick) then
       DIR=EL%P%DIR; DIR(3)=1;
       DIRE=EL%P%DIR; DIRE(1:2)=1;
-        PSIE=el%scale*el%p%charge*PSIE/EL%P%P0C
-        PSIM=el%scale*el%p%charge*PSIM
+        PSIE=el%p%charge*PSIE
+        PSIM=el%p%charge*PSIM
       do i=1,3
-        a(i)=DIR(I)*el%scale*el%p%charge*a(i)
-        b(i)=DIR(I)*el%scale*el%p%charge*b(i)
-        e(i)=DIRE(I)*el%scale*el%p%charge*e(i)/EL%P%P0C
+        a(i)=DIR(I)*el%p%charge*a(i)
+        b(i)=DIR(I)*el%p%charge*b(i)
+        e(i)=DIRE(I)*el%p%charge*e(i) 
        do j=1,2
-        da(i,j)=DIR(I)*el%scale*el%p%charge*da(i,j)
+        da(i,j)=DIR(I)*el%p%charge*da(i,j)
       enddo
       enddo
      endif
      endif
 IF(PRESENT(PSIM_in) ) psim_in=psim 
-IF(PRESENT(PSIE_in) ) psiE_in=psiE*volt_c   
+IF(PRESENT(PSIE_in) ) psiE_in=psiE   
 if(present(b_in)) then
  do i=1,3
   b_in(i)=b(i)
@@ -14813,7 +14863,7 @@ if(present(b_in)) then
 endif
 if(present(E_in)) then
  do i=1,3
-  E_in(i)=E(i)*volt_c 
+  E_in(i)=E(i) 
  enddo
 endif
 if(present(a_in)) then
@@ -14830,13 +14880,13 @@ if(present(da_in)) then
 endif
 
 
-  END SUBROUTINE B_FIELDR
+  END SUBROUTINE B_E_FIELDR
 
-  SUBROUTINE B_FIELDP(EL,X,Z,PSIE_in,E_in,PSIM_in,B_in,A_in,DA_in,charge)
+  SUBROUTINE B_E_FIELDP(EL,X,Z,PSIE_in,E_in,PSIM_in,B_in,A_in,DA_in,kick)
     IMPLICIT NONE
     TYPE(ABELLP), INTENT(INOUT)::EL
     TYPE(REAL_8), INTENT(IN) :: X(6)
-    logical, optional :: charge
+    logical, optional :: kick
     TYPE(REAL_8),  INTENT(In) :: Z
     TYPE(REAL_8), optional, INTENT(OUT) :: E_IN(3), B_IN(3),A_IN(3),DA_IN(3,2),PSIM_IN,PSIE_IN
     TYPE(REAL_8)  B(3),A(3),DA(3,2),PSIM,PSIE,E(3)
@@ -14916,11 +14966,11 @@ endif
         B(2)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm1*YN*K_N +B(2)
         B(3)=I_*K_N*dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm+B(3)
         PSIE=PSIE+EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*ddE*nbm      
-        E(1)=DYE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(1)
-        E(1)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*XN*K_N +E(1)
-        E(2)=I_*DXE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(2)
-        E(2)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
-        E(3)=I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
+        E(1)=-DYE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(1)
+        E(1)=-ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*XN*K_N +E(1)
+        E(2)=-I_*DXE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(2)
+        E(2)=-ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
+        E(3)=-I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
 
         if(n==0) then
 
@@ -14970,15 +15020,15 @@ endif
          PSIM=PSIM+EXP(I_*K_N*Z)*EL%B(0,N)*nbm/K_N 
          PSIE=PSIE+EXP(I_*K_N*Z)*EL%E(0,N)*nbm/K_N  
          else
-          PSIM=PSIM+z*EL%B(0,N)*nbm
-          PSIE=PSIE+z*EL%E(0,N)*nbm
+          PSIM=PSIM+I_*z*EL%B(0,N)*nbm
+          PSIE=PSIE+I_*z*EL%E(0,N)*nbm
         ENDIF
         B(1)=EXP(I_*K_N*Z)*XN*EL%B(0,N)*nbm1+B(1)
         B(2)=EXP(I_*K_N*Z)*YN*EL%B(0,N)*nbm1+B(2)
         B(3)=I_*EXP(I_*K_N*Z)*EL%B(0,N)*nbm+B(3)
-        E(1)=EXP(I_*K_N*Z)*XN*EL%E(0,N)*nbm1+E(1)
-        E(2)=EXP(I_*K_N*Z)*YN*EL%E(0,N)*nbm1+E(2)
-        E(3)=I_*EXP(I_*K_N*Z)*EL%E(0,N)*nbm+E(3)
+        E(1)=-EXP(I_*K_N*Z)*XN*EL%E(0,N)*nbm1+E(1)
+        E(2)=-EXP(I_*K_N*Z)*YN*EL%E(0,N)*nbm1+E(2)
+        E(3)=-I_*EXP(I_*K_N*Z)*EL%E(0,N)*nbm+E(3)
         AMI=I_*EL%B(0,N)*nbm1*EXP(I_*K_N*Z)
         C=I_*EL%B(0,N)*EXP(I_*K_N*Z)*K_N
         CX=C*XN*NBI(2,XN,YN)
@@ -14991,24 +15041,35 @@ endif
         A(2)=AMI*X(1)+A(2)
      ENDDO
 
-     if(present(charge)) then 
-     if(charge) then
+!psie=sin(z+x(1)+x(3)**2+0.5d0)
+!e(1)=-cos(z+x(1)+x(3)**2+0.5d0)
+!e(2)=-cos(z+x(1)+x(3)**2+0.5d0)*2*x(3)
+!e(3)=-cos(z+x(1)+x(3)**2+0.5d0)
+
+ PSIE=el%scale*PSIE*volt_c/EL%P%P0C
+ PSIm=el%scale*PSIM 
+ do i=1,3
+   e(i)=el%scale*e(i)*volt_c/EL%P%P0C
+   b(i)=el%scale*b(i) 
+ enddo
+     if(present(kick)) then 
+     if(kick) then
       DIR=EL%P%DIR; DIR(3)=1;
       DIRE=EL%P%DIR; DIRE(1:2)=1;
-        PSIE=el%scale*el%p%charge*PSIE/EL%P%P0C
-        PSIM=el%scale*el%p%charge*PSIM
+        PSIE=el%p%charge*PSIE
+        PSIM=el%p%charge*PSIM
       do i=1,3
-        a(i)=DIR(I)*el%scale*el%p%charge*a(i)
-        b(i)=DIR(I)*el%scale*el%p%charge*b(i)
-        e(i)=DIRE(I)*el%scale*el%p%charge*e(i)/EL%P%P0C
+        a(i)=DIR(I)*el%p%charge*a(i)
+        b(i)=DIR(I)*el%p%charge*b(i)
+        e(i)=DIRE(I)*el%p%charge*e(i) 
        do j=1,2
-        da(i,j)=DIR(I)*el%scale*el%p%charge*da(i,j)
+        da(i,j)=DIR(I)*el%p%charge*da(i,j)
       enddo
       enddo
      endif
      endif
 IF(PRESENT(PSIM_in) ) psim_in=psim 
-IF(PRESENT(PSIE_in) ) psiE_in=psiE*volt_c    
+IF(PRESENT(PSIE_in) ) psiE_in=psiE   
 if(present(b_in)) then
  do i=1,3
   b_in(i)=b(i)
@@ -15016,7 +15077,7 @@ if(present(b_in)) then
 endif
 if(present(E_in)) then
  do i=1,3
-  E_in(i)=E(i)*volt_c 
+  E_in(i)=E(i) 
  enddo
 endif
 if(present(a_in)) then
@@ -15048,7 +15109,7 @@ endif
      CALL KILL(DA(I,J)) 
     ENDDO
     ENDDO
-  END SUBROUTINE B_FIELDP
+  END SUBROUTINE B_E_FIELDP
 
 
   SUBROUTINE ZERO_ABELLP(EL,I)
@@ -15865,7 +15926,7 @@ endif
     endif
 
     xp=x(2);yp=x(4);
-    de=x(5)-ve
+    de=x(5)+VE
     delt=root(1.0_dp + 2*de/beta0 + de**2)
     del=(1.0_dp/beta0 + de)/delt
     k=(1.0_dp+hcurv*x(1))
@@ -15922,7 +15983,7 @@ endif
     endif
 
     xp=x(2);yp=x(4);
-    de=x(5)-ve
+    de=x(5)+VE
     delt=sqrt(1.0_dp + 2*de/beta0 + de**2)
     del=(1.0_dp/beta0 + de)/delt
     k=(1.0_dp+hcurv*x(1))
@@ -16906,7 +16967,7 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     integer ent
     z=ent*el%l
-    call B_FIELD(EL,X,Z,PSIE_IN=VE,A_in=a,charge=.true.)
+    call B_E_FIELD(EL,X,Z,PSIE_IN=VE,A_in=a,kick=.true.)
     if(k%TIME) then
        ti=ROOT(1.0_dp+2.0_dp*(X(5)+ve)/el%p%beta0+(X(5)+ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
        x(2)=(1.0_dp+el%hc*X(1))*(X(2)-put_a_abell*a(1))/ti
@@ -16932,7 +16993,7 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     call alloc(a)
     z=ent*el%l
 
-    call B_FIELD(EL,X,Z,PSIE_IN=VE,A_in=a,charge=.true.)
+    call B_E_FIELD(EL,X,Z,PSIE_IN=VE,A_in=a,kick=.true.)
     if(k%TIME) then
        ti=sqrt(1.0_dp+2.0_dp*(X(5)+ve)/el%p%beta0+(X(5)+ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
        x(2)=(1.0_dp+el%hc*X(1))*(X(2)-put_a_abell*a(1))/ti
@@ -16955,7 +17016,7 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     integer ent
     z=ent*el%l
-    call B_FIELD(EL,X,Z,PSIE_IN=VE,A_in=a,charge=.true.)
+    call B_E_FIELD(EL,X,Z,PSIE_IN=VE,A_in=a,kick=.true.)
 
     ti=ROOT((1.0_dp+el%hc*X(1))**2+X(2)**2+X(4)**2)
     if(k%TIME) then
@@ -16978,7 +17039,7 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     call alloc(ti,ve,z)
     call alloc(a)
     z=ent*el%l
-    call B_FIELD(EL,X,Z,PSIE_IN=VE,A_in=a,charge=.true.)
+    call B_E_FIELD(EL,X,Z,PSIE_IN=VE,A_in=a,kick=.true.)
 
     ti=sqrt((1.0_dp+el%hc*X(1))**2+X(2)**2+X(4)**2)
     if(k%TIME) then
