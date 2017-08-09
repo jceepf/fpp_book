@@ -15100,14 +15100,6 @@ enddo
     endif
  
 
-!!! Corrects the time variable with the d/dp_t term
- !      if(ndpt/=0) then         
- !       t= cphi + i_*sphi
- !        t=-i_*log(t)
- !        t=-(t.d.ndpt)/(2.0_dp,0.0_dp)
- !        phi1%v(ndptb)=phi1%v(ndptb)+(-1)**(ndptb)*t*((1.0_dp.cmono.(2*i-1))**2+(1.0_dp.cmono.(2*i))**2)
- !      endif
-
  if(present(phase)) then
      ang=-atan2(sphi,cphi)
   phase(i)=phase(i)-ang/twopi
@@ -15119,7 +15111,25 @@ enddo
 
 
 
- u_c=matmul(b,ri)
+      if(ndpt/=0) then
+        ri(5,5)=1
+        ri(6,6)=1
+        b0=matmul(b,ri)
+        write(6,'(6(1x,f12.5))')  b0(5,1:6)
+        write(6,'(6(1x,f12.5))') b0(6,1:6)
+pause 
+        if(mod(ndpt,2)==0) then
+         i=ndpt/2
+        else
+         i=ndptb/2
+        endif
+       phase(i)=phase(i)+b0(ndptb,ndpt)
+!      else
+!       u_c=matmul(b,ri)
+      endif
+
+       u_c=matmul(b,ri)
+
 
 end subroutine c_fast_canonise
 

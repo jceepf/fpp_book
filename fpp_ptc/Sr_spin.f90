@@ -960,7 +960,7 @@ contains
     INTEGER,OPTIONAL,INTENT(IN) ::POS
     REAL(DP),INTENT(INOUT) :: X(6),OM(3),B2,XP(2),DLDS
     REAL(DP)  B(3),E(3),BPA(3),BPE(3),D1,D2,GAMMA,EB(3),EFD(3),beta,ed(3)
-    REAL(DP) BETA0,GAMMA0I,XPA(2),phi,del
+    REAL(DP) BETA0,GAMMA0I,XPA(2),phi,del,z
     INTEGER I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
@@ -1018,6 +1018,18 @@ contains
        x(5)=x(5)+phi*EL%P%CHARGE   
 
            DEL=x(5)-phi*EL%P%CHARGE
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/root(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/root((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
+       if(pos>=0) OM(2)=p%dir*P%b0   ! not fake fringe
+    case(kindabell)     ! TEAPOT real curvilinear
+
+       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
+       CALL get_z_ab(EL%ab,POS,z)
+       call B_E_FIELD(EL%ab,x,Z,psie_in=phi)
+           DEL=x(5)+phi*EL%P%CHARGE
        IF(k%TIME) THEN
           DLDS=1.0_dp/root(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
        ELSE
@@ -1099,7 +1111,7 @@ contains
     TYPE(MAGNET_CHART), POINTER::P
     INTEGER,OPTIONAL,INTENT(IN) ::POS
     TYPE(REAL_8), INTENT(INOUT) :: X(6),OM(3),B2,XP(2)
-    TYPE(REAL_8)  B(3),E(3),BPA(3),BPE(3),DLDS,D1,D2,GAMMA,EB(3),efd(3),XPA(2),ed(3),beta,phi,del
+    TYPE(REAL_8)  B(3),E(3),BPA(3),BPE(3),DLDS,D1,D2,GAMMA,EB(3),efd(3),XPA(2),ed(3),beta,phi,del,z
     REAL(DP) BETA0,GAMMA0I
     INTEGER I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
@@ -1122,7 +1134,7 @@ contains
     CALL ALLOC(E,3)
     CALL ALLOC(Ed,3)
     CALL ALLOC(efd,3)
-    CALL ALLOC(beta,del)
+    CALL ALLOC(beta,del,z)
     CALL ALLOC(EB,3)
     CALL ALLOC(BPA,3)
     CALL ALLOC(BPE,3)
@@ -1201,6 +1213,18 @@ contains
        ELSE
           DLDS=1.0_dp/SQRT((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)
        ENDIF
+    case(kindabell)     ! TEAPOT real curvilinear
+
+       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
+       CALL get_z_ab(EL%ab,POS,z)
+       call B_E_FIELD(EL%ab,x,Z,psie_in=phi)
+           DEL=x(5)+phi*EL%P%CHARGE
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/sqrt(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/sqrt((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
+       if(pos>=0) OM(2)=p%dir*P%b0   ! not fake fringe
     case default
        OM(1)=0.0_dp
        OM(2)=0.0_dp
@@ -1253,7 +1277,7 @@ contains
     CALL KILL(EB,3)
     CALL KILL(BPA,3)
     CALL KILL(BPE,3)
-    CALL KILL(D1,D2,GAMMA,phi)
+    CALL KILL(D1,D2,GAMMA,phi,z)
     CALL KILL(XPA,2)
     CALL KILL(Ed,3)
     CALL KILL(efd,3)
