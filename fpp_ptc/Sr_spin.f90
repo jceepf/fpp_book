@@ -1513,8 +1513,8 @@ e=0
              z=el%l*(1.0_dp+el%p%dir)/2.0_dp
             endif        
              call B_E_FIELD(EL%ab,X,Z,PSIE_in=phi,PSIM_in=vm)
-            b(3)=-(2*Pos+3)*vm  +b(3)     ! v here  e=-grad phi
-            e(3)=(2*Pos+3)*phi  +e(3)
+            b(3)= (2*Pos+3)*vm  +b(3)     ! v here  e=-grad phi
+            e(3)=-(2*Pos+3)*phi  +e(3)
     end select
  
     call GET_BZ_fringe(EL,X,B(3),e(3),pos,k)
@@ -1558,8 +1558,8 @@ call alloc(vm,phi,z)
              z=el%l*(1.0_dp+el%p%dir)/2.0_dp
             endif        
              call B_E_FIELD(EL%ab,X,Z,PSIE_in=phi,PSIM_in=vm)
-            b(3)=-(2*Pos+3)*vm  +b(3)     ! v here  e=-grad phi
-            e(3)=(2*Pos+3)*phi  +e(3)
+            b(3)=(2*Pos+3)*vm  +b(3)     ! v here  e=-grad phi
+            e(3)= -(2*Pos+3)*phi  +e(3)
     end select
     call GET_BZ_fringe(EL,X,B(3),e(3),pos,k)
 !write(6,*) el%name,el%p%b0
@@ -1582,8 +1582,8 @@ call kill(vm,phi,z)
     
     if(el%electric.and.associated(el%tp10)) then
      call getelectric(EL%tp10,E,phi,B,VM,X)
-            bz=-(2*Pos+3)*vm       ! probably wrong : here  e=grad phi
-            ez=-(2*Pos+3)*phi
+            bz=(2*Pos+3)*vm       ! probably wrong : here  e=grad phi
+            ez=(2*Pos+3)*phi
     else
     bz=0.0_dp
     IF(EL%P%BEND_FRINGE) then
@@ -1639,8 +1639,8 @@ call kill(vm,phi,z)
      call alloc(phi,VM)
      call alloc(E);call alloc(b);
      call getelectric(EL%tp10,E,phi,B,VM,X)
-            bz=-(2*Pos+3)*vm       ! probably wrong : here  e=grad phi
-            ez=-(2*Pos+3)*phi
+            bz=(2*Pos+3)*vm       ! probably wrong : here  e=grad phi
+            ez=(2*Pos+3)*phi
      call kill(phi,VM)
      call kill(E);call kill(b);
     else

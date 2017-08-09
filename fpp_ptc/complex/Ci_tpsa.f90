@@ -9278,9 +9278,11 @@ subroutine c_full_factorise(at,as,a0,a1,a2,dir)
 
 
     if(ii==-1) then
-    a1=a0*a1*a0**(-1)
-    a2=a0*a2*a0**(-1)
-    a2=a1*a2*a1**(-1)
+     att=a0t*a1t*a2t
+     ast=att**(-1)*ast*att
+     a1t=a0t*a1t*a0t**(-1)
+     a2t=a0t*a2t*a0t**(-1)
+     a2t=a1t*a2t*a1t**(-1)
     endif
 
 
