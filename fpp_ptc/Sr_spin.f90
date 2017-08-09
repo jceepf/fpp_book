@@ -3476,7 +3476,7 @@ endif
 
        endif
     case(KINDabell)
-       if(el%pa%hc==0.0_dp) then
+       if(el%ab%hc==0.0_dp) then
 
             IF(C%CAS==CASE1) THEN
                 CALL rot_spin_y(p,el%p%dir*el%ab%angc)
@@ -3538,7 +3538,7 @@ endif
 
        endif
     case(KINDabell)
-       if(el%pa%hc==0.0_dp) then
+       if(el%ab%hc==0.0_dp) then
 
             IF(C%CAS==CASE1) THEN
                 CALL rot_spin_y(p,el%p%dir*el%ab%angc)

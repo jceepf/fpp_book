@@ -9211,20 +9211,17 @@ subroutine c_identify_resonance(j,n,c)
 
 end subroutine c_identify_resonance
 
-subroutine c_full_factorise(at,as,a0,a1,a2) 
+subroutine c_full_factorise(at,as,a0,a1,a2,dir) 
 !#general: manipulation
-!# This routine is of great pedagogical importance.
-!# It factors a canonical transformation as
-!# at=a_cs o rotation(phase,nu_spin) as explained in Chap.7 of my Springer book.
-!# a_cs = a_s o a_0 o a_1 o a_2
+!# a_t = a_s o a_0 o a_1 o a_2
     implicit none
     type(c_damap) , intent(inout) :: at 
     type(c_damap) , optional, intent(inout) :: as,a2,a1,a0
-
+    integer,optional :: dir
 
     type(c_damap) att,a0t,a1t,a2t,ast
     type(c_taylor) p
-    integer i,kspin
+    integer i,kspin,ii
     real(dp) norm
 
 
@@ -9235,7 +9232,8 @@ subroutine c_full_factorise(at,as,a0,a1,a2)
     call alloc(ast)
  
  
-    
+    ii=1
+    if(present(dir)) ii=dir
   !  at= (a,s) =  (a,I) o  (I,s)
     call c_full_norm_spin(at%s,kspin,norm)  
  ! storing the spin because the code is careless (sets it to zero)   
@@ -9279,7 +9277,11 @@ subroutine c_full_factorise(at,as,a0,a1,a2)
     a2t%s=1
 
 
-
+    if(ii==-1) then
+    a1=a0*a1*a0**(-1)
+    a2=a0*a2*a0**(-1)
+    a2=a1*a2*a1**(-1)
+    endif
 
 
     if(present(a0)) a0=a0t
