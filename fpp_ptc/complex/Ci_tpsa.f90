@@ -15053,7 +15053,7 @@ subroutine c_fast_canonise(u,u_c,phase,damping)
 implicit none
 type(c_damap), intent(inout) ::  u,u_c
 real(dp), optional, intent(inout) :: phase(:),damping(:)
-real(dp) b(6,6),ri(6,6),ang,damp(3),t,cphi,sphi,s(6,6)
+real(dp) b(6,6),b0(6,6),ri(6,6),ang,damp(3),t,cphi,sphi,s(6,6)
  
 integer i
 
@@ -15064,12 +15064,15 @@ s(2*i,2*i-1)=-1
 enddo
 
 b=0
+b0=0
 ri=0
 b=u
 
+if(ndpt/=0)  call extract_a0_mat(b,b0)
+
 s=matmul(matmul(b,s),transpose(b))
 
-do i=1,nd
+do i=1,ndt
     damp(i)=sqrt(abs(s(2*i-1,2*i)))
 enddo
 
@@ -15077,8 +15080,8 @@ enddo
 !write(6,*) damp
 
  
-      do i=1,nd2/2
-      if((i<=ndt).or.(i>nd-rf)) then
+      do i=1,ndt
+      if((i<=ndt)) then  !.or.(i>nd-rf)) then
  !    damp(i)=sqrt(b(2*i-1,2*i-1)*b(2*i,2*i)-b(2*i-1,2*i)*b(2*i,2*i-1))
        if(courant_snyder_teng_edwards) then
         t=sqrt(b(2*i-1,2*i-1)**2+b(2*i-1,2*i)**2)
@@ -15119,6 +15122,24 @@ enddo
  u_c=matmul(b,ri)
 
 end subroutine c_fast_canonise
+
+subroutine extract_a0_mat(a,a0)
+!#internal: manipulation
+!# This routines extracts a0: the full fixed point map.
+    implicit none
+    real(dp), intent(inout) :: a(6,6),a0(6,6)
+    type(c_damap) aa,aa0
+    call alloc(aa,aa0)
+    aa=a
+    aa0=a0
+    call extract_a0(aa,aa0)
+    a=aa
+    a0=aa0
+      call kill(aa,aa0)
+end subroutine extract_a0_mat
+
+
+
 
 !Function to find the determinant of a square matrix
 !Author : Louisda16th a.k.a Ashwith J. Rego

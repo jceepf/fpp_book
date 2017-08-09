@@ -1343,7 +1343,7 @@ contains
           IF(POS<0) THEN
              call get_Bfield_fringe(EL,B,E,X,pos,k)   ! fringe effect
           ELSE
-              call B_E_FIELD(EL%ab,x,Z,B_in=b)
+              call B_E_FIELD(EL%ab,x,Z,E_in=E,B_in=b)
           ENDIF
 
 
@@ -1455,7 +1455,7 @@ contains
           IF(POS<0) THEN
              call get_Bfield_fringe(EL,B,E,X,pos,k)   ! fringe effect
           ELSE
-              call B_E_FIELD(EL%ab,x,Z,B_in=b)
+              call B_E_FIELD(EL%ab,x,Z,E_in=E,B_in=b)
           ENDIF
 
     CASE(KIND22)     ! helical dipole
