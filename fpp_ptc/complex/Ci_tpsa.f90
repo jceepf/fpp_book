@@ -15114,9 +15114,13 @@ enddo
       if(ndpt/=0) then
         ri(5,5)=1
         ri(6,6)=1
-        b0=matmul(b,ri)
-        write(6,'(6(1x,f12.5))')  b0(5,1:6)
-        write(6,'(6(1x,f12.5))') b0(6,1:6)
+        s=matmul(b,ri)
+        write(6,'(6(1x,f12.5))') s(1,1:6)
+        write(6,'(6(1x,f12.5))') s(2,1:6)
+        write(6,'(6(1x,f12.5))') s(3,1:6)
+        write(6,'(6(1x,f12.5))') s(4,1:6)
+        write(6,'(6(1x,f12.5))') s(5,1:6)
+        write(6,'(6(1x,f12.5))') s(6,1:6)
 pause 
         if(mod(ndpt,2)==0) then
          i=ndpt/2

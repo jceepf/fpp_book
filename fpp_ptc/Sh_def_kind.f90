@@ -14608,8 +14608,8 @@ subroutine feval_abellP(Z,X,k,f,EL)   !electric teapot s
        call alloc(da(i,j))
       enddo
      enddo
-     e=0.0_dp
-     DEL=0.0_DP
+
+
 !     call B_E_FIELD(EL,vm,B,A,DA,X,Z,kick=.true.)
 
 
@@ -15931,7 +15931,7 @@ endif
     del=(1.0_dp/beta0 + de)/delt
     k=(1.0_dp+hcurv*x(1))
     rho=root(xp**2+yp**2+k**2)
-    ed=e(1)*xp + e(2)*yp + e(3)*k
+    ed=-(e(1)*xp + e(2)*yp + e(3)*k)
     
     g(1)=k*hcurv*xp**2/rho**3*delt
     g(2)=k*hcurv*xp*yp/rho**3*delt
@@ -15982,13 +15982,15 @@ endif
        beta0=1.0_dp; 
     endif
 
+    
+
     xp=x(2);yp=x(4);
     de=x(5)+VE
-    delt=sqrt(1.0_dp + 2*de/beta0 + de**2)
+    delt=sqrt(1.0_dp + 2.0_dp*de/beta0 + de**2)
     del=(1.0_dp/beta0 + de)/delt
     k=(1.0_dp+hcurv*x(1))
     rho=sqrt(xp**2+yp**2+k**2)
-    ed=e(1)*xp + e(2)*yp + e(3)*k
+    ed=-(e(1)*xp + e(2)*yp + e(3)*k)
     
     g(1)=k*hcurv*xp**2/rho**3*delt
     g(2)=k*hcurv*xp*yp/rho**3*delt
@@ -15996,8 +15998,8 @@ endif
     d(1)=xp/rho*del*ed + g(1) - rho*del*e(1) + delt*k*hcurv/rho + yp*b(3) - k*b(2)
     d(2)=yp/rho*del*ed + g(2) - rho*del*e(2) +                  - xp*b(3) + k*b(1)
     
-    c(1)=delt*(1/rho-xp**2/rho**3)
-    c(2)=delt*(1/rho-yp**2/rho**3)
+    c(1)=delt*(1.0_dp/rho-xp**2/rho**3)
+    c(2)=delt*(1.0_dp/rho-yp**2/rho**3)
     c(3)=xp*yp*delt/rho**3
     det=c(1)*c(2)-c(3)**2
    
@@ -16011,6 +16013,8 @@ endif
  
 
           F(6)=f(6)+(state%TOTALPATH-1)/BETA0
+
+
 
 
      call kill(xp,yp,rho,k,ed,det,de,delt,del)
@@ -16969,11 +16973,11 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     z=ent*el%l
     call B_E_FIELD(EL,X,Z,PSIE_IN=VE,A_in=a,kick=.true.)
     if(k%TIME) then
-       ti=ROOT(1.0_dp+2.0_dp*(X(5)+ve)/el%p%beta0+(X(5)+ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
+       ti=ROOT(1.0_dp+2.0_dp*(X(5)+ve)/el%p%beta0+(X(5)+ve)**2-(X(2)-put_a_abell*a(1))**2-(X(4)-put_a_abell*a(2))**2)
        x(2)=(1.0_dp+el%hc*X(1))*(X(2)-put_a_abell*a(1))/ti
        x(4)=(1.0_dp+el%hc*X(1))*(X(4)-put_a_abell*a(2))/ti
     else
-       ti=ROOT((1.0_dp+x(5)+ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
+       ti=ROOT((1.0_dp+x(5)+ve)**2-(X(2)-put_a_abell*a(1))**2-(X(4)-put_a_abell*a(2))**2)
        x(2)=(1.0_dp+el%hc*X(1))*(X(2)-put_a_abell*a(1))/ti
        x(4)=(1.0_dp+el%hc*X(1))*(X(4)-put_a_abell*a(2))/ti
     endif
@@ -16995,11 +16999,11 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
     call B_E_FIELD(EL,X,Z,PSIE_IN=VE,A_in=a,kick=.true.)
     if(k%TIME) then
-       ti=sqrt(1.0_dp+2.0_dp*(X(5)+ve)/el%p%beta0+(X(5)+ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
+       ti=sqrt(1.0_dp+2.0_dp*(X(5)+ve)/el%p%beta0+(X(5)+ve)**2-(X(2)-put_a_abell*a(1))**2-(X(4)-put_a_abell*a(2))**2)
        x(2)=(1.0_dp+el%hc*X(1))*(X(2)-put_a_abell*a(1))/ti
        x(4)=(1.0_dp+el%hc*X(1))*(X(4)-put_a_abell*a(2))/ti
     else
-       ti=sqrt((1.0_dp+x(5)+ve)**2-(X(2)-a(1))**2-(X(4)-a(2))**2)
+       ti=sqrt((1.0_dp+x(5)+ve)**2-(X(2)-put_a_abell*a(1))**2-(X(4)-put_a_abell*a(2))**2)
        x(2)=(1.0_dp+el%hc*X(1))*(X(2)-put_a_abell*a(1))/ti
        x(4)=(1.0_dp+el%hc*X(1))*(X(4)-put_a_abell*a(2))/ti
     endif
