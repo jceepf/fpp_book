@@ -1283,7 +1283,7 @@ contains
 
        if(present(pos)) then
           IF(POS<0) THEN
-             call get_Bfield_fringe(EL,B,X,pos,k)   ! fringe effect
+             call get_Bfield_fringe(EL,B,E,X,pos,k)   ! fringe effect
           ELSE
              call get_Bfield(EL,B,X)   ! fringe effect
           ENDIF
@@ -1293,7 +1293,7 @@ contains
     case(kind10)     ! TEAPOT real curvilinear
        if(present(pos)) then
           IF(POS<0) THEN
-             call get_Bfield_fringe(EL,B,X,pos,k)   ! fringe effect
+             call get_Bfield_fringe(EL,B,E,X,pos,k)   ! fringe effect
           ELSE
 !             if(EL%TP10%electric) then
               call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.d0;
@@ -1336,13 +1336,15 @@ contains
        call A_TRANS(EL%cav21,Z,X,k,A,AD,B,E)
 
     CASE(kindabell)     ! travelling wave cavity
-       IF(EL%ab%P%DIR==1) THEN
-          Z= pos*el%l/el%p%nst
-       ELSE
-          Z=EL%L-pos*el%l/el%p%nst
-       ENDIF
 
-       call B_E_FIELD(EL%ab,x,Z,B_in=b)
+       CALL get_z_ab(EL%ab,POS,z)
+
+
+          IF(POS<0) THEN
+             call get_Bfield_fringe(EL,B,E,X,pos,k)   ! fringe effect
+          ELSE
+              call B_E_FIELD(EL%ab,x,Z,B_in=b)
+          ENDIF
 
 
     CASE(KIND22)     ! helical dipole
@@ -1389,7 +1391,7 @@ contains
     case(KIND2,kind3,kind5:kind7,KIND16:kind17,KIND20) ! Straight for all practical purposes
        if(present(pos)) then
           IF(POS<0) THEN
-             call get_Bfield_fringe(EL,B,X,pos,k)   ! fringe effect
+             call get_Bfield_fringe(EL,B,E,X,pos,k)   ! fringe effect
           ELSE
              call get_Bfield(EL,B,X)   ! fringe effect
           ENDIF
@@ -1399,7 +1401,7 @@ contains
     case(kind10)     ! TEAPOT real curvilinear
        if(present(pos)) then
           IF(POS<0) THEN
-             call get_Bfield_fringe(EL,B,X,pos,k)   ! fringe effect
+             call get_Bfield_fringe(EL,B,E,X,pos,k)   ! fringe effect
           ELSE
 !             if(EL%TP10%electric) then
               call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.d0;
@@ -1449,9 +1451,12 @@ contains
        call kill(ad,3)
 
     CASE(kindabell)     ! travelling wave cavity
-       CALL get_z_ab(EL%ab,POS,z)
 
-       call B_E_FIELD(EL%ab,x,Z,B_in=b)
+          IF(POS<0) THEN
+             call get_Bfield_fringe(EL,B,E,X,pos,k)   ! fringe effect
+          ELSE
+              call B_E_FIELD(EL%ab,x,Z,B_in=b)
+          ENDIF
 
     CASE(KIND22)     ! helical dipole
        IF(EL%HE22%P%DIR==1) THEN
@@ -1472,15 +1477,15 @@ contains
 
   end subroutine get_fieldp
 
-  SUBROUTINE get_Bfield_fringeR(EL,B,X,pos,k)
+  SUBROUTINE get_Bfield_fringeR(EL,B,E,X,pos,k)
     IMPLICIT NONE
     real(dp),INTENT(INOUT):: X(6),B(3)
     TYPE(ELEMENT),INTENT(IN):: EL
     INTEGER pos
-    real(dp) e(3)
+    real(dp) e(3),z,vm,phi
     TYPE(INTERNAL_STATE) K
 
-
+e=0
     IF(ASSOCIATED(EL%B_SOL)) THEN
        B(1)=  (2*Pos+3)*EL%B_SOL*0.5_dp*x(1);    ! POS =-2,-1  (ENT, EXIT)
        B(2)=  (2*Pos+3)*EL%B_SOL*0.5_dp*x(3);
@@ -1501,21 +1506,31 @@ contains
        b(2)=-TAN(EL%p%EDGE(pos+3)-EL%p%b0*EL%p%LD/2.0_dp)*EL%p%DIR*EL%p%CHARGE*el%BN(1)*X(1)+b(2)
        b(1)=-TAN(EL%p%EDGE(pos+3)-EL%p%b0*EL%p%LD/2.0_dp)*EL%p%DIR*EL%p%CHARGE*el%BN(1)*X(3)+b(1)
     case(kind16)  ! likemad=false
+    case(kindabell) 
+            if(pos==-2) then    
+             z=el%l*(1.0_dp-el%p%dir)/2.0_dp
+              else
+             z=el%l*(1.0_dp+el%p%dir)/2.0_dp
+            endif        
+             call B_E_FIELD(EL%ab,X,Z,PSIE_in=phi,PSIM_in=vm)
+            b(3)=-(2*Pos+3)*vm  +b(3)     ! v here  e=-grad phi
+            e(3)=(2*Pos+3)*phi  +e(3)
     end select
-e=0
+ 
     call GET_BZ_fringe(EL,X,B(3),e(3),pos,k)
 
   END SUBROUTINE get_Bfield_fringeR
 
 
-  SUBROUTINE get_Bfield_fringeP(EL,B,X,pos,k)
+  SUBROUTINE get_Bfield_fringeP(EL,B,e,X,pos,k)
     IMPLICIT NONE
-    type(REAL_8),INTENT(INOUT):: X(6),B(3)
+    type(REAL_8),INTENT(INOUT):: X(6),B(3), e(3)
     TYPE(ELEMENTP),INTENT(IN):: EL
     INTEGER pos
     TYPE(INTERNAL_STATE) K
-    type(REAL_8) e(3)
+    type(REAL_8)vm,phi,z
 
+call alloc(vm,phi,z)
     IF(ASSOCIATED(EL%B_SOL)) THEN
        B(1)= (2*Pos+3)*EL%B_SOL*0.5_dp*x(1);    ! POS =-2,-1  (ENT, EXIT)
        B(2)= (2*Pos+3)*EL%B_SOL*0.5_dp*x(3);
@@ -1536,13 +1551,22 @@ e=0
        b(2)=-TAN(EL%p%EDGE(pos+3)-EL%p%b0*EL%p%LD/2.0_dp)*EL%p%DIR*EL%p%CHARGE*el%BN(1)*X(1)+b(2)
        b(1)=-TAN(EL%p%EDGE(pos+3)-EL%p%b0*EL%p%LD/2.0_dp)*EL%p%DIR*EL%p%CHARGE*el%BN(1)*X(3)+b(1)
     case(kind16)  ! likemad=false
+    case(kindabell) 
+            if(pos==-2) then    
+             z=el%l*(1.0_dp-el%p%dir)/2.0_dp
+              else
+             z=el%l*(1.0_dp+el%p%dir)/2.0_dp
+            endif        
+             call B_E_FIELD(EL%ab,X,Z,PSIE_in=phi,PSIM_in=vm)
+            b(3)=-(2*Pos+3)*vm  +b(3)     ! v here  e=-grad phi
+            e(3)=(2*Pos+3)*phi  +e(3)
     end select
-call alloc(e)
     call GET_BZ_fringe(EL,X,B(3),e(3),pos,k)
 !write(6,*) el%name,el%p%b0
 !call print(b(3),6)
 !pause
-call kill(e)
+
+call kill(vm,phi,z)
 
   END SUBROUTINE get_Bfield_fringeP
 
@@ -1558,8 +1582,8 @@ call kill(e)
     
     if(el%electric.and.associated(el%tp10)) then
      call getelectric(EL%tp10,E,phi,B,VM,X)
-            bz=(2*Pos+3)*vm
-            ez=(2*Pos+3)*phi
+            bz=-(2*Pos+3)*vm       ! probably wrong : here  e=grad phi
+            ez=-(2*Pos+3)*phi
     else
     bz=0.0_dp
     IF(EL%P%BEND_FRINGE) then
@@ -1615,8 +1639,8 @@ call kill(e)
      call alloc(phi,VM)
      call alloc(E);call alloc(b);
      call getelectric(EL%tp10,E,phi,B,VM,X)
-            bz=(2*Pos+3)*vm
-            ez=(2*Pos+3)*phi
+            bz=-(2*Pos+3)*vm       ! probably wrong : here  e=grad phi
+            ez=-(2*Pos+3)*phi
      call kill(phi,VM)
      call kill(E);call kill(b);
     else
@@ -1669,6 +1693,7 @@ call kill(e)
     call kill(X1,X3,BBYTW,BBXTW,BBYTWT)
     endif
   END SUBROUTINE GET_BZ_fringep
+
 
 
 
@@ -3450,6 +3475,23 @@ endif
             endif
 
        endif
+    case(KINDabell)
+       if(el%pa%hc==0.0_dp) then
+
+            IF(C%CAS==CASE1) THEN
+                CALL rot_spin_y(p,el%p%dir*el%ab%angc)
+            else
+                CALL rot_spin_y(p,el%p%dir*el%ab%angc)
+            endif
+        else
+   
+            IF(C%CAS==CASE1) THEN
+                CALL rot_spin_y(p,-el%p%dir*el%ab%angc)
+            else
+                CALL rot_spin_y(p,-el%p%dir*el%ab%angc)
+            endif
+
+       endif
     END SELECT
 
 
@@ -3495,6 +3537,24 @@ endif
             endif
 
        endif
+    case(KINDabell)
+       if(el%pa%hc==0.0_dp) then
+
+            IF(C%CAS==CASE1) THEN
+                CALL rot_spin_y(p,el%p%dir*el%ab%angc)
+            else
+                CALL rot_spin_y(p,el%p%dir*el%ab%angc)
+            endif
+        else
+   
+            IF(C%CAS==CASE1) THEN
+                CALL rot_spin_y(p,-el%p%dir*el%ab%angc)
+            else
+                CALL rot_spin_y(p,-el%p%dir*el%ab%angc)
+            endif
+
+       endif
+
     END SELECT
 
 
@@ -3517,7 +3577,7 @@ endif
     CASE(KIND0:KIND1,KIND3,KIND8:KIND9,KIND11:KIND15,KIND18:KIND19)
        !    case(KIND2)
     case(KIND4)
-    case(KIND2,kind5:kind7,KIND16:kind17,KIND20,KIND10) ! Straight for all practical purposes
+    case(KIND2,kind5:kind7,KIND16:kind17,KIND20,KIND10,kindabell) ! Straight for all practical purposes
        IF(C%CAS==CASE1) THEN
           pos=-2
           !          call PUSH_SPIN_fake_fringe(c,p,my_true,k,pos)
@@ -3560,7 +3620,7 @@ endif
     CASE(KIND0:KIND1,KIND3,KIND8:KIND9,KIND11:KIND15,KIND18:KIND19)
        !    case(KIND2)
     case(KIND4)
-    case(KIND2,kind5:kind7,KIND16:kind17,KIND20,KIND10) ! Straight for all practical purposes
+    case(KIND2,kind5:kind7,KIND16:kind17,KIND20,KIND10,kindabell) ! Straight for all practical purposes
        IF(C%CAS==CASE1) THEN
           pos=-2
           !          call PUSH_SPIN_fake_fringe(c,p,my_true,k,pos)
