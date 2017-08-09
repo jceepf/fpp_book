@@ -2156,7 +2156,7 @@ call kill(vm,phi,z)
 
 
           if(el%ab%xprime) then
-               H=1.0_dp+el%pa%hc*X(1)
+               H=1.0_dp+el%ab%hc*X(1)
                N=root(H**2+X(2)**2+X(4)**2)
                E(1)=X(2)/N
                E(2)=X(4)/N
@@ -2292,7 +2292,7 @@ call kill(vm,phi,z)
 
 
           if(el%ab%xprime) then
-               H=1.0_dp+el%pa%hc*X(1)
+               H=1.0_dp+el%ab%hc*X(1)
                N=SQRT(H**2+X(2)**2+X(4)**2)
                E(1)=X(2)/N
                E(2)=X(4)/N
