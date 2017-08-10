@@ -14756,11 +14756,11 @@ endif
         B(2)=dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm1*YN*K_N +B(2)
         B(3)=I_*K_N*dd*0.5_DP*EXP(I_*K_N*Z)*EL%B(M,N)*nbm+B(3)
         PSIE=PSIE+EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*ddE*nbm      
-        E(1)=DYE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(1)
-        E(1)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*XN*K_N +E(1)
-        E(2)=I_*DXE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(2)
-        E(2)=ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
-        E(3)=I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
+        E(1)=-DYE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(1)
+        E(1)=-ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*XN*K_N +E(1)
+        E(2)=-I_*DXE*M*EXP(I_*K_N*Z)*0.5_DP*EL%E(M,N)*nbm+E(2)
+        E(2)=-ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm1*YN*K_N +E(2)
+        E(3)=-I_*K_N*ddE*0.5_DP*EXP(I_*K_N*Z)*EL%E(M,N)*nbm+E(3)
 
         if(n==0) then
        AMI=-0.5_dp*EXP(I_*K_N*Z)/M*EL%B(M,N)*nbm*d  
@@ -14814,9 +14814,9 @@ endif
         B(1)=EXP(I_*K_N*Z)*XN*EL%B(0,N)*nbm1+B(1)
         B(2)=EXP(I_*K_N*Z)*YN*EL%B(0,N)*nbm1+B(2)
         B(3)=I_*EXP(I_*K_N*Z)*EL%B(0,N)*nbm+B(3)
-        E(1)=EXP(I_*K_N*Z)*XN*EL%E(0,N)*nbm1+E(1)
-        E(2)=EXP(I_*K_N*Z)*YN*EL%E(0,N)*nbm1+E(2)
-        E(3)=I_*EXP(I_*K_N*Z)*EL%E(0,N)*nbm+E(3)
+        E(1)=-EXP(I_*K_N*Z)*XN*EL%E(0,N)*nbm1+E(1)
+        E(2)=-EXP(I_*K_N*Z)*YN*EL%E(0,N)*nbm1+E(2)
+        E(3)=-I_*EXP(I_*K_N*Z)*EL%E(0,N)*nbm+E(3)
         AMI=I_*EL%B(0,N)*nbm1*EXP(I_*K_N*Z)
         C=I_*EL%B(0,N)*EXP(I_*K_N*Z)*K_N
         CX=C*XN*NBI(2,XN,YN)
@@ -15931,7 +15931,7 @@ endif
     del=(1.0_dp/beta0 + de)/delt
     k=(1.0_dp+hcurv*x(1))
     rho=root(xp**2+yp**2+k**2)
-    ed=-(e(1)*xp + e(2)*yp + e(3)*k)
+    ed=(e(1)*xp + e(2)*yp + e(3)*k)
     
     g(1)=k*hcurv*xp**2/rho**3*delt
     g(2)=k*hcurv*xp*yp/rho**3*delt
@@ -15990,7 +15990,7 @@ endif
     del=(1.0_dp/beta0 + de)/delt
     k=(1.0_dp+hcurv*x(1))
     rho=sqrt(xp**2+yp**2+k**2)
-    ed=-(e(1)*xp + e(2)*yp + e(3)*k)
+    ed=(e(1)*xp + e(2)*yp + e(3)*k)
     
     g(1)=k*hcurv*xp**2/rho**3*delt
     g(2)=k*hcurv*xp*yp/rho**3*delt
