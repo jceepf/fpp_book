@@ -15058,13 +15058,16 @@ real(dp) b(6,6),b0(6,6),ri(6,6),ang,damp(3),t,cphi,sphi,s(6,6)
 integer i
 
 s=0
+b0=0
 do i=1,nd
+b0(2*i-1,2*i-1)=1
+b0(2*i,2*i)=1
 s(2*i-1,2*i)=1 
 s(2*i,2*i-1)=-1 
 enddo
 
 b=0
-b0=0
+
 ri=0
 b=u
 
@@ -15114,25 +15117,20 @@ enddo
       if(ndpt/=0) then
         ri(5,5)=1
         ri(6,6)=1
-        s=matmul(b,ri)
-        write(6,'(6(1x,f12.5))') s(1,1:6)
-        write(6,'(6(1x,f12.5))') s(2,1:6)
-        write(6,'(6(1x,f12.5))') s(3,1:6)
-        write(6,'(6(1x,f12.5))') s(4,1:6)
-        write(6,'(6(1x,f12.5))') s(5,1:6)
-        write(6,'(6(1x,f12.5))') s(6,1:6)
-pause 
+        ri(ndptb,ndpt)=- b(ndptb,ndpt)
+!        write(6,'(6(1x,f12.5))') b(6,1:6)
+!        write(6,'(6(1x,f12.5))') s(6,1:6) 
         if(mod(ndpt,2)==0) then
          i=ndpt/2
         else
          i=ndptb/2
         endif
-       phase(i)=phase(i)+b0(ndptb,ndpt)
-!      else
-!       u_c=matmul(b,ri)
+       phase(i)=phase(i)+b(ndptb,ndpt)
+
       endif
 
-       u_c=matmul(b,ri)
+       s=matmul(b,ri)
+       u_c=matmul(b0,s)
 
 
 end subroutine c_fast_canonise
