@@ -19,9 +19,15 @@ TYPE undu_R
    real(dp), DIMENSION(:), pointer :: F
    real(dp), DIMENSION(:), pointer :: x0
    real(dp), DIMENSION(:), pointer :: y0
-   real(dp), DIMENSION(:), pointer :: ex(:),ey(:)
+   real(dp), DIMENSION(:,:), pointer :: KE
+   real(dp), DIMENSION(:), pointer :: AE
+   real(dp), DIMENSION(:), pointer :: FE
+   real(dp), DIMENSION(:), pointer :: x0E
+   real(dp), DIMENSION(:), pointer :: y0E
+   real(dp), DIMENSION(:), pointer :: ex,ey
    real(dp), pointer :: offset
    integer, DIMENSION(:), pointer :: FORM
+      integer, DIMENSION(:), pointer :: FORME
 END TYPE undu_R
 
 TYPE undu_p
@@ -30,9 +36,15 @@ TYPE undu_p
    TYPE(REAL_8), DIMENSION(:), pointer :: F
    TYPE(REAL_8), DIMENSION(:), pointer :: x0
    TYPE(REAL_8), DIMENSION(:), pointer :: y0
-   real(dp), DIMENSION(:), pointer :: ex(:),ey(:)
+   TYPE(REAL_8), DIMENSION(:,:), pointer :: KE
+   TYPE(REAL_8), DIMENSION(:), pointer :: AE
+   TYPE(REAL_8), DIMENSION(:), pointer :: FE
+   TYPE(REAL_8), DIMENSION(:), pointer :: x0E
+   TYPE(REAL_8), DIMENSION(:), pointer :: y0E
+   real(dp), DIMENSION(:), pointer :: ex,ey
    TYPE(REAL_8), pointer :: offset
    integer, DIMENSION(:), pointer :: FORM
+      integer, DIMENSION(:), pointer :: FORME
 END TYPE undu_p
 
 TYPE SAGAN
@@ -42,6 +54,7 @@ TYPE SAGAN
    real(dp),  DIMENSION(:), POINTER :: AN,BN         !Multipole component (OPTIONAL)
    !   ADD INTERNAL STUFF HERE AS POINTERS
    real(dp),  DIMENSION(:),  POINTER ::INTERNAL       ! INTERNAL IS AN EXAMPLE
+   LOGICAL(lp), POINTER :: xprime  => null()
    TYPE(undu_R), POINTER :: W
 END  TYPE SAGAN
 
@@ -52,5 +65,6 @@ TYPE SAGANP
    TYPE(REAL_8),  DIMENSION(:), POINTER :: AN,BN         !Multipole component (OPTIONAL)
    !   ADD INTERNAL STUFF HERE AS POINTERS
    TYPE(REAL_8), DIMENSION(:),POINTER ::INTERNAL        ! INTERNAL IS AN EXAMPLE
+   LOGICAL(lp), POINTER :: xprime  => null()
    TYPE(undu_p), POINTER :: W
 END  TYPE SAGANP
