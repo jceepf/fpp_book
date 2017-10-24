@@ -1301,6 +1301,8 @@ contains
 
     B=0.0_dp
     E=0.0_dp
+    a=0
+    ad=0
     phi=0.0_dp
     SELECT CASE(EL%KIND)
     case(KIND2,kind3,kind5:kind7,KIND16:kind17,KIND20) ! Straight for all practical purposes
