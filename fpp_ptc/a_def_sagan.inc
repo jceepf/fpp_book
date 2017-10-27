@@ -26,6 +26,7 @@ TYPE undu_R
    real(dp), DIMENSION(:), pointer :: y0E
    real(dp), DIMENSION(:), pointer :: ex,ey
    real(dp), pointer :: offset
+      integer, pointer :: n,ne
    integer, DIMENSION(:), pointer :: FORM
       integer, DIMENSION(:), pointer :: FORME
 END TYPE undu_R
@@ -43,6 +44,7 @@ TYPE undu_p
    TYPE(REAL_8), DIMENSION(:), pointer :: y0E
    real(dp), DIMENSION(:), pointer :: ex,ey
    TYPE(REAL_8), pointer :: offset
+         integer, pointer :: n,ne
    integer, DIMENSION(:), pointer :: FORM
       integer, DIMENSION(:), pointer :: FORME
 END TYPE undu_p

@@ -14,8 +14,8 @@ module sagan_WIGGLER
   PRIVATE COMPX_R,COMPX_P,COMPY_R,COMPY_P,COMPZ_R,COMPZ_P,b_fieldr,b_fieldp
  ! PRIVATE COMPZ  !,B_FIELD
   PRIVATE KICKR,KICKP,KICK
-  PRIVATE KILL_WIGGLER
-  PRIVATE ALLOC_WIGGLER,feval_saganp,feval_saganr,feval_sagan
+  PRIVATE KILL_WIGGLER,feval_saganp,feval_saganr,feval_sagan
+!  PRIVATE ALLOC_WIGGLER
   PRIVATE ZERO_Wr,ZERO_Wp,POINTERS_WP,e_potentialr,e_potentialp
   PRIVATE copy_W_WP,copy_WP_W,copy_W_W,INT_SAGANR,INT_SAGANP
   !  PRIVATE SET_R,SET_P,SET_W
@@ -124,7 +124,7 @@ private conv_to_xprsagan,conv_to_xppsagan,conv_to_pxrsagan,conv_to_pxpsagan
 
   INTERFACE ALLOC
      MODULE PROCEDURE ALLOC_SAGAN
-     MODULE PROCEDURE ALLOC_WIGGLER
+ !    MODULE PROCEDURE ALLOC_WIGGLER
   END INTERFACE
 
   INTERFACE POINTERS_SAGAN
@@ -992,6 +992,8 @@ end subroutine kick_integral_p
        ENDIF
          IF(ASSOCIATED(EL%offset))  DEALLOCATE(EL%offset)
          IF(ASSOCIATED(EL%ex))  DEALLOCATE(EL%ex,EL%ey)
+         IF(ASSOCIATED(EL%n))  DEALLOCATE(EL%n)
+         IF(ASSOCIATED(EL%ne))  DEALLOCATE(EL%ne)
     elseif(i==0)       then
           NULLIFY(EL%A,EL%AE)
           NULLIFY(EL%F,EL%x0,EL%y0,EL%y0,EL%x0e,EL%y0e)
@@ -999,6 +1001,7 @@ end subroutine kick_integral_p
           NULLIFY(EL%FORM,EL%FORME)
           NULLIFY(EL%K,EL%KE)
           NULLIFY(EL%ex,EL%ey)
+          NULLIFY(EL%n,EL%ne)
        ! nullifies pointers
        ! And also zeroes for security ordinary variables
     endif
@@ -1027,7 +1030,8 @@ end subroutine kick_integral_p
        ENDIF
          IF(ASSOCIATED(EL%offset))  DEALLOCATE(EL%offset)
          IF(ASSOCIATED(EL%ex))  DEALLOCATE(EL%ex,EL%ey)
-
+         IF(ASSOCIATED(EL%n))  DEALLOCATE(EL%n)
+         IF(ASSOCIATED(EL%ne))  DEALLOCATE(EL%ne)
 
     elseif(i==0)       then
           NULLIFY(EL%A,EL%AE)
@@ -1036,6 +1040,7 @@ end subroutine kick_integral_p
           NULLIFY(EL%FORM,EL%FORME)
           NULLIFY(EL%K,EL%KE)
           NULLIFY(EL%ex,EL%ey)
+          NULLIFY(EL%n,EL%ne)
        ! nullifies pointers
        ! And also zeroes for security ordinary variables
        !
@@ -1106,9 +1111,11 @@ end subroutine kick_integral_p
     TYPE(undu_r), INTENT(inout)::ELP
 
     INTEGER I,J
-
+       CALL POINTERS_W(ELP,(EL%n),(EL%ne))
     if(associated(el%K)) then
-       CALL POINTERS_W(ELP,SIZE(EL%A),SIZE(EL%AE))
+ !      CALL POINTERS_W(ELP,SIZE(EL%A),SIZE(EL%AE))
+
+
        DO I=1,3
           DO J=1,SIZE(EL%A)
              ELP%K(I,J)   =EL%K(I,J)
@@ -1122,10 +1129,15 @@ end subroutine kick_integral_p
           ELP%FORM(I) =EL%FORM(I)
        ENDDO
 
-        elp%ex=el%ex
-        elp%ey=el%ey
-       ELP%offset   =EL%offset
+
      ENDIF
+
+if(associated(el%ex))        elp%ex=el%ex
+if(associated(el%ey))    elp%ey=el%ey
+if(associated(EL%offset))    ELP%offset   =EL%offset
+if(associated(EL%n))    ELP%n   =EL%n
+if(associated(EL%ne))    ELP%ne   =EL%ne
+
     if(associated(el%KE)) then
        DO I=1,3
           DO J=1,SIZE(EL%AE)
@@ -1150,9 +1162,9 @@ end subroutine kick_integral_p
     TYPE(undu_p), INTENT(inout)::ELP
 
     INTEGER I,J
-
+       CALL POINTERS_W(ELP,(EL%n),(EL%ne))
     if(associated(el%K)) then
-       CALL POINTERS_W(ELP,SIZE(EL%A),SIZE(EL%AE))
+!       CALL POINTERS_W(ELP,SIZE(EL%A),SIZE(EL%AE))
        DO I=1,3
           DO J=1,SIZE(EL%A)
              ELP%K(I,J)   =EL%K(I,J)
@@ -1165,10 +1177,12 @@ end subroutine kick_integral_p
           ELP%y0(I)    =EL%y0(I)
           ELP%FORM(I) =EL%FORM(I)
        ENDDO
-        elp%ex=el%ex
-        elp%ey=el%ey
-       ELP%offset   =EL%offset
  ENDIF
+if(associated(el%ex))        elp%ex=el%ex
+if(associated(el%ey))    elp%ey=el%ey
+if(associated(EL%offset))    ELP%offset   =EL%offset
+if(associated(EL%n))    ELP%n   =EL%n
+if(associated(EL%ne))    ELP%ne   =EL%ne
     if(associated(el%KE)) then
        DO I=1,3
           DO J=1,SIZE(EL%AE)
@@ -1193,9 +1207,9 @@ end subroutine kick_integral_p
     TYPE(undu_r), INTENT(inout)::ELP
 
     INTEGER I,J
-
+       CALL POINTERS_W(ELP,(EL%n),(EL%ne))
     if(associated(el%K)) then
-       CALL POINTERS_W(ELP,SIZE(EL%A),SIZE(EL%AE))
+!       CALL POINTERS_W(ELP,SIZE(EL%A),SIZE(EL%AE))
        DO I=1,3
           DO J=1,SIZE(EL%A)
              ELP%K(I,J)   =EL%K(I,J)
@@ -1208,11 +1222,13 @@ end subroutine kick_integral_p
           ELP%F(I)    =EL%F(I)
           ELP%FORM(I) =EL%FORM(I)
        ENDDO
-        elp%ex=el%ex
-        elp%ey=el%ey
-       ELP%offset   =EL%offset
-ENDIF
 
+ENDIF
+if(associated(el%ex))        elp%ex=el%ex
+if(associated(el%ey))    elp%ey=el%ey
+if(associated(EL%offset))    ELP%offset   =EL%offset
+if(associated(EL%n))    ELP%n   =EL%n
+if(associated(EL%ne))    ELP%ne   =EL%ne
     if(associated(el%KE)) then
        DO I=1,3
           DO J=1,SIZE(EL%AE)
@@ -1268,25 +1284,32 @@ ENDIF
     TYPE(undu_r), INTENT(INOUT)::EL
     INTEGER, INTENT(IN)::N,ne
 
-    IF(ASSOCIATED(EL%A).OR.ASSOCIATED(EL%AE)) THEN
+!    IF(ASSOCIATED(EL%A).OR.ASSOCIATED(EL%AE)) THEN
+    IF(ASSOCIATED(EL%offset)) THEN
        EL=-1
     ENDIF
     EL=0
+
+allocate(el%n)
+el%n=n
+allocate(el%ne)
+el%ne=ne
+
 IF(N>0) THEN
     ALLOCATE(EL%A(N))
     ALLOCATE(EL%F(N),EL%x0(N),EL%y0(N))
     ALLOCATE(EL%FORM(N))
     ALLOCATE(EL%K(3,N))
-    ALLOCATE(EL%offset)
+
     EL%K=0.0_dp
     EL%x0=0.0_dp
     EL%y0=0.0_dp
     EL%A=0.0_dp
     EL%F=0.0_dp
     EL%FORM=0
-    EL%offset=0.0_dp
 ENDIF
-
+    ALLOCATE(EL%offset)
+    EL%offset=0.0_dp
 IF(NE>0) THEN
     ALLOCATE(EL%AE(NE))
     ALLOCATE(EL%FE(NE),EL%x0E(NE),EL%y0E(NE))
@@ -1309,31 +1332,35 @@ ENDIF
     TYPE(undu_p), INTENT(INOUT)::EL
     INTEGER, INTENT(IN)::N,ne
 
-    IF(ASSOCIATED(EL%A).OR.ASSOCIATED(EL%AE)) THEN
+!    IF(ASSOCIATED(EL%A).OR.ASSOCIATED(EL%AE)) THEN
+    IF(ASSOCIATED(EL%offset)) THEN
        CALL KILL(EL)
        EL=-1
     ENDIF
     EL=0
+
+allocate(el%n)
+el%n=n
+allocate(el%ne)
+el%ne=ne
 
 IF(N>0) THEN
     ALLOCATE(EL%A(N))
     ALLOCATE(EL%F(N),EL%x0(N),EL%y0(N))
     ALLOCATE(EL%FORM(N))
     ALLOCATE(EL%K(3,N))
-    ALLOCATE(EL%offset)
-    EL%FORM=0
-ENDIF
 
+ENDIF
+    ALLOCATE(EL%offset)
 IF(NE>0) THEN
     ALLOCATE(EL%AE(NE))
     ALLOCATE(EL%FE(NE),EL%x0E(NE),EL%y0E(NE))
     ALLOCATE(EL%FORME(NE))
     ALLOCATE(EL%KE(3,NE))
-    EL%FORME=0
 ENDIF
 
  
-    CALL ALLOC(EL)
+!    CALL ALLOC(EL)
     ALLOCATE(EL%ex(wiggler_suntao),EL%ey(wiggler_suntao))
     EL%ex=0
     EL%ey=0
@@ -1352,36 +1379,36 @@ ENDIF
     ! ALLOC INTERNAL POLYMORPHS IF ANY
   END SUBROUTINE ALLOC_SAGAN
 
-  SUBROUTINE ALLOC_WIGGLER(EL)
-    IMPLICIT NONE
-    TYPE(undu_p), INTENT(INOUT)::EL
-    INTEGER I,J
-    ! ALLOC INTERNAL POLYMORPHS IF ANY
-    IF(ASSOCIATED(EL%K)) THEN  !DAVID
-       DO I=1,3
-          DO J=1,SIZE(EL%A)
-             CALL ALLOC(EL%K(I,J));
-          ENDDO
-       ENDDO
-       CALL ALLOC(EL%A,SIZE(EL%A));
-       CALL ALLOC(EL%F,SIZE(EL%A));
-       CALL ALLOC(EL%x0,SIZE(EL%A));
-       CALL ALLOC(EL%y0,SIZE(EL%A));
-       CALL ALLOC(EL%offset);
-ENDIF
-    IF(ASSOCIATED(EL%KE)) THEN  
-       DO I=1,3
-          DO J=1,SIZE(EL%AE)
-             CALL ALLOC(EL%KE(I,J));
-          ENDDO
-       ENDDO
-       CALL ALLOC(EL%AE,SIZE(EL%AE));
-       CALL ALLOC(EL%FE,SIZE(EL%AE));
-       CALL ALLOC(EL%x0E,SIZE(EL%AE));
-       CALL ALLOC(EL%y0E,SIZE(EL%AE));
-    ENDIF
-  END SUBROUTINE ALLOC_WIGGLER
-
+!  SUBROUTINE ALLOC_WIGGLER(EL)
+!    IMPLICIT NONE
+!    TYPE(undu_p), INTENT(INOUT)::EL
+!    INTEGER I,J
+!    ! ALLOC INTERNAL POLYMORPHS IF ANY
+!    IF(ASSOCIATED(EL%K)) THEN  !DAVID
+!       DO I=1,3
+!          DO J=1,SIZE(EL%A)
+!             CALL ALLOC(EL%K(I,J));
+!          ENDDO
+!       ENDDO
+!       CALL ALLOC(EL%A,SIZE(EL%A));
+!       CALL ALLOC(EL%F,SIZE(EL%A));
+!       CALL ALLOC(EL%x0,SIZE(EL%A));
+!       CALL ALLOC(EL%y0,SIZE(EL%A));
+!ENDIF
+!      IF(ASSOCIATED(EL%offset)) CALL ALLOC(EL%offset);
+!    IF(ASSOCIATED(EL%KE)) THEN  
+!       DO I=1,3
+!          DO J=1,SIZE(EL%AE)
+!             CALL ALLOC(EL%KE(I,J));
+!          ENDDO
+!       ENDDO
+!       CALL ALLOC(EL%AE,SIZE(EL%AE));
+!       CALL ALLOC(EL%FE,SIZE(EL%AE));
+!       CALL ALLOC(EL%x0E,SIZE(EL%AE));
+!       CALL ALLOC(EL%y0E,SIZE(EL%AE));
+!    ENDIF
+!  END SUBROUTINE ALLOC_WIGGLER
+!
 
   SUBROUTINE KILL_SAGAN(EL)
     IMPLICIT NONE
@@ -1408,8 +1435,8 @@ ENDIF
        CALL KILL(EL%x0,SIZE(EL%A));
        CALL KILL(EL%y0,SIZE(EL%A));
        CALL KILL(EL%F,SIZE(EL%A));
-       CALL KILL(EL%offset);
 ENDIF
+
     IF(ASSOCIATED(EL%KE)) then! DAVID
        DO I=1,3
           DO J=1,SIZE(EL%AE)
@@ -1763,7 +1790,7 @@ ENDIF
     B=0.0_dp
 
 
-   DO I=1,SIZE(EL%W%A)
+   DO I=1,el%w%n  !SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyper_y_family_x) THEN
           A =  EL%W%A(I)*EL%W%K(3,i)*SIN(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*SINEH(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(2,i)**2 + A
@@ -1851,7 +1878,7 @@ ENDIF
 ! SINEH(X) ! REPLACES SINH(X)
 ! SINEHX_X(X) ! REPLACES SINH(X)/X
 
-   DO I=1,SIZE(EL%W%A)
+   DO I=1,el%w%n ! SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyper_y_family_x) THEN
           A =  EL%W%A(I)*EL%W%K(3,i)*SIN(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*SINH(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 SIN(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(2,i)**2 + A
@@ -1932,7 +1959,7 @@ ENDIF
     A=0.0_dp
     B=0.0_dp
  
-    DO I=1,SIZE(EL%W%A)
+    DO I=1,el%w%n  !SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyper_y_family_y) THEN
           A =  -EL%W%A(I)*EL%W%K(3,i)*sinx_x(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*(X(1)+EL%W%X0(i))  &
                *SINEH(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
@@ -2010,7 +2037,7 @@ ENDDO
     A=0.0_dp
     B=0.0_dp
 
-    DO I=1,SIZE(EL%W%A)
+    DO I=1,el%w%n   !SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyper_y_family_y) THEN
           A =  -EL%W%A(I)*EL%W%K(3,i)*sinx_x(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*(X(1)+EL%W%X0(i))  &
                *SINH(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
@@ -2092,7 +2119,7 @@ ENDDO
     A=0.0_dp
     B=0.0_dp
 
-    DO I=1,SIZE(EL%W%A)
+    DO I=1,el%w%n   !SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyper_y_family_x) THEN
           A =  -EL%W%A(I)*EL%W%K(1,i)**2*SIN(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*SINEH(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 COS(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(2,i)**2 + A
@@ -2153,7 +2180,7 @@ ENDDO
 
     q=0.0_dp
     n=el%n_min
-    DO I=1,SIZE(EL%W%A)
+    DO I=1,el%w%n   !SIZE(EL%W%A)
 
         q = q + (EL%W%A(I)**2/EL%W%K(3,i)) * (EL%W%K(1,i)**2+EL%W%K(2,i)**2)/2.d0
 
@@ -2171,7 +2198,7 @@ ENDDO
  
     A=0.0_dp
     B=0.0_dp
-    DO I=1,SIZE(EL%W%A)
+    DO I=1,el%w%n   !SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyper_y_family_x) THEN
           A =  -EL%W%A(I)*EL%W%K(1,i)**2*SIN(EL%W%K(1,i)*(X(1)+EL%W%X0(i)))*SINH(EL%W%K(2,i)*(X(3)+EL%W%Y0(I)))* &
                 COS(EL%W%K(3,i)*Z+EL%W%F(I))/EL%W%K(2,i)**2 + A
@@ -2235,7 +2262,7 @@ ENDDO
 ! SINEHX_X(X) ! REPLACES SINH(X)/X
 v=0.0_dp
  
-    DO I=1,SIZE(EL%W%AE)
+    DO I=1,el%w%ne   !SIZE(EL%W%AE)
        if (EL%W%FORME(I) == hyper_y_family_x) THEN
           V = EL%W%AE(I)*SIN(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*COSEH(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(2,i) + V
@@ -2303,48 +2330,48 @@ v=0.0_dp
 ! SINEHX_X(X) ! REPLACES SINH(X)/X
 v=0.0_dp
  
-    DO I=1,SIZE(EL%W%AE)
+    DO I=1,el%w%ne  !SIZE(EL%W%AE)
        if (EL%W%FORME(I) == hyper_y_family_x) THEN
           V = EL%W%AE(I)*SIN(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(2,i) + V
-       elseif (EL%W%FORM(I) == hyper_xy_family_x) THEN
+       elseif (EL%W%forme(I) == hyper_xy_family_x) THEN
           V = EL%W%AE(I)*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(3,i) + V
-       elseif (EL%W%FORM(I) == hyper_x_family_x) THEN
+       elseif (EL%W%forme(I) == hyper_x_family_x) THEN
           V = EL%W%AE(I)*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*COS(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(1,i) + V
-       ELSEif (EL%W%FORM(I) == hyper_y_family_y) THEN
+       ELSEif (EL%W%forme(I) == hyper_y_family_y) THEN
           V = EL%W%AE(I)*COS(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(2,i) + V
   
-       elseif (EL%W%FORM(I) == hyper_xy_family_y) THEN
+       elseif (EL%W%forme(I) == hyper_xy_family_y) THEN
           V = EL%W%AE(I)*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(3,i) + V
  
-       elseif (EL%W%FORM(I) == hyper_x_family_y) THEN
+       elseif (EL%W%forme(I) == hyper_x_family_y) THEN
           V = EL%W%AE(I)*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*SIN(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(1,i) + V
 
-        elseif (EL%W%FORM(I) == hyper_y_family_qu) THEN
+        elseif (EL%W%forme(I) == hyper_y_family_qu) THEN
           V = EL%W%AE(I)*(1.0_DP/EL%W%KE(2,i))*SIN(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + V
 
-        elseif (EL%W%FORM(I) == hyper_xy_family_qu) THEN
+        elseif (EL%W%forme(I) == hyper_xy_family_qu) THEN
           V = EL%W%AE(I)*(1.0_DP/EL%W%KE(3,i))*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + V
 
-        elseif (EL%W%FORM(I) == hyper_x_family_qu) THEN
+        elseif (EL%W%forme(I) == hyper_x_family_qu) THEN
           V = EL%W%AE(I)*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sin(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(1,i) + V
-        elseif (EL%W%FORM(I) == hyper_y_family_sq) THEN
+        elseif (EL%W%forme(I) == hyper_y_family_sq) THEN
           V = EL%W%AE(I)*(1.0_DP/EL%W%KE(2,i))*COS(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + V
 
-    elseif (EL%W%FORM(I) == hyper_xy_family_sq) THEN
+    elseif (EL%W%forme(I) == hyper_xy_family_sq) THEN
           V = EL%W%AE(I)*(1.0_DP/EL%W%KE(3,i))*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + V
 
-        elseif (EL%W%FORM(I) == hyper_x_family_sq) THEN
+        elseif (EL%W%forme(I) == hyper_x_family_sq) THEN
           V = -EL%W%AE(I)*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cos(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(1,i) + V
        else
@@ -2373,7 +2400,7 @@ v=0.0_dp
 ! SINEHX_X(X) ! REPLACES SINH(X)/X
 
  
-    DO I=1,SIZE(EL%W%AE)
+    DO I=1,el%w%ne  !SIZE(EL%W%AE)
        if (EL%W%FORME(I) == hyper_y_family_x) THEN
 
 
@@ -2383,14 +2410,14 @@ v=0.0_dp
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*EL%W%KE(3,i)*SIN(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*COSEH(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(2,i) + E(3)
-       elseif (EL%W%FORM(I) == hyper_xy_family_x) THEN
+       elseif (EL%W%forme(I) == hyper_xy_family_x) THEN
           E(1) = EL%W%AE(I)*EL%W%KE(1,i)*COSEH(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*COSEH(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(3,i) + E(1)
           E(2) = EL%W%AE(I)*EL%W%KE(2,i)*SINEH(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*SINEH(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(3,i) + E(2) 
           E(3) = -EL%W%AE(I)*SINEH(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*COSEH(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-       elseif (EL%W%FORM(I) == hyper_x_family_x) THEN
+       elseif (EL%W%forme(I) == hyper_x_family_x) THEN
           E(1) = EL%W%AE(I)*COSEH(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*COS(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = -EL%W%AE(I)*EL%W%KE(2,i)*SINEH(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*SIN(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
@@ -2398,7 +2425,7 @@ v=0.0_dp
           E(3) = -EL%W%AE(I)*EL%W%KE(3,i)*SINEH(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*COS(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(1,i) + E(3)
  
-       ELSEif (EL%W%FORM(I) == hyper_y_family_y) THEN
+       ELSEif (EL%W%forme(I) == hyper_y_family_y) THEN
 
 
           E(1) = -EL%W%AE(I)*EL%W%KE(1,i)*SIN(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*SINEH(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
@@ -2407,56 +2434,56 @@ v=0.0_dp
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*EL%W%KE(3,i)*COS(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*SINEH(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(2,i) + E(3)
-       elseif (EL%W%FORM(I) == hyper_xy_family_y) THEN
+       elseif (EL%W%forme(I) == hyper_xy_family_y) THEN
           E(1) = EL%W%AE(I)*EL%W%KE(1,i)*SINEH(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*SINEH(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(3,i) + E(1)
           E(2) = EL%W%AE(I)*EL%W%KE(2,i)*COSEH(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*COSEH(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(3,i) + E(2) 
           E(3) = -EL%W%AE(I)*COSH(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*SINEH(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-       elseif (EL%W%FORM(I) == hyper_x_family_y) THEN
+       elseif (EL%W%forme(I) == hyper_x_family_y) THEN
           E(1) = EL%W%AE(I)*SINEH(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*SIN(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*EL%W%KE(2,i)*COSEH(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*COS(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(1,i) + E(2) 
           E(3) = -EL%W%AE(I)*EL%W%KE(3,i)*COSEH(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*SIN(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(1,i) + E(3)
-        elseif (EL%W%FORM(I) == hyper_y_family_qu) THEN
+        elseif (EL%W%forme(I) == hyper_y_family_qu) THEN
           E(1) = EL%W%AE(I)*(EL%W%KE(1,i)/EL%W%KE(2,i))*cos(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sineh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*sin(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*coseh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*(EL%W%KE(3,i)/EL%W%KE(2,i))*sin(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sineh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-        elseif (EL%W%FORM(I) == hyper_xy_family_qu) THEN
+        elseif (EL%W%forme(I) == hyper_xy_family_qu) THEN
           E(1) = EL%W%AE(I)*(EL%W%KE(1,i)/EL%W%KE(3,i))*coseh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sineh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*(EL%W%KE(2,i)/EL%W%KE(3,i))*sineh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*coseh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*sineh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sineh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-        elseif (EL%W%FORM(I) == hyper_x_family_qu) THEN
+        elseif (EL%W%forme(I) == hyper_x_family_qu) THEN
           E(1) = EL%W%AE(I)*coseh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sin(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*(EL%W%KE(2,i)/EL%W%KE(1,i))*sineh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cos(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*(EL%W%KE(3,i)/EL%W%KE(1,i))*sineh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sin(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-        elseif (EL%W%FORM(I) == hyper_y_family_sq) THEN
+        elseif (EL%W%forme(I) == hyper_y_family_sq) THEN
           E(1) = -EL%W%AE(I)*(EL%W%KE(1,i)/EL%W%KE(2,i))*sin(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*coseh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*cos(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sineh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*(EL%W%KE(3,i)/EL%W%KE(2,i))*cos(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*coseh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-    elseif (EL%W%FORM(I) == hyper_xy_family_sq) THEN
+    elseif (EL%W%forme(I) == hyper_xy_family_sq) THEN
           E(1) = EL%W%AE(I)*(EL%W%KE(1,i)/EL%W%KE(3,i))*sineh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*coseh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*(EL%W%KE(2,i)/EL%W%KE(3,i))*coseh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sineh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*coseh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*coseh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-        elseif (EL%W%FORM(I) == hyper_x_family_sq) THEN
+        elseif (EL%W%forme(I) == hyper_x_family_sq) THEN
           E(1) = -EL%W%AE(I)*sineh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cos(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*(EL%W%KE(2,i)/EL%W%KE(1,i))*coseh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sin(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
@@ -2499,7 +2526,7 @@ v=0.0_dp
 ! SINEHX_X(X) ! REPLACES SINH(X)/X
 
  
-    DO I=1,SIZE(EL%W%AE)
+    DO I=1,el%w%ne   !SIZE(EL%W%AE)
        if (EL%W%FORME(I) == hyper_y_family_x) THEN
 
 
@@ -2509,14 +2536,14 @@ v=0.0_dp
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*EL%W%KE(3,i)*SIN(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(2,i) + E(3)
-       elseif (EL%W%FORM(I) == hyper_xy_family_x) THEN
+       elseif (EL%W%forme(I) == hyper_xy_family_x) THEN
           E(1) = EL%W%AE(I)*EL%W%KE(1,i)*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(3,i) + E(1)
           E(2) = EL%W%AE(I)*EL%W%KE(2,i)*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(3,i) + E(2) 
           E(3) = -EL%W%AE(I)*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-       elseif (EL%W%FORM(I) == hyper_x_family_x) THEN
+       elseif (EL%W%forme(I) == hyper_x_family_x) THEN
           E(1) = EL%W%AE(I)*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*COS(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = -EL%W%AE(I)*EL%W%KE(2,i)*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*SIN(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
@@ -2524,7 +2551,7 @@ v=0.0_dp
           E(3) = -EL%W%AE(I)*EL%W%KE(3,i)*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*COS(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(1,i) + E(3)
  
-       ELSEif (EL%W%FORM(I) == hyper_y_family_y) THEN
+       ELSEif (EL%W%forme(I) == hyper_y_family_y) THEN
 
 
           E(1) = -EL%W%AE(I)*EL%W%KE(1,i)*SIN(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
@@ -2533,56 +2560,56 @@ v=0.0_dp
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*EL%W%KE(3,i)*COS(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(2,i) + E(3)
-       elseif (EL%W%FORM(I) == hyper_xy_family_y) THEN
+       elseif (EL%W%forme(I) == hyper_xy_family_y) THEN
           E(1) = EL%W%AE(I)*EL%W%KE(1,i)*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(3,i) + E(1)
           E(2) = EL%W%AE(I)*EL%W%KE(2,i)*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(3,i) + E(2) 
           E(3) = -EL%W%AE(I)*COSH(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-       elseif (EL%W%FORM(I) == hyper_x_family_y) THEN
+       elseif (EL%W%forme(I) == hyper_x_family_y) THEN
           E(1) = EL%W%AE(I)*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*SIN(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*EL%W%KE(2,i)*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*COS(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(1,i) + E(2) 
           E(3) = -EL%W%AE(I)*EL%W%KE(3,i)*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*SIN(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I))/EL%W%KE(1,i) + E(3)
-        elseif (EL%W%FORM(I) == hyper_y_family_qu) THEN
+        elseif (EL%W%forme(I) == hyper_y_family_qu) THEN
           E(1) = EL%W%AE(I)*(EL%W%KE(1,i)/EL%W%KE(2,i))*cos(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*sin(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*(EL%W%KE(3,i)/EL%W%KE(2,i))*sin(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-        elseif (EL%W%FORM(I) == hyper_xy_family_qu) THEN
+        elseif (EL%W%forme(I) == hyper_xy_family_qu) THEN
           E(1) = EL%W%AE(I)*(EL%W%KE(1,i)/EL%W%KE(3,i))*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*(EL%W%KE(2,i)/EL%W%KE(3,i))*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-        elseif (EL%W%FORM(I) == hyper_x_family_qu) THEN
+        elseif (EL%W%forme(I) == hyper_x_family_qu) THEN
           E(1) = EL%W%AE(I)*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sin(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*(EL%W%KE(2,i)/EL%W%KE(1,i))*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cos(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*(EL%W%KE(3,i)/EL%W%KE(1,i))*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sin(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-        elseif (EL%W%FORM(I) == hyper_y_family_sq) THEN
+        elseif (EL%W%forme(I) == hyper_y_family_sq) THEN
           E(1) = -EL%W%AE(I)*(EL%W%KE(1,i)/EL%W%KE(2,i))*sin(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*cos(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*(EL%W%KE(3,i)/EL%W%KE(2,i))*cos(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-    elseif (EL%W%FORM(I) == hyper_xy_family_sq) THEN
+    elseif (EL%W%forme(I) == hyper_xy_family_sq) THEN
           E(1) = EL%W%AE(I)*(EL%W%KE(1,i)/EL%W%KE(3,i))*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*(EL%W%KE(2,i)/EL%W%KE(3,i))*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sinh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                  COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(2) 
           E(3) = -EL%W%AE(I)*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cosh(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 SIN(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(3)
-        elseif (EL%W%FORM(I) == hyper_x_family_sq) THEN
+        elseif (EL%W%forme(I) == hyper_x_family_sq) THEN
           E(1) = -EL%W%AE(I)*sinh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*cos(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
                 COS(EL%W%KE(3,i)*Z+EL%W%FE(I)) + E(1)
           E(2) = EL%W%AE(I)*(EL%W%KE(2,i)/EL%W%KE(1,i))*cosh(EL%W%KE(1,i)*(X(1)+EL%W%X0E(i)))*sin(EL%W%KE(2,i)*(X(3)+EL%W%Y0E(I)))* &
@@ -2623,7 +2650,7 @@ wp=>p%magp%wi%w
 
 ! result = SIGN (a, b)   sign(b)*|a|
 
-    DO I=1,SIZE(w%A)
+    DO I=1,w%n  !SIZE(w%A)
        if (w%FORM(I) == hyper_y_family_x) THEN
           
           k=sqrt(w%k(1,i)**2+w%k(3,i)**2)
@@ -2705,7 +2732,7 @@ wp=>p%magp%wi%w
        endif
     ENDDO
 
-    DO I=1,SIZE(w%AE)
+    DO I=1,w%ne   !SIZE(w%AE)
        if (w%FORME(I) == hyper_y_family_x) THEN
           
           k=sqrt(w%KE(1,i)**2+w%KE(3,i)**2)
@@ -2807,7 +2834,7 @@ wp=>p%magp%wi%w
 ! SINEHX_X(X) ! REPLACES SINH(X)/X
 
  
-    DO I=1,SIZE(EL%W%A)
+    DO I=1,el%w%n  !SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyper_y_family_x) THEN
 
 
@@ -2934,7 +2961,7 @@ wp=>p%magp%wi%w
 ! SINEHX_X(X) ! REPLACES SINH(X)/X
  
  
-    DO I=1,SIZE(EL%W%A)
+    DO I=1,el%w%n  !SIZE(EL%W%A)
        if (EL%W%FORM(I) == hyper_y_family_x) THEN
 
 
@@ -3102,9 +3129,13 @@ wp=>p%magp%wi%w
 
     !    WRITE(MF,*) EL%INTERNAL
     WRITE(MF,100) "NUMBER OF TERMS ",SIZE(EL%W%A)
-    DO I=1,SIZE(EL%W%A)
+    DO I=1,el%w%n  !SIZE(EL%W%A)
        WRITE(MF,101) " A = ",EL%W%A(I), " K = ",EL%W%K(1,I),EL%W%K(2,I),EL%W%K(3,I), &
             & " PHASE = ",EL%W%F(I)," FORM = ",EL%W%FORM(I)
+    ENDDO
+    DO I=1,el%w%ne  !SIZE(EL%W%A)
+       WRITE(MF,101) " A = ",EL%W%Ae(I), " K = ",EL%W%Ke(1,I),EL%W%K(2,I),EL%W%Ke(3,I), &
+            & " PHASE = ",EL%W%Fe(I)," FORM = ",EL%W%FORMe(I)
     ENDDO
     ! CALL resetpoly_R31 ON ALL THE INTERNAL POLYMORPHS
 100 FORMAT(A16,(1X,I4))

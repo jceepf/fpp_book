@@ -3238,7 +3238,7 @@ if(dir) then   !BETA0,GAMMA0I,GAMBET,MASS ,AG
  wig0%offset=F%wi%w%offset
  wig0%ex=f%wi%w%ex
  wig0%ey=f%wi%w%ey
-
+wig0%n=0
  if(associated(f%wi%w%a)) wig0%n=size(f%wi%w%a)
  n=wig0%n
 wig0%a=0.0_dp
@@ -3257,6 +3257,7 @@ else
  wig0%k(1:3,1:n)=0
 endif
 
+wig0%ne=0
  if(associated(f%wi%w%ae)) wig0%ne=size(f%wi%w%ae)
  ne=wig0%ne
 if(ne>0) then
