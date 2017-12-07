@@ -1,0 +1,72 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - gfortran compiler settings
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+# NOTE:
+# Use gfortran 4.4 or higher to compile...
+# Use gfortran 4.6 or higher to compile with -O3
+
+#
+# makedep
+#
+
+# fortran dependencies computation requires mod files (quite stupid, need loops)!
+# FDEP = $(FC) -MM -cpp -J$(OBJDIR) $(addprefix -I,$(FC_DIR))
+
+#
+# preprocessor flags
+#
+
+CPPFLAGS += -D_GFORTRAN
+PROG_CPPFLAGS += -D_GFORTRAN
+
+#
+# compiler flags
+#
+
+# gfortran 4.1 to 4.5 craches on l_complex_taylor.f90 with -O3, 4.6 is ok
+PROG_FFLAGS = -m$(ARCH) -O$(NOPT)
+
+#PROG_FFLAGS = -m$(ARCH) -std=f95 -Wall -W -pedantic -c
+
+#
+# options flags
+#
+
+ifeq ($(DEBUG),yes)
+PROG_FFLAGS += -g -ggdb
+endif
+
+ifeq ($(PROFILE),yes)
+PROG_FFLAGS += -pg
+endif
+
+#
+# extra flags
+#
+
+PROG_FFLAGS += -pipe -fno-second-underscore -fall-intrinsics -fno-range-check \
+          -J$(OBJDIR) $(addprefix -I,$(FC_DIR))
+
+
+FFLAGS = -c $(PROG_FFLAGS)
+
+ifeq ($(SHARED),yes)
+FFLAGS += -fPIC
+endif
+
+# end of makefile

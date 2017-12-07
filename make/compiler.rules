@@ -1,0 +1,80 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - compilers rules
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+vpath %.o $(OBJDIR)
+
+#
+# rule C compilation
+#
+%.o: %.c
+	$E "*** Compiling $(<F)"
+	$(call CC_tr,$(CC) $(CFLAGS) $(CPPFLAGS) $< -o $(OBJDIR)$/$(@F))
+
+#
+# rule C++ compilation
+#
+%.o: %.cpp
+	$E "*** Compiling $(<F)"
+	$(call CXX_tr,$(CXX) $(CXXFLAGS) $(CPPFLAGS) $< -o $(OBJDIR)$/$(@F))
+
+#
+# rule f90 compilation
+#
+
+%.o: complex/%.f90
+	$E "*** Compiling $(<F)"
+	$(call FC_tr,$(FC) $(FFLAGS) $(CPPFLAGS) $< -o $(OBJDIR)$/$(@F))
+
+%.o: $(FC_LAT_DIR)/%.f90
+	@echo "*** Compiling $(<F)"
+	$(call FC_tr,$(FC) $(FFLAGS) $(CPPFLAGS) $< -o $(OBJDIR)$/$(@F))
+
+%.o: %.f90
+	$E "*** Compiling $(<F)"
+	$(call FC_tr,$(FC) $(FFLAGS) $(CPPFLAGS) $< -o $(OBJDIR)$/$(@F))
+
+#
+# rule F90 compilation (same as f90 due to case insensitive file systems)
+#
+%.o: %.F90
+	$E "*** Compiling $(<F)"
+	$_ $(call FC_tr,$(FC) $(FFLAGS) $(CPPFLAGS) $< -o $(OBJDIR)$/$(@F))
+
+#
+# rule F90 compilation (same as f90 due to case insensitive file systems)
+#
+
+$(PROG_DESTDIR)/%.exe: $(PROG_SRCDIR)/%.f90
+	$E "*** Compiling $(<F)"
+	$E "*** $< --> $@ "
+	$(FC) $(PROG_LDFLAGS) $(PROG_FFLAGS)  $< -o $@ $(PROG_LIBS) $(LDLIBS) 
+
+
+
+#
+# compute object files
+#
+CC_OBJ  := $(patsubst %.c,%.o,$(CC_SRC))
+CXX_OBJ := $(patsubst %.cpp,%.o,$(CXX_SRC))
+FC_OBJ  := $(patsubst %.F90,%.o,$(patsubst %.f90,%.o,$(FC_SRC)))
+
+HEADERS := $(CC_HDR) $(CXX_HDR)
+SOURCES := $(CC_SRC) $(CXX_SRC) $(FC_SRC)
+OBJECTS := $(CC_OBJ) $(CXX_OBJ) $(FC_OBJ)
+
+# end of makefile

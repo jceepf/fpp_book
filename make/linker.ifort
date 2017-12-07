@@ -1,0 +1,118 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - ifort linker settings
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+################
+# Unix Settings
+#
+ifneq ($(OSTYPE),Windows)
+
+#
+# linker flags
+#
+
+LDFLAGS = -m$(ARCH) -O$(NOPT) -nofor-main -static-intel
+LDLIBS  =
+
+ifneq ($(CXXNAME),)
+LDFLAG += -cxxlib
+LDLIBS += -lstdc++
+#LDLIBS += -lstdc++$(if $(call eq,$(OSTYPE),Darwin),-static,)
+endif
+
+ifeq ($(OSTYPE),Darwin)
+LDFLAGS += -mmacosx-version-min=10.5
+ifeq ($(ARCH),32)
+LDLIBS += -L$(GNULIBDIR) -lgcc_eh
+endif
+endif
+
+#
+# options flags
+#
+
+ifeq ($(DEBUG),yes)
+LDFLAGS += -g -gdwarf-2 -check all
+endif
+
+ifeq ($(PROFILE),yes)
+LDFLAGS += -p
+endif
+
+ifeq ($(STATIC),yes)
+LDFLAGS += -static$(if $(call eq,$(OSTYPE),Darwin),lib,)
+endif
+
+ifeq ($(SHARED),yes)
+LDFLAGS += $(if $(call eq,$(OSTYPE),Darwin),-dynamiclib,-shared) -fPIC
+ifeq ($(OSTYPE),Linux)
+LDLIBS  += -lifcore_pic -lifcoremt_pic
+endif
+endif
+
+ifeq ($(PLUGIN),yes)
+LDFLAGS += -Bdynamic
+LDLIBS  += -ldl
+endif
+
+endif # Unix Settings
+
+# |
+# o---------------------------------------------------------------------o
+# |
+
+###################
+# Windows Settings
+#
+ifeq ($(OSTYPE),Windows)
+
+#
+# linker flags
+#
+
+LDFLAGS = /nologo /O$(NOPT) /extlnk:.o
+LDLIBS  =
+
+#
+# options flags
+#
+
+ifeq ($(DEBUG),yes)
+LDFLAGS += /debug:all /check:all
+endif
+
+ifeq ($(PROFILE),yes)
+LDFLAGS += /Qprof-use
+endif
+
+ifeq ($(STATIC),yes)
+LDFLAGS += /static
+endif
+
+ifeq ($(SHARED),yes)
+LDFLAGS += /shared
+endif
+
+#
+# command translator
+#
+
+LD_tr = $(strip $(subst $(SPACE)/O0 , /Od ,$(subst $(SPACE)-o , /Fe,$1)))
+
+endif # Windows Settings
+
+# end of makefile

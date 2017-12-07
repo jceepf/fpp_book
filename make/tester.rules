@@ -1,0 +1,56 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - tester rules
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+.PHONY: tests tests-all init-test fini-test check-tests-dirs $(tests-all) $(TESTS)
+
+#
+# all tests
+#
+tests-all: init-test $(if $(TESTS),$(TESTS),$(tests-all)) fini-test
+
+#
+# fast tests only
+#
+tests: init-test $(if $(TESTS),$(TESTS),$(filter-out $(tests-long),$(tests-all))) fini-test
+
+#
+# rule for one test
+#
+$(sort $(TESTS) $(tests-all)):
+	$(run-test)
+
+#
+# rule for init test
+#
+init-test: check-tests-dirs
+	$(init-test)
+
+#
+# rule for fini test
+#
+fini-test:
+	$(fini-test)
+
+#
+# check for directory existence
+#
+check-tests-dirs:
+	$(foreach dir,$(if $(TESTS),$(TESTS),$(tests-all)),\
+     $(call exists,tests/$(dir),invalid test directory tests/$(dir)))
+
+# end of makefile

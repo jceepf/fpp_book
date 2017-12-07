@@ -1,0 +1,60 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - nagfor compiler settings
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+#
+# makedep
+#
+
+# FDEP = fpp -M $(addprefix -I,$(FC_DIR))
+
+#
+# preprocessor flags
+#
+
+CPPFLAGS += -D_NAGFOR
+
+#
+# compiler flags
+#
+
+FFLAGS = -f95 -O$(NOPT) -w=unused -c
+
+ifeq ($(ARCH),32)
+FFLAGS += -Wc,-m32 -abi=32
+endif
+
+#
+# options flags
+#
+
+ifeq ($(DEBUG),yes)
+FFLAGS += -g -C=all -nan # -mtrace=size,line
+endif
+
+ifeq ($(PROFILE),yes)
+FFLAGS += -pg
+endif
+
+#
+# extra flags
+#
+
+FFLAGS += -gline -maxcontin=100 -ieee=full -mdir $(OBJDIR) \
+          -I$(OBJDIR) $(addprefix -I,$(FC_DIR))
+
+# end of makefile
