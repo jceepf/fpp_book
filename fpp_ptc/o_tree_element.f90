@@ -1155,9 +1155,9 @@ CONTAINS
      integer,optional :: mf
 
      mfi=6
-     if(present(mf)) mf=mfi
+     if(present(mf)) mfi=mf
 
-    WRITE(MF,*) " ORBIT "
+    WRITE(MFi,*) " ORBIT "
     do i=1,6
        write(mfi,*) ' Variable ',i
        write(mfi,'(6(1X,G20.13))') ds%x(i) 
@@ -1167,10 +1167,10 @@ CONTAINS
        write(mfi,'(3(1X,G20.13))') ds%s(1)%x 
  
     WRITE(MFi,*) " SPIN Y "
-       write(mf,'(3(1X,G20.13))') ds%s(2)%x 
+       write(mfi,'(3(1X,G20.13))') ds%s(2)%x 
  
     WRITE(MFi,*) " SPIN Z "
-       write(mf,'(3(1X,G20.13))') ds%s(3)%x 
+       write(mfi,'(3(1X,G20.13))') ds%s(3)%x 
 
  
 
@@ -1184,9 +1184,9 @@ CONTAINS
     logical(lp) rad_in
     integer,optional :: mf
      mfi=6
-     if(present(mf)) mf=mfi
+     if(present(mf)) mfi=mf
 
-    WRITE(MF,*) " ORBIT "
+    WRITE(MFi,*) " ORBIT "
     do i=1,6
        write(mfi,*) ' Variable ',i
        call print(ds%x(i),mfi)
@@ -1196,19 +1196,19 @@ CONTAINS
     !       write(mf,*) ' Spin Variable ',i
     !       call print(ds%s(0)%x(i),mf)
     !    enddo
-    WRITE(MF,*) " SPIN X "
+    WRITE(MFi,*) " SPIN X "
     call print(ds%s(1),mfi)
     !    do i=1,3
     !       write(mf,*) ' Spin Variable ',i
     !       call print(ds%s(1)%x(i),mf)
     !    enddo
-    WRITE(MF,*) " SPIN Y "
+    WRITE(MFi,*) " SPIN Y "
     call print(ds%s(2),mfi)
     !    do i=1,3
     !       write(mf,*) ' Spin Variable ',i
     !       call print(ds%s(2)%x(i),mf)
     !    enddo
-    WRITE(MF,*) " SPIN Z "
+    WRITE(MFi,*) " SPIN Z "
     call print(ds%s(3),mfi)
     !    do i=1,3
     !       write(mf,*) ' Spin Variable ',i
@@ -1222,7 +1222,7 @@ CONTAINS
 
     if(rad_in) then
 
-       WRITE(MF,*) " STOCHASTIC KICK  "
+       WRITE(MFi,*) " STOCHASTIC KICK  "
 
        do i=1,6
           do j=1,6
@@ -1231,13 +1231,13 @@ CONTAINS
        enddo
     else
 
-       WRITE(MF,*) "NO STOCHASTIC KICK  "
+       WRITE(MFi,*) "NO STOCHASTIC KICK  "
 
     endif
     if(doing_ac_modulation_in_ptc) then
        call print(ds%ac,mfi)
     else
-       WRITE(MF,*) "NO MODULATION  "
+       WRITE(MFi,*) "NO MODULATION  "
 
     endif
 
@@ -1249,7 +1249,7 @@ CONTAINS
     INTEGER MFi,I
     integer,optional :: mf
      mfi=6
-     if(present(mf)) mf=mfi
+     if(present(mf)) mfi=mf
 
     write(mfi,*) ' AC INFORMATION : omega, pseudo-time, hands of the clock'
     call print(s%om,mfi)
@@ -1267,7 +1267,7 @@ CONTAINS
     INTEGER MFi,I
     integer,optional :: mf
      mfi=6
-     if(present(mf)) mf=mfi
+     if(present(mf)) mfi=mf
 
     do i=1,3
        write(mfi,*) ' Spin Variable ',i

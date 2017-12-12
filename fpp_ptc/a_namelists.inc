@@ -44,7 +44,8 @@ namelist / MAGLname / MAGL0
 	LOGICAL(LP) THIN 
     real(dp) fint_hgap_h1_h2_va_vs(6)
 	logical(lp) slowac_recut_even_electric_MIS(5)  
-     logical(lp) usebf_skipptcbf_do1bf(6)
+     logical(lp) usebf_do1bf(4)
+	 integer skipptcbf(2)
      character(120) filef
      character(120) fileb
   END TYPE ele_list

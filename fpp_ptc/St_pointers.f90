@@ -1375,7 +1375,6 @@ endif
     !      READ(MF,*) filename
           if(.not.associated(my_ering%t)) call make_node_layout(my_ering)
           
-           p=>my_ering%start
            
            p=>my_ering%start
            f1=>p          
@@ -1412,8 +1411,8 @@ endif
                 p=>f1%next
                do i1=1,my_ering%n
                 if(associated(f2,p)) exit
-                 p%mag%skip_ptc_f=.true.
-                 p%magp%skip_ptc_f=.true.
+                 p%mag%skip_ptc_f=1
+                 p%magp%skip_ptc_f=1
                 p=>p%next 
                enddo
                 
@@ -1460,8 +1459,8 @@ endif
                 f2=>f1%next
                do i1=1,my_ering%n
                 if(associated(f2,f1)) exit
-                 f2%mag%skip_ptc_f=.true.
-                 f2%magp%skip_ptc_f=.true.
+                 f2%mag%skip_ptc_f=1
+                 f2%magp%skip_ptc_f=1
                 f2=>f2%next 
                enddo
                 
@@ -1569,7 +1568,16 @@ endif
          write(6,*) icnmax, " changed into Taylor maps "
          write(6,*) icnmin, " markers "
          write(6,*) my_ering%N, " total number of fibres "
-       case('REMOVEALLMAP')
+       case('REMOVEALLMAPS')
+       READ(MF,*) I1,I2  ! ORDER OF THE MAP
+
+          p=>my_ering%start
+          do ii=i1,i2-1
+             p%MAG%skip_ptc_f=-p%MAG%skip_ptc_f
+             p%MAGp%skip_ptc_f=-p%MAGp%skip_ptc_f
+             p=>p%next
+          enddo
+
 
           p=>my_ering%start
           do ii=1,my_ering%N
@@ -1586,6 +1594,16 @@ endif
           enddo
     
        case('PUTBACKALLMAP')
+
+       READ(MF,*) I1,I2  ! ORDER OF THE MAP
+
+          p=>my_ering%start
+          do ii=i1,i2-1
+             p%MAG%skip_ptc_f=-p%MAG%skip_ptc_f
+             p%MAGp%skip_ptc_f=-p%MAGp%skip_ptc_f
+             p=>p%next
+          enddo
+
 
           p=>my_ering%start
           do ii=1,my_ering%N

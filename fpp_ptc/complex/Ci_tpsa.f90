@@ -19,7 +19,7 @@ MODULE c_TPSA
 
   private equal,DAABSEQUAL,Dequaldacon ,equaldacon ,Iequaldacon,derive  !,AABSEQUAL 2002.10.17
   private pow, GETORDER,CUTORDER,getchar,GETint,GETORDERMAP,c_exp_vectorfield_on_spinmatrix  !, c_bra_v_spinmatrix
-  private getdiff,getdATRA  ,mul,dmulsc,dscmul,c_spinor_spinmatrix
+  private getdiff,getdATRA  ,mul,dmulsc,dscmul,c_spinor_spinmatrix,GETintmat
   private mulsc,scmul,imulsc,iscmul,map_mul_vec,DAREADTAYLORS
   private div,ddivsc,dscdiv,divsc,scdiv,idivsc,iscdiv,equalc_ray_r6r
   private unaryADD,add,daddsca,dscadd,addsc,scadd,iaddsc,iscadd 
@@ -300,6 +300,13 @@ private EQUAL_probe_3_by_3,equalc_cspinor_spinor,EQUAL_3_by_3_c_spinmatrix
      MODULE PROCEDURE GETORDERMAP  ! with negative integer map.sub.i the spin is handled with iabs(i)-1
      MODULE PROCEDURE GETORDERSPINMATRIX ! FOR SPIN MATRICES
   END INTERFACE
+
+
+  INTERFACE OPERATOR (.index.)
+    MODULE PROCEDURE GETintmat
+  END INTERFACE
+
+
 
   INTERFACE OPERATOR (.harmonic.)
      MODULE PROCEDURE GETORDER_par
@@ -3962,6 +3969,44 @@ endif
 
   END FUNCTION GETint
 
+  FUNCTION GETintmat( S1, S2 )
+    implicit none
+    complex(dp) GETintmat,r1
+    TYPE (c_taylor), INTENT (IN) :: S1
+    integer , INTENT (IN) ::  S2
+    integer j(lnv),i,c,cm
+    IF(.NOT.C_STABLE_DA) then
+     GETintmat=0
+    endif
+
+ 
+
+    do i=1,lnv
+       j(i)=0
+    enddo
+    j(s2)=1
+
+    c=0
+    do i=nv+1,lnv
+       c=j(i)+c
+    enddo
+cm=0
+    do i=1,nv
+       cm=j(i)+cm
+    enddo
+
+
+!if(c>0.or.cm>nv) then  ! 2017.1.16
+if(c>0.or.cm>no) then
+
+r1=0.0_dp
+else
+    CALL c_dapek(S1%I,j,r1)
+endif
+ 
+    GETintmat=r1
+
+  END FUNCTION GETintmat
 
 
 
@@ -9807,6 +9852,115 @@ endif
    n%s_ij0=m1%e_ij
 
    end  subroutine  c_normal_radiation 
+
+ subroutine c_stochastic_kick(m,ait,ki,eps)
+!#general:  stochastic kick
+!# This routine creates a random kick 
+    implicit none
+    type(c_damap) , intent(inout) :: m
+    real(dp), intent(out) :: ait(6,6),ki(3)
+    real(dp), intent(in) :: eps
+    integer i,j
+    real(dp) norm,f(6,6),s(6,6), at(6,6),ai(6,6)
+    real(dp) b(6,6),a(6,6)
+    type(c_vector_field) vf
+    type(c_damap) id
+    type(c_normal_form) n
+    logical yhere
+
+     vf%n=m%n
+    call alloc(vf)
+    call alloc(id)
+    call alloc(n)
+
+    norm=0.0_dp
+    do i=1,6
+    do j=1,6
+     norm=abs(m%e_ij(i,j)) + norm
+    enddo
+    enddo
+    
+ !   write(6,*) " norm ",norm
+    norm=norm/10
+    f=0
+    s=0
+    do i=1,3
+     s(2*i-1,2*i)=1
+     s(2*i,2*i-1)=-1
+    enddo
+    do i=1,6
+    do j=1,6
+     b(i,j)=m%e_ij(i,j)
+     f(i,j)=m%e_ij(i,j)/norm
+ !   if(f(i,j)/=0.d0) then
+ !    write(6,*) i,j,f(i,j)
+ !   endif
+    enddo
+    enddo
+
+    norm=0
+    do i=1,6
+    do j=1,6
+     yhere=i==3.or.i==4.or.j==3.or.j==4
+     if(yhere) norm=norm +abs(f(i,j))
+    enddo
+    enddo
+ !   write(6,*) " norm y",norm
+    if(norm<eps) then
+      f(3,3)=0.234567_dp*twopi 
+      f(4,4)=0.234567_dp*twopi 
+    endif
+     f=matmul(f,s)
+    do i=1,6
+    do j=1,6
+!    if(f(i,j)/=0.d0) then
+!     write(6,*) i,j,f(i,j)
+!    endif
+     vf%v(i)=vf%v(i)+ f(j,i) * (1.0_dp.cmono.j)
+    enddo
+    enddo
+
+    id=exp(vf)
+    call c_normal(id,n)
+!    write(6,*) n%tune(1:3)
+!    id=n%a_t**(-1)*id*n%a_t
+!call print(id)
+!pause 324
+!    a=n%a_t**(-1)
+!    a=transpose(a)
+    a=n%a_t
+    at=transpose(a)
+
+ 
+    b=matmul(at,b)
+    b=matmul(b,a)
+
+
+    do i=1,3
+     ki(i)=b(2*i,2*i)
+    enddo
+!write(6,*) ki
+!pause 887
+!    do i=1,6
+!    do j=1,6
+!    if(b(i,j)/=0.d0) then
+!     write(6,*) i,j,b(i,j)
+!    endif
+!    enddo
+!    enddo
+
+    ai=-matmul(matmul(s,at),s)
+    ait=transpose(ai)
+
+!  B= ait*beta*ai
+
+
+!pause 888
+    call kill(vf)
+    call kill(id)
+    call kill(n)
+
+end subroutine c_stochastic_kick
 
     subroutine check_kernel(k,n,je,removeit)
 !#internal: normal
