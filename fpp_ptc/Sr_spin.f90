@@ -3038,14 +3038,14 @@ call kill(vm,phi,z)
      
     if(.not.(k%nocavity.and.(C%PARENT_FIBRE%MAG%kind==kind4.or.C%PARENT_FIBRE%MAG%kind==kind21))) then
      if(C%PARENT_FIBRE%dir==1) then
-       if(C%PARENT_FIBRE%MAG%skip_ptc_f) return
+       if(C%PARENT_FIBRE%MAG%skip_ptc_f==1) return
        if(associated(C%PARENT_FIBRE%MAG%forward)) then
          if(C%PARENT_FIBRE%MAG%usef) useptc=.false.
           arbre=>C%PARENT_FIBRE%MAG%forward
           doonemap=C%PARENT_FIBRE%MAG%do1mapf
        endif
      else
-       if(C%PARENT_FIBRE%MAG%skip_ptc_b) return
+       if(C%PARENT_FIBRE%MAG%skip_ptc_b==1) return
        if(associated(C%PARENT_FIBRE%MAG%backward)) then
          if(C%PARENT_FIBRE%MAG%useb) useptc=.false.
           arbre=>C%PARENT_FIBRE%MAG%backward
@@ -3185,14 +3185,14 @@ endif ! full_way
     useptc=.true.
     if(.not.(k%nocavity.and.(ki==kind4.or.ki==kind21))) then
      if(C%PARENT_FIBRE%dir==1) then
-       if(C%PARENT_FIBRE%MAGp%skip_ptc_f) return
+       if(C%PARENT_FIBRE%MAGp%skip_ptc_f==1) return
        if(associated(C%PARENT_FIBRE%MAGP%forward)) then
          if(C%PARENT_FIBRE%MAGP%usef) useptc=.false.
           arbre=>C%PARENT_FIBRE%MAGP%forward
           doonemap=C%PARENT_FIBRE%MAGp%do1mapf
        endif
      else
-       if(C%PARENT_FIBRE%MAGp%skip_ptc_b) return
+       if(C%PARENT_FIBRE%MAGp%skip_ptc_b==1) return
        if(associated(C%PARENT_FIBRE%MAGP%backward)) then
          if(C%PARENT_FIBRE%MAGP%useb) useptc=.false.
           arbre=>C%PARENT_FIBRE%MAGP%backward

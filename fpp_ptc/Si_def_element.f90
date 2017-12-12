@@ -2758,7 +2758,7 @@ nullify(EL%filef,el%fileb);
        ALLOCATE(EL%even);EL%even=MY_false;
        ALLOCATE(EL%NAME);ALLOCATE(EL%VORNAME);ALLOCATE(EL%electric);
        ALLOCATE(EL%filef,el%fileb);
-       ALLOCATE(EL%skip_ptc_f);   EL%skip_ptc_f=.false. ;   ALLOCATE(EL%skip_ptc_b);EL%skip_ptc_b=.false.  ;
+       ALLOCATE(EL%skip_ptc_f);   EL%skip_ptc_f=0;   ALLOCATE(EL%skip_ptc_b);EL%skip_ptc_b=0  ;
        ALLOCATE(el%do1mapf);   el%do1mapf=.false. ;   ALLOCATE(el%do1mapb);el%do1mapb=.false.  ;
   ALLOCATE(el%usef);   el%usef=.false. ;   ALLOCATE(el%useb);el%useb=.false.  ;
 
@@ -3030,7 +3030,7 @@ nullify(EL%filef,el%fileb);
 
        ALLOCATE(EL%KIND);EL%KIND=0;ALLOCATE(EL%KNOB);EL%KNOB=.FALSE.;
        ALLOCATE(EL%NAME);ALLOCATE(EL%VORNAME);ALLOCATE(EL%electric);
-       ALLOCATE(EL%skip_ptc_f);   EL%skip_ptc_f=.false. ;   ALLOCATE(EL%skip_ptc_b);EL%skip_ptc_b=.false.  ;
+       ALLOCATE(EL%skip_ptc_f);   EL%skip_ptc_f=0 ;   ALLOCATE(EL%skip_ptc_b);EL%skip_ptc_b=0  ;
        ALLOCATE(el%do1mapb);   el%do1mapb=.false. ;   ALLOCATE(el%do1mapf);el%do1mapf=.false.  ;
   ALLOCATE(el%usef);   el%usef=.false. ;   ALLOCATE(el%useb);el%useb=.false.  ;
 
