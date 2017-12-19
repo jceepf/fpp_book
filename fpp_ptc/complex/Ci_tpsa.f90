@@ -9858,7 +9858,7 @@ endif
 !# This routine creates a random kick 
     implicit none
     type(c_damap) , intent(inout) :: m
-    real(dp), intent(out) :: ait(6,6),ki(3)
+    real(dp), intent(out) :: ait(6,6),ki(6)
     real(dp), intent(in) :: eps
     integer i,j
     real(dp) norm,f(6,6),s(6,6), at(6,6),ai(6,6)
@@ -9936,18 +9936,18 @@ endif
     b=matmul(b,a)
 
 
-    do i=1,3
-     ki(i)=b(2*i,2*i)
+    do i=1,6
+     ki(i)=sqrt(b(i,i))
     enddo
-!write(6,*) ki
-!pause 887
-!    do i=1,6
-!    do j=1,6
-!    if(b(i,j)/=0.d0) then
-!     write(6,*) i,j,b(i,j)
-!    endif
-!    enddo
-!    enddo
+write(6,*) ki
+pause 887
+    do i=1,6
+    do j=1,6
+    if(b(i,j)/=0.d0) then
+     write(6,*) i,j,b(i,j)
+    endif
+    enddo
+    enddo
 
     ai=-matmul(matmul(s,at),s)
     ait=transpose(ai)

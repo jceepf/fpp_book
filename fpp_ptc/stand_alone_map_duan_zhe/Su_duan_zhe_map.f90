@@ -4,7 +4,7 @@ implicit none
   public track_TREE_probe_complex_zhe,probe,tree_element, read_tree_zhe,kill_tree_zhe
   public EQUAL_PROBE_REAL6_zhe,print,zhe_ini,track_TREE_probe_complex_ptc, dp,INTERNAL_STATE
   public DEFAULT0,TOTALPATH0 ,TIME0,ONLY_4d0,DELTA0,SPIN0,MODULATION0,only_2d0   
-  public RADIATION0, NOCAVITY0, FRINGE0 ,STOCHASTIC0,ENVELOPE0
+  public RADIATION0, NOCAVITY0, FRINGE0 ,STOCHASTIC0,ENVELOPE0,RANFzhe
  ! public EQUALi_zhe,EQUALt_zhe
   public OPERATOR(+),operator(-), assignment(=)
 
@@ -16,7 +16,7 @@ implicit none
    LOGICAL(lp),TARGET  :: CHECK_STABLE=.TRUE.
  complex(dp), parameter :: i_ = ( 0.0_dp,1.0_dp )    ! cmplx(zero,one,kind=dp)
   integer,parameter::lno=200,lnv=100
-
+  integer :: zhe_ISEED=1000
 
 TYPE INTERNAL_STATE
    INTEGER TOTALPATH   ! total time or path length is used
@@ -1117,8 +1117,39 @@ enddo  ! is
       xs%x(i)=x(i)
     enddo
 
+    x=0.0_dp
+  do i=1,6
+    x(i)=RANFzhe()*t(2)%fix0(i)
+  enddo
+    x=matmul(t(2)%rad,x)
+
+    xs%x=xs%x+x
+
   end SUBROUTINE track_TREE_probe_complex_zhe
 
+
+  real(dp) FUNCTION RANFzhe()
+    implicit none
+    integer ia,ic,iq,ir,ih,il,it
+    DATA IA/16807/,IC/2147483647/,IQ/127773/,IR/2836/
+    IH = zhe_ISEED/IQ
+    IL = MOD(zhe_ISEED,IQ)
+    IT = IA*IL-IR*IH
+    IF(IT.GT.0) THEN
+       zhe_ISEED = IT
+    ELSE
+       zhe_ISEED = IC+IT
+    END IF
+    RANFzhe = zhe_ISEED/FLOAT(IC)
+
+       !         t=sqrt(12.d0)*(RANF()-half)
+       if(RANFzhe>0.5_dp) then
+          RANFzhe=1.0_dp
+       else
+          RANFzhe=-1.0_dp
+       endif
+    RETURN
+  END FUNCTION RANFzhe
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! end of   new zhe tracking   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  
