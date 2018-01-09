@@ -2083,7 +2083,7 @@ CONTAINS
     p=>r%start
 
     do N=1,R%N
-       IF(P%MAG%SLOW_AC) THEN
+       IF(P%MAG%SLOW_AC/=0) THEN
           CALL restore_ANBN_SINGLE(P%MAG,P%MAGP)
        ELSE
           CYCLE
@@ -2150,7 +2150,7 @@ CONTAINS
     p=>r%start
 
     do N=1,R%N
-       IF(P%MAG%SLOW_AC) CALL force_restore_ANBN_SINGLE(P%MAG,P%MAGP)
+       IF(P%MAG%SLOW_AC/=0) CALL force_restore_ANBN_SINGLE(P%MAG,P%MAGP)
        P=>P%NEXT
     ENDDO
 
@@ -2788,7 +2788,7 @@ nullify(EL%filef,el%fileb);
        !       ALLOCATE(EL%theta_ac); EL%theta_ac= zero ;
        !       ALLOCATE(EL%a_ac);  EL%a_ac = zero;
        !       ALLOCATE(EL%DC_ac); EL%DC_ac= zero ;
-       ALLOCATE(EL%slow_ac); EL%slow_ac=.false. ;
+       ALLOCATE(EL%slow_ac); EL%slow_ac=0 ;
     ENDIF
 
   END SUBROUTINE ZERO_EL
@@ -3057,7 +3057,7 @@ nullify(EL%filef,el%fileb);
        !       ALLOCATE(EL%theta_ac);CALL ALLOC(EL%theta_ac); EL%theta_ac= zero ;
        !       ALLOCATE(EL%a_ac);CALL ALLOC(EL%a_ac);  EL%a_ac = zero;
        !       ALLOCATE(EL%DC_ac); EL%DC_ac= zero ;
-       ALLOCATE(EL%slow_ac); EL%slow_ac=.false. ;
+       ALLOCATE(EL%slow_ac); EL%slow_ac=0 ;
     ENDIF
 
   END SUBROUTINE ZERO_ELP

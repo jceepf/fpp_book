@@ -1141,8 +1141,8 @@ endif
                    P%MAGP%DC_ac=DC_ac
                    P%MAGP%A_ac=A_ac
                    P%MAGP%theta_ac=theta_ac*twopi
-                   P%MAG%slow_ac=.true.
-                   P%MAGP%slow_ac=.true.
+                   P%MAG%slow_ac=1
+                   P%MAGP%slow_ac=1
 
                    if(i2>p%mag%p%nmul) then
                       CALL ADD(P,i2,0,0.0_dp)
@@ -1200,7 +1200,7 @@ endif
            P=>P%NEXT
           ENDDO
        case('MODULATE','ACMAGNET')
-          READ(MF,*) NAME
+          READ(MF,*) NAME , posr
 
           CALL CONTEXT(NAME)
           N_NAME=0
@@ -1266,8 +1266,12 @@ endif
                    P%MAGP%DC_ac=DC_ac
                    P%MAGP%A_ac=A_ac
                    P%MAGP%theta_ac=theta_ac*twopi
-                   P%MAG%slow_ac=.true.
-                   P%MAGP%slow_ac=.true.
+                 if(P%MAG%slow_ac/=0) then
+                  write(6,*) P%MAG%name, " already modulated "
+                  stop 180
+                 endif
+                   P%MAG%slow_ac=posr
+                   P%MAGP%slow_ac=posr
 
                    if(i2>p%mag%p%nmul) then
                       CALL ADD(P,i2,0,0.0_dp)

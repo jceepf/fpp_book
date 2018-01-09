@@ -108,15 +108,17 @@ CONTAINS
     TYPE(ELEMENT),POINTER :: EL
     TYPE(ELEMENTP),POINTER :: ELp
     REAL(DP) v,dv
-
+    integer(2) n
 
 
     EL=>C%PARENT_FIBRE%MAG
     ELP=>C%PARENT_FIBRE%MAGP
 
     IF(K%MODULATION) THEN
+    n=el%slow_ac
 
-       DV=(XS%AC%X(1)*COS(EL%theta_ac)-XS%AC%X(2)*SIN(EL%theta_ac))
+
+       DV=(XS%AC(n)%X(1)*COS(EL%theta_ac)-XS%AC(n)%X(2)*SIN(EL%theta_ac))
        V=EL%DC_ac+EL%A_ac*DV
        DV=el%D_ac*DV
      else
@@ -307,6 +309,7 @@ CONTAINS
     TYPE(ELEMENT),POINTER :: EL
     TYPE(ELEMENTP),POINTER :: ELP
     TYPE(REAL_8) V,DV
+    integer(2) n
 
     EL=>C%PARENT_FIBRE%MAG
     ELP=>C%PARENT_FIBRE%MAGP
@@ -315,7 +318,8 @@ CONTAINS
     CALL ALLOC(DV)
 
     IF(K%MODULATION) THEN
-       DV=(XS%AC%X(1)*COS(ELP%theta_ac)-XS%AC%X(2)*SIN(ELP%theta_ac))
+       n=el%slow_ac
+       DV=(XS%AC(n)%X(1)*COS(ELP%theta_ac)-XS%AC(n)%X(2)*SIN(ELP%theta_ac))
        V=ELP%DC_ac+ELP%A_ac*DV
        DV=elp%D_ac*DV
 
@@ -340,20 +344,22 @@ CONTAINS
     TYPE(INTERNAL_STATE) K
     real(dp) xt
     real(dp),pointer :: beta0
-
-    if(k%time) then
-       beta0=>C%PARENT_FIBRE%beta0
-       xs%ac%t=c%DS_AC/beta0+xs%ac%t
-       xt = cos(XS%AC%om * c%DS_AC/beta0) *XS%AC%X(1) + sin(XS%AC%om * c%DS_AC/beta0) *XS%AC%X(2)
-       XS%AC%X(2) = -sin(XS%AC%om * c%DS_AC/beta0) *XS%AC%X(1) + cos(XS%AC%om * c%DS_AC/beta0) *XS%AC%X(2)
-       XS%AC%X(1) = xt
-    else
-       xt = cos(XS%AC%om * c%DS_AC) *XS%AC%X(1) + sin(XS%AC%om * c%DS_AC) *XS%AC%X(2)
-       XS%AC%X(2) = -sin(XS%AC%om * c%DS_AC) *XS%AC%X(1) + cos(XS%AC%om * c%DS_AC) *XS%AC%X(2)
-       XS%AC%X(1) = xt
-       xs%ac%t=c%DS_AC+xs%ac%t
-    endif
-
+    integer(2) n
+    if(xs%nac==0) return
+    do n=1,xs%nac
+      if(k%time) then
+         beta0=>C%PARENT_FIBRE%beta0
+         xs%ac%t=c%DS_AC/beta0+xs%ac(n)%t
+         xt = cos(XS%AC(n)%om * c%DS_AC/beta0) *XS%AC(n)%X(1) + sin(XS%AC(n)%om * c%DS_AC/beta0) *XS%AC(n)%X(2)
+         XS%AC(n)%X(2) = -sin(XS%AC(n)%om * c%DS_AC/beta0) *XS%AC(n)%X(1) + cos(XS%AC(n)%om * c%DS_AC/beta0) *XS%AC(n)%X(2)
+         XS%AC(n)%X(1) = xt
+      else
+         xt = cos(XS%AC(n)%om * c%DS_AC) *XS%AC(n)%X(1) + sin(XS%AC(n)%om * c%DS_AC) *XS%AC(n)%X(2)
+         XS%AC(n)%X(2) = -sin(XS%AC(n)%om * c%DS_AC) *XS%AC(n)%X(1) + cos(XS%AC(n)%om * c%DS_AC) *XS%AC(n)%X(2)
+         XS%AC(n)%X(1) = xt
+         xs%ac(n)%t=c%DS_AC+xs%ac(n)%t
+      endif
+    enddo
   END   SUBROUTINE TRACK_MODULATION_R
 
   SUBROUTINE TRACK_MODULATION_P(C,XS,K)
@@ -363,22 +369,23 @@ CONTAINS
     TYPE(INTERNAL_STATE) K
     TYPE(REAL_8) xt
     real(dp),pointer :: beta0
-
+    integer(2) n
+    if(xs%nac==0) return
     CALL ALLOC(XT)
-
-    if(k%time) then
-       beta0=>C%PARENT_FIBRE%beta0
-       xs%ac%t=c%DS_AC/beta0+xs%ac%t
-       xt = cos(XS%AC%om * c%DS_AC/beta0) *XS%AC%X(1) + sin(XS%AC%om * c%DS_AC/beta0) *XS%AC%X(2)
-       XS%AC%X(2) = -sin(XS%AC%om * c%DS_AC/beta0) *XS%AC%X(1) + cos(XS%AC%om * c%DS_AC/beta0) *XS%AC%X(2)
-       XS%AC%X(1) = xt
-    else
-       xt = cos(XS%AC%om * c%DS_AC) *XS%AC%X(1) + sin(XS%AC%om * c%DS_AC) *XS%AC%X(2)
-       XS%AC%X(2) = -sin(XS%AC%om * c%DS_AC) *XS%AC%X(1) + cos(XS%AC%om * c%DS_AC) *XS%AC%X(2)
-       XS%AC%X(1) = xt
-       xs%ac%t=c%DS_AC+xs%ac%t
-    endif
-
+    do n=1,xs%nac
+        if(k%time) then
+           beta0=>C%PARENT_FIBRE%beta0
+           xs%ac(n)%t=c%DS_AC/beta0+xs%ac(n)%t
+           xt = cos(XS%AC(n)%om * c%DS_AC/beta0) *XS%AC(n)%X(1) + sin(XS%AC(n)%om * c%DS_AC/beta0) *XS%AC(n)%X(2)
+           XS%AC(n)%X(2) = -sin(XS%AC(n)%om * c%DS_AC/beta0) *XS%AC(n)%X(1) + cos(XS%AC(n)%om * c%DS_AC/beta0) *XS%AC(n)%X(2)
+           XS%AC(n)%X(1) = xt
+        else
+           xt = cos(XS%AC(n)%om * c%DS_AC) *XS%AC(n)%X(1) + sin(XS%AC(n)%om * c%DS_AC) *XS%AC(n)%X(2)
+           XS%AC(n)%X(2) = -sin(XS%AC(n)%om * c%DS_AC) *XS%AC(n)%X(1) + cos(XS%AC(n)%om * c%DS_AC) *XS%AC(n)%X(2)
+           XS%AC(n)%X(1) = xt
+           xs%ac(n)%t=c%DS_AC+xs%ac(n)%t
+        endif
+    enddo
     CALL KILL(XT)
 
   END   SUBROUTINE TRACK_MODULATION_P

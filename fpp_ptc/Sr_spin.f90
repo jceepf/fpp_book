@@ -3058,11 +3058,10 @@ call kill(vm,phi,z)
       call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
     endif
 
-    IF(K%MODULATION) THEN !modulate
-       if(c%parent_fibre%mag%slow_ac) CALL MODULATE(C,XS,K) !modulate
+    IF(K%MODULATION.and.xs%nac/=0) THEN !modulate
+       if(c%parent_fibre%mag%slow_ac/=0) CALL MODULATE(C,XS,K) !modulate
        CALL TRACK_MODULATION(C,XS,K) !modulate
     ENDIF !modulate
-    
 
 
  
@@ -3108,7 +3107,7 @@ call kill(vm,phi,z)
      ENDIF
 
     endif
-    IF((K%MODULATION).and.c%parent_fibre%mag%slow_ac) THEN  !modulate
+    IF(K%MODULATION.and.xs%nac/=0.and.c%parent_fibre%mag%slow_ac/=0) then!modulate
        CALL restore_ANBN_SINGLE(C%PARENT_FIBRE%MAG,C%PARENT_FIBRE%MAGP)
     ENDIF  !modulate
   !  IF((K%MODULATION.or.ramp).and.c%parent_fibre%mag%slow_ac) THEN  !modulate
@@ -3205,8 +3204,8 @@ endif ! full_way
       call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
     endif
 
-    IF(K%MODULATION) THEN !modulate
-       if(c%parent_fibre%magp%slow_ac) CALL MODULATE(C,XS,K) !modulate
+    IF(K%MODULATION.and.xs%nac/=0) then
+       if(c%parent_fibre%mag%slow_ac/=0)  CALL MODULATE(C,XS,K) !modulate
        CALL TRACK_MODULATION(C,XS,K) !modulate
     ENDIF !modulate
 
@@ -3267,7 +3266,7 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     endif
 
 
-    IF((K%MODULATION).and.c%parent_fibre%mag%slow_ac) THEN  !modulate
+    IF(K%MODULATION.and.xs%nac/=0.and.c%parent_fibre%mag%slow_ac/=0) then
        CALL restore_ANBN_SINGLE(C%PARENT_FIBRE%MAG,C%PARENT_FIBRE%MAGP)
     ENDIF  !modulate
 
