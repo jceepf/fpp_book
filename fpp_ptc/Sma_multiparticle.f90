@@ -123,11 +123,17 @@ CONTAINS
 !       DV=(XS%AC%X(1)*COS(EL%theta_ac)-XS%AC%X(2)*SIN(EL%theta_ac))
 
     IF(K%MODULATION) THEN
-       n=el%slow_ac
+      n=el%slow_ac
+      
+      if (modulationtype == 1) then
+         V=zero
+         DV=el%D_ac*XS%AC(n)%X(2)
+      else 
 
-       DV=(XS%AC(n)%X(1)*COS(EL%theta_ac)-XS%AC(n)%X(2)*SIN(EL%theta_ac))
-       V=EL%DC_ac+EL%A_ac*DV
-       DV=el%D_ac*DV
+         DV=(XS%AC(n)%X(1)*COS(EL%theta_ac)-XS%AC(n)%X(2)*SIN(EL%theta_ac))
+         V=EL%DC_ac+EL%A_ac*DV
+         DV=el%D_ac*DV
+      endif   
      else
        V=0.0_dp
        DV=0.0_dp
@@ -325,15 +331,20 @@ CONTAINS
     CALL ALLOC(DV)
 
     IF(K%MODULATION) THEN
-       n=el%slow_ac
-       DV=(XS%AC(n)%X(1)*COS(ELP%theta_ac)-XS%AC(n)%X(2)*SIN(ELP%theta_ac))
-       V=ELP%DC_ac+ELP%A_ac*DV
-       DV=elp%D_ac*DV
-
-       else  ! ramp
-          V=0.0_dp
-          DV=0.0_dp
-       endif
+      n=el%slow_ac
+      if (modulationtype == 1) then
+        V=zero
+        DV=el%D_ac*XS%AC(n)%X(2)
+      else
+        DV=(XS%AC(n)%X(1)*COS(ELP%theta_ac)-XS%AC(n)%X(2)*SIN(ELP%theta_ac))
+        V=ELP%DC_ac+ELP%A_ac*DV
+        DV=elp%D_ac*DV
+      endif
+      
+    else  ! ramp
+      V=0.0_dp
+      DV=0.0_dp
+    endif
  
     CALL transfer_ANBN(EL,ELP,VP=V,DVP=DV)
 
