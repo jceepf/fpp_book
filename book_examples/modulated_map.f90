@@ -118,7 +118,7 @@ call get_length(als,circ)
   write(mf1,*) "select layout"                  
   write(mf1,*) 1
   write(mf1,*) " MODULATE"               
-  write(mf1,*) " QF1"                   
+  write(mf1,*) " QF1  1"       ! name and number of clocks           
   write(mf1,*) "1.d0 0 0       !DC_ac,A_ac,theta_ac"
   write(mf1,*) "1.d0   2       ! D_ac,n_ac  "
   write(mf1,*) "2 0.02d0 0      ! n d_bn(n) d_an(n)  "  ! (A)
@@ -128,8 +128,8 @@ call get_length(als,circ)
  call read_ptc_command77("AC_modulation.txt")
 
 !!!! set a modulation clock !!!!!!
-ray_closed%ac%om=mu_mod/circ        ! (B1)
-ray_closed%ac%x=0.d0 ;              ! (B2)
+ray_closed%ac(1)%om=mu_mod/circ ! (B1) ! differs from the first edition   
+ray_closed%ac(1)%x=0.d0 ;       ! (B2) ! differs from the first edition   
 write(6,*) " Modulation tune in radians =",circ*ray_closed%ac%om
 
 closed_orbit=0.d0;                                                   ! (C)
@@ -141,7 +141,7 @@ id=1;
 ! ray= closed orbit + identity map  
 ray=id+ray_closed;          ! (F1)
 write(mf,*); write(mf,*) " Initial value of the clock ( in type probe_8) "
-write(mf,*);call print(ray%ac,mf )         ! (F2)
+write(mf,*);call print(ray%ac(1),mf ) ! (F2) ! differs from the first edition   
                           
 call propagate(als,RAY,state,fibre1=pos)  ! (G)
 

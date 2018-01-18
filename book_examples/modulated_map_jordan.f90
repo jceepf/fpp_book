@@ -66,7 +66,7 @@ call get_length(als,circ)
   write(mf1,*) "select layout"                  
   write(mf1,*) 1
   write(mf1,*) " MODULATE"               
-  write(mf1,*) " BEND1"                   
+  write(mf1,*) " BEND1 1" ! name and number of frequencies              
   write(mf1,*) "1.d0 0 0       !DC_ac,A_ac,theta_ac"
   write(mf1,*) "1.d0   1       ! D_ac,n_ac  "
   write(mf1,*) "1 0.001d0 0      ! n d_bn(n) d_an(n)  "  ! (A)
@@ -77,9 +77,9 @@ call get_length(als,circ)
 
 !!!! set a modulation clock !!!!!!
 mu_mod=twopi*0.12345d0; 
-ray_closed%ac%om=mu_mod/circ        ! (B1)
-ray_closed%ac%x=0.d0 ;              ! (B2)
-write(6,*) " Modulation tune in radians =",circ*ray_closed%ac%om
+ray_closed%ac(1)%om=mu_mod/circ ! (B1) differs from the first edition 
+ray_closed%ac(1)%x=0.d0 ;       ! (B2) differs from the first edition 
+write(6,*) " Modulation tune in radians =",circ*ray_closed%ac(1)%om
 
 closed_orbit=0.d0;                                                   ! (C)
 
