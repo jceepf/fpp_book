@@ -7,7 +7,7 @@ implicit none
   public RADIATION0, NOCAVITY0, FRINGE0 ,STOCHASTIC0,ENVELOPE0,RANFzhe
  ! public EQUALi_zhe,EQUALt_zhe
   public OPERATOR(+),operator(-), assignment(=)
-
+  public track_TREE_probe_complex_zhe_radiation_only
   real(kind(1d0)) :: doublenum = 0d0
   integer,parameter::lp=4
   integer,parameter::dp=selected_real_kind(2*precision(1.e0))
@@ -1127,6 +1127,60 @@ enddo  ! is
 
   end SUBROUTINE track_TREE_probe_complex_zhe
 
+  SUBROUTINE track_TREE_probe_complex_zhe_radiation_only(T,xs)
+!    use da_arrays
+    IMPLICIT NONE
+    TYPE(TREE_ELEMENT),target, INTENT(IN) :: T(:)
+ 
+     real(dp) xs(6)
+    real(dp) x(size_tree),x0(size_tree) 
+    integer i,j,k,ier,is
+ 
+
+ 
+    
+ 
+ 
+    x=0.e0_dp
+    x0=0.e0_dp
+    do i=1,6
+      x(i)=xs(i)
+      x0(i)=xs(i)
+    enddo
+
+     do i=1,6
+      x(i)=x(i)-t(1)%fix0(i)
+      x0(i)=x0(i)-t(1)%fix0(i)
+     enddo
+      x(7:12)=x(1:6)
+
+
+
+! if(t(3)%usenonsymp.or..not.t(3)%symptrack) then
+    call track_TREE_G_complex(T(1),X(1:6))
+
+
+
+         do i=1,6
+           x(i)=x(i)+t(1)%fix(i)
+         enddo
+
+
+!endif ! jumpnot
+
+    do i=1,6
+      xs(i)=x(i)
+    enddo
+
+    x=0.0_dp
+  do i=1,6
+    x(i)=RANFzhe()*t(2)%fix0(i)
+  enddo
+    x=matmul(t(2)%rad,x)
+
+    xs=xs+x
+
+  end SUBROUTINE track_TREE_probe_complex_zhe_radiation_only
 
   real(dp) FUNCTION RANFzhe()
     implicit none

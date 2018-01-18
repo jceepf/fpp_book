@@ -341,6 +341,7 @@ module definition
   TYPE C_taylor
      INTEGER I !@1  integer I is a pointer to the complexified Berz package
   END TYPE C_taylor
+  type(c_taylor),pointer :: dx_(:)=>null()
   !@3 ---------------------------------------------</br>
   type c_dascratch
      type(c_taylor), pointer :: t
