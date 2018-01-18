@@ -1,0 +1,72 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - lf95 linker settings
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+#
+# linker flags
+#
+
+LDFLAGS = -m$(ARCH) -O$(NOPT)
+LDLIBS  =
+
+ifeq ($(ARCH),32)
+  # attemp to find the gnu libs directory for Lahey 32 bits! (GCC only)
+  LDLIBS += -L$(GNULIBDIR)
+endif
+
+ifneq ($(CXXNAME),)
+  ifeq ($(ARCH),32)
+    # required by __constructor/__destructor attributes
+    LDLIBS += $(GNULIBDIR)$/crt*S.o
+  endif
+  LDLIBS += -lstdc++
+endif
+
+ifeq ($(STATIC),yes)
+  ifeq ($(ARCH),32)
+    # Lahey 32 bits (hidden) libs are asking for symbols during last linking step
+    # It probably uses partial link and discards everthing in the final step
+    # Hence, ld groups do not work and required symbols must be specified by hand...
+    REQSYM := __divdi3 __udivdi3 __moddi3 __umoddi3
+    REQCMD := -Wl,--undefined=
+    LDLIBS += $(addprefix $(REQCMD),$(REQSYM)) -lc -lgcc_eh -lgcc
+  endif
+endif
+
+#
+# options flags
+#
+
+ifeq ($(DEBUG),yes)
+LDFLAGS += -g --info --ap --chkglobal --lst --trap
+endif
+
+ifeq ($(PROFILE),yes) # not found in the doc
+LDFLAGS += -pg
+endif
+
+ifeq ($(STATIC),yes)
+LDFLAGS += -static
+endif
+
+ifeq ($(PLUGIN),yes) # not found in the doc
+LDFLAGS += -dynamic
+LDLIBS  += -ldl
+endif
+
+# end of makefile
+

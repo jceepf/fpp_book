@@ -1,0 +1,64 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - g95 compiler settings
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+# NOTE: compile/link only on properly configured linux (not lxplus!)
+#   does not compile/link correctly on other platforms
+#   64 bits Linux required g95 >= 0.93
+
+#
+# makedep
+#
+
+# fortran dependencies computation requires mod files (quite stupid)!
+# FDEP = $(FC) -M -fmod=$(OBJDIR) $(addprefix -I,$(FC_DIR))
+
+#
+# preprocessor flags
+#
+
+CPPFLAGS += -D_G95
+
+#
+# compiler flags
+#
+
+FFLAGS = -m$(ARCH) -O$(NOPT) -c
+
+# Trig too many warnings for the moment! 
+# fortran code is not conformant to f90/f95 (break compilation)!
+# FFLAGS  = -m$(ARCH) -O$(NOPT) -std=f95 -Wall -Wextra -pedantic -c
+
+#
+# options flags
+#
+
+ifeq ($(DEBUG),yes)
+FFLAGS += -ggdb3
+endif
+
+ifeq ($(PROFILE),yes)
+FFLAGS  += -pg
+endif
+
+#
+# extra flags
+#
+
+FFLAGS += -pipe -fno-second-underscore -fmod=$(OBJDIR) $(addprefix -I,$(FC_DIR))
+
+# end of makefile

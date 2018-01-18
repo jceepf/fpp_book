@@ -1,0 +1,55 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - icc linker settings
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+#
+# linker flags
+#
+
+LDFLAGS = -m$(ARCH) -O$(NOPT) -static-intel
+LDLIBS  =
+
+ifeq ($(OSTYPE),Darwin)
+LDFLAGS += -mmacosx-version-min=10.5
+endif
+
+#
+# options flags
+#
+
+ifeq ($(DEBUG),yes)
+LDFLAGS += -g -gdwarf-2
+endif
+
+ifeq ($(PROFILE),yes)
+LDFLAGS += -p
+endif
+
+ifeq ($(STATIC),yes)
+LDFLAGS += -static$(if $(call eq,$(OSTYPE),Darwin),lib,)
+endif
+
+ifeq ($(SHARED),yes)
+LDFLAGS += $(if $(call eq,$(OSTYPE),Darwin),-dynamiclib,-shared)
+endif
+
+ifeq ($(PLUGIN),yes)
+LDFLAGS += -Bdynamic
+LDLIBS  += -ldl
+endif
+
+# end of makefile

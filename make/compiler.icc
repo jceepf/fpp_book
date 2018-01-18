@@ -1,0 +1,125 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - icc compiler settings
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+#####################
+# ICC specific
+#
+
+#
+# preprocessor flags
+#
+
+CPPFLAGS += -D_ICC
+
+###############
+# C language
+#
+
+ifeq ($(CCNAME),icc)
+
+#
+# makedep
+#
+
+CDEP = $(CC) -MM $(addprefix -I,$(CC_DIR))
+
+#
+# compiler
+#
+
+CFLAGS = -m$(ARCH) -O$(NOPT) -std=c99 -Wall -Wcheck -Wp64 -c
+
+#
+# diagnostics
+#
+
+CFLAGS += -diag-disable 2259,1572,981 # -diag-enable port-win # -diag-enable sc2
+
+#
+# options flags
+#
+
+ifeq ($(DEBUG),yes)
+CFLAGS += -g -gdwarf-2
+endif
+
+ifeq ($(PROFILE),yes)
+CFLAGS += -p
+endif
+
+ifeq ($(SHARED),yes)
+CFLAGS += -fPIC
+endif
+
+#
+# extra flags
+#
+ 
+CFLAGS += -mp1 -fp-model strict $(addprefix -I,$(CC_DIR))
+
+endif
+
+###############
+# C++ language
+#
+
+ifeq ($(CXXNAME),icc)
+
+#
+# makedep
+#
+
+CXXDEP = $(CXX) -MM $(addprefix -I,$(CXX_DIR))
+
+#
+# compiler
+#
+
+CXXFLAGS = -m$(ARCH) -O$(NOPT) -std=c++0x -Wall -Wcheck -Wp64 -c
+
+#
+# diagnostics
+#
+
+CXXFLAGS += -diag-disable 2259,1572,981 # -diag-enable port-win # -diag-enable sc2
+
+#
+# options flags
+#
+
+ifeq ($(DEBUG),yes)
+CXXFLAGS += -g -gdwarf-2
+endif
+
+ifeq ($(PROFILE),yes)
+CXXFLAGS += -p
+endif
+
+ifeq ($(SHARED),yes)
+CXXFLAGS += -fPIC
+endif
+
+#
+# extra flags
+#
+ 
+CXXFLAGS += -mp1 -fp-model strict $(addprefix -I,$(CXX_DIR))
+
+endif
+
+# end of makefile

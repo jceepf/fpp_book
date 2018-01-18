@@ -3736,13 +3736,14 @@ call kill(yy); call kill(id);
       isStableFixPoint = is_ORBIT_STABLE(FIX,EPS,STAT,fibre1,node1)
       if (isStableFixPoint .eqv. .false.) then
         
-     if(global_verbose) print*,"Orbit seemed to be unstable in longitudinal"
-        fix = fix0
-        fix(6)= fix(6)+ clight/freqmin/2
+         if(global_verbose) print*,"Orbit seemed to be unstable in longitudinal"
+   
+         fix = fix0
+         fix(6)= fix(6)+ clight/freqmin/2
 
-        goto 1111
-        
-      endif
+         goto 1111
+
+       endif
     endif
 
 
@@ -3770,6 +3771,7 @@ call kill(yy); call kill(id);
     integer NO1,ND2,I,IU,ITE,ier,j,ITEM,k
     TYPE (fibre), POINTER :: p,f1
     TYPE (integration_node), POINTER :: t
+
     logical(lp) APERTURE
     INTEGER trackflag
     type(work) w,we

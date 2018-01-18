@@ -1,0 +1,132 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - ifort compiler settings
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+#####################
+# IFORT specific
+#
+
+#
+# preprocessor flags
+#
+
+CPPFLAGS += -D_IFORT
+
+################
+# Unix Settings
+#
+ifneq ($(OSTYPE),Windows)
+
+#
+# makedep
+#
+
+# fortran dependencies computation requires mod files (i.e. loops)
+# FDEP = $(FC) -gen-dep -module $(OBJDIR) $(addprefix -I,$(FC_DIR))
+
+#
+# compiler flags
+#
+
+FFLAGS = -m$(ARCH) -O$(NOPT) -warn all -warn nounused -c
+
+#
+# options flags
+#
+
+ifeq ($(DEBUG),yes)
+FFLAGS += -g -gdwarf-2 -check all
+endif
+
+ifeq ($(PROFILE),yes)
+FFLAGS += -p
+endif
+
+ifeq ($(SHARED),yes)
+FFLAGS += -fPIC
+endif
+
+#
+# extra flags
+#
+
+FFLAGS += -mp1 -fp-model strict -assume noold_unit_star \
+          -module $(OBJDIR) $(addprefix -I,$(FC_DIR))
+
+ifneq ($(CXXNAME),)
+FFLAGS += -fexceptions
+endif
+
+endif # Unix Settings
+
+# |
+# o---------------------------------------------------------------------o
+# |
+
+###################
+# Windows Settings
+#
+ifeq ($(OSTYPE),Windows)
+
+#
+# makedep
+#
+
+# fortran dependencies computation requires mod files (i.e. loops)
+# FDEP = $(FC) -gen-dep -module $(OBJDIR) $(addprefix -I,$(FC_DIR))
+
+#
+# compiler flags
+#
+
+FFLAGS = /O$(NOPT) /warn:all /warn:nounused /c
+
+# Trig too many warnings for the moment!
+# FFLAGS  = /stand:f95 /warn all /c
+
+#
+# options flags
+#
+
+ifeq ($(DEBUG),yes)
+FFLAGS += /debug:all /check:all
+endif
+
+ifeq ($(PROFILE),yes)
+FFLAGS += /Qprof-use
+endif
+
+#
+# extra flags
+#
+
+FFLAGS += /nologo /Qprec /fp:source /fpp \
+          /names:lowercase /assume:underscore /assume:noold_unit_star \
+          /module:$(OBJDIR) $(addprefix /I,$(FC_DIR))
+
+#
+# command translator
+#
+
+IFORT_FC1 := -D%  -I%  /O0
+IFORT_FC2 := /D%  /I%  /Od
+
+FC_tr = $(strip $(subst $(SPACE)-o , /Fo,$(call trans,$(IFORT_FC1),$(IFORT_FC2),$1)))
+
+endif # Windows Settings
+
+# end of makefile

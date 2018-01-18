@@ -47,7 +47,8 @@ module tree_element_MODULE
   integer, private, parameter :: nfac=20
   real(dp), private :: fac(0:nfac)
   integer :: nbe=8
-  integer :: n_rf
+  integer :: n_rf=0  !number of modulation clocks in the simulation
+  integer :: modulationtype=0 ! 0 is the full blown and internal anf externa field, 1 is simple one on external field only without cos(theta)
   INTERFACE assignment (=)
      !
      MODULE PROCEDURE REAL_8REAL6
@@ -587,6 +588,7 @@ CONTAINS
        if(abs(xi(1))>c_%absolute_aperture.or.abs(xi(3))>c_%absolute_aperture) then
           c_%CHECK_STABLE=.FALSE.
           xlost=xi
+          messagelost="o_tree_element.f90 track_tree : aperture exeeded"
        endif
     enddo
 
