@@ -79,7 +79,8 @@ module Mad_like
      REAL(DP) DPHAS,PSI,dvds
      logical(lp) usethin
      INTEGER N_BESSEL
-     !     logical(lp) in,out
+     INTEGER n_ac
+     REAL(DP) d_bn(NMAX), d_an(NMAX), D_ac, DC_ac, A_ac, theta_ac
   END TYPE EL_LIST
 
   INTERFACE OPERATOR (+)
@@ -732,7 +733,13 @@ CONTAINS
        s2%dvds=0.0_dp
        s2%N_BESSEL=0
        s2%usethin=my_true
-
+       s2%n_ac = 0
+       s2%d_bn(:) = 0.0_dp
+       s2%d_an(:) = 0.0_dp
+       s2%D_ac  = 0.0_dp 
+       s2%DC_ac = 0.0_dp
+       s2%A_ac  = 0.0_dp
+       s2%theta_ac  = 0.0_dp
     ENDIF
   END SUBROUTINE EL_0
 
@@ -1186,7 +1193,8 @@ CONTAINS
           GKICKTILT%tilt=t%tilt(0)
        ENDIF
     ENDIF
-
+    
+    
     IF(LEN(NAME)>nlp) THEN
        !w_p=0
        !w_p%nc=2
@@ -2997,6 +3005,7 @@ CONTAINS
  !      S2%ECOL19%A%R(2)=ABSOLUTE_APERTURE
     ENDIF
 
+
     IF(MADX) then
        s2%fint=s1%FINT
        s2%hgap=s1%hgap
@@ -3040,6 +3049,93 @@ CONTAINS
     endif
 
     call copy(s2,s2p)
+
+
+
+    ! SLOW AC MODULATION this must be after copy
+    !print*,S2%NAME, " N_AC ", s1%n_ac
+    if(s1%n_ac > 0) then
+      !print*, "EL_Q ", s1%n_ac       
+      allocate(S2%DC_ac)
+      allocate(S2%A_ac)
+      allocate(S2%theta_ac)
+      allocate(S2%D_ac)
+
+
+      allocate(s2p%DC_ac)
+      allocate(s2p%A_ac)
+      allocate(s2p%theta_ac)
+      CALL alloc(s2p%DC_ac)
+      CALL alloc(s2p%A_ac)
+      CALL alloc(s2p%theta_ac)
+      allocate(s2p%D_ac)
+      CALL alloc(s2p%D_ac)
+
+
+      S2%D_ac     = s1%D_ac
+      S2%DC_ac    = s1%DC_ac
+      S2%A_ac     = s1%A_ac
+      S2%theta_ac = s1%theta_ac*twopi
+      S2%slow_ac  = .true.
+      allocate(S2%slow_ac2)
+      S2%slow_ac2 = .true.
+
+
+      s2p%D_ac     = s1%D_ac
+      s2p%DC_ac    = s1%DC_ac
+      s2p%A_ac     = s1%A_ac
+      s2p%theta_ac = s1%theta_ac*twopi
+      s2p%slow_ac  = .true.
+
+
+      !may need to move after s2 to s2p copy
+      if(s1%n_ac > S2%p%nmul) then
+         CALL ADD(S22,s1%n_ac,0,0.0_dp)
+      endif
+
+      allocate(S2%d_an(S2%p%nmul))
+      allocate(S2%d_bn(S2%p%nmul))
+      allocate(S2%d0_an(S2%p%nmul))
+      allocate(S2%d0_bn(S2%p%nmul))
+
+      allocate(s2p%d_an(S2%p%nmul))
+      allocate(s2p%d_bn(S2%p%nmul))
+      allocate(s2p%d0_an(S2%p%nmul))
+      allocate(s2p%d0_bn(S2%p%nmul))
+
+      S2%d_an=0.0_dp
+      S2%d_bn=0.0_dp
+
+      call alloc(s2p%d_an,S2%p%nmul)
+      call alloc(s2p%d_bn,S2%p%nmul)
+      call alloc(s2p%d0_an,S2%p%nmul)
+      call alloc(s2p%d0_bn,S2%p%nmul)
+
+      ! copy of original values from the base setting (unmodulated)
+      do i=1,S2%p%nmul
+         S2%d0_bn(i)=S2%bn(i)
+         S2%d0_an(i)=S2%an(i)
+
+         s2p%d0_bn(i)=S2%bn(i)
+         s2p%d0_an(i)=S2%an(i)
+      enddo
+
+      do i=1,s1%n_ac
+      
+         !print*,"skowron: ", S2%NAME, " ACD ", i, " AN ",s1%d_an(i), " BN ", s1%d_bn(i)
+         S2%d_an(i) =s1%d_an(i)
+         S2%d_bn(i) =s1%d_bn(i)
+
+         S2p%d_an(i) =s1%d_an(i)
+         S2p%d_bn(i) =s1%d_bn(i)
+         
+      enddo
+      !
+    else
+     S2%slow_ac  = .false.   
+     S2p%slow_ac = .false.   
+    endif
+
 
     ! end of machida stuff here
     ! Default survey stuff here

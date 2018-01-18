@@ -2018,6 +2018,7 @@ CONTAINS
     if(EL%KIND==kind1) return
 
     if(associated(EL%ramp)) then
+    
       if(EL%KIND/=kind15) then
           do n=1,EL%P%NMUL
              EL%BN(N)= EL%ramp%table(0)%bn(n)
@@ -2030,27 +2031,28 @@ CONTAINS
            ELP%VOLT=EL%ramp%table(0)%bn(1)*COS(twopi*EL%ramp%table(0)%an(1)*T/clight+EL%ramp%table(0)%bn(2))+EL%ramp%table(0)%an(2)
          write(6,*) " volt ",el%volt,EL%ramp%table(0)%bn(1)
       endif
-          if(EL%ramp%table(0)%b_t/=0.0_dp) then
-              if(EL%parent_fibre%PATCH%TIME==0) EL%parent_fibre%PATCH%TIME=2
-              if(EL%parent_fibre%PATCH%TIME==1) EL%parent_fibre%PATCH%TIME=3
-              EL%parent_fibre%PATCH%b_T=EL%ramp%table(0)%b_t
-            else
-              if(EL%parent_fibre%PATCH%TIME==2) EL%parent_fibre%PATCH%TIME=0
-              if(EL%parent_fibre%PATCH%TIME==3) EL%parent_fibre%PATCH%TIME=1
-            EL%parent_fibre%PATCH%b_T=0.0_dp
-        endif
+      
+      if(EL%ramp%table(0)%b_t/=0.0_dp) then
+          if(EL%parent_fibre%PATCH%TIME==0) EL%parent_fibre%PATCH%TIME=2
+          if(EL%parent_fibre%PATCH%TIME==1) EL%parent_fibre%PATCH%TIME=3
+          EL%parent_fibre%PATCH%b_T=EL%ramp%table(0)%b_t
+        else
+          if(EL%parent_fibre%PATCH%TIME==2) EL%parent_fibre%PATCH%TIME=0
+          if(EL%parent_fibre%PATCH%TIME==3) EL%parent_fibre%PATCH%TIME=1
+        EL%parent_fibre%PATCH%b_T=0.0_dp
+      endif
           
     else
 
-    IF(EL%P%NMUL>=1) THEN
-       if(present(VR))then
+      IF(EL%P%NMUL>=1) THEN
+        if(present(VR))then
           do n=1,EL%P%NMUL
              EL%BN(N)= vR*EL%D0_BN(N)+DVR*EL%D_BN(N) 
              EL%AN(N)= vR*EL%D0_AN(N)+DVR*EL%D_AN(N)
              ELP%BN(N)= vR*EL%D0_BN(N)+DVR*EL%D_BN(N)
              ELP%AN(N)= vR*EL%D0_AN(N)+DVR*EL%D_AN(N)
           enddo
-       else
+        else
           do n=1,EL%P%NMUL
              EL%BN(N)= vp*EL%D0_BN(N)+DVp*EL%D_BN(N)
              EL%AN(N)= vp*EL%D0_AN(N)+DVp*EL%D_AN(N)

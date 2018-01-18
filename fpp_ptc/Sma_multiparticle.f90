@@ -109,16 +109,26 @@ CONTAINS
     TYPE(ELEMENTP),POINTER :: ELp
     REAL(DP) v,dv
 
-
-
     EL=>C%PARENT_FIBRE%MAG
     ELP=>C%PARENT_FIBRE%MAGP
 
-    IF(K%MODULATION) THEN
-
+    if( K%MODULATION .and. ASSOCIATED(EL%slow_ac2) .and. EL%slow_ac2 ) THEN
+    
+       V=zero
+       DV=el%D_ac*XS%AC%X(2)
+       !print*, "Skowron: ",EL%name," ", EL%KIND ," slow_ac ",EL%slow_ac, " ", EL%slow_ac2
+       !print*, "Skowron: Fast Modulation V=",V," DV=",DV, " ", XS%AC%X
+    elseif(K%MODULATION .and. EL%slow_ac) THEN
+    
        DV=(XS%AC%X(1)*COS(EL%theta_ac)-XS%AC%X(2)*SIN(EL%theta_ac))
        V=EL%DC_ac+EL%A_ac*DV
        DV=el%D_ac*DV
+       !V   defines amplitude of the original field modulation 
+       !DV  defines amplitude of the spacial field modulation 
+       !  print*, "Skowron: ",EL%name," ", EL%KIND ," slow_ac ",EL%slow_ac, " ", EL%slow_ac2
+       !  print*, "Skowron: Modulation el%theta_ac=",EL%theta_ac," XS%AC%X=",XS%AC%X
+       !  print*, "Skowron: Modulation V=",V," DV=",DV
+
      else
        V=0.0_dp
        DV=0.0_dp
