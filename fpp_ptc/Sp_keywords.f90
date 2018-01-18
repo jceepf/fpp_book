@@ -3668,8 +3668,7 @@ comt='REWIND'
 if(present(com)) comt=com
 
 call kanalnummer(mf)
-open(unit=mf,file=filename,position=comt,recl=200)
-
+open(unit=mf,file=filename,position=comt,recl=4000)
 
 call TIE_MAD_UNIVERSE(ud)
 
