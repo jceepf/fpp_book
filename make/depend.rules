@@ -1,0 +1,77 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - depend rules
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+.PRECIOUS: %.d %.mod
+
+vpath %.d   $(OBJDIR)
+vpath %.mod $(OBJDIR)
+
+#
+# rule for C dependencies
+#
+$(OBJDIR)/%.d: %.c
+	$E "*** Computing $(@F)"
+	$_ $(call CC_tr,$(CDEP) $(CPPFLAGS) $<) $(CDEP_tr) > $@
+
+#
+# rule for C++ dependencies
+#
+$(OBJDIR)/%.d: %.cpp
+	$E "*** Computing $(@F)"
+	$_ $(call CXX_tr,$(CXXDEP) $(CPPFLAGS) $<) $(CXXDEP_tr) > $@
+
+#
+# rule for f90 and F90 dependencies
+#
+$(OBJDIR)/%.d: %.f90
+	$E "*** Computing $(@F)"
+	$_ $(call FC_tr,$(FDEP) $<) $(FDEP_tr) > $@
+
+$(OBJDIR)/%.d: %.F90
+	$E "*** Computing $(@F)"
+	$_ $(call FC_tr,$(FDEP) $(CPPFLAGS) $<) $(FDEP_tr) > $@
+
+#
+# compute dependencies
+#
+C_DEPS   := $(patsubst %.c,%.d,$(CC_SRC))
+CXX_DEPS := $(patsubst %.cpp,%.d,$(CXX_SRC))
+F_DEPS   := $(patsubst %.F90,%.d,$(patsubst %.f90,%.d,$(FC_SRC)))
+DEPENDS  :=
+
+ifneq ($(CDEP),)
+DEPENDS += $(C_DEPS)
+endif
+
+ifneq ($(CXXDEP),)
+DEPENDS += $(CXX_DEPS)
+endif
+
+ifneq ($(FDEP),)
+DEPENDS += $(F_DEPS)
+endif
+
+#
+# include dependencies
+#
+ifneq ($(filter $(BUILDGOALS),$(MAKECMDGOALS)),)
+-include $(addprefix $(OBJDIR)/,$(DEPENDS))
+endif
+
+# end of makefile
+

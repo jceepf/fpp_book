@@ -1,0 +1,65 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - cleaning rules
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+.PHONY: clean cleandir cleantest
+.PHONY: cleanc cleancxx cleanf90 cleandep cleanbuild cleanall
+
+clean:
+	$E "** Cleaning program files, not library"
+	$_ $(RM) core
+	$_ $(RM) *~
+	$_ $(RM) $(OBJECTS) $(PROGRAMS) 
+
+cleandir: clean
+	$E "** Cleaning files in depth"
+	$_ $(FIND) . -name '*~' -exec $(RM) {} \;
+
+cleantest:
+	$E "** Cleaning tests files"
+	$_ $(RM) $(wildcard tests/*/*.out tests/$(NDSUM))
+	$_ $(RM) $(wildcard $(patsubst %.ref,%,$(wildcard tests/*/*.ref)))
+
+cleanc:
+	$E "** Cleaning C generated files"
+	$_ $(RM) $(addprefix $(OBJDIR)$/,$(patsubst %.c,%.o,$(CC_SRC)))
+	$_ $(RM) $(addprefix $(OBJDIR)$/,$(patsubst %.c,%.d,$(CC_SRC)))
+
+cleancxx:
+	$E "** Cleaning C++ generated files"
+	$_ $(RM) $(addprefix $(OBJDIR)$/,$(patsubst %.cpp,%.o,$(CXX_SRC)))
+	$_ $(RM) $(addprefix $(OBJDIR)$/,$(patsubst %.cpp,%.d,$(CXX_SRC)))
+
+cleanf90:
+	$E "** Cleaning F90 generated files"
+	$_ $(RM) $(addprefix $(OBJDIR)$/,$(patsubst %.F90,%.o,$(patsubst %.f90,%.o,$(FC_SRC))))
+	$_ $(RM) $(addprefix $(OBJDIR)$/,$(patsubst %.F90,%.d,$(patsubst %.f90,%.d,$(FC_SRC))))
+	$_ $(RM) $(OBJDIR)$/*.mod
+
+cleandep:
+	$E "** Removing DEP generated files"
+	$_ $(RM) $(OBJDIR)$/*.d
+
+cleanbuild:
+	$E "** Removing $(PRJNAME)"
+	$_ $(RM) $(if $(LD),$(PRJNAME_LD),) $(if $(AR),$(PRJNAME_AR),)
+
+cleanall: cleandir
+	$E "** Removing" $(OBJDIR)
+	$_ $(RMDIR) $(OBJDIR)
+  
+# end of makefile

@@ -1,0 +1,128 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | PTC makefile - Fortran files selection and dependencies
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Polymorphic Tracking Code from Etienne Forest
+# |
+# | For more information, see http:/cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+vpath %.inc fpp_ptc
+vpath %.f90 fpp_ptc
+vpath %.F90 fpp_ptc
+
+FC_DIR := fpp_ptc
+FC_C_DIR := fpp_ptc/complex
+FC_LAT_DIR := book_examples/als
+
+FC_C_SRC := $(notdir $(wildcard $(FC_C_DIR)/*.f90 $(FC_C_DIR)/*.F90  ))
+FC_SRC := $(FC_C_SRC)
+FC_SRC += $(notdir $(wildcard $(FC_DIR)/*.f90 $(FC_DIR)/*.F90  ))
+FC_SRC += $(notdir $(wildcard $(FC_LAT_DIR)/*.f90 $(FC_LAT_DIR)/*.F90  ))
+
+PROG_SRC := $(wildcard $(PROG_SRCDIR)/*.f90 $(PROG_SRCDIR)/*.F90) 
+
+PROGRAMS := $(patsubst %.F90,%.exe,$(patsubst %.f90,%.exe,$(patsubst $(PROG_SRCDIR)%,$(PROG_DESTDIR)%,$(PROG_SRC))))
+
+PROG_LIBS := -L$(PROG_DESTDIR) -lptc$(ARCH) 
+
+# files specific compiler flag
+l_complex_taylor.o: NOPT := 2
+Sg_sagan_wiggler.o: FFLAGS += -fdollar-ok
+#######################
+# Fortran dependencies (case not automatic!)
+
+ifeq ($(FDEP),)
+
+
+# chain of dependencies (PTC from MAD-X)
+a_scratch_size.o:           $(FC_DIR)/a_scratch_size.f90
+b_da_arrays_all.o:          $(FC_DIR)/b_da_arrays_all.f90         a_scratch_size.o
+c_dabnew.o:                 $(FC_DIR)/c_dabnew.f90                b_da_arrays_all.o
+d_lielib.o:                 $(FC_DIR)/d_lielib.f90                c_dabnew.o
+cb_da_arrays_all.o:         $(FC_C_DIR)/cb_da_arrays_all.f90      d_lielib.o
+cc_dabnew.o:                $(FC_C_DIR)/cc_dabnew.f90             cb_da_arrays_all.o
+h_definition.o:             $(FC_DIR)/h_definition.f90            cc_dabnew.o cb_da_arrays_all.o
+i_tpsa.o:                   $(FC_DIR)/i_tpsa.f90                  h_definition.o
+j_tpsalie.o:                $(FC_DIR)/j_tpsalie.f90               i_tpsa.o
+k_tpsalie_analysis.o:       $(FC_DIR)/k_tpsalie_analysis.f90      j_tpsalie.o
+l_complex_taylor.o:         $(FC_DIR)/l_complex_taylor.f90        k_tpsalie_analysis.o
+m_real_polymorph.o:         $(FC_DIR)/m_real_polymorph.f90        l_complex_taylor.o
+n_complex_polymorph.o:      $(FC_DIR)/n_complex_polymorph.f90     m_real_polymorph.o
+o_tree_element.o:           $(FC_DIR)/o_tree_element.f90          n_complex_polymorph.o
+Ci_tpsa.o:                  $(FC_C_DIR)/Ci_tpsa.f90               o_tree_element.o
+Sa_extend_poly.o:           $(FC_DIR)/Sa_extend_poly.f90          Ci_tpsa.o
+Sb_sagan_pol_arbitrary.o:   $(FC_DIR)/Sb_sagan_pol_arbitrary.f90  Sa_extend_poly.o
+Sc_euclidean.o:             $(FC_DIR)/Sc_euclidean.f90            Sb_sagan_pol_arbitrary.o
+Sd_frame.o:                 $(FC_DIR)/Sd_frame.f90                Sc_euclidean.o
+Se_status.o:                $(FC_DIR)/Se_status.f90               Sd_frame.o
+Sf_def_all_kinds.o:         $(FC_DIR)/Sf_def_all_kinds.f90        Se_status.o
+Sh_def_kind.o:              $(FC_DIR)/Sh_def_kind.f90             Sf_def_all_kinds.o 
+Sg_sagan_wiggler.o:         $(FC_DIR)/Sg_sagan_wiggler.f90        Sh_def_kind.o
+Si_def_element.o:           $(FC_DIR)/Si_def_element.f90          Sg_sagan_wiggler.o
+Sk_link_list.o:             $(FC_DIR)/Sk_link_list.f90            Si_def_element.o
+Sl_family.o:                $(FC_DIR)/Sl_family.f90               Sk_link_list.o
+Sm_tracking.o:              $(FC_DIR)/Sm_tracking.f90             Sl_family.o
+Sma0_beam_beam_ptc.o:       $(FC_DIR)/Sma0_beam_beam_ptc.f90      Sm_tracking.o
+Sma_multiparticle.o:        $(FC_DIR)/Sma_multiparticle.f90       Sma0_beam_beam_ptc.o
+Sn_mad_like.o:              $(FC_DIR)/Sn_mad_like.f90             Sma_multiparticle.o
+So_fitting.o:               $(FC_DIR)/So_fitting.f90              Sn_mad_like.o
+Sp_keywords.o:              $(FC_DIR)/Sp_keywords.f90             So_fitting.o
+Spb_fake_gino_sub.o:        $(FC_DIR)/Spb_fake_gino_sub.f90
+Sq_orbit_ptc.o:             $(FC_DIR)/Sq_orbit_ptc.f90            Sp_keywords.o
+Sr_spin.o:                  $(FC_DIR)/Sr_spin.f90                 Sq_orbit_ptc.o
+Sra_fitting.o:              $(FC_DIR)/Sra_fitting.f90             Sr_spin.o
+St_pointers.o:              $(FC_DIR)/St_pointers.f90             Sp_keywords.o Ss_fake_mad.o 
+
+h_definition.o:             $(FC_DIR)/a_def_frame_patch_chart.inc $(FC_DIR)/a_def_all_kind.inc \
+                            $(FC_DIR)/a_def_sagan.inc $(FC_DIR)/a_def_element_fibre_layout.inc
+Sf_def_all_kinds.o:         $(FC_DIR)/a_def_worm.inc
+Sp_keywords.o:              $(FC_DIR)/a_namelists.inc
+
+# chain of dependencies (PTC lib)
+Ss_fake_mad.o:              $(FC_DIR)/Ss_fake_mad.f90                   Sra_fitting.o
+ptcinterface.o:             $(FC_DIR)/ptcinterface.f90                  St_pointers.o 
+
+#z_als_lattice.o:            $(FC_LAT_DIR)/z_als_lattice.f90 
+z_fodocell.o:               $(FC_LAT_DIR)/z_fodocell.f90
+
+endif
+
+radiation_map.exe:  $(PROG_SRCDIR)/radiation_map.f90
+
+#######################
+# check for gfortran version >= 4.4
+# set to gfortran44 on lxplus
+#
+
+ifneq ($(filter $(BUILDGOALS),$(MAKECMDGOALS)),)
+ifeq ($(FC),gfortran)
+ifeq ($(origin FC),file)
+FCVER  := $(shell $(FC) -dumpversion)
+FCVERL := $(subst ., ,$(FCVER))
+FCVER1 := $(findstring $(word 1,$(FCVERL)),"456789")
+FCVER2 := 0
+  ifeq ($(FCVER1),4)
+  FCVER2 := $(findstring $(word 2,$(FCVERL)),"456789")
+  endif
+ifeq ($(and $(FCVER1),$(FCVER2)),)
+ifeq ($(findstring lxplus,$(HOST)),lxplus)
+$(warning PTC requires gfortran >= 4.4 ($(FCVER) detected), FC set to gfortran44)
+FC     := gfortran44
+FCNAME := gfortran
+else
+$(error PTC requires gfortran >= 4.4 ($(if $(FCVER),$(FCVER),none) detected))
+endif # lxplus
+endif # version
+endif # origin
+endif # gfortran
+endif # cmdgoal
+
+# end of makefile

@@ -1,0 +1,50 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - linker rules
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+.PHONY: $(PROJECT)
+
+PRJNAME_LD := $(PRJNAME)$(if $(call eq,lib%,$(PROJECT)),$(SHARED_EXT),$(BINARY_EXT))
+PRJNAME_AR := $(PRJNAME)$(if $(call eq,lib%,$(PROJECT)),$(STATIC_EXT),)
+
+$(PROJECT): $(if $(LD),$(PRJNAME_LD),) $(if $(AR),$(PRJNAME_AR),) $(PROGRAMS)
+
+
+$(PROGRAMS): $(PROG_SRC)
+
+
+ifneq ($(LD),)
+$(PRJNAME_LD): $(OBJECTS)
+	@echo "*** Linking $(@F)"
+	@echo $(addprefix $(OBJDIR)$/,$(^F))
+	@echo "*****************"
+	$(call LD_tr,$(LD) $(LDFLAGS) -o $(PROG_DESTDIR)/$@ $(addprefix $(OBJDIR)$/,$(^F)) $(LIBS) $(LDLIBS))
+
+#	$E "PROGRAMS"
+#	$E $(PROGRAMS)
+#	$E ""
+#	$E "THEIR SOURCES"
+#	$E $(PROG_SRC)
+endif
+
+ifneq ($(AR),)
+$(PRJNAME_AR): $(OBJECTS)
+	$E "*** Archiving $(@F)"
+	@$(call AR_tr,$(AR) $(ARFLAGS) -o $(PROG_DESTDIR)/$@ $(addprefix $(OBJDIR)$/,$(^F)))
+endif
+
+# end of makefile

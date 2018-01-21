@@ -1,0 +1,61 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - gfortran linker settings
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+#
+# linker flags
+#
+
+LDFLAGS = -m$(ARCH) -O3
+LDLIBS  =
+
+ifeq ($(OSTYPE),Darwin)
+LDFLAGS += -mmacosx-version-min=10.5 -Wl,-no_compact_unwind
+endif
+
+ifneq ($(CXXNAME),)
+LDLIBS += -lstdc++
+#LDLIBS += -lstdc++$(if $(call eq,$(OSTYPE),Darwin),-static,)
+endif
+
+#
+# options flags
+#
+
+ifeq ($(DEBUG),yes)
+LDFLAGS += -g -ggdb
+endif
+
+ifeq ($(PROFILE),yes)
+LDFLAGS += -pg
+endif
+
+
+ifeq ($(STATIC),yes)
+LDFLAGS += -static
+endif
+
+ifeq ($(SHARED),yes)
+LDFLAGS += -shared
+endif
+
+ifeq ($(PLUGIN),yes)
+LDFLAGS += -rdynamic
+LDLIBS  += -ldl
+endif
+
+# end of makefile

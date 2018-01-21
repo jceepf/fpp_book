@@ -1,0 +1,55 @@
+# |
+# o---------------------------------------------------------------------o
+# |
+# | MAD makefile - nagfor linker settings
+# |
+# o---------------------------------------------------------------------o
+# |
+# | Methodical Accelerator Design
+# |
+# | Copyright (c) 2011+ CERN, mad@cern.ch
+# |
+# | For more information, see http://cern.ch/mad
+# |
+# o---------------------------------------------------------------------o
+# |
+# | $Id$
+# |
+
+#
+# linker flags
+#
+
+LDFLAGS = -O$(NOPT)
+LDLIBS  =
+
+ifeq ($(ARCH),32)
+LDFLAGS += -Wl,-m32 -abi=32
+endif
+
+ifneq ($(CXXNAME),)
+LDLIBS += -lstdc++
+endif
+
+#
+# options flags
+#
+
+ifeq ($(DEBUG),yes)
+LDFLAGS += -g -C=all -nan # -mtrace=size,line
+endif
+
+ifeq ($(PROFILE),yes)
+LDFLAGS += -pg
+endif
+
+ifeq ($(STATIC),yes)
+LDFLAGS += -Bstatic
+endif
+
+ifeq ($(PLUGIN),yes)
+LDFLAGS += -rdynamic
+LDLIBS  += -ldl
+endif
+
+# end of makefile
