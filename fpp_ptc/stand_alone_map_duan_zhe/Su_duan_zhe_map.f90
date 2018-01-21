@@ -964,7 +964,7 @@ endif ! jumpnot
   SUBROUTINE track_TREE_probe_complex_zhe(T,xs,spin)
 !    use da_arrays
     IMPLICIT NONE
-    TYPE(TREE_ELEMENT),target, INTENT(IN) :: T(:)
+    TYPE(TREE_ELEMENT),target, INTENT(INout) :: T(3)
  
     type(probe) xs
     real(dp) x(size_tree),x0(size_tree),s0(3,3),r(3,3),dx6,beta,q(3),p(3),qg(3),qf(3)
@@ -1130,7 +1130,7 @@ enddo  ! is
   SUBROUTINE track_TREE_probe_complex_zhe_radiation_only(T,xs)
 !    use da_arrays
     IMPLICIT NONE
-    TYPE(TREE_ELEMENT),target, INTENT(IN) :: T(:)
+    TYPE(TREE_ELEMENT),target, INTENT(INout) :: T(3)
  
      real(dp) xs(6)
     real(dp) x(size_tree),x0(size_tree) 
@@ -1149,8 +1149,8 @@ enddo  ! is
     enddo
 
      do i=1,6
-      x(i)=x(i)-t(1)%fix0(i)
-      x0(i)=x0(i)-t(1)%fix0(i)
+      x(i)=x(i)-t(3)%fix0(i)
+      x0(i)=x0(i)-t(3)%fix0(i)
      enddo
       x(7:12)=x(1:6)
 
@@ -1162,7 +1162,7 @@ enddo  ! is
 
 
          do i=1,6
-           x(i)=x(i)+t(1)%fix(i)
+           x(i)=x(i)+t(3)%fix(i)
          enddo
 
 

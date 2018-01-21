@@ -2419,6 +2419,7 @@ v=0.0_dp
 
  
     DO I=1,el%w%ne  !SIZE(EL%W%AE)
+
   if (EL%W%FORME(I) == hyper_y_family_x) THEN
 
 
@@ -2512,6 +2513,7 @@ v=0.0_dp
      print *, 'ERROR IN e_fieldr: UNKNOWN FORM FOR WIGGLER TERM!'
      stop
   endif
+
     ENDDO
 
       do i=1,3
