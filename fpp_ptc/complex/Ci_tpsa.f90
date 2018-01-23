@@ -10034,14 +10034,16 @@ end subroutine c_full_factorise
 ! in the original space. 
 ! 
 
-
+ if(global_verbose)  then
+    write(6,*)" Stochastic kick"
     do i=1,6
     do j=1,6
-    if(d(i,j)/=0.d0) then
+    if(abs(d(i,j))>eps*norm) then
      write(6,*) i,j,d(i,j)
     endif
     enddo
     enddo
+endif
 
     ai=-matmul(matmul(s,at),s)
     ait=transpose(ai)

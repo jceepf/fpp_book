@@ -182,7 +182,7 @@ TYPE ELEMENT
    real(dp), POINTER ::  L  => null()                              ! Length of integration often same as LD
    !
    real(dp),   DIMENSION(:), POINTER:: AN => null(),BN => null()         !Multipole component
-   real(dp),   POINTER:: FINT => null(),HGAP => null()         !FRINGE FUDGE FOR MAD
+   real(dp), DIMENSION(:),   POINTER:: FINT => null(),HGAP => null()         !FRINGE FUDGE FOR MAD
    real(dp),   POINTER:: H1 => null(),H2 => null()         !FRINGE FUDGE FOR MAD
    real(dp),   POINTER:: VA => null(),VS => null()         ! use in quad fringe from sad
    !
@@ -248,7 +248,7 @@ TYPE ELEMENTP
    !
    TYPE(REAL_8), POINTER ::  L    => null() ! LENGTH OF INTEGRATION OFTEN SAME AS LD, CAN BE ZERO
    TYPE(REAL_8),  DIMENSION(:), POINTER :: AN => null(),BN   => null()       !MULTIPOLE COMPONENT
-   TYPE(REAL_8),   POINTER:: FINT => null(),HGAP  => null()        !FRINGE FUDGE FOR MAD
+   TYPE(REAL_8), DIMENSION(:),   POINTER:: FINT => null(),HGAP  => null()        !FRINGE FUDGE FOR MAD
    TYPE(REAL_8),   POINTER:: H1 => null(),H2 => null()         !FRINGE FUDGE FOR MAD
    TYPE(REAL_8),    POINTER:: VA => null(),VS => null()         !valishev-like multipole
    !

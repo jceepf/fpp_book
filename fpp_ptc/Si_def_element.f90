@@ -2780,8 +2780,8 @@ nullify(EL%filef,el%fileb);
        !       EL=DEFAULT;
        !   ANBN
        CALL ZERO_ANBN(EL,I)
-       ALLOCATE(EL%FINT);EL%FINT=0.5_dp;
-       ALLOCATE(EL%HGAP);EL%HGAP=0.0_dp;
+       ALLOCATE(EL%FINT(2));EL%FINT(1)=0.5_dp;EL%FINT(2)=0.5_dp;
+       ALLOCATE(EL%HGAP(2));EL%HGAP(1)=0.0_dp;EL%HGAP(2)=0.0_dp;
        ALLOCATE(EL%H1);EL%H1=0.0_dp;
        ALLOCATE(EL%H2);EL%H2=0.0_dp;
        ALLOCATE(EL%VA);EL%VA=0.0_dp;
@@ -3050,8 +3050,8 @@ nullify(EL%filef,el%fileb);
        !      EL=DEFAULT;
        !   ANBN
        CALL ZERO_ANBN(EL,I)
-       ALLOCATE(EL%FINT);CALL ALLOC(EL%FINT);EL%FINT=0.5_dp;
-       ALLOCATE(EL%HGAP);CALL ALLOC(EL%HGAP);EL%HGAP=0.0_dp;
+       ALLOCATE(EL%FINT(2));CALL ALLOC(EL%FINT);EL%FINT(1)=0.5_dp;EL%FINT(2)=0.5_dp;
+       ALLOCATE(EL%HGAP(2));CALL ALLOC(EL%HGAP);EL%HGAP(1)=0.0_dp;EL%HGAP(2)=0.0_dp;
        ALLOCATE(EL%H1);CALL ALLOC(EL%H1);EL%H1=0.0_dp;
        ALLOCATE(EL%H2);CALL ALLOC(EL%H2);EL%H2=0.0_dp;
        ALLOCATE(EL%VA);CALL ALLOC(EL%VA);EL%VA=0.0_dp;
@@ -3099,8 +3099,10 @@ nullify(EL%filef,el%fileb);
     ELP%vorname=EL%vorname
     ELP%KIND=EL%KIND
     ELP%L=EL%L
-    ELP%FINT=EL%FINT
-    ELP%HGAP=EL%HGAP
+    ELP%FINT(1)=EL%FINT(1)
+    ELP%FINT(2)=EL%FINT(2)
+    ELP%HGAP(1)=EL%HGAP(1)
+    ELP%HGAP(2)=EL%HGAP(2)
     ELP%H1=EL%H1
     ELP%H2=EL%H2
     ELP%VA=EL%VA
@@ -3482,8 +3484,10 @@ nullify(EL%filef,el%fileb);
     ELP%vorname=EL%vorname
     ELP%KIND=EL%KIND
     ELP%L=EL%L
-    ELP%FINT=EL%FINT
-    ELP%HGAP=EL%HGAP
+    ELP%FINT(1)=EL%FINT(1)
+    ELP%FINT(2)=EL%FINT(2)
+    ELP%HGAP(1)=EL%HGAP(1)
+    ELP%HGAP(2)=EL%HGAP(2)
     ELP%H1=EL%H1
     ELP%H2=EL%H2
     ELP%VA=EL%VA
@@ -3864,8 +3868,10 @@ nullify(EL%filef,el%fileb);
     ELP%KIND=EL%KIND
     ELP%PLOT=EL%PLOT
     ELP%L=EL%L
-    ELP%FINT=EL%FINT
-    ELP%HGAP=EL%HGAP
+    ELP%FINT(1)=EL%FINT(1)
+    ELP%FINT(2)=EL%FINT(2)
+    ELP%HGAP(1)=EL%HGAP(1)
+    ELP%HGAP(2)=EL%HGAP(2)
     ELP%H1=EL%H1
     ELP%H2=EL%H2
     ELP%VA=EL%VA
@@ -4241,8 +4247,10 @@ nullify(EL%filef,el%fileb);
     ELP%knob=.FALSE.
 
     CALL resetpoly_R31(ELP%L)         ! SHARED BY EVERYONE
-    CALL resetpoly_R31(ELP%FINT)         ! SHARED BY EVERYONE
-    CALL resetpoly_R31(ELP%HGAP)         ! SHARED BY EVERYONE
+    CALL resetpoly_R31(ELP%FINT(1))         ! SHARED BY EVERYONE
+    CALL resetpoly_R31(ELP%FINT(2))         ! SHARED BY EVERYONE
+    CALL resetpoly_R31(ELP%HGAP(1))         ! SHARED BY EVERYONE
+    CALL resetpoly_R31(ELP%HGAP(2))         ! SHARED BY EVERYONE
     CALL resetpoly_R31(ELP%H1)         ! SHARED BY EVERYONE
     CALL resetpoly_R31(ELP%H2)         ! SHARED BY EVERYONE
     CALL resetpoly_R31(ELP%VA)         ! SHARED BY EVERYONE
