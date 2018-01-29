@@ -3249,12 +3249,29 @@ SET_TPSAFIT=.FALSE.
           c=>c%next
           i=i+1
        enddo
-     
-           if(freq_redefine) then
-             tot=RING%HARMONIC_NUMBER*twopi/FREQ
+           if(ring%harmonic_number==0) then
+              t=>ring%t%start
+              tot=0
+             do i=1,ring%t%n
+               tot= tot + t%ds_ac
+              t=>t%next
+             enddo
+            if(state%time) tot=tot/c%beta0
+            
+             if(freq_redefine) then
+               ring%harmonic_number=tot*freq/twopi
+             else
+               ring%harmonic_number=tot*freq/CLIGHT
+             endif
+
            else
-             tot=RING%HARMONIC_NUMBER*CLIGHT/FREQ
-           endif
+
+             if(freq_redefine) then
+               tot=RING%HARMONIC_NUMBER*twopi/FREQ
+             else
+               tot=RING%HARMONIC_NUMBER*CLIGHT/FREQ
+             endif
+          endif
        endif
     
 
@@ -3435,7 +3452,7 @@ call kill(yy); call kill(id);
 
     real(dp)  DIX(6),xdix,xdix0,tiny,beta1,t6,freqmin
     real(dp) X(6),Y(6),MX(6,6),sxi(6,6),SX(6,6),dt,dl,fix(6)
-    integer NO1,ND2,I,IU,ITE,ier,j,ITEM,try
+    integer NO1,ND2,I,IU,ITE,ier,j,ITEM !,try
     TYPE (fibre), POINTER :: C
     TYPE (integration_node), POINTER :: t
     logical(lp) APERTURE,use_bmad_units_temp
@@ -3569,11 +3586,30 @@ call kill(yy); call kill(id);
           i=i+1
        enddo
      
-           if(freq_redefine) then
-             tot=RING%HARMONIC_NUMBER*twopi/FREQ
+           if(ring%harmonic_number==0) then
+              t=>ring%t%start
+              tot=0
+             do i=1,ring%t%n
+               tot= tot + t%ds_ac
+              t=>t%next
+             enddo
+            if(state%time) tot=tot/c%beta0
+            
+             if(freq_redefine) then
+               ring%harmonic_number=tot*freq/twopi
+             else
+               ring%harmonic_number=tot*freq/CLIGHT
+             endif
+
            else
-             tot=RING%HARMONIC_NUMBER*CLIGHT/FREQ
-           endif
+
+             if(freq_redefine) then
+               tot=RING%HARMONIC_NUMBER*twopi/FREQ
+             else
+               tot=RING%HARMONIC_NUMBER*CLIGHT/FREQ
+             endif
+          endif
+
        endif
     
 
@@ -3597,14 +3633,14 @@ call kill(yy); call kill(id);
        if(.not.check_stable) then
           messagelost(len_trim(messagelost)+1:255)=" -> Unstable tracking guessed orbit "
           c_%APERTURE_FLAG=APERTURE
-                 if(try>0) goto 1111
+ !                if(try>0) goto 1111
           return
        endif
  
 
     ENDDO
     !    write(6,*) x
- 
+ write(6,*) "tot ",tot
 
     mx=0.0_dp
     DO J=1,ND2
@@ -3619,22 +3655,18 @@ call kill(yy); call kill(id);
              messagelost(len_trim(messagelost)+1:255)=" -> Unstable while tracking small rays around the guessed orbit "
              !   fixed_found=my_false
              c_%APERTURE_FLAG=APERTURE
-                    if(try>0) goto 1111
+ !                   if(try>0) goto 1111
              return
           endif
 
           
        ENDDO
  
-
+       if(stat%totalpath==1) then
+         y(6)=y(6)-TURNS0*tot
+       endif
        do i=1,ND2
-         if(i==6) then
             MX(I,J)=Y(i)/2/eps+MX(I,J)   
-          ! MX(I,J)=(Y(i)-tot-X(i))/eps
-         else
-          ! MX(I,J)=(Y(i)-X(i))/eps
-          MX(I,J)=Y(i)/2/eps+MX(I,J)
-         endif
        enddo
        Y=FIX
        Y(J)=FIX(J)-EPS
@@ -3647,21 +3679,18 @@ call kill(yy); call kill(id);
              messagelost(len_trim(messagelost)+1:255)=" -> Unstable while tracking small rays around the guessed orbit "
              !   fixed_found=my_false
              c_%APERTURE_FLAG=APERTURE
-                    if(try>0) goto 1111
+ !                   if(try>0) goto 1111
              return
           endif
  
        ENDDO
  
+      if(stat%totalpath==1) then
+         y(6)=y(6)-TURNS0*tot
+       endif
 
        do i=1,ND2
-         if(i==6) then
             MX(I,J)=-Y(i)/2/eps+MX(I,J)   
-          ! MX(I,J)=(Y(i)-tot-X(i))/eps
-         else
-          ! MX(I,J)=(Y(i)-X(i))/eps
-          MX(I,J)=-Y(i)/2/eps+MX(I,J)
-         endif
        enddo
 
        
@@ -3722,7 +3751,8 @@ call kill(yy); call kill(id);
        check_stable=my_false
        !     ENDIF
        ITE=0
-              if(try>0) goto 1111
+   !           if(try>0) goto 1111
+      return
     endif
     !   write(6,*) item,xdix,xdix0,tiny
 
