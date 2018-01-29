@@ -3071,10 +3071,11 @@ SET_TPSAFIT=.FALSE.
 
     end subroutine lattice_fit_bump_min_rcs
   
-      SUBROUTINE FIND_ORBIT_LAYOUT_da(RING,FIX,STATE,TURNS,fibre1,node1) ! Finds orbit without TPSA in State or compatible state
+      SUBROUTINE FIND_ORBIT_LAYOUT_da(RING,FIX,STATE,TURNS,fibre1,node1,total) ! Finds orbit without TPSA in State or compatible state
     IMPLICIT NONE
     TYPE(layout),target,INTENT(INOUT):: RING
     real(dp) , intent(inOUT) :: FIX(6)
+    real(dp), optional :: total
     INTEGER , optional,intent(in) :: TURNS,node1,fibre1
     TYPE(INTERNAL_STATE),optional, intent(in) :: STATE
     type(fibre), pointer :: object_fibre1
@@ -3086,21 +3087,22 @@ SET_TPSAFIT=.FALSE.
       do i=1,fibre1-1
          object_fibre1=>object_fibre1%next
       enddo   
-      call FIND_ORBIT_LAYOUT_da_object(FIX,STATE,TURNS,fibre1=object_fibre1)
+      call FIND_ORBIT_LAYOUT_da_object(FIX,STATE,TURNS,fibre1=object_fibre1,total=total)
      else
        object_node1=>ring%t%start
       do i=1,node1-1
          object_node1=>object_node1%next
       enddo 
-      call FIND_ORBIT_LAYOUT_da_object(FIX,STATE,TURNS,node1=object_node1)
+      call FIND_ORBIT_LAYOUT_da_object(FIX,STATE,TURNS,node1=object_node1,total=total)
      endif
 
 
      end  SUBROUTINE FIND_ORBIT_LAYOUT_da
  
-    SUBROUTINE FIND_ORBIT_LAYOUT_da_object(FIX0,STATE,TURNS,fibre1,node1) ! Finds orbit without TPSA in State or compatible state
+    SUBROUTINE FIND_ORBIT_LAYOUT_da_object(FIX0,STATE,TURNS,fibre1,node1,total) ! Finds orbit without TPSA in State or compatible state
     IMPLICIT NONE
     real(dp) , intent(inOUT) :: FIX0(6)
+    real(dp), optional :: total
     INTEGER , optional,intent(in) :: TURNS 
     type(fibre), optional, pointer :: fibre1
     type(integration_node), optional, pointer :: node1
@@ -3407,14 +3409,16 @@ call kill(yy); call kill(id);
     !    FIX(6)=FIX(6)+freq*turns0
     c_%APERTURE_FLAG=APERTURE
     fix0=fix
+    if(present(total)) total=tot
   END SUBROUTINE FIND_ORBIT_LAYOUT_da_object
 
 
 
-  SUBROUTINE FIND_ORBIT_LAYOUT_noda(RING,FIX,STATE,eps,TURNS,fibre1,node1) ! Finds orbit without TPSA in State or compatible state
+  SUBROUTINE FIND_ORBIT_LAYOUT_noda(RING,FIX,STATE,eps,TURNS,fibre1,node1,total) ! Finds orbit without TPSA in State or compatible state
     IMPLICIT NONE
     TYPE(layout),target,INTENT(INOUT):: RING
     real(dp) , intent(inOUT) :: FIX(6)
+    real(dp), optional :: total
     INTEGER , optional,intent(in) :: TURNS,node1,fibre1
     real(dp)  eps,TOT,freq,t6
     TYPE(INTERNAL_STATE),optional, intent(in) :: STATE
@@ -3427,22 +3431,23 @@ call kill(yy); call kill(id);
       do i=1,fibre1-1
          object_fibre1=>object_fibre1%next
       enddo   
-      call FIND_ORBIT_LAYOUT_noda_object(FIX,STATE,eps,TURNS,fibre1=object_fibre1)
+      call FIND_ORBIT_LAYOUT_noda_object(FIX,STATE,eps,TURNS,fibre1=object_fibre1,total=total)
      else
        object_node1=>ring%t%start
       do i=1,node1-1
          object_node1=>object_node1%next
       enddo 
-      call FIND_ORBIT_LAYOUT_noda_object(FIX,STATE,eps,TURNS,node1=object_node1)
+      call FIND_ORBIT_LAYOUT_noda_object(FIX,STATE,eps,TURNS,node1=object_node1,total=total)
      endif
 
   end SUBROUTINE FIND_ORBIT_LAYOUT_noda
 
 
-  SUBROUTINE FIND_ORBIT_LAYOUT_noda_object(FIX0,STATE,eps,TURNS,fibre1,node1) ! Finds orbit without TPSA in State or compatible state
+  SUBROUTINE FIND_ORBIT_LAYOUT_noda_object(FIX0,STATE,eps,TURNS,fibre1,node1,total) ! Finds orbit without TPSA in State or compatible state
     IMPLICIT NONE
     TYPE(layout),pointer :: RING
     real(dp) , intent(inOUT) :: FIX0(6)
+    real(dp), optional :: total
     INTEGER , optional,intent(in) :: TURNS
     type(fibre), optional, pointer :: fibre1
     type(integration_node), optional, pointer :: node1
@@ -3640,7 +3645,7 @@ call kill(yy); call kill(id);
 
     ENDDO
     !    write(6,*) x
- write(6,*) "tot ",tot
+! write(6,*) "tot ",tot
 
     mx=0.0_dp
     DO J=1,ND2
@@ -3785,6 +3790,7 @@ call kill(yy); call kill(id);
     !    FIX(6)=FIX(6)+freq*turns0
     c_%APERTURE_FLAG=APERTURE
     fix0=fix
+    if(present(total)) total=tot
   END SUBROUTINE FIND_ORBIT_LAYOUT_noda_object
 
 
