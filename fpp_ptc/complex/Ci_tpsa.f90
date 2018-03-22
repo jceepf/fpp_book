@@ -92,6 +92,7 @@ private EQUAL_c_spinmatrix_probe,EQUAL_c_spinmatrix_3_by_3,EQUAL_3_by_3_probe,EQ
 private EQUAL_probe_3_by_3,equalc_cspinor_spinor,EQUAL_3_by_3_c_spinmatrix
 private EQUALq_r,EQUALq_8_c,EQUALq_c_8,EQUALq,POWq,c_invq,subq,mulq,addq,alloc_c_quaternion,kill_c_quaternion
 private c_pri_quaternion,CUTORDERquaternion,c_trxquaternion,EQUALq_c_r,EQUALq_r_c,mulcq,c_exp_quaternion
+private equalc_quaternion_c_spinor,equalc_spinor_c_quaternion
 
   INTERFACE assignment (=)
      MODULE PROCEDURE EQUAL
@@ -154,6 +155,8 @@ private c_pri_quaternion,CUTORDERquaternion,c_trxquaternion,EQUALq_c_r,EQUALq_r_
       MODULE PROCEDURE equalc_spinor_cspinor
       MODULE PROCEDURE equalc_cspinor_spinor
       MODULE PROCEDURE flatten_c_factored_lie_r !# same as flatten_c_factored_lie
+      MODULE PROCEDURE equalc_quaternion_c_spinor
+      MODULE PROCEDURE equalc_spinor_c_quaternion
   end  INTERFACE
 
 
@@ -2236,7 +2239,11 @@ enddo
        j=j+1
     ENDDO
 
-
+! quaternion
+    DO I=1,4
+          t=DS%q%x(i)
+          r%q%x(i)=t
+    ENDDO
 
     DO J=1,3
        DO I=1,3
@@ -2301,6 +2308,40 @@ enddo
 
 
  end SUBROUTINE  equalc_cspinor_cspinor
+
+  SUBROUTINE  equalc_spinor_c_quaternion(S2,S1) ! spin routine
+!*
+    implicit none
+    type (c_spinor),INTENT(inOUT)::S2
+    type (c_quaternion),INTENT(IN)::S1
+
+    integer i 
+
+    call check_snake
+
+    do i=1,3
+      s2%v(i)=s1%x(i+1)
+    enddo
+
+
+ end SUBROUTINE  equalc_spinor_c_quaternion
+
+  SUBROUTINE  equalc_quaternion_c_spinor(S2,S1) ! spin routine
+!*
+    implicit none
+    type (c_quaternion),INTENT(inOUT)::S2
+    type (c_spinor),INTENT(IN)::S1
+
+    integer i 
+
+    call check_snake
+    s2%x(1)=0.0_dp
+    do i=1,3
+      s2%x(i+1)=s1%v(i)
+    enddo
+
+
+ end SUBROUTINE  equalc_quaternion_c_spinor
 
   SUBROUTINE  equalc_spinor_cspinor(S2,S1) ! spin routine
 !*
@@ -5038,17 +5079,14 @@ cgetvectorfield=0
     implicit none
     TYPE (c_quaternion) addq
     TYPE (c_quaternion), INTENT (IN) :: S1, S2
-    type(c_taylor) temp
     integer i,localmaster
-       call alloc(temp)
+              localmaster=c_master
+              call c_ass_quaternion(addq)
        do i=1,4
-        temp=s1%x(i)+s2%x(i)
-         localmaster=c_master
-         call ass(addq%x(i))
-         addq%x(i)=temp
-          c_master=localmaster
+        addq%x(i)=s1%x(i)+s2%x(i)
        enddo
-       call kill(temp)
+          c_master=localmaster
+ 
   END FUNCTION addq
 
   FUNCTION mulq( S1, S2 )
@@ -5102,18 +5140,13 @@ cgetvectorfield=0
     implicit none
     TYPE (c_quaternion) subq
     TYPE (c_quaternion), INTENT (IN) :: S1, S2
-    type(c_taylor) temp
     integer i,localmaster
-       call alloc(temp)
+              localmaster=c_master
+              call c_ass_quaternion(subq)
        do i=1,4
-        temp=s1%x(i)-s2%x(i)
-
-         localmaster=master
-         call ass(subq%x(i))
-         subq%x(i)=temp
-          master=localmaster
+                 subq%x(i)=s1%x(i)-s2%x(i)
        enddo
-       call kill(temp)
+               c_master=localmaster 
 
   END FUNCTION subq
 
@@ -5283,6 +5316,24 @@ endif
         s2%x(1)=s1
 
  end   SUBROUTINE  EQUALq_r
+
+  subroutine  quaternion_to_matrix_in_c_damap(p)
+    implicit none
+    TYPE(c_damap), INTENT(INOUT) :: p
+    type(c_quaternion) s,sf
+    integer i,j
+
+    do i=1,3
+     s=0.0_dp
+     s%x(i+1)=1.0_dp
+     sf=p%q*s*p%q**(-1)
+     do j=1,3
+      p%s%s(j,i)=sf%x(j+1)
+     enddo
+    enddo
+
+    end subroutine  quaternion_to_matrix_in_c_damap
+
 
   FUNCTION cdaddsc( S1, sc )
     implicit none
@@ -10561,7 +10612,8 @@ end subroutine c_full_factorise
       ! because  exp(a L_y) x = x- a z + O(a**2)
        ri=ri**(-1) ! exp(-alpha_0 L_y)   (3)
 
-       nonl=m1.sub.1 ; nonl%s=1 ;nonl=nonl**(-1)  ! R_0^-1      (4)          
+!       nonl=m1.sub.1 ; nonl%s=1 ;nonl=nonl**(-1)  ! R_0^-1      (4)          
+       nonl=m1.sub.1 ; nonl%q=1.0_dp ;nonl=nonl**(-1)  ! R_0^-1      (4)          
 
        do i=1,no    !+2
           if(lielib_print(13)/=0) then
@@ -10572,11 +10624,8 @@ end subroutine c_full_factorise
           endif
           
           mt=m1*ri !  S*exp(-theta_0 L_y)    (5)
-  n0%v(1)=mt%q%x(2)
-  n0%v(2)=mt%q%x(3)
-  n0%v(3)=mt%q%x(4)
-call print(n0)
-pause 10
+
+n0=mt%q
 !          call c_find_om_da(mt%s,n0)  ! exp(n0.L)    (6)
            call c_n0_to_nr(n0,n0)   ! n0 = > eigen-operator of spin   (7)
           n0=n0*nonl               !  no * R^-1      (8)
@@ -10642,10 +10691,11 @@ pause 10
         enddo ! k
         
         call c_nr_to_n0(nr,nr)  !   (10)
- 
-call print(nr)
-pause 11
-        AS=1 ; AS%s=exp(nr)*AS%s         ! (11)
+qnr=nr
+
+
+!        AS=1 ; AS%s=exp(nr)*AS%s         ! (11)
+        AS=1 ; AS%q=exp(qnr)*AS%q         ! (11)
 
         n%AS=n%AS*AS             ! (12)
  
@@ -12619,9 +12669,6 @@ endif
 
     call c_ass_quaternion(c_exp_quaternion)
 
-
-
-
     check=.true.
     eps=1.d-5
     nmax=1000
@@ -12629,10 +12676,6 @@ endif
     call alloc(dh)
     call alloc(dhn)
     call alloc(dr)
- 
-
-    !  this  works with a  tpsa-map
-
  
      c_exp_quaternion=1.0_dp
   
@@ -12644,15 +12687,18 @@ endif
     norm1=mybig
     do i=1,nmax
        dhn=dhn*dh
-       c=c/i
+       c=1.0_dp/i
+       dhn=c*dhn
 
        dr=c_exp_quaternion
-       c_exp_quaternion=c_exp_quaternion+c*dhn 
+
+       c_exp_quaternion=c_exp_quaternion+dhn 
 
        dr=c_exp_quaternion+(-1.0_dp,0.0_dp)*dr
 
        call c_full_norm_quaternion(dr,k,norm2)
- 
+
+
        if(check) then
           if(norm2<eps.and.i>10) then
              check=.false.
