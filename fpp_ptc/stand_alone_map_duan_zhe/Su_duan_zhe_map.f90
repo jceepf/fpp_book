@@ -46,7 +46,7 @@ END TYPE INTERNAL_STATE
      real(dp), pointer :: e_ij(:,:)
      real(dp), pointer :: rad(:,:)
      real(dp), pointer :: ds,beta0,eps
-     logical, pointer :: symptrack,usenonsymp
+     logical, pointer :: symptrack,usenonsymp,factored
   end  type tree_element
 
   type spinor
@@ -166,7 +166,7 @@ contains
 
     ALLOCATE(T%CC(N),T%fix0(6),T%fix(6),T%fixr(6),T%JL(N),T%JV(N),T%N,T%ds,T%beta0,T%np,T%no, & 
   !  t%e_ij(c_%nd2,c_%nd2),T%rad(c_%nd2,c_%nd2),t%usenonsymp, t%symptrack, t%eps)  !,t%file)
-     t%e_ij(6,6),T%rad(6,6),t%usenonsymp, t%symptrack, t%eps)  !,t%file)
+     t%e_ij(6,6),T%rad(6,6),t%usenonsymp, t%symptrack,t%factored, t%eps)  !,t%file)
     t%cc=0
     t%jl=0
     t%jv=0
@@ -187,7 +187,7 @@ contains
     t%eps=1.d-7
     t%symptrack=.false.
     t%usenonsymp=.false.
-
+     t%factored=.false.
   END SUBROUTINE ALLOC_TREE
  
 
@@ -197,7 +197,7 @@ contains
 
 
      IF(ASSOCIATED(T%CC))DEALLOCATE(T%CC,T%fix0,T%fix,T%fixr,t%ds,t%beta0,T%JL,T%JV,T%N,T%NP, &
-    T%No,t%e_ij,t%rad,t%eps,t%symptrack,t%usenonsymp)  !,t%file)
+    T%No,t%e_ij,t%rad,t%eps,t%symptrack,t%usenonsymp,t%factored )  !,t%file)
 
 
   END SUBROUTINE KILL_TREE
@@ -593,7 +593,7 @@ write(mf,'(3(1X,i8))') t%N,t%NP,t%no
 do i=1,t%n
  write(mf,'(1X,G20.13,1x,i8,1x,i8)')  t%cc(i),t%jl(i),t%jv(i)
 enddo
-write(mf,'(2(1X,L1))') t%symptrack,t%usenonsymp
+write(mf,'(2(1X,L1))') t%symptrack,t%usenonsymp,t%factored
 write(mf,'(18(1X,G20.13))') t%fix0,t%fix,t%fixr
 do i=1,6
  write(mf,'(6(1X,G20.13))') t%e_ij(i,1:6)
@@ -628,7 +628,7 @@ integer i,mf
 do i=1,t%n
  read(mf,*)  t%cc(i),t%jl(i),t%jv(i)
 enddo
-read(mf,*) t%symptrack,t%usenonsymp
+read(mf,*) t%symptrack,t%usenonsymp,t%factored
 read(mf,'(18(1X,G20.13))') t%fix0,t%fix,t%fixr
 do i=1,6
  read(mf,*) t%e_ij(i,1:6)
