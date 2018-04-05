@@ -7,7 +7,6 @@ implicit none
   public RADIATION0, NOCAVITY0, FRINGE0 ,STOCHASTIC0,ENVELOPE0,RANFzhe
  ! public EQUALi_zhe,EQUALt_zhe
   public OPERATOR(+),operator(-), assignment(=)
-  public track_TREE_probe_complex_zhe_radiation_only
   real(kind(1d0)) :: doublenum = 0d0
   integer,parameter::lp=4
   integer,parameter::dp=selected_real_kind(2*precision(1.e0))
@@ -17,6 +16,8 @@ implicit none
  complex(dp), parameter :: i_ = ( 0.0_dp,1.0_dp )    ! cmplx(zero,one,kind=dp)
   integer,parameter::lno=200,lnv=100
   integer :: zhe_ISEED=1000
+private subq,unarysubq,addq,unaryADDq,absq,absq2,mulq,divq
+private EQUALq,EQUALqr,EQUALqi,powq,printq ,invq
 
 TYPE INTERNAL_STATE
    INTEGER TOTALPATH   ! total time or path length is used
@@ -53,19 +54,16 @@ END TYPE INTERNAL_STATE
          real(dp) x(3)  ! x(3) = (s_x, s_y, s_z)   with  |s|=1   
   end type spinor
 
- type rf_phasor
-     real(dp) x(2)
-     real(dp) om
-     real(dp) t
-  end type rf_phasor
   !@3 ---------------------------------------------</br>
-
+ type  quaternion
+  real(dp) x(4)
+ end type  quaternion 
   !@3 ---------------------------------------------</br>
   type probe
      real(dp) x(6)
-     type(rf_phasor) AC
      type(spinor) s(3)
-     logical u
+     type(quaternion) q
+     logical u,use_q
   !   type(integration_node),pointer :: last_node=>null()
       real(dp) e
   end type probe
@@ -128,25 +126,53 @@ private orthonormaliser
      MODULE PROCEDURE EQUALt_zhe
      MODULE PROCEDURE EQUALi_zhe
      MODULE PROCEDURE EQUAL_PROBE_REAL6_zhe
+     MODULE PROCEDURE EQUALq
+     MODULE PROCEDURE EQUALqi
+     MODULE PROCEDURE EQUALqr
   end  INTERFACE
 
   INTERFACE OPERATOR (+)
      MODULE PROCEDURE add_zhe
      MODULE PROCEDURE PARA_REMA_zhe
+     MODULE PROCEDURE unaryADDq  
   END INTERFACE
 
   INTERFACE OPERATOR (-)
      MODULE PROCEDURE sub_zhe
+     MODULE PROCEDURE unarySUBq
   END INTERFACE
 
 
- 
+   INTERFACE OPERATOR (*)
+     MODULE PROCEDURE mulq
+  END INTERFACE
+
+  INTERFACE OPERATOR (/)
+     MODULE PROCEDURE divq
+  END INTERFACE
  
   INTERFACE print
      MODULE PROCEDURE print_s
      MODULE PROCEDURE print_probe_zhe
   END INTERFACE
  
+  INTERFACE OPERATOR (**)
+     MODULE PROCEDURE POWq
+  END INTERFACE
+
+  INTERFACE abs
+     MODULE PROCEDURE absq  
+  END INTERFACE
+
+
+  INTERFACE abs_square
+     MODULE PROCEDURE absq2
+  END INTERFACE
+
+
+  INTERFACE PRINT
+     MODULE PROCEDURE PRINTQ
+  END INTERFACE
 
 
   INTERFACE track_TREE_probe_complex_ptc
@@ -243,7 +269,8 @@ contains
        P%s(i)%x(i)=1.0_dp
     enddo
     P%X=X
-    P%ac%t=0.0_dp
+    p%q%x=0.0_dp
+    p%q%x(1)=1.0_dp
 
   END    subroutine EQUAL_PROBE_REAL6_zhe
 
@@ -662,14 +689,17 @@ end subroutine read_tree_elements
     real(dp) normb,norm 
     integer i,j,k,ier,is
     type(internal_state) sta
-    logical dofix0,dofix,doit,jumpnot
+    logical dofix0,dofix,jumpnot
+    type(quaternion)qu
+
+
     jumpnot=.true.
     if(present(jump)) jumpnot=.not.jump
     
  
 
     nrmax=1000
-    doit=.true.
+
     x=0.e0_dp
     x0=0.e0_dp
     do i=1,6
@@ -742,7 +772,7 @@ do is=1,nrmax
     enddo
     call matinv(r,r,3,3,ier)
     if(ier/=0) then
-     write(6,*) "matinv failed in track_TREE_probe_complexr "
+     write(6,*) "matinv failed in track_TREE_probe_complexr in zhe"
      stop
     endif
     do i=1,3
@@ -756,8 +786,8 @@ do is=1,nrmax
     enddo
    norm=abs(qg(1))+abs(qg(2))+abs(qg(3))
 
-   if(norm>t(3)%eps.and.doit) then
-     if(normb<=norm) doit=.false.
+
+   if(norm>t(3)%eps) then
      normb=norm
    else
      if(normb<=norm) then 
@@ -774,6 +804,7 @@ do is=1,nrmax
      normb=norm
    endif
 
+
 enddo  ! is 
  if(is>nrmax-10) then
    xs%u=.true.
@@ -785,6 +816,16 @@ enddo  ! is
 if(jumpnot) then
     if(sta%spin) then  ! spin
     call track_TREE_G_complex(T(2),X(7:15))
+
+     if(xs%use_q) then
+       do k=1,4
+         qu%x(k)=x(6+k)
+       enddo 
+ 
+       xs%q=qu*xs%q
+       xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(4)**2)
+     else
+
     s0=0.0e0_dp
  
     do i=1,3
@@ -810,6 +851,7 @@ if(jumpnot) then
        xs%s(k)%x(j)=s0(k,j)
      enddo
     enddo   
+endif
     endif ! spin
 
 
@@ -961,7 +1003,7 @@ endif ! jumpnot
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   new zhe tracking   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE track_TREE_probe_complex_zhe(T,xs,spin)
+  SUBROUTINE track_TREE_probe_complex_zhe(T,xs,spin,stoch,rad)
 !    use da_arrays
     IMPLICIT NONE
     TYPE(TREE_ELEMENT),target, INTENT(INout) :: T(3)
@@ -970,14 +1012,19 @@ endif ! jumpnot
     real(dp) x(size_tree),x0(size_tree),s0(3,3),r(3,3),dx6,beta,q(3),p(3),qg(3),qf(3)
     real(dp) normb,norm 
     integer i,j,k,ier,is
-    logical doit,spin
+    logical, optional  :: spin,stoch,rad
+    logical  spin0,stoch0,rad0
 
- 
-    
- 
 
+    spin0=.true.
+    stoch0=.true.
+    rad0=.true.
+ 
+    if(present(spin)) spin0=spin
+    if(present(stoch)) stoch0=stoch
+    if(present(rad)) rad0=rad
     nrmax=1000
-    doit=.true.
+
     x=0.e0_dp
     x0=0.e0_dp
     do i=1,6
@@ -998,7 +1045,7 @@ endif ! jumpnot
 
 
 ! if(t(3)%usenonsymp.or..not.t(3)%symptrack) then
-    call track_TREE_G_complex(T(1),X(1:6))
+  if(rad0)   call track_TREE_G_complex(T(1),X(1:6))
 
       x0(1:6)=x(1:6)
       x(7:12)=x(1:6)
@@ -1025,6 +1072,7 @@ do is=1,nrmax
      x0(2*i-1)=qf(i)  
      qg(i)=0
     enddo
+
     call track_TREE_G_complex(T(3),X0(1:15))
  
     do i=1,3
@@ -1034,7 +1082,7 @@ do is=1,nrmax
     enddo
     call matinv(r,r,3,3,ier)
     if(ier/=0) then
-     write(6,*) "matinv failed in track_TREE_probe_complexr "
+     write(6,*) "matinv failed in track_TREE_probe_complex_zhe"
      stop
     endif
     do i=1,3
@@ -1048,8 +1096,7 @@ do is=1,nrmax
     enddo
    norm=abs(qg(1))+abs(qg(2))+abs(qg(3))
 
-   if(norm>t(3)%eps.and.doit) then
-     if(normb<=norm) doit=.false.
+   if(norm>t(3)%eps) then
      normb=norm
    else
      if(normb<=norm) then 
@@ -1066,6 +1113,8 @@ do is=1,nrmax
      normb=norm
    endif
 
+
+
 enddo  ! is 
  if(is>nrmax-10) then
    xs%u=.true.
@@ -1075,7 +1124,7 @@ enddo  ! is
 ! endif
 
 !if(jumpnot) then
-    if(spin) then  ! spin
+    if(spin0) then  ! spin
     call track_TREE_G_complex(T(2),X(7:15))
     s0=0.0e0_dp
  
@@ -1116,7 +1165,7 @@ enddo  ! is
     do i=1,6
       xs%x(i)=x(i)
     enddo
-
+if(stoch0) then 
     x=0.0_dp
   do i=1,6
     x(i)=RANFzhe()*t(2)%fix0(i)
@@ -1124,63 +1173,9 @@ enddo  ! is
     x=matmul(t(2)%rad,x)
 
     xs%x=xs%x+x
-
+endif
   end SUBROUTINE track_TREE_probe_complex_zhe
 
-  SUBROUTINE track_TREE_probe_complex_zhe_radiation_only(T,xs)
-!    use da_arrays
-    IMPLICIT NONE
-    TYPE(TREE_ELEMENT),target, INTENT(INout) :: T(3)
- 
-     real(dp) xs(6)
-    real(dp) x(size_tree),x0(size_tree) 
-    integer i,j,k,ier,is
- 
-
- 
-    
- 
- 
-    x=0.e0_dp
-    x0=0.e0_dp
-    do i=1,6
-      x(i)=xs(i)
-      x0(i)=xs(i)
-    enddo
-
-     do i=1,6
-      x(i)=x(i)-t(3)%fix0(i)
-      x0(i)=x0(i)-t(3)%fix0(i)
-     enddo
-      x(7:12)=x(1:6)
-
-
-
-! if(t(3)%usenonsymp.or..not.t(3)%symptrack) then
-    call track_TREE_G_complex(T(1),X(1:6))
-
-
-
-         do i=1,6
-           x(i)=x(i)+t(3)%fix(i)
-         enddo
-
-
-!endif ! jumpnot
-
-    do i=1,6
-      xs(i)=x(i)
-    enddo
-
-    x=0.0_dp
-  do i=1,6
-    x(i)=RANFzhe()*t(2)%fix0(i)
-  enddo
-    x=matmul(t(2)%rad,x)
-
-    xs=xs+x
-
-  end SUBROUTINE track_TREE_probe_complex_zhe_radiation_only
 
   real(dp) FUNCTION RANFzhe()
     implicit none
@@ -1497,6 +1492,195 @@ integer i
 
  
 end subroutine kill_tree_zhe
+
+!!! quaternion
+
+
+
+  FUNCTION unaryADDq( S1 )
+    implicit none
+    TYPE (quaternion) unaryADDq
+    TYPE (quaternion), INTENT (IN) :: S1
+ 
+    unaryADDq=s1
+
+  END FUNCTION unaryADDq
+
+  FUNCTION unarySUBq( S1 )
+    implicit none
+    TYPE (quaternion) unarySUBq
+    TYPE (quaternion), INTENT (IN) :: S1
+
+         unarySUBq%x= -unarySUBq%x
+
+  END FUNCTION unarySUBq
+
+
+  FUNCTION invq( S1 )
+    implicit none
+    TYPE (quaternion) invq
+    TYPE (quaternion), INTENT (IN) :: S1
+    real(dp) norm
+     integer i
+     invq=s1
+              do i=2,4
+                invq%x(i)=-invq%x(i)
+              enddo
+                norm=abs_square(invq)
+              do i=1,4
+                invq%x(i)=invq%x(i)/norm
+              enddo
+      
+  END FUNCTION invq
+
+
+  FUNCTION absq( S1 )
+    implicit none
+    real(dp) absq
+    TYPE (quaternion), INTENT (IN) :: S1
+    integer i
+
+ 
+   
+     absq=sqrt(abs_square(s1))
+  END FUNCTION absq
+
+
+  FUNCTION absq2( S1 )
+    implicit none
+    real(dp) absq2
+    TYPE (quaternion), INTENT (IN) :: S1
+    integer i
+ 
+           absq2=0
+       do i=1,4
+         absq2 = s1%x(i)**2+absq2
+       enddo
+  END FUNCTION absq2
+
+
+  SUBROUTINE  EQUALq(S2,S1)
+    implicit none
+    type (quaternion),INTENT(inOUT)::S2
+    type (quaternion),INTENT(IN)::S1
+    integer i
+     
+    do i=1,4
+    s2%x(i)=s1%x(i)
+    enddo
+
+  end SUBROUTINE  EQUALq
+
+  SUBROUTINE  EQUALqr(S2,S1)
+    implicit none
+    type (quaternion),INTENT(inOUT)::S2
+    real(dp),INTENT(IN)::S1
+    integer i
+ 
+    do i=1,4
+    s2%x(i)=0
+    enddo
+    s2%x(1)=s1
+  end SUBROUTINE  EQUALqr
+
+  SUBROUTINE  EQUALqi(S2,S1)
+    implicit none
+    type (quaternion),INTENT(inOUT)::S2
+    integer,INTENT(IN)::S1
+    integer i
+ 
+    do i=1,4
+    s2%x(i)=0
+    enddo
+    s2%x(1)=s1
+  end SUBROUTINE  EQUALqi
+
+
+  FUNCTION POWq( S1, R2 )
+    implicit none
+    TYPE (quaternion) POWq,temp
+    TYPE (quaternion), INTENT (IN) :: S1
+    INTEGER, INTENT (IN) :: R2
+    INTEGER I,R22
+    integer localmaster
+      temp=1.0_dp
+
+    R22=IABS(R2)
+    DO I=1,R22
+       temp=temp*s1
+    ENDDO
+    IF(R2.LT.0) THEN
+       temp=invq(temp)
+    ENDIF
+     powq=temp
+ 
+  END FUNCTION POWq
+
+
+  FUNCTION addq( S1, S2 )
+    implicit none
+    TYPE (quaternion) addq
+    TYPE (quaternion), INTENT (IN) :: S1, S2
+
+ 
+       addq%x=s1%x+s2%x
+  END FUNCTION addq
+
+
+  FUNCTION subq( S1, S2 )
+    implicit none
+    TYPE (quaternion) subq
+    TYPE (quaternion), INTENT (IN) :: S1, S2
+
+ 
+          subq%x=s1%x+s2%x
+
+  END FUNCTION subq
+
+  FUNCTION mulq( S1, S2 )
+    implicit none
+    TYPE (quaternion) mulq
+    TYPE (quaternion), INTENT (IN) :: S1, S2
+    integer i
+ 
+          mulq=0.0_dp
+
+          mulq%x(1)=s1%x(1)*s2%x(1)-s1%x(2)*s2%x(2)-s1%x(3)*s2%x(3)-s1%x(4)*s2%x(4)
+
+         mulq%x(2)=  s1%x(3)*s2%x(4)-s1%x(4)*s2%x(3)
+         mulq%x(3)=  s1%x(4)*s2%x(2)-s1%x(2)*s2%x(4)
+         mulq%x(4)=  s1%x(2)*s2%x(3)-s1%x(3)*s2%x(2)
+
+        do i=2,4
+         mulq%x(i)= mulq%x(i) + s1%x(1)*s2%x(i)+ s1%x(i)*s2%x(1)
+        enddo
+
+  END FUNCTION mulq
+
+  FUNCTION divq( S1, S2 )
+    implicit none
+    TYPE (quaternion) divq
+    TYPE (quaternion), INTENT (IN) :: S1, S2
+
+         
+       divq=s1*invq(s2)
+
+  END FUNCTION divq
+
+
+  SUBROUTINE  printq(S1,MFILE,PREC)
+    implicit none
+    INTEGER,OPTIONAL,INTENT(IN)::MFILE
+    type (quaternion),INTENT(IN)::S1
+    REAL(DP),OPTIONAL,INTENT(IN)::PREC
+    INTEGER I,mfi
+     mfi=6
+     if(present(mfile)) mfi=mfile
+      write(mfi,*) " real quaternion "
+    DO I=1,4
+      write(mfi,*) s1%x(i)
+    ENDDO
+  END SUBROUTINE printq
 
 end module duan_zhe_map
 

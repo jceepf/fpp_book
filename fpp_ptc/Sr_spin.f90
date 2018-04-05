@@ -5765,7 +5765,7 @@ end subroutine fill_tree_element_line_zhe
     IMPLICIT NONE
     TYPE(TREE_ELEMENT), INTENT(INOUT) :: T(:)
     TYPE(c_damap), INTENT(INOUT) :: Ma
-    INTEGER N,NP,i,k,j
+    INTEGER N,NP,i,k,j,kq
     real(dp) norm,mat(6,6)
     TYPE(taylor), ALLOCATABLE :: M(:), MG(:)
     TYPE(damap) ms
@@ -5816,6 +5816,19 @@ end subroutine fill_tree_element_line_zhe
 
     call c_full_norm_spin(Ma%s,k,norm)
 
+
+if(use_quaternion) then
+    call c_full_norm_quaternion(Ma%q,kq,norm)
+    if(kq==-1) then
+      do i=1,4
+        m(ind_spin(1,1)+i-1)=ma%q%x(i)
+      enddo
+    elseif(kq/=-1) then
+      do i=ind_spin(1,1)+4,size_tree
+        m(i)=0.0_dp
+      enddo
+    endif
+else
     if(k==-1) then
       do i=1,3
       do j=1,3
@@ -5827,7 +5840,7 @@ end subroutine fill_tree_element_line_zhe
         m(ind_spin(i,i))=1.0e0_dp
       enddo
     endif
-
+endif
       js=0
      js(1)=1;js(3)=1;js(5)=1; ! q_i(q_f,p_i) and p_f(q_f,p_i)
      call alloc(ms)
