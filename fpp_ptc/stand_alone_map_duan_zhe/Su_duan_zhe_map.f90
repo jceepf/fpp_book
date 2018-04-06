@@ -4,7 +4,7 @@ implicit none
   public track_TREE_probe_complex_zhe,probe,tree_element, read_tree_zhe,kill_tree_zhe
   public EQUAL_PROBE_REAL6_zhe,print,zhe_ini,track_TREE_probe_complex_ptc, dp,INTERNAL_STATE
   public DEFAULT0,TOTALPATH0 ,TIME0,ONLY_4d0,DELTA0,SPIN0,MODULATION0,only_2d0   
-  public RADIATION0, NOCAVITY0, FRINGE0 ,STOCHASTIC0,ENVELOPE0,RANFzhe
+  public RADIATION0, NOCAVITY0, FRINGE0 ,STOCHASTIC0,ENVELOPE0,gaussian_seed_zhe
  ! public EQUALi_zhe,EQUALt_zhe
   public OPERATOR(+),operator(-), assignment(=)
   real(kind(1d0)) :: doublenum = 0d0
@@ -16,9 +16,11 @@ implicit none
  complex(dp), parameter :: i_ = ( 0.0_dp,1.0_dp )    ! cmplx(zero,one,kind=dp)
   integer,parameter::lno=200,lnv=100
   integer :: zhe_ISEED=1000
-private subq,unarysubq,addq,unaryADDq,absq,absq2,mulq,divq
+private subq,unarysubq,addq,unaryADDq,absq,absq2,mulq,divq,ranf
 private EQUALq,EQUALqr,EQUALqi,powq,printq ,invq
-
+real(dp),parameter::pi=3.141592653589793238462643383279502e0_dp
+real(dp) :: cut_zhe=6.0_dp
+ 
 TYPE INTERNAL_STATE
    INTEGER TOTALPATH   ! total time or path length is used
    LOGICAL(LP) TIME  ! Time is used instead of path length
@@ -1004,14 +1006,14 @@ endif ! jumpnot
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   new zhe tracking   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE track_TREE_probe_complex_zhe(T,xs,spin,stoch,rad)
+  SUBROUTINE track_TREE_probe_complex_zhe(T,xs,spin,rad,stoch)
 !    use da_arrays
     IMPLICIT NONE
     TYPE(TREE_ELEMENT),target, INTENT(INout) :: T(3)
  
     type(probe) xs
     real(dp) x(size_tree),x0(size_tree),s0(3,3),r(3,3),dx6,beta,q(3),p(3),qg(3),qf(3)
-    real(dp) normb,norm 
+    real(dp) normb,norm,x0_begin(size_tree),xr(6)
     integer i,j,k,ier,is
     logical, optional  :: spin,stoch,rad
     logical  spin0,stoch0,rad0
@@ -1028,9 +1030,11 @@ endif ! jumpnot
 
     x=0.e0_dp
     x0=0.e0_dp
+x0_begin=0.0_dp
     do i=1,6
       x(i)=xs%x(i)
       x0(i)=xs%x(i)
+      x0_begin(i)=xs%x(i)
     enddo
 !      x0(1:6)=x(1:6)
       x(7:12)=x(1:6)
@@ -1040,13 +1044,14 @@ endif ! jumpnot
      do i=1,6
       x(i)=x(i)-t(1)%fix0(i)
       x0(i)=x0(i)-t(1)%fix0(i)
+      x0_begin(i)=x0_begin(i)-t(1)%fix0(i)
      enddo
       x(7:12)=x(1:6)
+      x0_begin(7:12)= x0_begin(1:6)
 
 
+!  if(rad0)   call track_TREE_G_complex(T(1),X(1:6))
 
-! if(t(3)%usenonsymp.or..not.t(3)%symptrack) then
-  if(rad0)   call track_TREE_G_complex(T(1),X(1:6))
 
       x0(1:6)=x(1:6)
       x(7:12)=x(1:6)
@@ -1126,9 +1131,11 @@ else
 !!!    
  endif  ! no > 1
 
+
+
 !if(jumpnot) then
     if(spin0) then  ! spin
-    call track_TREE_G_complex(T(2),X(7:15))
+    call track_TREE_G_complex(T(2),x0_begin(7:15))
 
      if(xs%use_q) then
        do k=1,4
@@ -1167,31 +1174,34 @@ else
     endif ! spin
 
 
+  if(rad0)   call track_TREE_G_complex(T(1),X(1:6))
+
+
+
+
+if(stoch0) then 
+    xr=0.0_dp
+  do i=1,6
+    xr(i)=GRNF_zhe()*t(2)%fix0(i)
+  enddo
+    xr(1:6)=matmul(t(2)%rad,xr)
+
+    x=x+xr(1:6)
+endif
 
 
          do i=1,6
            x(i)=x(i)+t(1)%fix(i)
          enddo
 
-
-!endif ! jumpnot
-
     do i=1,6
       xs%x(i)=x(i)
     enddo
-if(stoch0) then 
-    x=0.0_dp
-  do i=1,6
-    x(i)=RANFzhe()*t(2)%fix0(i)
-  enddo
-    x=matmul(t(2)%rad,x)
 
-    xs%x=xs%x+x
-endif
   end SUBROUTINE track_TREE_probe_complex_zhe
 
 
-  real(dp) FUNCTION RANFzhe()
+  real(dp) FUNCTION RANF_zhe()
     implicit none
     integer ia,ic,iq,ir,ih,il,it
     DATA IA/16807/,IC/2147483647/,IQ/127773/,IR/2836/
@@ -1203,17 +1213,55 @@ endif
     ELSE
        zhe_ISEED = IC+IT
     END IF
-    RANFzhe = zhe_ISEED/FLOAT(IC)
+    RANF_zhe = zhe_ISEED/FLOAT(IC)
 
        !         t=sqrt(12.d0)*(RANF()-half)
-       if(RANFzhe>0.5_dp) then
-          RANFzhe=1.0_dp
+       if(RANF_zhe>0.5_dp) then
+          RANF_zhe=1.0_dp
        else
-          RANFzhe=-1.0_dp
+          RANF_zhe=-1.0_dp
        endif
     RETURN
-  END FUNCTION RANFzhe
+  END FUNCTION RANF_zhe
 
+  real(dp) FUNCTION RANF()
+    implicit none
+    integer ia,ic,iq,ir,ih,il,it
+    DATA IA/16807/,IC/2147483647/,IQ/127773/,IR/2836/
+    IH = zhe_ISEED/IQ
+    IL = MOD(zhe_ISEED,IQ)
+    IT = IA*IL-IR*IH
+    IF(IT.GT.0) THEN
+       zhe_ISEED = IT
+    ELSE
+       zhe_ISEED = IC+IT
+    END IF
+    RANF = zhe_ISEED/FLOAT(IC)
+    RETURN
+  END FUNCTION RANF
+
+  SUBROUTINE gaussian_seed_zhe(seed,cut)
+    implicit none
+    integer seed
+    real(dp) cut
+    zhe_ISEED=seed
+    cut_zhe=cut
+  end SUBROUTINE gaussian_seed_zhe
+
+   real(dp) function GRNF_zhe
+    implicit none
+    real(dp) r1,r2,x 
+
+
+1   R1 = -LOG(1.0_dp-RANF())
+    R2 = 2.0_dp*PI*RANF()
+    R1 = SQRT(2.0_dp*R1)
+    X  = R1*COS(R2)
+    if(abs(x)>cut_zhe) goto 1
+     GRNF_zhe=x
+    ! Y  = R1*SIN(R2)
+    RETURN
+  END function GRNF_zhe
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! end of   new zhe tracking   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  
   subroutine matinv(a,ai,n,nmx,ier)
