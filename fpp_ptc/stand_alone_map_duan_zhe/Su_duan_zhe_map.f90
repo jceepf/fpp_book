@@ -809,6 +809,7 @@ enddo  ! is
  if(is>nrmax-10) then
    xs%u=.true.
   check_stable=.false.
+  return
  endif
 !!!    
  endif
@@ -1014,7 +1015,7 @@ endif ! jumpnot
     integer i,j,k,ier,is
     logical, optional  :: spin,stoch,rad
     logical  spin0,stoch0,rad0
-
+    type(quaternion) qu
 
     spin0=.true.
     stoch0=.true.
@@ -1049,7 +1050,7 @@ endif ! jumpnot
 
       x0(1:6)=x(1:6)
       x(7:12)=x(1:6)
-
+if(t(1)%no>1) then
     do i=1,3
      q(i)=x(2*i-1)
      p(i)=x(2*i)
@@ -1120,12 +1121,24 @@ enddo  ! is
    xs%u=.true.
   check_stable=.false.
  endif
+else
+       x(1:6)=matmul(t(3)%rad,x(1:6))
 !!!    
-! endif
+ endif  ! no > 1
 
 !if(jumpnot) then
     if(spin0) then  ! spin
     call track_TREE_G_complex(T(2),X(7:15))
+
+     if(xs%use_q) then
+       do k=1,4
+         qu%x(k)=x(6+k)
+       enddo 
+ 
+       xs%q=qu*xs%q
+       xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(4)**2)
+     else
+
     s0=0.0e0_dp
  
     do i=1,3
@@ -1149,7 +1162,8 @@ enddo  ! is
      do j=1,3
        xs%s(k)%x(j)=s0(k,j)
      enddo
-    enddo   
+    enddo 
+     endif  
     endif ! spin
 
 
