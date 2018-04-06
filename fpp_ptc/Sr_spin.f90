@@ -5659,7 +5659,7 @@ call kill(xs);call kill(m)
 end subroutine fill_tree_element_line
 
 !!!!!!!!!!!!!!!!!!!!   stuff for Zhe  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine fill_tree_element_line_zhe(state,f1,f2,no,fix0,filef,stochprec)   ! fix0 is the initial condition for the maps
+subroutine fill_tree_element_line_zhe(state,f1,f2,no,fix0,filef,stochprec,sagan_tree)   ! fix0 is the initial condition for the maps
 implicit none
 type(fibre), target :: f1,f2 
 type(layout), pointer :: r
@@ -5674,9 +5674,11 @@ type(c_damap) m,mr
 integer no,i,inf
 type(fibre), pointer :: p
 type(tree_element), pointer :: forward(:) =>null()
-character(*) filef
+character(*),optional :: filef
+type(tree_element),optional, target :: sagan_tree(3)
 
 
+if(present(sagan_tree)) forward=>sagan_tree
 if(.not.associated(f1%parent_layout)) then
  write(6,*) " parent layout not associated "
  stop
@@ -5749,10 +5751,11 @@ forward(1)%fix(1:6)=fix    ! always same fixed point
  enddo
 forward(1)%beta0=f1%beta0
 
-   call kanalnummer(inf,filef)
+ if(present(filef)) then
+  call kanalnummer(inf,filef)
     call print_tree_elements(forward,inf)
    close(inf)
-
+endif
   call KILL(forward)
   deallocate(forward)
 call kill(xs);call kill(m);call kill(mr)
