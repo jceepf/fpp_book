@@ -1146,7 +1146,7 @@ else
        enddo 
  
        xs%q=qu*xs%q
- !      xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(4)**2)
+       xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(4)**2)
      else
 
     s0=0.0e0_dp
