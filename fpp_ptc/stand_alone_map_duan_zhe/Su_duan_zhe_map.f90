@@ -1251,7 +1251,7 @@ endif
     cut_zhe=cut
   end SUBROUTINE gaussian_seed_zhe
 
-   real(dp) function GRNF_zhe
+   real(dp) function GRNF_zhe()
     implicit none
     real(dp) r1,r2,x 
 
