@@ -411,6 +411,7 @@ private c_exp_vectorfield_on_quaternion,c_vector_field_quaternion
      MODULE PROCEDURE c_clean_damap
      MODULE PROCEDURE c_clean_vector_field
      MODULE PROCEDURE c_clean_yu_w
+     MODULE PROCEDURE c_clean_quaternion
   end INTERFACE clean
   ! Exponential of Lie Operators
 
@@ -7352,6 +7353,23 @@ end   SUBROUTINE  c_clean_yu_w
 
   END SUBROUTINE c_clean_spinmatrix
 
+  SUBROUTINE  c_clean_quaternion(S1,S2,prec,r) ! spin routine
+    implicit none
+    type (c_quaternion),INTENT(INOUT)::S2
+    type (c_quaternion), intent(INOUT):: s1
+    real(dp) prec
+    integer i,j
+    type(c_ray),optional :: r
+
+    do i=1,4
+    
+       call clean(s1%x(i),s2%x(i),prec,r)
+    
+    enddo
+
+
+  END SUBROUTINE c_clean_quaternion
+
   SUBROUTINE  c_clean_spinor(S1,S2,prec,r) ! spin routine
     implicit none
     type (c_spinor),INTENT(INOUT)::S2
@@ -10988,14 +11006,10 @@ as%q=q3*e_x
     real(dp) norm,normy,f(6,6),s(6,6), at(6,6),ai(6,6)
     real(dp) b(6,6),a(6,6),d(6,6)
     type(c_vector_field) vf
-    type(c_damap) id
-    type(c_normal_form) n
+    type(c_damap) id,as
+ 
     logical yhere
 
-     vf%n=m%n
-    call alloc(vf)
-    call alloc(id)
-    call alloc(n)
 
     norm=0.0_dp
     do i=1,6
@@ -11003,8 +11017,22 @@ as%q=q3*e_x
      norm=abs(m%e_ij(i,j)) + norm
     enddo
     enddo
-    
+       if(norm==0) then
+         ki=0
+         ait=0
+         return
+      endif
+
+
+
+     vf%n=m%n
+    call alloc(vf)
+    call alloc(id,as)
+ 
+
+
     norm=norm/10
+
     f=0
     s=0
     do i=1,3
@@ -11018,7 +11046,7 @@ as%q=q3*e_x
     enddo
     enddo
 
-
+    
 !!!! In rings without errors and middle plane symmetry
 !!!  the y-part of the envelope is exactly zero
 !!! So I add a y-part to make sure that my normal form
@@ -11044,9 +11072,10 @@ as%q=q3*e_x
     enddo
 
     id=exp(vf)
-    call c_normal(id,n)
-
-    a=n%a_t
+ 
+call c_linear_a(id,as)
+ 
+    a=as
     at=transpose(a)
 
 !!!!  initially  !!!!
@@ -11087,8 +11116,8 @@ endif
 !  B= ait*d*ai
 
     call kill(vf)
-    call kill(id)
-    call kill(n)
+    call kill(id,as)
+ 
 
 end subroutine c_stochastic_kick
 
