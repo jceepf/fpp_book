@@ -79,7 +79,7 @@ private GETORDER_par,GETORDERMAP_par,GETORDERSPINMATRIX_par,liebraspinor
 integer,private,parameter::ndd=6
 private c_concat_vector_field_ray,CUTORDERVEC,kill_c_vector_field_fourier,alloc_c_vector_field_fourier
 private complex_mul_vec,equal_c_vector_field_fourier,c_IdentityEQUALVECfourier,c_vector_field_spinmatrix
-private c_add_map,c_sub_map,c_read_spinor,flatten_c_factored_lie_r,c_EQUALcray
+private c_add_map,c_sub_map,c_read_spinor,flatten_c_factored_lie_r,c_EQUALcray,c_read_quaternion
 integer :: n_fourier=12,n_extra=0
 logical :: remove_tune_shift=.false.
 complex(dp) :: n_cai=-2*i_
@@ -562,6 +562,7 @@ private c_exp_vectorfield_on_quaternion,c_vector_field_quaternion
        module procedure c_read_map
        MODULE PROCEDURE c_read_spinor
        MODULE PROCEDURE DAREADTAYLORS
+       MODULE PROCEDURE c_read_quaternion
     END INTERFACE
 
     INTERFACE read
@@ -570,6 +571,7 @@ private c_exp_vectorfield_on_quaternion,c_vector_field_quaternion
        module procedure c_read_map
        MODULE PROCEDURE c_read_spinor
        MODULE PROCEDURE DAREADTAYLORS
+       MODULE PROCEDURE c_read_quaternion
     END INTERFACE
 
     INTERFACE daprint
@@ -6428,13 +6430,25 @@ endif
 
   END SUBROUTINE c_pri_quaternion
 
+  SUBROUTINE  c_read_quaternion(S2,mfile)
+    implicit none
+    integer mfile,i
+    type (c_quaternion),INTENT(INOUT)::S2
+      character(255) line   
+ 
+     read(mfile,'(a255)') line
+    do i=1,4
+     call c_rea(s2%x(i),mfile)    
+    enddo
+
+  END SUBROUTINE c_read_quaternion
+
+
   SUBROUTINE  c_read_map(S1,MFILE)
     implicit none
         INTEGER,OPTIONAL,INTENT(IN)::MFILE
     type (c_damap),INTENT(inout)::S1
     integer i,j,i1,j2
-
-
     character(255) line 
 
     read(mfile,'(a255)') line
@@ -6452,6 +6466,16 @@ endif
            call c_read_spinmatrix(S1%s,MFILE) 
         endif
   
+        read(mfile,'(a255)') line
+
+        if(index(line,"No")/=0) then
+           s1%q=0.0_dp
+        elseif(index(line,"id")/=0) then
+           s1%q=1.0_dp
+        else
+           call c_read_quaternion(S1%q,MFILE) 
+        endif
+
         read(mfile,'(a255)') line
         if(index(line,"No")/=0) then
          s1%e_ij=0.0_dp
@@ -9063,6 +9087,8 @@ SUBROUTINE  c_EQUALcray(S2,S1)
   END SUBROUTINE r_MAPmatrixr
 
 !!!!!!!!!!  TPSA LIE PART !!!!!!!
+
+
 subroutine c_linear_a(xy,a1)
 !#internal: normal
 !# This routine linearises the linear part of the map ONLY.
@@ -9176,6 +9202,12 @@ subroutine c_linear_a(xy,a1)
         write(6,*) " "
         do i=1,nd2harm  !t
           write(6,'(i2,2(1x,G21.14))') i, reval(i),imval(i)
+        enddo
+        write(6,*) " "
+        do i=1,nd2harm  !t
+           write(6,*) i
+          write(6,'(6(1x,G21.14))') vr(i,1:6)
+          write(6,'(6(1x,G21.14))') vi(i,1:6)
         enddo
       endif
       
@@ -9328,7 +9360,6 @@ subroutine c_linear_a(xy,a1)
 
     return
   end subroutine c_linear_a
-
 
 subroutine c_locate_planes(vr,vi,idef)
 !#restricted: normal
@@ -11058,11 +11089,11 @@ as%q=q3*e_x
      if(yhere) normy=normy +abs(f(i,j))
     enddo
     enddo
- !   write(6,*) " norm y",norm
-    if((normy/10)/norm<eps) then
-      f(3,3)=0.234567_dp*twopi 
-      f(4,4)=0.234567_dp*twopi 
-    endif
+     write(6,*) " norm y",norm
+     if((normy/10)/norm<eps) then
+       f(3,3)=0.234567_dp*twopi 
+       f(4,4)=0.234567_dp*twopi 
+     endif
 !!!!!!!!!!!!!!!
      f=matmul(f,s)
     do i=1,6
@@ -11077,7 +11108,9 @@ call c_linear_a(id,as)
  
     a=as
     at=transpose(a)
-
+    do i=1,6
+          write(6,'(6(1x,G21.14))') a(i,1:6)
+    enddo
 !!!!  initially  !!!!
 !sigma_f= M sigma M^t + B
 !
@@ -11091,9 +11124,35 @@ call c_linear_a(id,as)
 ! then  
   
     do i=1,6
-     ki(i)=sqrt(d(i,i))
+     ki(i)=d(i,i)
     enddo
-
+     do i=1,3
+      if(ki(2*i-1)<0) then
+       write(6,*) "fluctuations ill defined in plane ",i
+        write(6,*) i,ki(2*i-1:2*i)
+         ki(2*i-1)=0
+         ki(2*i)=0
+       endif
+      if(ki(2*i)<0) then
+       write(6,*) "fluctuations ill defined in plane ",i
+        write(6,*) i,ki(2*i-1:2*i)
+         ki(2*i-1)=0
+         ki(2*i)=0
+       endif
+      if(ki(2*i-1)/=0.and.ki(2*i)/=0) then
+        if(ki(2*i-1)-ki(2*i)/=0) then
+          if(abs( (ki(2*i-1)-ki(2*i))/(abs(ki(2*i-1))+abs(ki(2*i))))>1.d-4) then
+          write(6,*) "fluctuations ill defined in plane ",i
+          write(6,*) i,ki(2*i-1:2*i)
+           ki(2*i-1)=0
+           ki(2*i)=0
+          endif
+        endif
+      endif
+     enddo 
+    do i=1,6
+     ki(i)=sqrt(ki(i))
+    enddo
 !  construct    z_i =ki(i) * r_i
 ! then x= Ait z  is the appropriate kick
 ! in the original space. 
