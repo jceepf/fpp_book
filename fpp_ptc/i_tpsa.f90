@@ -788,7 +788,7 @@ CONTAINS
     do i=1,4
     s2%x(i)=0
     enddo
-    s2%x(1)=s1
+    s2%x(s1)=1
   end SUBROUTINE  EQUALqi
 
   SUBROUTINE  DEQUAL(R1,S2)
