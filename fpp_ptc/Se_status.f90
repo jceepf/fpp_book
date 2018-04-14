@@ -10138,7 +10138,7 @@ endif
 if(use_quaternion) then
     call c_full_norm_quaternion(Ma%q,kq,norm)
     if(kq==-1) then
-      do i=1,4
+      do i=0,3
         m(ind_spin(1,1)+i-1)=ma%q%x(i)
       enddo
     elseif(kq/=-1) then
@@ -10447,12 +10447,12 @@ if(jumpnot) then
     call track_TREE_G_complex(T(2),X(7:15))
  
      if(xs%use_q) then
-       do k=1,4
+       do k=0,3
          qu%x(k)=x(6+k)
        enddo 
  
        xs%q=qu*xs%q
-       xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(4)**2)
+       xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
      else
     s0=0.0e0_dp
  
@@ -10748,16 +10748,16 @@ SUBROUTINE track_TREE_probe_complexp_new(T,xs,dofix0,dofix,sta)
       if(xs%use_q) then
 call alloc(qu)
 call alloc(ds)
-       do k=1,4
+       do k=0,3
          qu%x(k)=x(6+k)
        enddo 
  
        xs%q=qu*xs%q
-        ds=1.0_dp/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(4)**2)
+        ds=1.0_dp/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
             xs%q%x(1)=ds*xs%q%x(1)
             xs%q%x(2)=ds*xs%q%x(2)
             xs%q%x(3)=ds*xs%q%x(3)
-            xs%q%x(4)=ds*xs%q%x(4)
+            xs%q%x(0)=ds*xs%q%x(0)
 call KILL(qu)
 call KILL(ds)
    else

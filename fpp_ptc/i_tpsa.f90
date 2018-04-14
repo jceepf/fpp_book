@@ -527,11 +527,11 @@ CONTAINS
      RETURN
     endif
               invq=s1
-              do i=2,4
+              do i=1,3
                 invq%x(i)=-invq%x(i)
               enddo
                 norm=abs_square(invq)
-              do i=1,4
+              do i=0,3
                 invq%x(i)=invq%x(i)/norm
               enddo
       
@@ -564,7 +564,7 @@ CONTAINS
      RETURN
     endif
            absq2=0
-       do i=1,4
+       do i=0,3
          absq2 = s1%x(i)**2+absq2
        enddo
   END FUNCTION absq2
@@ -759,7 +759,7 @@ CONTAINS
     integer i
     IF(.NOT.C_%STABLE_DA) RETURN
     
-    do i=1,4
+    do i=0,3
     s2%x(i)=s1%x(i)
     enddo
 
@@ -772,10 +772,10 @@ CONTAINS
     integer i
     IF(.NOT.C_%STABLE_DA) RETURN
 
-    do i=1,4
+    do i=0,3
     s2%x(i)=0
     enddo
-    s2%x(1)=s1
+    s2%x(0)=s1
   end SUBROUTINE  EQUALqr
 
   SUBROUTINE  EQUALqi(S2,S1)
@@ -785,7 +785,7 @@ CONTAINS
     integer i
     IF(.NOT.C_%STABLE_DA) RETURN
 
-    do i=1,4
+    do i=0,3
     s2%x(i)=0
     enddo
     s2%x(s1)=1
@@ -2213,14 +2213,14 @@ endif
     endif 
           mulq=0.0_dp
 
-          mulq%x(1)=s1%x(1)*s2%x(1)-s1%x(2)*s2%x(2)-s1%x(3)*s2%x(3)-s1%x(4)*s2%x(4)
+          mulq%x(0)=s1%x(0)*s2%x(0)-s1%x(1)*s2%x(1)-s1%x(2)*s2%x(2)-s1%x(3)*s2%x(3)
 
-         mulq%x(2)=  s1%x(3)*s2%x(4)-s1%x(4)*s2%x(3)
-         mulq%x(3)=  s1%x(4)*s2%x(2)-s1%x(2)*s2%x(4)
-         mulq%x(4)=  s1%x(2)*s2%x(3)-s1%x(3)*s2%x(2)
+         mulq%x(1)=  s1%x(2)*s2%x(3)-s1%x(3)*s2%x(2)
+         mulq%x(2)=  s1%x(3)*s2%x(1)-s1%x(1)*s2%x(3)
+         mulq%x(3)=  s1%x(1)*s2%x(2)-s1%x(2)*s2%x(1)
 
-        do i=2,4
-         mulq%x(i)= mulq%x(i) + s1%x(1)*s2%x(i)+ s1%x(i)*s2%x(1)
+        do i=1,3
+         mulq%x(i)= mulq%x(i) + s1%x(0)*s2%x(i)+ s1%x(i)*s2%x(0)
         enddo
 
   END FUNCTION mulq
@@ -2617,7 +2617,7 @@ endif
   FUNCTION varf001( S1, S2 )
     implicit none
     TYPE (taylor) varf001
-    real(dp), INTENT (IN) :: S1(2)
+    real(dp), INTENT (IN) :: S1(1)
     integer  , INTENT (IN) ::  S2
     integer localmaster
     IF(.NOT.C_%STABLE_DA) then
@@ -2629,7 +2629,7 @@ endif
 
     call ass(varf001)
 
-    varf001=S1(1) + (s1(2).mono.S2)
+    varf001=S1(1) + (s1(1).mono.S2)
 
     master=localmaster
 
@@ -3174,7 +3174,7 @@ endif
      mfi=6
      if(present(mfile)) mfi=mfile
       write(mfi,*) " real quaternion "
-    DO I=1,4
+    DO I=0,3
       write(mfi,*) s1%x(i)
     ENDDO
   END SUBROUTINE printq
