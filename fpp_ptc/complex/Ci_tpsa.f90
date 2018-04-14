@@ -16631,6 +16631,7 @@ if(use_quaternion.and.dos) then
  qr%q(0,0)= cos(aq)
  qr%q(2,0)= sin(aq)
 
+ daq=0
  if(ndpt/=0) then  
 
   daq=(q%q(0,ndpt)*qr%q(2,0)+q%q(2,ndpt)*qr%q(0,0))/(q%q(2,0)*qr%q(2,0)-q%q(0,0)*qr%q(0,0))
