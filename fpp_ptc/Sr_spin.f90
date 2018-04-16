@@ -5827,8 +5827,8 @@ end subroutine fill_tree_element_line_zhe
 if(use_quaternion) then
     call c_full_norm_quaternion(Ma%q,kq,norm)
     if(kq==-1) then
-      do i=1,4
-        m(ind_spin(1,1)+i-1)=ma%q%x(i)
+      do i=0,3
+        m(ind_spin(1,1)+i)=ma%q%x(i)
       enddo
     elseif(kq/=-1) then
       m(ind_spin(1,1))=1.0_dp

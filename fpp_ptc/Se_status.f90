@@ -10139,7 +10139,7 @@ if(use_quaternion) then
     call c_full_norm_quaternion(Ma%q,kq,norm)
     if(kq==-1) then
       do i=0,3
-        m(ind_spin(1,1)+i-1)=ma%q%x(i)
+        m(ind_spin(1,1)+i)=ma%q%x(i)
       enddo
     elseif(kq/=-1) then
       do i=ind_spin(1,1)+4,size_tree
