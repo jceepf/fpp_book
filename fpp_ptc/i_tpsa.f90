@@ -2617,7 +2617,7 @@ endif
   FUNCTION varf001( S1, S2 )
     implicit none
     TYPE (taylor) varf001
-    real(dp), INTENT (IN) :: S1(1)
+    real(dp), INTENT (IN) :: S1(2)
     integer  , INTENT (IN) ::  S2
     integer localmaster
     IF(.NOT.C_%STABLE_DA) then
@@ -2629,11 +2629,12 @@ endif
 
     call ass(varf001)
 
-    varf001=S1(1) + (s1(1).mono.S2)
+    varf001=S1(1) + (s1(2).mono.S2)
 
     master=localmaster
 
   END FUNCTION varf001
+
 
 
 
