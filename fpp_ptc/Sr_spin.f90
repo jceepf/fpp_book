@@ -5832,7 +5832,7 @@ if(use_quaternion) then
       enddo
     elseif(kq/=-1) then
       m(ind_spin(1,1))=1.0_dp
-      do i=ind_spin(1,1)+4,size_tree
+      do i=ind_spin(1,1)+1,size_tree
         m(i)=0.0_dp
       enddo
     endif

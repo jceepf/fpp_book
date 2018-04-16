@@ -825,7 +825,7 @@ if(jumpnot) then
 
      if(xs%use_q) then
        do k=0,3
-         qu%x(k)=x(6+k)
+         qu%x(k)=x(7+k)
        enddo 
  
        xs%q=qu*xs%q
@@ -1142,7 +1142,7 @@ else
 
      if(xs%use_q) then
        do k=0,3
-         qu%x(k)=x0_begin(6+k)
+         qu%x(k)=x0_begin(7+k)
        enddo 
  
        xs%q=qu*xs%q

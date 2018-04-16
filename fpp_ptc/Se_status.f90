@@ -10142,7 +10142,8 @@ if(use_quaternion) then
         m(ind_spin(1,1)+i)=ma%q%x(i)
       enddo
     elseif(kq/=-1) then
-      do i=ind_spin(1,1)+4,size_tree
+      m(ind_spin(1,1))=1.0_dp
+      do i=ind_spin(1,1)+1,size_tree
         m(i)=0.0_dp
       enddo
     endif
@@ -10448,7 +10449,7 @@ if(jumpnot) then
  
      if(xs%use_q) then
        do k=0,3
-         qu%x(k)=x(6+k)
+         qu%x(k)=x(7+k)
        enddo 
  
        xs%q=qu*xs%q
@@ -10749,7 +10750,7 @@ SUBROUTINE track_TREE_probe_complexp_new(T,xs,dofix0,dofix,sta)
 call alloc(qu)
 call alloc(ds)
        do k=0,3
-         qu%x(k)=x(6+k)
+         qu%x(k)=x(7+k)
        enddo 
  
        xs%q=qu*xs%q
