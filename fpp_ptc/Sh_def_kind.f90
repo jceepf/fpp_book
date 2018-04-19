@@ -127,7 +127,7 @@ MODULE S_DEF_KIND
   real(dp), target :: wedge_coeff(2)
   logical(lp), target :: MAD8_WEDGE=.TRUE.
   logical(lp) :: bug_intentional=.false.
- 
+  real(dp) :: e1_cas=0
   !  logical(lp) :: old_solenoid=.true.
   INTEGER :: N_CAV4_F=1
   INTEGER :: m_abell=1,n_abell=2
@@ -3638,7 +3638,10 @@ CALL FRINGECAV(EL,X,k,2)
           X(4)=X(4)-X(3)*el%f(ko)*DF*VL*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)/(ko*O)
        ENDIF
 
-
+!!!!!   el%t should be the "phase" of the cavity if many modes are used
+!!!!!   indeed EL%PH(KO) should be used to shape the harmonic profile of the cavity only
+!!!!!   if tot_t=1 (default)  then it=1 if totalpath=1 other zero
+!!!!!   if tot_t=0 it=1 always
        x(5)=x(5)-el%f(ko)*F*VL*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)
 
 
@@ -5277,10 +5280,14 @@ integer :: kkk=0
 
 
        CALL DRIFT(DH,DD,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,X)
+       if(e1_cas/=0.and.el%p%nmul>1) then
+          X(1)=X(1)+DH*X(2)/ROOT(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)*e1_cas*el%bn(2)
+       endif
        CALL KICK (EL,D,X,k)
        CALL DRIFT(DH,DD,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,X)
-
-
+       if(e1_cas/=0.and.el%p%nmul>1) then
+          X(1)=X(1)+DH*X(2)/ROOT(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)*e1_cas*el%bn(2)
+       endif
 
     CASE(4)
        D1=EL%L*FD1/EL%P%NST
@@ -5378,8 +5385,14 @@ integer :: kkk=0
        DD=EL%P%LD/2.0_dp/EL%P%NST
 
        CALL DRIFT(DH,DD,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,X)
+       if(e1_cas/=0.and.el%p%nmul>1) then
+          X(1)=X(1)+DH*X(2)/sqrt(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)*e1_cas*el%bn(2)
+       endif
        CALL KICK (EL,D,X,k)
        CALL DRIFT(DH,DD,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,X)
+       if(e1_cas/=0.and.el%p%nmul>1) then
+          X(1)=X(1)+DH*X(2)/sqrt(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)*e1_cas*el%bn(2)
+       endif
 
        CALL KILL(DH,D)
 
