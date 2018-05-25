@@ -2672,7 +2672,6 @@ call kill(vm,phi,z)
     J=I1
 
     DO  WHILE(J<I22.AND.ASSOCIATED(C))
-
        CALL TRACK_NODE_PROBE(C,XS,K)
 
        if(.not.check_stable) exit
@@ -2715,10 +2714,8 @@ call kill(vm,phi,z)
     J=I1
 
     DO  WHILE(J<I22.AND.ASSOCIATED(C))
-  
-       CALL TRACK_NODE_PROBE(C,XS,K)  !,R%charge)
-
-       if(.not.check_stable) exit
+        CALL TRACK_NODE_PROBE(C,XS,K)  !,R%charge)
+        if(.not.check_stable) exit
 
        C=>C%NEXT
        J=J+1
@@ -2776,6 +2773,7 @@ call kill(vm,phi,z)
    
  
      CALL TRACK_PROBE2(r,xs,K,i11,i22)
+
           
   END SUBROUTINE TRACK_LAYOUT_FLAG_probe_spin12r
 
