@@ -3223,28 +3223,27 @@ do i=1,fq%nray
 
 enddo
 
+call create_phi(fq)
+fq%r(1:6, 0,0)=fq%x(1:6,0)
 
-if(.false.) then
-call x_fourier_c_quaternion(fq)
+if(.true.) then
 
 state=fq%state+spin0
 
-do i=0,fq%nphix
-do j=0,fq%nphiy
+do i=0,fq%nphix-1
+do j=0,fq%nphiy-1
 x=0
 
-phi(1)=i*fq%dphix
-phi(2)=j*fq%dphiy
-
-call x_evaluate_fourier_c_quaternion(fq,phi,x)
 
 x=x+fq%closed_orbit
 
-XS0%x=x
+XS0%x=fq%r(1:6, i,j)
 XS0%q=1.0_dp
 
  CALL propagate(r,XS0,STATE,FIBRE1=1) 
  if(.not.check_stable) then
+ write(6,*) i,j
+ write(6,*) fq%r(1:6, i,j)
  write(6,*) xs0%x
  stop 666
 endif
@@ -3255,7 +3254,7 @@ enddo
 enddo
 endif ! false
 
- 
+ if(.false.) then
 state=fq%state+spin0
 
 do i=0,fq%nphix-1
@@ -3280,6 +3279,8 @@ endif
  
 enddo
 enddo
+endif  ! second false
+
 
 else
 
@@ -3354,7 +3355,7 @@ end subroutine locate_phi
 subroutine create_phi(fq)
 implicit none
 type(c_quaternion_fourier) fq
-integer k1,k2,pos,k11,pos11,k22,pos22
+integer k1,k2,pos,k11,pos11,k22,pos22,k
  real(dp) dxx,dxy,dyx,dyy,d(2)
  type(c_damap) a,b
 
@@ -3362,11 +3363,11 @@ integer k1,k2,pos,k11,pos11,k22,pos22
 
 do k1=0, fq%nphix-1
 do k2=0, fq%nphiy-1
-
-write(6,*) k1,k2,fq%p(k1,k2)
-write(6,*) mod(fq%p(k1,k2)*fq%mux,twopi)/twopi,mod(fq%p(k1,k2)*fq%muy,twopi)/twopi
-write(6,*) fq%nphix*mod(fq%p(k1,k2)*fq%mux,twopi)/twopi,fq%nphiy*mod(fq%p(k1,k2)*fq%muy,twopi)/twopi
-write(6,*) fq%ph(1,k1,k2), fq%ph(2,k1,k2)
+ write(6,*) k1,k2
+!write(6,*) k1,k2,fq%p(k1,k2)
+!write(6,*) mod(fq%p(k1,k2)*fq%mux,twopi)/twopi,mod(fq%p(k1,k2)*fq%muy,twopi)/twopi
+!write(6,*) fq%nphix*mod(fq%p(k1,k2)*fq%mux,twopi)/twopi,fq%nphiy*mod(fq%p(k1,k2)*fq%muy,twopi)/twopi
+!write(6,*) fq%ph(1,k1,k2), fq%ph(2,k1,k2)
 
 
 b=0
@@ -3374,37 +3375,40 @@ pos=fq%p(k1,k2)
 k11=k1+1
 if(k11==fq%nphix) k11=0
 pos11=fq%p(k11,k2)
- write(6,*) " *** ",k11,k2
-write(6,*) fq%ph(1,k11,k2), fq%ph(2,k11,k2)
+! write(6,*) " *** ",k11,k2
+!write(6,*) fq%ph(1,k11,k2), fq%ph(2,k11,k2)
 dxx=fq%ph(1,k11,k2)+1-fq%ph(1,k1,k2)
-dxy=fq%ph(2,k11,k2)+1-fq%ph(2,k1,k2)
+dxy=fq%ph(2,k11,k2)-fq%ph(2,k1,k2)
 k22=k2+1
 if(k22==fq%nphiy) k22=0
 pos22=fq%p(k1,k22)
- write(6,*) " *** ",k1,k22
-write(6,*) fq%ph(1,k1,k22), fq%ph(2,k1,k22)
-dyx=fq%ph(1,k1,k22)+1-fq%ph(1,k1,k2)
+! write(6,*) " *** ",k1,k22
+!write(6,*) fq%ph(1,k1,k22), fq%ph(2,k1,k22)
+dyx=fq%ph(1,k1,k22)-fq%ph(1,k1,k2)
 dyy=fq%ph(2,k1,k22)+1-fq%ph(2,k1,k2)
  write(6,*) " deltas "
-write(6,*) dxx,dxy
-write(6,*) dyx,dyy
+!write(6,*) dxx,dxy
+!write(6,*) dyx,dyy
 
-a=1
+do k=1,4
+ a=1
+ a%v(1)=(dxx.cmono.1)+(dxy.cmono.2)
+ a%v(2)=(dyx.cmono.1)+(dyy.cmono.2)
+ a=a**(-1)
+ b%v(1)=fq%x(k,pos11)-fq%x(k,pos)
+ b%v(2)=fq%x(k,pos22)-fq%x(k,pos)
+ b=a.o.b
 
-a%v(1)=(dxx.cmono.1)+(dxy.cmono.2)
-a%v(2)=(dyx.cmono.1)+(dyy.cmono.2)
-a=a**(-1)
-b%v(1)=fq%x(1,pos11)-fq%x(1,pos)
-b%v(2)=fq%x(1,pos22)-fq%x(1,pos)
-b=a.o.b
-
-d(1)=b%v(1)
-d(2)=b%v(2)
-!    allocate(f%r(1:6,0:f%nphix-1,0:f%nphiy-1))
-fq%r(1, k1,k2)= fq%x(1,pos) - d(1)*fq%ph(1,k1,k2)- d(2)*fq%ph(2,k1,k2)
-write(6,*) fq%r(1, k1,k2) ,fq%x(1,pos) 
+ d(1)=b%v(1)
+ d(2)=b%v(2)
+ !    allocate(f%r(1:6,0:f%nphix-1,0:f%nphiy-1))
+ fq%r(k, k1,k2)= fq%x(k,pos) - d(1)*fq%ph(1,k1,k2)- d(2)*fq%ph(2,k1,k2)
+ write(6,*) fq%r(k, k1,k2) ,fq%x(k,pos) 
+enddo
+fq%r(1:6, k1,k2)=fq%x(1:6,pos)
 enddo
 enddo
+fq%r(1:6, 0,0)=fq%x(1:6,0)
 
 call kill(a,b)
 end subroutine create_phi

@@ -34,7 +34,7 @@ MODULE c_TPSA
   private shiftda,shift000,cDEQUAL,pri,rea,cfu000,alloc_DA,alloc_c_spinmatrix,cpbbra
   private alloc_c_damap,c_DPEKMAP,c_DPOKMAP,kill_c_damap,kill_c_spinmatrix,c_etcct,c_spinmatrix_mul_cray
   private EQUALspinmatrix,c_trxtaylor,powmap,POWMAPs,alloc_c_vector_field,kill_c_vector_field
-  private alloc_c_normal_form,kill_c_normal_form,c_EQUALVEC,c_spinmatrix_spinmatrix,c_IdentityEQUALVEC
+  private alloc_c_normal_form,kill_c_normal_form,c_EQUALVEC,c_spinmatrix_spinmatrix,c_IdentityEQUALVEC,qua_ql
   private liebraquaternion
   private EQUALql_cmap,EQUALcmap_ql
   private NO,ND,ND2,NP,NDPT,NV,ndptb,rf
@@ -421,9 +421,15 @@ type(q_linear) q_phasor,qi_phasor
 
   ! intrisic functions overloaded
 
+  INTERFACE q_part
+     MODULE PROCEDURE qua_ql
+  end INTERFACE q_part
+
+
   INTERFACE c_phasor
      MODULE PROCEDURE from_phasor
   end INTERFACE c_phasor
+
 
   INTERFACE ci_phasor
      MODULE PROCEDURE to_phasor
@@ -6139,6 +6145,18 @@ endif
       S2%q(0,0)= s1
 
  end   SUBROUTINE  EQUALql_r
+
+  function  qua_ql(S2)
+    implicit none
+    integer ipause, mypauses
+    type (q_linear) qua_ql
+    type (q_linear),INTENT(inOUT)::S2
+ 
+      qua_ql=0
+      qua_ql%q = s2%q 
+
+
+ end   function  qua_ql
 
 
 
