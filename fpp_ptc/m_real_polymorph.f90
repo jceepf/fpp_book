@@ -5879,11 +5879,12 @@ contains
 
 
        endif !
-
+        
        call kill(w)
        master=localmaster
     endif
 
+    ANG=datan2t
 
   END FUNCTION datan2t
 

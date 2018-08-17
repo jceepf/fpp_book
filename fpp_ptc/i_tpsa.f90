@@ -4002,11 +4002,11 @@ endif
   subroutine crap1(STRING)
     implicit none
     CHARACTER(*) STRING
-
+    integer i
  
       write(6,*) "ERROR IN :"
       write(6,*) STRING
- 
+      read(5,*) i     
 
   end subroutine crap1
 

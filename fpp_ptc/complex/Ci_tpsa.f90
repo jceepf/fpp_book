@@ -11732,10 +11732,20 @@ endif
       
       if(present(nu_spin)) then
         call alloc(c1,s1)
-        c1=m1%s%s(1,1)
-        s1=m1%s%s(1,3)
-        nu_spin=spin_def_tune*atan2(s1,c1)/twopi
-        nu_spin=nu_spin*from_phasor()
+        if(.not.use_quaternion) then
+         c1=m1%s%s(1,1)
+         s1=m1%s%s(1,3)
+         nu_spin=spin_def_tune*atan2(s1,c1)/twopi
+         nu_spin=nu_spin*from_phasor()
+        else
+         c1=m1%q%x(0)
+         s1=m1%q%x(2)
+         nu_spin=2*spin_def_tune*atan2(s1,c1)/twopi
+         nu_spin=nu_spin*from_phasor()
+        alpha=nu_spin
+        if(alpha>0.5_dp)  nu_spin=nu_spin-1.0_dp
+        if(alpha<-0.5_dp) nu_spin=nu_spin+1.0_dp
+        endif
         call kill(c1,s1)
       endif
       
@@ -11826,6 +11836,9 @@ q0=m_out%q
 
 alpha=2*atan2(q0%x(2),q0%x(0))
  
+        if(alpha>0.5_dp)  alpha=alpha-twopi
+        if(alpha<-0.5_dp) alpha=alpha+twopi
+
  end  subroutine c_normal_spin_linear_quaternion
 
  subroutine log_map_quaternion(m,logm0,epso) 
@@ -12409,16 +12422,7 @@ end subroutine c_stochastic_kick
      t2=t2+abs(je(i)-je(i+1)-m(j,kr))
      t1=t1+abs(je(i)-je(i+1)+m(j,kr))
     enddo
-!        if(k==1) then
-!         t1=t1+iabs(-spin_def_tune-ms(kr))
-!         t2=t2+iabs(-spin_def_tune+ms(kr))
-!        elseif(k==3) then
-!         t1=t1+iabs(spin_def_tune-ms(kr))
-!         t2=t2+iabs(spin_def_tune+ms(kr))
-!        else
-!         t1=t1+iabs(ms(kr))
-!         t2=t2+iabs(ms(kr))
-!        endif
+ 
        if(k==1) then
         if(ms(kr)>0) then
 !         t2=t2+iabs(spin_def_tune)
