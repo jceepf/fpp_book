@@ -42,7 +42,8 @@ state=only_2d0
 
 write(6,*) "Write 't' for Courant-Snyder "
 write(6,*) "Write 'f' for Anti-Courant-Snyder "
-read(5,*) courant_snyder_teng_edwards
+! global flag used in the c_canonise routine
+read(5,*) courant_snyder_teng_edwards   
 
 pos=2
 map_order=2
