@@ -703,6 +703,11 @@ type(q_linear) q_phasor,qi_phasor
      MODULE PROCEDURE c_asstaylor   !2000.12.25
   END INTERFACE
 
+type c_fourier_index
+ integer, pointer :: i
+ type(c_fourier_index), pointer :: next =>null() 
+ type(c_fourier_index), pointer :: last =>null() 
+end type c_fourier_index
 
 type c_quaternion_fourier
  type(complex_quaternion), allocatable :: qd(:,:) 
@@ -710,7 +715,7 @@ type c_quaternion_fourier
  logical, allocatable :: found(:,:)
  real(dp), allocatable :: d(:,:),ph(:,:,:)
  integer, allocatable :: p(:,:)
- 
+ type(c_fourier_index), pointer:: f(:,:)
 
  real(dp), allocatable ::  x(:,:),ray(:,:,:),r(:,:,:)
  real(dp) dphix,dphiy,rx,ry,mux,muy
@@ -728,7 +733,7 @@ CONTAINS
  subroutine alloc_c_quaternion_fourier(f)
  implicit none
  type(c_quaternion_fourier) f
- integer n,i
+ integer n,i,j
 
  n=f%n
  f%closed_orbit=0.0_dp
@@ -745,11 +750,21 @@ CONTAINS
     allocate(f%x(1:6,0:f%nray))
     allocate(f%ray(1:6,-f%mx:f%mx,-f%my:f%my))
     allocate(f%ph(1:2,0:f%nphix-1,0:f%nphiy-1))
+    allocate(f%f(0:f%nphix-1,0:f%nphiy-1))
     allocate(f%r(1:6,0:f%nphix-1,0:f%nphiy-1))
     f%x=0
     f%ray=0
     f%ph=0 
     f%r=0
+    do i=0,f%nphix-1
+    do j=0,f%nphiy-1
+     nullify(f%f(i,j)%next)
+     nullify(f%f(i,j)%last)
+     allocate(f%f(i,j)%i)
+     f%f(i,j)%i=0
+    enddo
+    enddo
+    
   allocate(f%found(0:f%nphix-1,0:f%nphiy-1)) 
   allocate(f%d(0:f%nphix-1,0:f%nphiy-1)) 
   allocate(f%p(0:f%nphix-1,0:f%nphiy-1)) 
@@ -6211,7 +6226,7 @@ endif
       do i=0,3
         s1%x(i) = s2%q(i,0)   +s1%x(i)
        do j=1,min(6,nd2)
-        s1%x(i)= s2%q(i,j)*dx_(j)+s1%x(i)
+        s1%x(i)= s2%q(i,j)*dz_c(j)+s1%x(i)
        enddo
       enddo
 
@@ -8670,10 +8685,10 @@ end   SUBROUTINE  c_clean_yu_w
     integer ndpt_ptc,i
 
    ! order_gofix=no1
-     if(associated(dx_)) then
-      call kill(dx_)
-      deallocate(dx_)
-      nullify(dx_)
+     if(associated(dz_c)) then
+      call kill(dz_c)
+      deallocate(dz_c)
+      nullify(dz_c)
      endif
      call set_da_pointers()
 
@@ -8751,11 +8766,11 @@ endif
     c_master=0  !  master=1   2002.12.2
 
     CALL c_ASSIGN
-    allocate(dx_(nv))
-    call alloc(dx_)
+    allocate(dz_c(nv))
+    call alloc(dz_c)
 
     do i=1,nv
-     dx_(i)=1.0_dp.cmono.i   
+     dz_c(i)=1.0_dp.cmono.i   
     enddo
 ! for fast inversion in 
     sj=0
@@ -11732,20 +11747,10 @@ endif
       
       if(present(nu_spin)) then
         call alloc(c1,s1)
-        if(.not.use_quaternion) then
-         c1=m1%s%s(1,1)
-         s1=m1%s%s(1,3)
-         nu_spin=spin_def_tune*atan2(s1,c1)/twopi
-         nu_spin=nu_spin*from_phasor()
-        else
-         c1=m1%q%x(0)
-         s1=m1%q%x(2)
-         nu_spin=2*spin_def_tune*atan2(s1,c1)/twopi
-         nu_spin=nu_spin*from_phasor()
-        alpha=nu_spin
-        if(alpha>0.5_dp)  nu_spin=nu_spin-1.0_dp
-        if(alpha<-0.5_dp) nu_spin=nu_spin+1.0_dp
-        endif
+        c1=m1%s%s(1,1)
+        s1=m1%s%s(1,3)
+        nu_spin=spin_def_tune*atan2(s1,c1)/twopi
+        nu_spin=nu_spin*from_phasor()
         call kill(c1,s1)
       endif
       
@@ -11836,9 +11841,6 @@ q0=m_out%q
 
 alpha=2*atan2(q0%x(2),q0%x(0))
  
-        if(alpha>0.5_dp)  alpha=alpha-twopi
-        if(alpha<-0.5_dp) alpha=alpha+twopi
-
  end  subroutine c_normal_spin_linear_quaternion
 
  subroutine log_map_quaternion(m,logm0,epso) 
@@ -12422,7 +12424,16 @@ end subroutine c_stochastic_kick
      t2=t2+abs(je(i)-je(i+1)-m(j,kr))
      t1=t1+abs(je(i)-je(i+1)+m(j,kr))
     enddo
- 
+!        if(k==1) then
+!         t1=t1+iabs(-spin_def_tune-ms(kr))
+!         t2=t2+iabs(-spin_def_tune+ms(kr))
+!        elseif(k==3) then
+!         t1=t1+iabs(spin_def_tune-ms(kr))
+!         t2=t2+iabs(spin_def_tune+ms(kr))
+!        else
+!         t1=t1+iabs(ms(kr))
+!         t2=t2+iabs(ms(kr))
+!        endif
        if(k==1) then
         if(ms(kr)>0) then
 !         t2=t2+iabs(spin_def_tune)

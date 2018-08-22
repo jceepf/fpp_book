@@ -3099,6 +3099,7 @@ endif
  type(probe_8) xs
  type(probe) xs0
  type(internal_state) state
+type(c_fourier_index) , pointer ::p
  integer i,j,n(2)
  real(dp) x(6),phi(2)
 type(c_ray) cray
@@ -3155,8 +3156,7 @@ fq%x(1:6,0)=x
 write(6,*) " closed "
 write(6,'(6(1x,g20.13))')fq%closed_orbit
 write(6,'(6(1x,g20.13))')fq%x(1:6,0)
-write(6,*) " start 0"
-pause 123
+!write(6,*) " start 0"
 if(fq%normalised.and.fq%nray==0) then
 
 do i=0,fq%nphix
@@ -3192,10 +3192,10 @@ XS0%q=1.0_dp
  
 fq%qd(i,j)=XS0%q
  
-write(6,'(6(1x,g20.13))') xs0%x(1:6)
+!write(6,'(6(1x,g20.13))') xs0%x(1:6)
 enddo
 enddo
-write(6,*) " end 0"
+!write(6,*) " end 0"
 
 
 elseif(fq%normalised.and.fq%nray/=0) then
@@ -3229,6 +3229,14 @@ do i=0,fq%nray
  endif
 
 enddo
+
+
+     allocate(fq%f(0,0)%next)
+     fq%f(0,0)%last=>fq%f(0,0)%next
+     p=>fq%f(0,0)%next
+     allocate(p%i)
+     p%i=1
+     fq%f(0,0)%i=1
 
 do i=0,fq%nray
  call locate_phi(fq,i,phi,n)
@@ -3305,7 +3313,8 @@ call kill(xs)
 subroutine locate_phi(fq,i,phi,n)
 implicit none
 type(c_quaternion_fourier) fq
-integer i,n(2)
+type(c_fourier_index) , pointer ::p
+integer i,n(2) 
 real(dp) phi(2),nx,ny,d
 
 nx=fq%nphix
@@ -3319,7 +3328,7 @@ if(ny-0.5d0<phi(2)) phi(2)=phi(2)-ny
 n(1)=nint(phi(1))
 n(2)=nint(phi(2))
 d=sqrt( (n(1)-phi(1))**2+ (n(2)-phi(2))**2)
-
+ 
 if(fq%found(n(1),n(2))) then
  if(d<fq%d(n(1),n(2))) then
   fq%d(n(1),n(2))=d
@@ -3328,6 +3337,14 @@ if(fq%found(n(1),n(2))) then
   fq%ph(2,n(1),n(2))=-n(2)+phi(2)
 !   write(6,*) n(1),n(2),d
  endif
+ !  if(n(1)+n(2)/=0) then
+     allocate(fq%f(n(1),n(2))%last%next)
+     fq%f(n(1),n(2))%last=>fq%f(n(1),n(2))%last%next
+     p=>fq%f(n(1),n(2))%last
+     allocate(p%i)
+     p%i=fq%f(n(1),n(2))%i+1
+     fq%f(n(1),n(2))%i=fq%f(n(1),n(2))%i+1
+  ! endif
 else
  fq%found(n(1),n(2))=.true.
  fq%d(n(1),n(2))=d
@@ -3335,6 +3352,15 @@ else
  fq%nd=fq%nd-1
   fq%ph(1,n(1),n(2))=-n(1)+phi(1)
   fq%ph(2,n(1),n(2))=-n(2)+phi(2)
+ !  if(n(1)+n(2)/=0) then
+     allocate(fq%f(n(1),n(2))%next)
+     fq%f(n(1),n(2))%last=>fq%f(n(1),n(2))%next
+     p=>fq%f(n(1),n(2))%next
+     allocate(p%i)
+     p%i=1
+     fq%f(n(1),n(2))%i=1
+ ! endif
+
 endif
 
 end subroutine locate_phi
