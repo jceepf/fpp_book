@@ -35,7 +35,7 @@ MODULE c_TPSA
   private alloc_c_damap,c_DPEKMAP,c_DPOKMAP,kill_c_damap,kill_c_spinmatrix,c_etcct,c_spinmatrix_mul_cray
   private EQUALspinmatrix,c_trxtaylor,powmap,POWMAPs,alloc_c_vector_field,kill_c_vector_field
   private alloc_c_normal_form,kill_c_normal_form,c_EQUALVEC,c_spinmatrix_spinmatrix,c_IdentityEQUALVEC,qua_ql
-  private liebraquaternion
+  private liebraquaternion,pow_tpsaMAP
   private EQUALql_cmap,EQUALcmap_ql
   private NO,ND,ND2,NP,NDPT,NV,ndptb,rf
   integer NP,NO,ND,ND2,NDPT,NV,ndptb,rf
@@ -291,6 +291,10 @@ type(q_linear) q_phasor,qi_phasor
      module procedure c_trxspinmatrixda     !# c_spinmatrix=c_spinmatrix o  c_damap
    END INTERFACE 
  
+  INTERFACE OPERATOR (.oo.) 
+     module procedure pow_tpsaMAP
+  END INTERFACE 
+
   INTERFACE OPERATOR (/)
      MODULE PROCEDURE div
      MODULE PROCEDURE cddivsc
@@ -10045,6 +10049,59 @@ endif
 
   END FUNCTION POWMAP
 
+
+  FUNCTION pow_tpsaMAP( S1, R2 )
+    implicit none
+    TYPE (c_damap) pow_tpsaMAP
+    TYPE (c_damap), INTENT (IN) :: S1
+    INTEGER, INTENT (IN) :: R2
+    TYPE (c_damap) S11,s0
+    INTEGER I,R22
+    integer localmaster
+    complex(dp) v(lnv)
+     v=0
+     IF(.NOT.C_STABLE_DA) then
+     pow_tpsaMAP%v%i=0
+     RETURN
+     endif
+    localmaster=c_master
+
+     pow_tpsaMAP%N=s1%n
+    call c_assmap(pow_tpsaMAP)
+    
+    s11%n=s1%n
+    s0%n=s1%n
+    call alloc(s11,s0)
+
+    s11=1
+
+    R22=IABS(R2)
+    DO I=1,R22
+       s11=s1.o.s11
+   ENDDO
+    do i=1,s11%n
+       v(i)=s11%v(i).sub.'0'
+     enddo
+    IF(R2.LT.0) THEN
+
+ !     CALL c_etinv1(S11%v%i,S11%v%i,s11%n)
+        CALL c_etinv(S11,S11)
+
+    ENDIF
+
+    do i=1,s1%n
+       s0%v(i)=(1.0_dp.cmono.i)-v(i)
+       !s11%v(i)=s11%v(i)-(s11%v(i).sub.'0')
+    enddo
+    s11=s11.o.s0
+    pow_tpsaMAP=s11
+         if(complex_extra_order==1.and.special_extra_order_1) pow_tpsaMAP=pow_tpsaMAP.cut.no
+
+    call kill(s11,s0)
+
+    c_master=localmaster
+
+  END FUNCTION pow_tpsaMAP
 
   FUNCTION POWMAPs( SS1, R2 )
     implicit none
