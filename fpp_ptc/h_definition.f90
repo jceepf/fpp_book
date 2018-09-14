@@ -326,18 +326,19 @@ END TYPE quaternion_8
       real(dp) e
   end type probe
   !@3 ---------------------------------------------</br>
-  type probe_8
-     type(real_8) x(6)     ! Polymorphic orbital ray
-     type(spinor_8) s(3)   ! Polymorphic spin s(1:3)
-     type(quaternion_8) q
-     type(rf_phasor_8)  ac(nacmax)  ! Modulation of magnet
-     integer:: nac=0 !  number of modulated clocks <=nacmax
-     real(dp) E_ij(6,6)   !  Envelope for stochastic radiation
-     !   stuff for exception
-     logical u,use_q
-     type(integration_node),pointer :: last_node=>null()
-    real(dp) e
-  end type probe_8
+type probe_8
+   type(real_8) x(6)     ! Polymorphic orbital ray
+   type(spinor_8) s(3)   ! Polymorphic spin s(1:3)
+   type(quaternion_8) q
+   type(rf_phasor_8)  ac(nacmax)  ! Modulation of magnet
+   integer:: nac=0 !  number of modulated clocks <=nacmax
+   real(dp) E_ij(6,6)   !  Envelope for stochastic radiation
+   real(dp) x0(6) ! initial value of the ray for TPSA calculations with c_damap
+   !   stuff for exception
+   logical u,use_q
+   type(integration_node),pointer :: last_node=>null()
+  real(dp) e
+end type probe_8
   !@3 ---------------------------------------------</br>
   type TEMPORAL_PROBE
      TYPE(probe)  XS   ! probe at r=0
@@ -404,15 +405,20 @@ type c_damap
  type(c_spinmatrix) s !@1 spin matrix
  type(c_quaternion) q
  complex(dp) e_ij(6,6) !@1 stochastic fluctuation in radiation theory
+ complex(dp) x0(lnv) 
+ logical :: tpsa=.false.
 end type c_damap
 
   !@3 ---------------------------------------------</br>
-  TYPE c_vector_field  !@1 
-      integer :: n=0,nrmax !@1 n dimension used v(1:n) (nd2 by default) ; nrmax some big integer if eps<1 
-      real(dp) eps !@1 if eps=-integer  then |eps| Lie brackets are taken ; otherwise eps=eps_tpsalie=10^-9
-      type (c_taylor) v(lnv)  
-      type(c_spinor) om 
-      type(c_quaternion) q
+  TYPE c_vector_field  !@1
+   !@1 n dimension used v(1:n) (nd2 by default) ; nrmax some big integer if eps<1  
+   integer :: n=0,nrmax
+   !@1 if eps=-integer  then |eps| # of Lie brackets are taken 
+   !@ otherwise eps=eps_tpsalie=10^-9
+   real(dp) eps
+   type (c_taylor) v(lnv)  
+ !  type(c_spinor) om 
+   type(c_quaternion) q
   END TYPE c_vector_field
   !@3 ---------------------------------------------</br>
   TYPE c_vector_field_fourier  !@1 
@@ -451,7 +457,9 @@ type(c_taylor) c_temp
  TYPE c_ray
   complex(dp) x(lnv)            !# orbital and/or magnet modulation clocks
   complex(dp) s1(3),s2(3),s3(3) !# 3 spin directions
-  type(complex_quaternion) q
+  type(complex_quaternion) q    !# quaternion
+  integer n                     !# of dimensions used in x(lnv)
+  complex(dp) x0(lnv)           !# the initial orbit around which the map is computed
  end type c_ray
 
 
