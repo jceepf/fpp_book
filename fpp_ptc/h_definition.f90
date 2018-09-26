@@ -432,23 +432,23 @@ end type c_damap
        type (c_vector_field), pointer :: f(:)=>null()                   
   END TYPE c_factored_lie
   !@3 ---------------------------------------------</br>
-  TYPE c_normal_form
-      type(c_damap) a1   !@1 brings to fix point at least linear
-      type(c_damap) a2   !@1 linear normal form 
-      type(c_factored_lie) g   !@1 nonlinear part of a in phasors
-      type(c_factored_lie) ker !@1  kernel i.e. normal form in phasors
-      type(c_damap) a_t !@1 transformation a (m=a n a^-1) 
-      type(c_damap) n   !@1 transformation n (m=a n a^-1)      
-      type(c_damap) As  !@1  For Spin   (m = As a n a^-1 As^-1)  
-      type(c_damap) Atot  !@1  For Spin   (m = Atot n Atot^-1)  
-      integer NRES,M(NDIM2t/2,NRESO),ms(NRESO) !@1 stores resonances to be left in the map, including spin (ms)
-      real(dp) tune(NDIM2t/2),damping(NDIM2t/2),spin_tune !@1 Stores simple information
-      logical positive ! forces positive tunes (close to 1 if <0)
+TYPE c_normal_form
+ type(c_damap) a1   !@1 brings to fix point at least linear
+ type(c_damap) a2   !@1 linear normal form 
+ type(c_factored_lie) g   !@1 nonlinear part of a in phasors
+ type(c_factored_lie) ker !@1  kernel i.e. normal form in phasors
+ type(c_damap) a_t !@1 transformation a (m=a n a^-1) 
+ type(c_damap) n   !@1 transformation n (m=a n a^-1)      
+ type(c_damap) As  !@1  For Spin   (m = As a n a^-1 As^-1)  
+ type(c_damap) Atot  !@1  For Spin   (m = Atot n Atot^-1)  
+ integer NRES,M(NDIM2t/2,NRESO),ms(NRESO) !@1 stores resonances to be left in the map, including spin (ms)
+ real(dp) tune(NDIM2t/2),damping(NDIM2t/2),spin_tune !@1 Stores simple information
+ logical positive ! forces positive tunes (close to 1 if <0)
 !!!Envelope radiation stuff to normalise radiation (Sand's like theory)
-     complex(dp) s_ij0(6,6)  !@1  equilibrium beam sizes
-     complex(dp) s_ijr(6,6)  !@1  equilibrium beam sizes in resonance basis
-     real(dp) emittance(3)   !@1  Equilibrium emittances as defined by Chao (computed from s_ijr(2*i-1,2*i) i=1,2,3 )
-  END TYPE c_normal_form
+ complex(dp) s_ij0(6,6)  !@1  equilibrium beam sizes
+ complex(dp) s_ijr(6,6)  !@1  equilibrium beam sizes in resonance basis
+ real(dp) emittance(3)   !@1  Equilibrium emittances as defined by Chao (computed from s_ijr(2*i-1,2*i) i=1,2,3 )
+END TYPE c_normal_form
   !@2 the routine c_canonize(at,a_cs,a0,a1,a2,phase) factors neatly the map "at"
   !@2 at= a_cs o rotation(phase) where  a_cs = a0 o a1 o a2 ; this gives the phase advance even nonlinear!
   !@3 ---------------------------------------------</br>
