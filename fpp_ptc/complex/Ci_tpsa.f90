@@ -10949,7 +10949,7 @@ subroutine c_linear_a_stoch(xy,a1)
     integer idef(ndim2t/2)
     real(dp), allocatable :: fm(:,:),fmi(:,:),fmii(:,:)
     type(c_damap) s1
-
+    real(dp) :: eps_eigen = 1.e-12_dp,norm
 
     if(.not.c_stable_da) return
 
@@ -11031,15 +11031,28 @@ subroutine c_linear_a_stoch(xy,a1)
  
 
     call c_eig6(fm0,reval,imval,vr,vi)
+
+norm=0.0_dp
+do i=1,6
+ norm=norm+ abs(reval(i))+abs(imval(i))-1.0_dp
+enddo
+
 if(c_verbose) then
 do i=1,6
 write(6,*) i,reval(i),imval(i)
 enddo
-
+write(6,*) " norm ",norm
 do i=1,6
 write(6,'(i4,6(1x,g13.6))') i,vr(1:6,i)
 write(6,'(i4,6(1x,g13.6))') i,vi(1:6,i)
 enddo
+endif
+
+
+if(norm<eps_eigen) then
+ a1=1
+ deallocate(fm,fmi,fmii)   
+return
 endif
     !! This routine will locate the modulated plane
     !! It assumes that the modulated plane are rotations
@@ -11105,6 +11118,11 @@ endif
     !!! is truly diagonalised.
     a1%s=1
     a1%q=1.0_dp
+
+
+
+ 
+
     a1=a1**(-1)
     
 
