@@ -14,7 +14,9 @@ MODULE c_TPSA
   use tree_element_MODULE
   IMPLICIT NONE
   public
-  integer,private::ndel ,nd2par,nd2part,nd2partt
+  integer,private::nd2par,nd2part,nd2partt
+  integer,private,target ::pos_of_delta  
+
   integer,private,dimension(lnv)::jfil,jfilt
 
   private equal,DAABSEQUAL,Dequaldacon ,equaldacon ,Iequaldacon,derive,DEQUALDACONS  !,AABSEQUAL 2002.10.17
@@ -38,7 +40,7 @@ MODULE c_TPSA
   private liebraquaternion,pow_tpsaMAP,c_concat_quaternion_ray
   private EQUALql_cmap,EQUALcmap_ql,EQUAL_complex_quaternion_c_quaternion,EQUAL_c_quaternion_complex_quaternion
   private NO,ND,ND2,NP,NDPT,NV,ndptb,rf
-  integer NP,NO,ND,ND2,NDPT,NV,ndptb,rf
+  integer, target :: NP,NO,ND,ND2,NDPT,NV,ndptb,rf
   private nd_used
   integer nd_used
   logical(lp):: do_linear_ac_longitudinal=.true.
@@ -64,7 +66,7 @@ MODULE c_TPSA
  private c_spinor_cmap,c_adjoint_vec,c_adjoint,c_trxtaylor_da,c_spinmatrix_sub_spinmatrix,c_spinor_cmap_tpsa
  PRIVATE CUTORDERMAP,CUTORDERspin,CUTORDERspinor,c_concat_tpsa,c_concat_spinor_ray,GETORDERquaternion
   type(C_dalevel) c_scratchda(ndumt)   !scratch levels of DA using linked list
-integer, private :: nd2t=6,ndt=3,ndc2t=2,ndct=1,nd2harm,ndharm
+integer, private,target :: nd2t=6,ndt=3,ndc2t=2,ndct=1,nd2harm,ndharm
 !integer, private, parameter :: ndim2t=10
 logical(lp), private ::   c_similarity=my_false
 logical(lp) :: symp =my_false
@@ -714,6 +716,12 @@ type(q_linear) q_phasor,qi_phasor
   INTERFACE ass
      MODULE PROCEDURE c_asstaylor   !2000.12.25
   END INTERFACE
+
+  INTERFACE AVERAGE
+     MODULE PROCEDURE c_AVERAGE   !2000.12.25
+  END INTERFACE
+
+
 
 type c_fourier_index
  integer, pointer :: i
@@ -1465,7 +1473,7 @@ alpha=2*atan2(real(q0%x(2)),real(q0%x(0)))
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
  subroutine c_get_indices(n,mf)
-!#general: information
+!#general: informationc_%
 !# In the arrary n(>11), important parameters of the normal
 !# form can be retrieved.
 !# If mf/=0, they are printed on file mf.
@@ -7196,7 +7204,7 @@ enddo
      endif
     localmaster=c_master
 
-    ndel=0
+   ! ndel=0
     !    call check(s1)
     call ass(GETCHARnd2)
 
@@ -7271,7 +7279,7 @@ enddo
        jfil(i)=0
     enddo
     nd2par=size(s2)
-    ndel=0
+  !  ndel=0
 
     !frs get around compiler problem
     !frs    do i=1,len(trim(ADJUSTR (s2)))
@@ -7337,7 +7345,7 @@ enddo
     s2=s22%j
     nd2part=s22%min
     nd2partt=s22%max
-    ndel=0
+  !  ndel=0
     !frs get around compiler problem
     !frs    do i=1,len(trim(ADJUSTR (s2)))
     do i=nd2part,nd2partt
@@ -8792,6 +8800,38 @@ endif
     enddo 
 q_phasor=c_phasor()
 qi_phasor=ci_phasor()
+
+c_%rf=>rf
+c_%nd2t=>nd2t
+c_%nd2harm=>nd2harm
+c_%ndc2t=>ndc2t
+c_%no=>NO
+c_%NDPT=>NDPT
+c_%ND=>ND
+c_%ND2=>ND2
+c_%ndptb=>ndptb
+c_%ndpt=>ndpt
+
+c_%pos_of_delta=>pos_of_delta
+c_%pos_of_delta=0
+if(ndpt/=0) then
+c_%pos_of_delta=ndpt
+else
+ i=nv1-nd2harm-2*rf-np
+  if(i/=0) c_%pos_of_delta=nd2harm+1 
+endif
+
+
+
+
+!    ndct=iabs(ndpt-ndptb)  ! 1 if coasting, otherwise 0
+!    ndc2t=2*ndct  ! 2 if coasting, otherwise 0
+!    nd2t=nd2-2*rf-ndc2t   !  size of harmonic oscillators minus modulated clocks
+!    ndt=nd2t/2        ! ndt number of harmonic oscillators minus modulated clocks
+!    nd2harm=nd2t+2*rf  !!!!  total dimension of harmonic phase space
+!    ndharm=ndt+rf  !!!! total number of harmonic planes
+!
+
   end subroutine c_init
 
   subroutine c_init_all(NO1,NV1,np1,ndpt1,AC_rf,ptc)  !,spin
@@ -8801,6 +8841,18 @@ qi_phasor=ci_phasor()
     logical(lp), optional :: ptc  
     call c_init(NO1,NV1,np1,ndpt1,AC_rf,ptc)
      call init(NO,nd,np,ndpt) 
+
+c_%nd2t=>nd2t
+c_%nd2harm=>nd2harm
+c_%ndc2t=>ndc2t
+c_%no=>NO
+c_%NDPT=>NDPT
+c_%ND=>ND
+c_%ND2=>ND2
+c_%ndptb=>ndptb
+c_%ndpt=>ndpt
+write(6,*) ndpt
+
  end   subroutine c_init_all
 
     subroutine c_etcct(x,n1,y,n2,z)
@@ -10565,8 +10617,8 @@ SUBROUTINE  c_EQUALcray(S2,S1)
        JL(i)=0
     enddo
     ! if(old) then
-    do i=1,S1%n
-       do j=1,S1%n
+    do i=1,min(S1%n,size(s2,1))
+       do j=1,min(S1%n,size(s2,2))
           JL(j)=1
           call c_dapek(S1%v(i)%i,JL,s2(i,j))
           JL(j)=0
@@ -12238,16 +12290,17 @@ endif
       
       call c_full_canonise(m1,a1,phase=phase,nu_spin=nu_spin)
       
-      if(present(nu_spin)) then
-        call alloc(c1,s1)
-        c1=m1%s%s(1,1)
-        s1=m1%s%s(1,3)
-        nu_spin=spin_def_tune*atan2(s1,c1)/twopi
-        nu_spin=nu_spin*from_phasor()
-        call kill(c1,s1)
-      endif
       
     endif
+
+    !  if(present(nu_spin)) then
+    !    call alloc(c1,s1)
+    !    c1=m1%s%s(1,1)
+    !    s1=m1%s%s(1,3)
+    !    nu_spin=spin_def_tune*atan2(s1,c1)/twopi
+     !!   nu_spin=nu_spin*from_phasor()
+     !   call kill(c1,s1)
+    !  endif
 
 
     call c_check_rad(m1%e_ij,rad_in)
