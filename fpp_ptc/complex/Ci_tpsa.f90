@@ -710,6 +710,8 @@ type(q_linear) q_phasor,qi_phasor
 
   INTERFACE MAKESO3
      MODULE PROCEDURE quaternion_to_matrix_in_c_damap
+     MODULE PROCEDURE q_linear_to_matrix
+     MODULE PROCEDURE q_linear_to_3_by_3_by_6
   END INTERFACE
   ! management routines
 
@@ -6531,6 +6533,35 @@ enddo
 
     end subroutine  q_linear_to_matrix 
 
+  subroutine  q_linear_to_3_by_3_by_6 (q_lin,m)
+    implicit none
+    real(dp), INTENT(INOUT) :: m(3,3,0:6)
+    TYPE(q_linear), INTENT(IN) :: q_lin
+    type(q_linear) sf,q,s
+    integer i,j
+
+!type q_linear
+! complex(dp) mat(6,6)
+! complex(dp)  q(0:3,0:6) 
+!end type q_linear
+
+     q=1
+     q%q=q_lin%q
+     s%mat=0
+     s%q=0
+     m=0
+    do i=1,3
+     s=i
+
+     sf=q*s*q**(-1)
+
+     do j=1,3
+      m(j,i,0:6)=sf%q(j,0:6)
+     enddo
+    enddo
+ 
+
+    end subroutine  q_linear_to_3_by_3_by_6 
 
 
   FUNCTION cdaddsc( S1, sc )
@@ -11678,6 +11709,7 @@ subroutine c_full_canonise(at,a_cs,as,a0,a1,a2,rotation,phase,nu_spin,irot)
       a2t%s=1
     endif
     if(kspin==-1.and.ir==1) then
+
      call c_remove_y_rot(ast,ar,tune_spin)
      if(present(nu_spin) ) nu_spin=tune_spin/twopi+nu_spin
          if(present(rotation)) then
@@ -12357,7 +12389,7 @@ sinalpha=sqrt(q3%x(1)**2+q3%x(2)**2+q3%x(3)**2)
 
 alpha= atan2(sinalpha,cosalpha)
 
-
+ 
 
 if(alpha==0.and.cosalpha/=-1.0_dp) then
 ! write(6,*)sinalpha,cosalpha
@@ -12368,7 +12400,7 @@ if(alpha==0.and.cosalpha/=-1.0_dp) then
 
 else
 
-if(cosalpha==-1.0_dp)  then
+if(abs(cosalpha+1.0_dp)>=1.e-16_dp)  then
  q3=-1.0_dp
 else 
  q3%x(0)=cos(alpha/2)
@@ -16924,13 +16956,14 @@ end subroutine extract_a2
      real(dp) si0,co0
     type(c_taylor) t
     type(c_quaternion) qnr
+    type(q_linear) q,qr
     integer i
     integer  nmax
-    real(dp) eps,norm1,norm2,d,dt
+    real(dp) eps,norm1,norm2,d,dt,aq
     logical check
 !!!  original as_xyz = as_xyz*r_y = a_y*a_nl*r_y  on exit
     check=.true.
-    eps=1.d-6
+    eps=1.d-9
     nmax=1000
  
     call alloc(n_expo)
@@ -16963,6 +16996,20 @@ dt=0
 
  
       if(use_quaternion) then
+      if(i==1) then
+          q=1
+          q=as_y%q
+            aq=-atan2(real(q%q(2,0)),real(q%q(0,0)))
+            temp%q=1.0_dp
+            temp%q%x(0)= cos(aq)
+            temp%q%x(2)= -sin(aq)
+
+            n_tune%v(1)=0.0_dp
+            n_tune%v(3)=0.0_dp
+            n_tune%v(2)=-aq*2.0_dp
+ 
+     else
+
             temp%q=1.0_dp
             si0=as_y%q%x(2)
             co0=as_y%q%x(0)
@@ -16977,33 +17024,11 @@ dt=0
   
   
             call cfu(n_tune%v(2),c_phase_shift,n_tune%v(2))
-qnr=n_tune
-  temp%q=exp(qnr)
-n_tune%v(2)=n_tune%v(2)*2.0_dp
-!write(16,*) 1,si0,co0
-        
- !           co0= atan2(si0,co0) 
-!write(16,*) co0
-!            co0=asin(si0)
-!write(16,*) co0
- !           temp%q%x(0)=cos(co0)
- !           temp%q%x(2)=sin(co0)
-            
- !  n_tune%v(2)=co0*2.0_dp
- !        t=as_y%q%x(0)+i_*as_y%q%x(2)
- !       t= log( t)
- !       t=aimag(t)
- !          n_tune%v(2)= 2*t
- !             temp%q%x(0)=cos(t)
- !             temp%q%x(2)=sin(t)
-        norm2=FULL_ABS(n_tune%v(2)) 
-!write(6,*) norm2
-!write(6,*) i,norm2
-!call print(as_y%q%x(0))
-!call print(temp%q%x(2))
-! call print(as_y%q%x(2))
-
-!pause 123
+             qnr=n_tune
+           temp%q=exp(qnr)
+            n_tune%v(2)=n_tune%v(2)*2.0_dp
+  endif
+ 
        else
             n_expo=log(as_y%s,exact=my_false)
             !     call dalog_spinor_8(as_y,n_expo)
@@ -17062,7 +17087,7 @@ endif
     enddo
 
     if(i>nmax-10) then
-       write(6,*) "no convergence in remove_y_rot ",norm2,norm1,i
+       write(6,*) "no convergence in remove_y_rot ",norm2,norm1,eps,i,norm2>=norm1
        !stop 1067
     endif
     
