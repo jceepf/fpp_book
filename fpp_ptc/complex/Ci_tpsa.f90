@@ -12400,7 +12400,7 @@ if(alpha==0.and.cosalpha/=-1.0_dp) then
 
 else
 
-if(abs(cosalpha+1.0_dp)>=1.e-16_dp)  then
+if(abs(cosalpha+1.0_dp)<=1.e-16_dp)  then
  q3=-1.0_dp
 else 
  q3%x(0)=cos(alpha/2)
