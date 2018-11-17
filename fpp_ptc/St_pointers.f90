@@ -414,6 +414,9 @@ endif
           enddo
        case('USER1')
          call my_user_routine1
+       case('SPINTWISSCAS')
+           read(mf,*) no,noca   !  order and general canonise
+         call SMALL_CODE_TWISS(my_ering,no,noca)
        case('SETORBITPHASORTIME','ORBITTIME')
           read(mf,*) xsmt
           xsm0t=xsmt

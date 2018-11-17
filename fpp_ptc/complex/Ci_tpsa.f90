@@ -7790,7 +7790,7 @@ endif
         INTEGER,OPTIONAL,INTENT(IN)::MFILE
     REAL(DP),OPTIONAL,INTENT(INOUT)::DEPS
     type (c_vector_field),INTENT(INout)::S1
-    integer i,mfi
+    integer i,mfi,k
     real(dp) norm
     logical, optional :: dospin
     logical(lp) dos
@@ -7811,13 +7811,23 @@ endif
 
     if(dos) then
  
+        call c_full_norm_quaternion(s1%q,k,norm)
+        if(k==-1) then
           write(mfi,*) " Quaternion  "
-          call c_pri_quaternion(S1%q,mfi,deps)  
+          call c_pri_quaternion(S1%q,MFILE,prec=deps)  
+         endif
+        if(k==0) then
+         write(mfi,*) " No c_quaternion "
+        endif
+        if(k==1) then
+         write(mfi,*) " c_quaternion is identity "
+        endif
  
     else
          write(mfi,*) " c_quaternion is not printed per user's request "
     endif
 
+ 
 
 
   
@@ -12341,9 +12351,10 @@ endif
       endif
           qphase=.false.
       call c_full_canonise(m1,a1,phase=phase,nu_spin=nu_spin)
+       if(dospinr) then
         if(real(nu_spin.sub.'0')<0) nu_spin=-nu_spin   ! 2018.11.01  to match phase advance
+       endif
           qphase=.true.
-      
     endif
 
 
@@ -17422,11 +17433,11 @@ subroutine print_vector_field_fourier(s1,mf)
     INTEGER I,mf
  
      write(mf,*) 0,"th mode"
-     call print(s1%f(0),mf)
+     call print(s1%f(0),mf,dospin=.false.)
     do i=1,n_fourier
      write(mf,*) i,"th mode"
-     call print(s1%f(i),mf)
-     call print(s1%f(-i),mf)
+     call print(s1%f(i),mf,dospin=.false.)
+     call print(s1%f(-i),mf,dospin=.false.)
     enddo
 
 end subroutine print_vector_field_fourier
