@@ -99,6 +99,7 @@ private EQUALq_r,EQUALq_8_c,EQUALq_c_8,EQUALq,POWq,c_invq,subq,mulq,addq,alloc_c
 private c_pri_quaternion,CUTORDERquaternion,c_trxquaternion,EQUALq_c_r,EQUALq_r_c,mulcq,c_exp_quaternion
 private equalc_quaternion_c_spinor,equalc_spinor_c_quaternion,unarySUB_q,c_trxquaternion_tpsa
 private c_exp_vectorfield_on_quaternion,c_vector_field_quaternion,addql,subql,mulqdiv,powql
+!private equal_map_real8,equal_map_complex8,equal_real8_map,equal_complex8_map
 real(dp) dts
 real(dp), private :: sj(6,6)
 logical :: use_new_stochastic_normal_form=.true.
@@ -162,8 +163,8 @@ type(q_linear) q_phasor,qi_phasor
     MODULE PROCEDURE r_matrixMAPr
     MODULE PROCEDURE MAPmatrixr
     MODULE PROCEDURE r_MAPmatrixr
-     MODULE PROCEDURE c_DPEKMAP
-     MODULE PROCEDURE c_DPOKMAP
+   !  MODULE PROCEDURE c_DPEKMAP
+  !   MODULE PROCEDURE c_DPOKMAP
      MODULE PROCEDURE EQUALspinmatrix
 
      MODULE PROCEDURE EQUAL_c_map_RAY8   !#  c_damap=probe_8
@@ -186,6 +187,11 @@ type(q_linear) q_phasor,qi_phasor
       MODULE PROCEDURE flatten_c_factored_lie_r !# same as flatten_c_factored_lie
       MODULE PROCEDURE equalc_quaternion_c_spinor
       MODULE PROCEDURE equalc_spinor_c_quaternion
+
+      MODULE PROCEDURE equal_map_real8
+      MODULE PROCEDURE equal_map_complex8    ! replaces c_dpokmap
+      MODULE PROCEDURE equal_real8_map
+      MODULE PROCEDURE equal_complex8_map   ! replaces c_dpekmap
 
   end  INTERFACE
 
@@ -3302,6 +3308,88 @@ endif
  
   END SUBROUTINE EQUAL
 
+  SUBROUTINE  equal_map_real8(S2,S1)
+!*
+    implicit none
+    type (c_damap),INTENT(inOUT)::S2
+    real(dp),INTENT(IN),dimension(:)::S1     
+
+    integer i
+    IF(.NOT.C_STABLE_DA) RETURN
+
+    call c_check_snake
+    !    if(old) then
+    if(s2%v(1)%i==0) then
+       call c_crap1("EQUAL 1 in tpsa") !call allocw(s2)
+    endif
+
+    do i=1, min(s2%n,size(s1,1)) 
+     S2%v(i)=s1(i)
+    enddo
+ 
+  END SUBROUTINE equal_map_real8
+
+  SUBROUTINE  equal_map_complex8(S2,S1)
+!*
+    implicit none
+    type (c_damap),INTENT(inOUT)::S2
+    complex(dp),INTENT(IN),dimension(:)::S1   
+
+    integer i
+    IF(.NOT.C_STABLE_DA) RETURN
+
+    call c_check_snake
+    !    if(old) then
+    if(s2%v(1)%i==0) then
+       call c_crap1("EQUAL 1 in tpsa") !call allocw(s2)
+    endif
+ 
+    do i=1, min(s2%n,size(s1,1)) 
+     S2%v(i)=s1(i)
+    enddo
+ 
+  END SUBROUTINE equal_map_complex8
+
+  SUBROUTINE  equal_real8_map(S2,S1)
+!*
+    implicit none
+    real(dp),INTENT(inOUT),dimension(:)::S2
+    type (c_damap),INTENT(IN)::S1 
+    integer i
+    IF(.NOT.C_STABLE_DA) RETURN
+
+    call c_check_snake
+    !    if(old) then
+    if(s1%v(1)%i==0) then
+       call c_crap1("EQUAL 1 in tpsa") !call allocw(s2)
+    endif
+ 
+    do i=1, min((s1%n),size(s2,1)) 
+     s2(i)=S1%v(i)
+    enddo
+ 
+  END SUBROUTINE equal_real8_map
+
+  SUBROUTINE  equal_complex8_map(S2,S1)
+!*
+    implicit none
+    complex(dp),INTENT(inOUT),dimension(:)::S2
+    type (c_damap),INTENT(IN)::S1
+    integer i
+    IF(.NOT.C_STABLE_DA) RETURN
+
+    call c_check_snake
+    !    if(old) then
+    if(s1%v(1)%i==0) then
+       call c_crap1("EQUAL 1 in tpsa") !call allocw(s2)
+    endif
+    
+    do i=1, min(s1%n,size(s2,1)) 
+     s2(i)=S1%v(i)
+    enddo
+ 
+  END SUBROUTINE equal_complex8_map
+
 !skowron to bypass strange gfortran error when using s2=s1     
  SUBROUTINE  equal_c_tayls(S2,S1)
     implicit none
@@ -5245,7 +5333,12 @@ endif
    endif
   end subroutine derive
 
+
+
       FUNCTION getvectorfield( S1,s2 )  
+!#internal: getvectorfield
+!# produce vector field S1.grad= :s2:
+!
     implicit none
     TYPE (c_vector_field) getvectorfield
     TYPE (c_taylor), INTENT (IN) :: S1
