@@ -4964,15 +4964,7 @@ else
  
 
 !!!!!!!!!!!!  Analytical  !!!!!!!!!!!!!!!!!!!!
-if(associated(f,sf)) then
- dnu_dko=betx(1)**2*3.0_dp/8.0_dp/twopi
-betasfx=betx(1)
- if(general) then
- phx=phase(1)
-else
- phx=phaser(1)
-endif
-endif
+
 
 
 Write(mf,*) " change in invariant due to octupole : TPSA "
