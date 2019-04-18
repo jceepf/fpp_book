@@ -47,7 +47,7 @@ call kanalnummer(mfmap,"maps.txt")
 
 state= nocavity0 + modulation0 !
 
-map_order=1
+map_order=3
 call init_all(state,map_order,0)
 
 

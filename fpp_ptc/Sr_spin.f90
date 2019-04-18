@@ -44,7 +44,7 @@ module ptc_spin
   REAL(DP) :: bran_init=pi  
   logical :: locate_with_no_cavity = .false.,full_way=.true.
   integer  :: item_min=3,mfdebug
-
+ 
   !  INTEGER, PRIVATE :: ISPIN0P=0,ISPIN1P=3
   
 
@@ -1183,7 +1183,13 @@ endif
        DLDS=root((1.0_dp+d2**2))*d1/(1.0_dp/BETA0+del)
        OM(2)=p%dir*el%pa%hc
     CASE(KIND21)     ! travelling wave cavity
-       WRITE(6,*) EL%KIND,EL%NAME," NOT DONE "
+       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/root(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/root((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
+
     case(KIND22)
        CALL B_PARA_PERP(k,EL,0,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
        IF(k%TIME) THEN
@@ -1341,7 +1347,12 @@ endif
        DLDS=sqrt((1.0_dp+d2**2))*d1/(1.0_dp/BETA0+del)
        OM(2)=p%dir*el%pa%hc
     CASE(KIND21)     ! travelling wave cavity
-       WRITE(6,*) EL%KIND,EL%NAME," NOT DONE "
+       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/sqrt(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/sqrt((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
     case(KIND22)
        CALL B_PARA_PERP(k,EL,0,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
        IF(k%TIME) THEN
@@ -1489,11 +1500,7 @@ endif
       endif
 
     CASE(KIND21)     ! travelling wave cavity
-       IF(EL%cav21%P%DIR==1) THEN
-          Z= pos*el%l/el%p%nst
-       ELSE
-          Z=EL%L-pos*el%l/el%p%nst
-       ENDIF
+        call get_z_cav(EL%cav21,pos,z)
 
        call A_TRANS(EL%cav21,Z,X,k,A,AD,B,E)
 
@@ -1602,11 +1609,7 @@ endif
     CASE(KIND21)     ! travelling wave cavity
        call alloc(a,3)
        call alloc(ad,3)
-       IF(EL%cav21%P%DIR==1) THEN
-          Z= pos*el%l/el%p%nst
-       ELSE
-          Z=EL%L-pos*el%l/el%p%nst
-       ENDIF
+        call get_z_cav(EL%cav21,pos,z)
 
        call A_TRANS(EL%cav21,Z,X,k,A,AD,B,E)
        call kill(a,3)
@@ -2516,6 +2519,7 @@ call kill(vm,phi,z)
     TYPE (fibre),optional, POINTER :: fibre1,fibre2
     TYPE (INTEGRATION_NODE), POINTER :: C,n1,n2,last
     logical donew
+    real(dp) beta
     !    INTEGER,TARGET :: CHARGE
 
     !    if(present(node1))CHARGE=NODE1%PARENT_FIBRE%CHARGE
@@ -2552,6 +2556,11 @@ call kill(vm,phi,z)
     if(donew) then   ! actually calling old stuff pre-node
      call TRACK(xs%x,K,fibre1,fibre2=fibre2)
     else
+     if(use_bmad_units.and.(.not.inside_bmad)) then 
+       beta=C%PARENT_FIBRE%beta0
+       if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
+       call convert_bmad_to_ptc(xs,beta,k%time)
+     endif
      DO  WHILE(.not.ASSOCIATED(C,n2))
         CALL TRACK_NODE_PROBE(C,XS,K)
         if(.not.check_stable) exit
@@ -2561,6 +2570,11 @@ call kill(vm,phi,z)
      if(associated(last).and.check_stable) then
        CALL TRACK_NODE_PROBE(last,XS,K)
      endif
+    if(use_bmad_units.and.(.not.inside_bmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_ptc_to_bmad(xs,beta,k%time)
+    endif
     endif
 
 
@@ -2579,6 +2593,7 @@ call kill(vm,phi,z)
     TYPE (fibre),optional, POINTER :: fibre1,fibre2
     TYPE (INTEGRATION_NODE), POINTER :: C,n1,n2,last
     logical donew
+    real(dp) beta
     !    INTEGER,TARGET :: CHARGE
 
     !    if(present(node1))CHARGE=NODE1%PARENT_FIBRE%CHARGE
@@ -2628,6 +2643,11 @@ call kill(vm,phi,z)
     if(donew) then   ! actually calling old stuff pre-node
      call TRACK(xs%x,K,fibre1,fibre2=fibre2)
     else
+     if(use_bmad_units.and.(.not.inside_bmad)) then 
+       beta=C%PARENT_FIBRE%beta0
+       if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
+       call convert_bmad_to_ptc(xs,beta,k%time)
+     endif
      DO  WHILE(.not.ASSOCIATED(C,n2))
         CALL TRACK_NODE_PROBE(C,XS,K)
         if(.not.check_stable) exit
@@ -2637,6 +2657,11 @@ call kill(vm,phi,z)
      if(associated(last).and.check_stable) then
        CALL TRACK_NODE_PROBE(last,XS,K)
      endif
+    if(use_bmad_units.and.(.not.inside_bmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_ptc_to_bmad(xs,beta,k%time)
+    endif
     endif
 
 
@@ -2656,7 +2681,7 @@ call kill(vm,phi,z)
     INTEGER, INTENT(IN):: I1,I2
     INTEGER J,i22
     TYPE (INTEGRATION_NODE), POINTER :: C
-
+    real(dp) beta
     ! CALL RESET_APERTURE_FLAG
     xs%u=my_false
 
@@ -2671,8 +2696,13 @@ call kill(vm,phi,z)
 
     J=I1
 
-    DO  WHILE(J<I22.AND.ASSOCIATED(C))
+    if(use_bmad_units.and.(.not.inside_bmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_bmad_to_ptc(xs,beta,k%time)
+    endif
 
+    DO  WHILE(J<I22.AND.ASSOCIATED(C))
        CALL TRACK_NODE_PROBE(C,XS,K)
 
        if(.not.check_stable) exit
@@ -2681,6 +2711,13 @@ call kill(vm,phi,z)
        C=>C%NEXT
        J=J+1
     ENDDO
+
+    if(use_bmad_units.and.(.not.inside_bmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_ptc_to_bmad(xs,beta,k%time)
+    endif
+
     C_%STABLE_DA=.true.
 
     !    if(c_%watch_user) ALLOW_TRACKING=.FALSE.
@@ -2696,7 +2733,7 @@ call kill(vm,phi,z)
     INTEGER, INTENT(IN):: I1,I2
     INTEGER J   ,i22
     TYPE (INTEGRATION_NODE), POINTER :: C
-
+    real(dp) beta
 
     !    CALL RESET_APERTURE_FLAG
 
@@ -2714,15 +2751,27 @@ call kill(vm,phi,z)
 
     J=I1
 
-    DO  WHILE(J<I22.AND.ASSOCIATED(C))
-  
-       CALL TRACK_NODE_PROBE(C,XS,K)  !,R%charge)
 
-       if(.not.check_stable) exit
+    if(use_bmad_units.and.(.not.inside_bmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_bmad_to_ptc(xs,beta,k%time)
+    endif
+
+    DO  WHILE(J<I22.AND.ASSOCIATED(C))
+        CALL TRACK_NODE_PROBE(C,XS,K)  !,R%charge)
+        if(.not.check_stable) exit
 
        C=>C%NEXT
        J=J+1
     ENDDO
+
+    if(use_bmad_units.and.(.not.inside_bmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_ptc_to_bmad(xs,beta,k%time)
+    endif
+
     C_%STABLE_DA=.true.
 
     !    if(c_%watch_user) ALLOW_TRACKING=.FALSE.
@@ -2776,6 +2825,7 @@ call kill(vm,phi,z)
    
  
      CALL TRACK_PROBE2(r,xs,K,i11,i22)
+
           
   END SUBROUTINE TRACK_LAYOUT_FLAG_probe_spin12r
 
@@ -3146,7 +3196,7 @@ call kill(vm,phi,z)
     type(INTEGRATION_NODE), pointer :: C
     type(probe), INTENT(INOUT) :: xs
     TYPE(INTERNAL_STATE) K
-    REAL(DP) FAC,DS
+    REAL(DP) FAC,DS,beta
     logical useptc,dofix0,dofix,doonemap
     type(tree_element), pointer :: arbre(:)
 !    logical(lp) bmad
@@ -3169,7 +3219,7 @@ call kill(vm,phi,z)
      useptc=.true.
 
      
-    if(.not.(k%nocavity.and.(C%PARENT_FIBRE%MAG%kind==kind4.or.C%PARENT_FIBRE%MAG%kind==kind21))) then
+  !  if(.not.(k%nocavity.and.(C%PARENT_FIBRE%MAG%kind==kind4.or.C%PARENT_FIBRE%MAG%kind==kind21))) then
      if(C%PARENT_FIBRE%dir==1) then
        if(C%PARENT_FIBRE%MAG%skip_ptc_f==1) return
        if(associated(C%PARENT_FIBRE%MAG%forward)) then
@@ -3185,10 +3235,13 @@ call kill(vm,phi,z)
           doonemap=C%PARENT_FIBRE%MAG%do1mapb
        endif
      endif
-    endif ! cavity
+ !   endif ! cavity
  
-    if(use_bmad_units) then 
-      call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
+
+    if(use_bmad_units.and.inside_bmad) then
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_bmad_to_ptc(xs,beta,k%time)
     endif
 
     IF(K%MODULATION.and.xs%nac/=0) THEN !modulate
@@ -3229,14 +3282,14 @@ call kill(vm,phi,z)
           if(k%spin) then
  
                  CALL TRACK_SPIN_FRONT(C%PARENT_FIBRE,XS)
-           xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
+            if(xs%use_q) xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
 
           endif
        ELSEif(c%cas==caseP2) THEN
           if(k%spin) then
  
                  CALL TRACK_SPIN_BACK(C%PARENT_FIBRE,XS)
-           xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
+             if(xs%use_q) xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
 
            endif
           CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
@@ -3249,10 +3302,11 @@ call kill(vm,phi,z)
   !  IF((K%MODULATION.or.ramp).and.c%parent_fibre%mag%slow_ac) THEN  !modulate
   !     CALL restore_ANBN_SINGLE(C%PARENT_FIBRE%MAG,C%PARENT_FIBRE%MAGP)
   !  ENDIF  !modulate
-    if(use_bmad_units) then 
-      call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
+    if(use_bmad_units.and.inside_bmad) then
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_ptc_to_bmad(xs,beta,k%time)
     endif
-
  else ! full_way
  
 
@@ -3294,7 +3348,7 @@ endif ! full_way
     type(INTEGRATION_NODE), pointer :: C
     type(probe_8), INTENT(INOUT) :: xs
     TYPE(INTERNAL_STATE) K
-    REAL(DP) FAC
+    REAL(DP) FAC,beta
     type(real_8) ds
     logical(lp) CHECK_KNOB
     integer(2), pointer,dimension(:)::AN,BN
@@ -3319,7 +3373,7 @@ endif ! full_way
 
     if(full_way.or.k%full_way) then
     useptc=.true.
-    if(.not.(k%nocavity.and.(ki==kind4.or.ki==kind21))) then
+!    if(.not.(k%nocavity.and.(ki==kind4.or.ki==kind21))) then
      if(C%PARENT_FIBRE%dir==1) then
        if(C%PARENT_FIBRE%MAGp%skip_ptc_f==1) return
        if(associated(C%PARENT_FIBRE%MAGP%forward)) then
@@ -3335,10 +3389,14 @@ endif ! full_way
           doonemap=C%PARENT_FIBRE%MAGp%do1mapb
        endif
      endif
-    endif
+!    endif
  
-    if(use_bmad_units) then 
-      call convert_bmad_to_ptc(xs,C%PARENT_FIBRE%beta0,k%time)
+ 
+
+    if(use_bmad_units.and.inside_bmad) then
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_bmad_to_ptc(xs,beta,k%time)
     endif
 
     IF(K%MODULATION.and.xs%nac/=0) then
@@ -3396,25 +3454,26 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
           if(k%spin) then
  
                  CALL TRACK_SPIN_FRONT(C%PARENT_FIBRE,XS)
-                      ds=1.0_dp/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
-
+       if(xs%use_q) then
+           ds=1.0_dp/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
            xs%q%x(0)=xs%q%x(0)*ds
            xs%q%x(1)=xs%q%x(1)*ds
            xs%q%x(2)=xs%q%x(2)*ds
            xs%q%x(3)=xs%q%x(3)*ds
-
+        endif
 
           endif
        ELSEif(c%cas==caseP2) THEN
           if(k%spin) then
   
                  CALL TRACK_SPIN_BACK(C%PARENT_FIBRE,XS)
-                      ds=1.0_dp/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
-
+        if(xs%use_q) then
+           ds=1.0_dp/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
            xs%q%x(0)=xs%q%x(0)*ds
            xs%q%x(1)=xs%q%x(1)*ds
            xs%q%x(2)=xs%q%x(2)*ds
            xs%q%x(3)=xs%q%x(3)*ds
+        endif
            endif
           CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
      ENDIF
@@ -3431,8 +3490,10 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     call kill(ds)
 
 
-    if(use_bmad_units) then 
-      call convert_ptc_to_bmad(xs,C%PARENT_FIBRE%beta0,k%time)
+    if(use_bmad_units.and.inside_bmad) then
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_ptc_to_bmad(xs,beta,k%time)
     endif
 else
 
@@ -4302,7 +4363,7 @@ endif
     write(mff,*) " every ",kp," turns "
     do k=1,nturn
        call track_probe(ring,xs0,mstate,node1=pos)  !,fibre2=3)
-
+  if(use_quaternion) call probe_quaternion_to_matrix(xs0)
        do i=1,3
           xst%s(i)%x=xs0%s(i)%x+xst%s(i)%x  ! <---- Stroboscopic average
        enddo
@@ -4335,8 +4396,6 @@ endif
     enddo
 
   end SUBROUTINE stroboscopic_average
-
-
 
 
   ! time tracking
@@ -5217,7 +5276,7 @@ end subroutine equal_temporal
 
 
 
-subroutine fill_tree_element(f,no,fix0,onemap,factor)   ! fix0 is the initial condition for the maps
+subroutine fill_tree_element(f,no,fix0,onemap,factor,file)   ! fix0 is the initial condition for the maps
 implicit none
 type(fibre), target :: f
 type(layout), pointer :: r
@@ -5231,7 +5290,8 @@ type(probe_8) xs
 type(c_damap) m,mr
 logical :: onemap,fact
 logical,optional :: factor
-integer no,i
+integer no,i,mf
+character(*), optional :: file 
 
 fact=.false. 
 
@@ -5429,9 +5489,16 @@ arbre(1)%beta0=f%beta0
  
 call kill(xs);call kill(m)
  
+ if(present(file)) then
+  call kanalnummer(mf,file)
+   call print_tree_elements(arbre,mf)
+  close(mf)
+ endif
+
+
 end subroutine fill_tree_element
 
-subroutine fill_tree_element_line(f1,f2,f,no,fix0,factor,nocav)   ! fix0 is the initial condition for the maps
+subroutine fill_tree_element_line(f1,f2,f,no,fix0,factor,nocav,file)   ! fix0 is the initial condition for the maps
 implicit none
 type(fibre), target :: f1,f2,f
 type(layout), pointer :: r
@@ -5445,9 +5512,9 @@ type(probe_8) xs
 type(c_damap) m,mr
 logical :: fact,noca
 logical,optional :: factor,nocav
-integer no,i
+integer no,i,mf
 type(fibre), pointer :: p
- 
+character(*), optional :: file 
 
 fact=.false. 
 noca=.false. 
@@ -5582,6 +5649,7 @@ call SET_TREE_G_complex(f%mag%forward,m,fact)
  f%mag%do1mapf=.false.
  f%mag%usef=.true.
  arbre=>f%mag%forward
+
 else
  if(.not.associated(f%mag%backward)) then 
   allocate(f%mag%backward(3))
@@ -5609,6 +5677,9 @@ arbre(1)%fix(1:6)=fix
 
 arbre(1)%beta0=f1%beta0
 
+
+
+
 if(f%dir==1) then
  if(.not.associated(f%magp%forward)) then 
   allocate(f%magp%forward(3))
@@ -5624,6 +5695,7 @@ enddo
  f%magp%do1mapf=.false.
  f%magp%usef=.true.
  arbre=>f%magp%forward
+
 else
 
  if(.not.associated(f%magp%backward)) then 
@@ -5656,9 +5728,147 @@ arbre(1)%beta0=f1%beta0
  
 call kill(xs);call kill(m)
  
+
+ if(present(file)) then
+  call kanalnummer(mf,file)
+   call print_tree_elements(arbre,mf)
+  close(mf)
+ endif
+
+
 end subroutine fill_tree_element_line
 
 !!!!!!!!!!!!!!!!!!!!   stuff for Zhe  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+subroutine fill_tree_element_line_zhe0(state_0,state,f1,f2,no,fix0_0,fix0,filef,stochprec,sagan_tree)   ! fix0 is the initial condition for the maps
+implicit none
+type(fibre), target :: f1,f2 
+type(layout), pointer :: r
+TYPE(INTEGRATION_NODE),POINTER:: t1c,t2c
+TYPE (NODE_LAYOUT), POINTER :: t
+type(internal_state), intent(in):: state,state_0
+real(dp) fixr(6),fixs(6),fix(6),fix0(6),fix0_0(6),mat(6,6),xn,stoch,fix_0(6)
+real(dp), optional :: stochprec
+ 
+type(probe) xs0,xs0_0
+type(probe_8) xs,xs_0
+type(c_damap) m,mr,m_0
+integer no,i,inf
+type(fibre), pointer :: p
+type(tree_element), pointer :: forward(:) =>null()
+character(*),optional :: filef
+type(tree_element),optional, target :: sagan_tree(3)
+
+ 
+
+if(present(sagan_tree)) then
+ forward=>sagan_tree
+else
+  allocate(forward(3))
+endif
+if(.not.associated(f1%parent_layout)) then
+ write(6,*) " parent layout not associated "
+ stop
+else
+ r=>f1%parent_layout
+endif
+
+ t=>f1%parent_layout%t
+ t1c=>f1%t1 !%next
+ t2c=>f2%t1
+
+
+mat=0
+do i=1,size(mat,1)
+mat(i,i)=1
+enddo
+
+ 
+call init_all(state,no,0)
+call alloc(xs);call alloc(m,m_0);call alloc(mr)
+ call alloc(xs_0);
+
+
+xs0=fix0
+m=1
+xs=xs0+m
+if(associated(t1c,t2c)) then
+ call propagate(xs,state,node1=t1c)
+else
+ call propagate(xs,state,node1=t1c,node2=t2c)
+endif
+ 
+
+
+xs0_0=fix0_0
+m=1
+xs_0=xs0_0+m
+if(associated(t1c,t2c)) then
+ call propagate(xs_0,state_0,node1=t1c)
+else
+ call propagate(xs_0,state_0,node1=t1c,node2=t2c)
+endif
+ 
+! For David
+!!  The full nonlinear map m is computed and the final orbit
+!!  
+fix=xs%x  ! <---   
+m=xs  ! <---   
+ 
+do i=1,6
+ m%v(i)=m%v(i)-(m%v(i).sub.0)
+enddo 
+
+fix_0=xs_0%x  ! <---   
+m_0=xs_0 ! <---   
+ 
+do i=1,6
+ m_0%v(i)=m_0%v(i)-(m_0%v(i).sub.0)
+enddo 
+
+ 
+
+ 
+call SET_TREE_G_complex_zhe0(forward,m,m_0)
+
+  stoch=-1.0_dp
+if(present(stochprec)) stoch=stochprec
+
+if(stoch>=0) then
+  call c_stochastic_kick(m,forward(2)%rad,forward(2)%fix0,stoch)  
+endif
+
+ 
+forward(1)%rad=mat
+forward(1)%fix0(1:6)=fix0
+forward(1)%fixr(1:6)=fix
+forward(1)%fix(1:6)=fix    ! always same fixed point
+ 
+ 
+forward(3)%fix0(1:6)=fix0_0
+forward(3)%fixr(1:6)=fix_0
+forward(3)%fix(1:6)=fix_0    ! always same fixed point
+
+
+ forward(1)%ds=0.0_dp
+ p=>f1
+ do while(.not.associated(p,f2))
+  forward(1)%ds=p%mag%p%ld +forward(1)%ds
+  p=>p%next
+ enddo
+forward(1)%beta0=f1%beta0
+
+ if(present(filef)) then
+  call kanalnummer(inf,filef)
+    call print_tree_elements(forward,inf)
+   close(inf)
+  call KILL(forward)
+  deallocate(forward)
+endif
+
+call kill(xs);call kill(m);call kill(mr)
+ 
+end subroutine fill_tree_element_line_zhe0
+
 subroutine fill_tree_element_line_zhe(state,f1,f2,no,fix0,filef,stochprec,sagan_tree)   ! fix0 is the initial condition for the maps
 implicit none
 type(fibre), target :: f1,f2 
@@ -5668,6 +5878,7 @@ TYPE (NODE_LAYOUT), POINTER :: t
 type(internal_state), intent(in):: state
 real(dp) fixr(6),fixs(6),fix(6),fix0(6),mat(6,6),xn,stoch
 real(dp), optional :: stochprec
+ 
 type(probe) xs0
 type(probe_8) xs
 type(c_damap) m,mr
@@ -5677,6 +5888,7 @@ type(tree_element), pointer :: forward(:) =>null()
 character(*),optional :: filef
 type(tree_element),optional, target :: sagan_tree(3)
 
+ 
 
 if(present(sagan_tree)) then
  forward=>sagan_tree
@@ -5726,9 +5938,7 @@ do i=1,6
  m%v(i)=m%v(i)-(m%v(i).sub.0)
 enddo 
 
-
-
-
+ 
 
 
 call SET_TREE_G_complex_zhe(forward,m)
@@ -5773,16 +5983,18 @@ end subroutine fill_tree_element_line_zhe
     TYPE(TREE_ELEMENT), INTENT(INOUT) :: T(:)
     TYPE(c_damap), INTENT(INOUT) :: Ma
     INTEGER N,NP,i,k,j,kq
+ 
     real(dp) norm,mat(6,6)
     TYPE(taylor), ALLOCATABLE :: M(:), MG(:)
     TYPE(damap) ms
     integer js(6)
     type(c_damap) L_ns , N_pure_ns , N_s , L_s
 
-  
+
+ 
 
     call alloc(L_ns , N_pure_ns , N_s , L_s)
-
+    
     call symplectify_for_zhe(ma,L_ns , N_pure_ns, L_s , N_s )
     
 !    np=ma%n+18
@@ -5885,7 +6097,8 @@ endif
  !    call SET_TREE_g(T(2),m(1:size_tree))
      call SET_TREE_g(T(3),mg(1:size_tree))
 
-
+!T(3)%ng=mul
+!     write(6,*) " mul ",mul
       t(3)%rad=L_s
  
 
@@ -5900,6 +6113,141 @@ endif
 
   END SUBROUTINE SET_TREE_G_complex_zhe
 
+  SUBROUTINE SET_TREE_G_complex_zhe0(T,Ma,ma_0)
+    IMPLICIT NONE
+    TYPE(TREE_ELEMENT), INTENT(INOUT) :: T(:)
+    TYPE(c_damap), INTENT(INOUT) :: Ma,ma_0
+    INTEGER N,NP,i,k,j,kq
+ 
+    real(dp) norm,mat(6,6)
+    TYPE(taylor), ALLOCATABLE :: M(:), MG(:)
+    TYPE(damap) ms
+    integer js(6)
+    type(c_damap) L_ns , N_pure_ns , N_s , L_s
+
+
+ 
+
+    call alloc(L_ns , N_pure_ns , N_s , L_s)
+    
+    call symplectify_for_zhe0(ma,ma_0,L_ns , N_pure_ns, L_s , N_s )
+    
+!    np=ma%n+18
+    if(ma%n/=6) then
+     write(6,*) " you need a 6-d map in SET_TREE_G_complex for PTC "
+     stop
+    endif
+    np=size_tree
+! initialized in ptc ini
+ !   ind_spin(1,1)=1+ma%n;ind_spin(1,2)=2+ma%n;ind_spin(1,3)=3+ma%n;
+ !   ind_spin(2,1)=4+ma%n;ind_spin(2,2)=5+ma%n;ind_spin(2,3)=6+ma%n;
+ !   ind_spin(3,1)=7+ma%n;ind_spin(3,2)=8+ma%n;ind_spin(3,3)=9+ma%n;    
+ !   k1_spin(1)=1;k2_spin(1)=1;
+ !   k1_spin(2)=1;k2_spin(2)=2;
+ !   k1_spin(3)=1;k2_spin(3)=3;
+ !   k1_spin(4)=2;k2_spin(4)=1;
+ !   k1_spin(5)=2;k2_spin(5)=2;
+ !   k1_spin(6)=2;k2_spin(6)=3;
+ !   k1_spin(7)=3;k2_spin(7)=1;
+ !   k1_spin(8)=3;k2_spin(8)=2;
+ !   k1_spin(9)=3;k2_spin(9)=3;
+
+   
+    ALLOCATE(M(NP))
+    CALL ALLOC(M,NP)
+    ALLOCATE(Mg(NP))
+    CALL ALLOC(mg,NP)
+    do i=1,np
+     m(i)=0.e0_dp
+     mg(i)=0.e0_dp
+    enddo
+     
+      L_ns = L_ns*N_pure_ns
+
+     do i=1,L_ns%n
+      m(i)=L_ns%v(i)   ! orbital part
+     enddo
+
+    call c_full_norm_spin(Ma%s,k,norm)
+
+
+if(use_quaternion) then
+    call c_full_norm_quaternion(Ma%q,kq,norm)
+    if(kq==-1) then
+      do i=0,3
+        m(ind_spin(1,1)+i)=ma%q%x(i)
+      enddo
+    elseif(kq/=-1) then
+      m(ind_spin(1,1))=1.0_dp
+      do i=ind_spin(1,1)+1,size_tree
+        m(i)=0.0_dp
+      enddo
+    endif
+else
+    if(k==-1) then
+      do i=1,3
+      do j=1,3
+        m(ind_spin(i,j))=ma%s%s(i,j)
+      enddo
+      enddo
+    else
+      do i=1,3
+        m(ind_spin(i,i))=1.0e0_dp
+      enddo
+    endif
+endif
+      js=0
+     js(1)=1;js(3)=1;js(5)=1; ! q_i(q_f,p_i) and p_f(q_f,p_i)
+     call alloc(ms)
+
+ 
+       ms=n_s
+ 
+ 
+
+     ms=ms**js
+!     do i=1,3
+!      mg(i)=ms%v(2*i-1)   !  q_i(q_f,p_i)
+!      mg(3+i)=ms%v(2*i)   !  p_f(q_f,p_i)
+!     enddo
+     do i=1,6
+      mg(i)=ms%v(i) 
+     enddo
+     do i=1,3
+     do j=1,3
+       mg(ind_spin(i,j))=ms%v(2*i-1).d.(2*j-1)  !   Jacobian for Newton search
+     enddo
+     enddo
+          call kill(ms)  
+
+     call SET_TREE_g(T(1),m(1:6))
+ !    do i=1,ma%n
+ !     m(i)=1.0_dp.cmono.i
+ !    enddo 
+ !    do i=ma%n+1,6
+ !     m(i)=0.0_dp
+ !    enddo
+     call SET_TREE_g(T(2),m(7:15))
+ 
+ !    call SET_TREE_g(T(2),m(1:size_tree))
+     call SET_TREE_g(T(3),mg(1:size_tree))
+
+!T(3)%ng=mul
+!     write(6,*) " mul ",mul
+      t(3)%rad=L_s
+ 
+
+       mat=ma**(-1)
+       t(1)%e_ij=ma%e_ij     !matmul(matmul(mat,ma%e_ij),transpose(mat))  not necessary I think
+
+  
+
+    call kill(m); call kill(mg);
+    deallocate(M);    deallocate(Mg);
+    call kill(L_ns , N_pure_ns , N_s , L_s)
+
+  END SUBROUTINE SET_TREE_G_complex_zhe0
+
 
 
 subroutine symplectify_for_zhe(m,L_ns , N_pure_ns , L_s, N_s )
@@ -5909,7 +6257,7 @@ type(c_vector_field) f,fs
 complex(dp) v
 type(c_taylor) t,dt
 real(dp),allocatable::  mat(:,:)
-integer i,j,k,n(11),nv,nd2,al,ii,a
+integer i,j,k,n(11),nv,nd2,al,ii,a,mul
 integer, allocatable :: je(:)
 real(dp) dm,norm,normb,norma
 TYPE(c_damap) mt
@@ -5994,12 +6342,16 @@ do i=1,f%n
 
 enddo
  
+
+
 N_s=exp(fs)
 N_pure_ns= mt*N_s**(-1)
+
 N_s= L_s**(-1)*N_s*L_s 
 
-!mt=L_ns*N_pure_ns
-
+!norma=1.d0/mul
+!fs=norma*log(n_s)
+!N_s=exp(fs)
 
 
 deallocate(je);deallocate(s,id);
@@ -6007,6 +6359,122 @@ deallocate(je);deallocate(s,id);
 call kill(t,dt);call kill(mt);
 deallocate(mat)
 end subroutine symplectify_for_zhe
+
+subroutine symplectify_for_zhe0(m,m0,L_ns , N_pure_ns , L_s, N_s )
+implicit none
+TYPE(c_damap),intent(inout):: m ,m0,L_ns , N_pure_ns , N_s , L_s
+type(c_vector_field) f,fs
+complex(dp) v
+type(c_taylor) t,dt
+real(dp),allocatable::  mat(:,:)
+integer i,j,k,n(11),nv,nd2,al,ii,a,mul
+integer, allocatable :: je(:)
+real(dp) dm,norm,normb,norma
+TYPE(c_damap) mt
+real(dp),allocatable::   S(:,:),id(:,:)
+
+! m = L_ns o N_pure_ns o L_s o N_s
+! d= = L_ns o N_pure_ns
+! ms= L_s o N_s
+
+allocate(S(m%n,m%n),id(m%n,m%n))
+
+call c_get_indices(n,0)
+nv=n(4)
+nd2=n(3)
+
+S=0
+id=0
+do i=1,nd2/2
+ S(2*I-1,2*I)=1 ; S(2*I,2*I-1)=-1;
+ Id(2*I-1,2*I-1)=1 ; id(2*I,2*I)=1;
+enddo
+
+
+
+
+ call alloc(f);call alloc(fs);
+call alloc(t,dt);call alloc(mt);
+
+allocate(mat(m%n,m%n))
+
+mat=0
+
+
+
+if(nv-nd2==0) then
+mat=m0.sub.1
+else
+write(6,*) " this map should not have parameters or modulated magnets "
+stop 444
+endif
+
+
+! constructing Furman's contracting matrix from my review sec.3.8.2
+
+call furman_symp(mat)
+L_s=mat
+
+N_s=m0*L_s**(-1)
+
+!goto 1111
+f=log(N_s)
+ 
+fs=0
+
+! Integrating a symplectic operator using the hypercube's diagonal
+
+allocate(je(nv))
+je=0
+do i=1,f%n
+
+       j=1
+
+        do while(.true.) 
+
+          call  c_cycle(f%v(i),j,v ,je); if(j==0) exit;
+         dm=1
+         do ii=1,nd2
+          dm=dm+je(ii)
+         enddo
+        t=v.cmono.je
+        do a=1,nd2
+         dt=t.d.a
+        do al=1,nd2
+        do k=1,nd2
+          fs%v(al)=fs%v(al)+s(a,al)*s(k,i)*(id(k,a)*t+(1.0_dp.cmono.k)*dt)/dm
+        enddo ! k
+        enddo ! al
+        enddo ! a
+        enddo
+
+enddo
+ 
+
+
+N_s=exp(fs)
+
+
+!1111 continue 
+
+
+N_pure_ns= m*m0**(-1)
+
+L_ns=N_pure_ns.sub.1
+
+N_pure_ns=  L_ns**(-1)*N_pure_ns
+
+N_s= L_s**(-1)*N_s*L_s 
+
+ 
+ 
+
+deallocate(je);deallocate(s,id);
+ call kill(f);call kill(fs);
+call kill(t,dt);call kill(mt);
+deallocate(mat)
+end subroutine symplectify_for_zhe0
+
 
 
   SUBROUTINE furman_symp(r)

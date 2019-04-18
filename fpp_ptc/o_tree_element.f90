@@ -9,7 +9,7 @@ module tree_element_MODULE
 
   PRIVATE track_TREE,track_TREEP,KILL_TREE,KILL_TREE_N   !,SET_TREE
   PRIVATE track_TREE_G,track_TREEP_g
-  PRIVATE ALLOC_SPINOR_8,ALLOC_probe_8
+  PRIVATE ALLOC_SPINOR_8,ALLOC_probe_8,r_AVERAGE
   PRIVATE KILL_SPINOR_8,KILL_probe_8
   PRIVATE EQUAL_SPINOR8_SPINOR8,EQUAL_IDENTITY_SPINOR_8 !,EQUAL_SPINOR8_RAY8,EQUAL_RAY8_SPINOR8,
   PRIVATE  EQUAL_IDENTITY_probe_8
@@ -30,7 +30,7 @@ module tree_element_MODULE
 
 
   private scdaddo,daddsco
-  private real_8REAL6,REAL6real_8,real_8REAL_8,PRINT6
+  private real_8REAL6,REAL6real_8,real_8REAL_8
   private probe_quaternion_to_matrixr,probe_quaternion_to_matrixp
 
 
@@ -101,7 +101,6 @@ module tree_element_MODULE
      MODULE PROCEDURE cross_spinor8
   END  INTERFACE
 
-
   INTERFACE operator (+)
      MODULE PROCEDURE scdaddo
      MODULE PROCEDURE daddsco
@@ -113,7 +112,7 @@ module tree_element_MODULE
 
 
   INTERFACE PRINT
-     MODULE PROCEDURE PRINT6
+
 !!!
      MODULE PROCEDURE PRINT_probe
      MODULE PROCEDURE PRINT_probe8
@@ -121,10 +120,7 @@ module tree_element_MODULE
      MODULE PROCEDURE print_rf_phasor_8
   END INTERFACE
 
-  INTERFACE daPRINT
-     MODULE PROCEDURE PRINT6
-!!!!
-  END INTERFACE
+
 
   INTERFACE READ
      MODULE PROCEDURE read_probe8   ! a bit illegal : reading polymorphs as taylor...
@@ -159,6 +155,10 @@ module tree_element_MODULE
   INTERFACE KILL
      MODULE PROCEDURE KILL_TREE
      MODULE PROCEDURE KILL_TREE_N
+  END INTERFACE
+
+  INTERFACE AVERAGE
+     MODULE PROCEDURE r_AVERAGE
   END INTERFACE
 
 
@@ -266,27 +266,6 @@ CONTAINS
     enddo
   END SUBROUTINE real_8REAL6
 
-
- 
- 
-
-  SUBROUTINE  print6(S1,mf)
-    implicit none
-    type (real_8),INTENT(INout)::S1(:)
-    integer,optional :: mf
-    integer        i
-    
- !   if(size(s1)==6) then
- !    do i=1,ndd
- !       call print(s1(i),mf)
- !    enddo
- !   else
-     do i=1,size(s1)
-        call print(s1(i),mf)
-     enddo
- !   endif
-  END SUBROUTINE print6
-
 !!! end of "use to be in extend_poly"
 
   SUBROUTINE COPY_TREE(T,U)
@@ -315,7 +294,7 @@ CONTAINS
     U%symptrack=T%symptrack
     U%usenonsymp=T%usenonsymp
     U%factored=T%factored
-
+   ! U%ng=T%ng
   END SUBROUTINE COPY_TREE
 
   SUBROUTINE COPY_TREE_N(T,U)
@@ -351,7 +330,7 @@ CONTAINS
 
     ALLOCATE(T%CC(N),T%fix0(6),T%fix(6),T%fixr(6),T%JL(N),T%JV(N),T%N,T%ds,T%beta0,T%np,T%no, & 
   !  t%e_ij(c_%nd2,c_%nd2),T%rad(c_%nd2,c_%nd2),t%usenonsymp, t%symptrack, t%eps)  !,t%file)
-     t%e_ij(6,6),T%rad(6,6),t%usenonsymp, t%symptrack, t%eps,t%factored)  !,t%file)
+     t%e_ij(6,6),T%rad(6,6),t%usenonsymp, t%symptrack, t%eps,t%factored) !,t%ng)  !,t%file)
     t%cc=0
     t%jl=0
     t%jv=0
@@ -373,7 +352,7 @@ CONTAINS
     t%symptrack=.false.
     t%usenonsymp=.false.
     t%factored=.false.
-
+  !  t%ng=1
   END SUBROUTINE ALLOC_TREE
 
   SUBROUTINE SET_TREE(T,MA)
@@ -809,7 +788,7 @@ CONTAINS
   subroutine EQUAL_PROBE_REAL6 (P,X)
     implicit none
     TYPE(PROBE), INTENT(INOUT) :: P
-    REAL(DP), INTENT(IN) :: X(6)
+    REAL(DP), INTENT(IN) :: X(:)
     INTEGER I
     P%u=my_false
     !       P%s(0)%x=zero
@@ -822,7 +801,9 @@ CONTAINS
 ! quaternion
     p%q=1.0_dp
     p%use_q=use_quaternion
-    P%X=X
+    DO I=1,size(x,1)
+       P%X(i)=X(i)
+    enddo
     P%ac%t=0.0_dp
     p%nac=n_rf
   END    subroutine EQUAL_PROBE_REAL6
@@ -830,7 +811,7 @@ CONTAINS
   subroutine EQUAL_PROBE8_REAL6 (P,X)
     implicit none
     TYPE(PROBE_8), INTENT(INOUT) :: P
-    REAL(DP), INTENT(IN) :: X(6)
+    REAL(DP), INTENT(IN) :: X(:)
     INTEGER I
 
     P%u=my_false
@@ -845,7 +826,7 @@ CONTAINS
     enddo
 ! quaternion
     p%q=1.0_dp
-    DO I=1,6
+    DO I=1,size(x,1)
        P%X(i)=X(i)
     enddo
     p%use_q=use_quaternion
@@ -885,6 +866,7 @@ CONTAINS
     P8%u=P%u
     p8%use_q=P%use_q
     P8%e=P%e
+    P8%x0=P%x0
 
 
   END subroutine EQUAL_PROBE8_PROBE8
@@ -965,7 +947,7 @@ CONTAINS
     P8%u=P%u
     P8%e_ij=0.0_dp
     p8%use_q=P%use_q
-
+    p8%x0=P%x
   END subroutine EQUAL_PROBE8_PROBE
 
   subroutine EQUAL_PROBE_PROBE8 (P,P8)
@@ -1085,6 +1067,7 @@ CONTAINS
     r%u=.false.
     r%use_q=use_quaternion
     r%e=0
+    r%x0=0
   END    subroutine EQUAL_IDENTITY_probe_8
 
 
@@ -1157,7 +1140,7 @@ CONTAINS
     integer i
     do i=1,3
      s=0.0_dp
-     s%x(i+1)=1.0_dp
+     s%x(i)=1.0_dp
      sf=p%q*s*p%q**(-1)
      p%s(i)%x=sf%x(1:3)
     enddo
@@ -1173,7 +1156,7 @@ CONTAINS
      call ALLOC(sf)
     do i=1,3
      s=0.0_dp
-     s%x(i+1)=1.0_dp
+     s%x(i)=1.0_dp
      sf=p%q*s*p%q**(-1)
      do j=1,3
        p%s(i)%x(j)=sf%x(j+1)
@@ -1416,6 +1399,7 @@ CONTAINS
     r%u=.false.
     r%use_q=use_quaternion
     r%e=0
+    r%x0=0
   END    subroutine ALLOC_probe_8
 
   subroutine ALLOC_rf_phasor_8(R)
@@ -1657,7 +1641,7 @@ CONTAINS
  
 !!! Some useful routines
 
-  subroutine AVERAGE(F,A,F_floquet,F_xp,use_J)
+  subroutine r_AVERAGE(F,A,F_floquet,F_xp,use_J)
     implicit none
     type(damap) A
     TYPE(TAYLOR), intent(inout):: F
@@ -1729,7 +1713,7 @@ CONTAINS
     call kill(fq)
 
 
-  end subroutine AVERAGE
+  end subroutine r_AVERAGE
 
   ! remove small numbers
 

@@ -1,10 +1,12 @@
 module duan_zhe_map
 implicit none
   private    !  this private can be removed outside PTC
-  public track_TREE_probe_complex_zhe,probe,tree_element, read_tree_zhe,kill_tree_zhe
+  public track_TREE_probe_complex_zhe,probe,tree_element, read_tree_zhe,kill_tree_zhe,print_tree_elements_zhe
   public EQUAL_PROBE_REAL6_zhe,print,zhe_ini,track_TREE_probe_complex_ptc, dp,INTERNAL_STATE
-  public DEFAULT0,TOTALPATH0 ,TIME0,ONLY_4d0,DELTA0,SPIN0,MODULATION0,only_2d0   
-  public RADIATION0, NOCAVITY0, FRINGE0 ,STOCHASTIC0,ENVELOPE0,gaussian_seed_zhe
+  public DEFAULT0,TOTALPATH0 ,TIME0,ONLY_4d0,DELTA0,SPIN0,MODULATION0,only_2d0   ,nrmax_zhe
+  public RADIATION0, NOCAVITY0, FRINGE0 ,STOCHASTIC0,ENVELOPE0,gaussian_seed_zhe,nrmax_used_zhe
+     public CHECK_STABLE_ZHE
+     public c_verbose_zhe 
  ! public EQUALi_zhe,EQUALt_zhe
   public OPERATOR(+),operator(-), assignment(=)
   real(kind(1d0)) :: doublenum = 0d0
@@ -12,10 +14,11 @@ implicit none
   integer,parameter::dp=selected_real_kind(2*precision(1.e0))
   logical(lp),parameter:: my_true=.true.
   logical(lp),parameter:: my_false=.false.
-   LOGICAL(lp),TARGET  :: CHECK_STABLE=.TRUE.
+   LOGICAL(lp),TARGET  :: CHECK_STABLE_ZHE=.TRUE.
+   logical :: c_verbose_zhe = .false.
  complex(dp), parameter :: i_ = ( 0.0_dp,1.0_dp )    ! cmplx(zero,one,kind=dp)
   integer,parameter::lno=200,lnv=100
-  integer :: zhe_ISEED=1000
+  integer :: zhe_ISEED=1000,nrmax_used
 private subq,unarysubq,addq,unaryADDq,absq,absq2,mulq,divq,ranf
 private EQUALq,EQUALqr,EQUALqi,powq,printq ,invq
 real(dp),parameter::pi=3.141592653589793238462643383279502e0_dp
@@ -51,6 +54,7 @@ END TYPE INTERNAL_STATE
      real(dp), pointer :: rad(:,:)
      real(dp), pointer :: ds,beta0,eps
      logical, pointer :: symptrack,usenonsymp,factored
+ !    integer, pointer :: ng
   end  type tree_element
 
   type spinor
@@ -72,7 +76,7 @@ END TYPE INTERNAL_STATE
   end type probe
 
 
-   integer :: nrmax
+   integer :: nrmax = 1000
  
 
 
@@ -217,6 +221,7 @@ contains
     t%symptrack=.false.
     t%usenonsymp=.false.
      t%factored=.false.
+ !    t%ng=1
   END SUBROUTINE ALLOC_TREE
  
 
@@ -226,17 +231,19 @@ contains
 
 
      IF(ASSOCIATED(T%CC))DEALLOCATE(T%CC,T%fix0,T%fix,T%fixr,t%ds,t%beta0,T%JL,T%JV,T%N,T%NP, &
-    T%No,t%e_ij,t%rad,t%eps,t%symptrack,t%usenonsymp,t%factored )  !,t%file)
+    T%No,t%e_ij,t%rad,t%eps,t%symptrack,t%usenonsymp,t%factored  )  !,t%file)
 
 
   END SUBROUTINE KILL_TREE
 
-   subroutine print_probe_zhe(DS,MF)
+   subroutine print_probe_zhe(DS,MFF)
     implicit none
     TYPE(probe), INTENT(INOUT) :: DS
-    INTEGER MF,I
+    INTEGER I,mf
+    INTEGER, optional :: MFf
  
-
+    mf=6
+    if(present(mff)) mf=mff
     WRITE(MF,*) " ORBIT "
     do i=1,6
        write(mf,*) ' Variable ',i
@@ -275,7 +282,7 @@ else
     enddo
     P%X=X
     p%q%x=0.0_dp
-    p%q%x(1)=1.0_dp
+    p%q%x(0)=1.0_dp
      p%use_q=use_quaternion
   END    subroutine EQUAL_PROBE_REAL6_zhe
 
@@ -621,7 +628,7 @@ type(tree_element) t
  
 integer i,mf
 !   write(mf,'(a204)') t%file
-write(mf,'(3(1X,i8))') t%N,t%NP,t%no
+write(mf,'(3(1X,i8))') t%N,t%NP,t%no ! ,t%ng
 do i=1,t%n
  write(mf,'(1X,G20.13,1x,i8,1x,i8)')  t%cc(i),t%jl(i),t%jv(i)
 enddo
@@ -637,7 +644,7 @@ enddo
 
 end subroutine print_tree_element
 
-subroutine print_tree_elements(t,mf)
+subroutine print_tree_elements_zhe(t,mf)
 implicit none
 type(tree_element) t(:)
  
@@ -647,7 +654,7 @@ integer i,mf
   call print_tree_element(t(i),mf)
  enddo
 
-end subroutine print_tree_elements
+end subroutine print_tree_elements_zhe
  
 subroutine read_tree_element(t,mf)
 implicit none
@@ -658,7 +665,7 @@ integer i,mf
  ! read(mf,'(a204)') t%file
 !read(mf,*) t%N,t%NP,t%no
 do i=1,t%n
- read(mf,*)  t%cc(i),t%jl(i),t%jv(i)
+ read(mf,*)  t%cc(i),t%jl(i),t%jv(i) 
 enddo
 read(mf,*) t%symptrack,t%usenonsymp,t%factored
 read(mf,'(18(1X,G20.13))') t%fix0,t%fix,t%fixr
@@ -697,13 +704,15 @@ end subroutine read_tree_elements
     logical dofix0,dofix,jumpnot
     type(quaternion)qu
 
+   check_stable_zhe=.true.
+       xs%u=.false.
 
     jumpnot=.true.
     if(present(jump)) jumpnot=.not.jump
     
  
 
-    nrmax=1000
+   
 
     x=0.e0_dp
     x0=0.e0_dp
@@ -778,6 +787,8 @@ do is=1,nrmax
     call matinv(r,r,3,3,ier)
     if(ier/=0) then
      write(6,*) "matinv failed in track_TREE_probe_complexr in zhe"
+     xs%u=.true.
+     check_stable_zhe=.false.
      stop
     endif
     do i=1,3
@@ -813,7 +824,8 @@ do is=1,nrmax
 enddo  ! is 
  if(is>nrmax-10) then
    xs%u=.true.
-  check_stable=.false.
+  check_stable_zhe=.false.
+ 
   return
  endif
 !!!    
@@ -925,6 +937,7 @@ endif ! jumpnot
     enddo
     if(i>nrmax-10) then
      write(6,*) i, a, "did not converge in orthonormaliser"
+     read(5,*) i
       stop
     endif 
   end SUBROUTINE orthonormaliser
@@ -1016,21 +1029,44 @@ endif ! jumpnot
  
     type(probe) xs
     real(dp) x(size_tree),x0(size_tree),s0(3,3),r(3,3),dx6,beta,q(3),p(3),qg(3),qf(3)
-    real(dp) normb,norm,x0_begin(size_tree),xr(6)
+    real(dp) normb,norm,x0_begin(size_tree),xr(6),normbb
     integer i,j,k,ier,is
     logical, optional  :: spin,stoch,rad
-    logical  spin0,stoch0,rad0
+    logical  spin0,stoch0,rad0,doit
     type(quaternion) qu
 
     spin0=.true.
     stoch0=.true.
     rad0=.true.
- 
+
     if(present(spin)) spin0=spin
     if(present(stoch)) stoch0=stoch
     if(present(rad)) rad0=rad
-    nrmax=1000
+    doit=rad0.or.stoch0
 
+!    nrmax=1000
+   check_stable_zhe=.true.
+       xs%u=.false.
+!!!! put stochastic kick in front per Sagan
+ if(stoch0) then 
+
+    do i=1,6
+      x(i)=xs%x(i)-t(1)%fix0(i)
+    enddo
+
+    xr=0.0_dp
+  do i=1,6
+    xr(i)=GRNF_zhe()*t(2)%fix0(i)
+  enddo
+    xr(1:6)=matmul(t(2)%rad,xr)
+
+    x=x+xr(1:6)
+
+    do i=1,6
+      xs%x(i)=x(i)+t(1)%fix0(i)
+    enddo
+ endif
+!!!!!!!!!!!!!!!!!!!
     x=0.e0_dp
     x0=0.e0_dp
 x0_begin=0.0_dp
@@ -1043,12 +1079,20 @@ x0_begin=0.0_dp
    !   x(7:12)=x(1:6)  remove4/9/2018
 
 
+if(doit) then
 
      do i=1,6
       x(i)=x(i)-t(1)%fix0(i)
       x0(i)=x0(i)-t(1)%fix0(i)
       x0_begin(i)=x0_begin(i)-t(1)%fix0(i)
      enddo
+else
+     do i=1,6
+      x(i)=x(i)-t(3)%fix0(i)
+      x0(i)=x0(i)-t(3)%fix0(i)
+      x0_begin(i)=x0_begin(i)-t(3)%fix0(i)
+     enddo
+endif
       x(7:12)=x(1:6)
       x0_begin(7:12)= x0_begin(1:6)
 
@@ -1092,6 +1136,9 @@ do is=1,nrmax
     call matinv(r,r,3,3,ier)
     if(ier/=0) then
      write(6,*) "matinv failed in track_TREE_probe_complex_zhe"
+       check_stable_zhe=.false.
+       xs%u=.true.
+      return
      stop
     endif
     do i=1,3
@@ -1104,8 +1151,9 @@ do is=1,nrmax
      qf(i) = qf(i) + qg(i)
     enddo
    norm=abs(qg(1))+abs(qg(2))+abs(qg(3))
-
+!write(6,*) is,normb,norm
    if(norm>t(3)%eps) then
+      normbb=normb  ! saving for debugging
      normb=norm
    else
      if(normb<=norm) then 
@@ -1117,17 +1165,20 @@ do is=1,nrmax
        x(6)=x0(6)       
 
        x(1:6)=matmul(t(3)%rad,x(1:6))
+
        exit
      endif
      normb=norm
    endif
 
-
+       nrmax_used=is
 
 enddo  ! is 
  if(is>nrmax-10) then
+   if(c_verbose_zhe) write(6,*) " Too many iterations ",normbb,norm,t(3)%eps
    xs%u=.true.
-  check_stable=.false.
+   check_stable_zhe=.false.
+  return
  endif
 else
        x(1:6)=matmul(t(3)%rad,x(1:6))
@@ -1181,21 +1232,21 @@ else
 
 
 
+if(doit) then
 
-if(stoch0) then 
-    xr=0.0_dp
-  do i=1,6
-    xr(i)=GRNF_zhe()*t(2)%fix0(i)
-  enddo
-    xr(1:6)=matmul(t(2)%rad,xr)
-
-    x=x+xr(1:6)
-endif
-
-
+ 
          do i=1,6
            x(i)=x(i)+t(1)%fix(i)
          enddo
+else
+ 
+         do i=1,6
+           x(i)=x(i)+t(3)%fix(i)
+         enddo
+endif
+
+
+
 
     do i=1,6
       xs%x(i)=x(i)
@@ -1250,6 +1301,18 @@ endif
     zhe_ISEED=seed
     cut_zhe=cut
   end SUBROUTINE gaussian_seed_zhe
+
+  SUBROUTINE nrmax_zhe(nrmax_in)
+    implicit none
+    integer nrmax_in
+    nrmax=nrmax_in
+  end SUBROUTINE nrmax_zhe
+
+  SUBROUTINE nrmax_used_zhe(nrmax_u)
+    implicit none
+    integer nrmax_u
+    nrmax_u=nrmax_used
+  end SUBROUTINE nrmax_used_zhe
 
    real(dp) function GRNF_zhe()
     implicit none
@@ -1539,6 +1602,7 @@ integer inf,i,n,np,no
   do i=1,3
     read(inf,*) n,np,no
     CALL ALLOC_TREE(t(i),N,NP)
+   ! t(i)%Ng=ng
     t(i)%N=n
     t(i)%NP=np
     t(i)%no=no
@@ -1746,7 +1810,7 @@ end subroutine kill_tree_zhe
      mfi=6
      if(present(mfile)) mfi=mfile
       write(mfi,*) " real quaternion "
-    DO I=1,4
+    DO I=0,3
       write(mfi,*) s1%x(i)
     ENDDO
   END SUBROUTINE printq
