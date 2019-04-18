@@ -143,6 +143,7 @@ MODULE S_DEF_KIND
   PRIVATE KICKPATHR_HE,KICKPATHP_HE
   PRIVATE INTR_HE,INTP_HE,INTR_HE_TOT,INTP_HE_TOT
   private ZEROr_DKD2,ZEROp_DKD2
+  private GETMAGNETICR,GETMAGNETICP
   private GETELECTRICR,GETELECTRICP,electric_field_septumR,electric_field_septump
   !include "def_all_kind.f90"
   ! New home for element and elementp
@@ -763,6 +764,11 @@ integer :: tot_t=1
      MODULE PROCEDURE electric_field_septumR    ! FOR ESEPTUM
      MODULE PROCEDURE electric_field_septump    ! FOR ESEPTUM
   END INTERFACE
+
+  INTERFACE GETMAGNETIC
+     MODULE PROCEDURE GETMAGNETICR
+     MODULE PROCEDURE GETMAGNETICP
+  END INTERFACE 
 
  ! INTERFACE GETMULB_TEAPOT
  !    MODULE PROCEDURE GETMULB_TEAPOTR
@@ -10004,6 +10010,150 @@ integer :: kkk=0
 
   END SUBROUTINE GETAEBEP
 
+  SUBROUTINE GETMAGNETICR(EL,B,X,kick)
+     IMPLICIT NONE
+     real(dp),INTENT(INOUT):: X(6),B(3)
+     TYPE(TEAPOT),INTENT(IN):: EL
+     real(dp) X1,X3,BX,BY,BTX,BTY
+     logical(lp), optional :: kick
+     logical(lp) kic
+     INTEGER J,M,A,K
+ 
+     kic=my_false
+     if(present(kick)) kic=kick
+ 
+     X1=X(1)
+     X3=X(3)
+ 
+     BX=0.0_dp
+     BY=0.0_dp
+ 
+     
+     k=0
+     m=EL%P%nmul
+     do a=m,1,-1
+        BTX=0.0_dp
+        BTY=0.0_dp
+        do j=m-a,1,-1
+           k=k+1
+           BTX= (BTX+EL%BF_X(k))*X3  !x1
+           BTY= (BTY+EL%BF_Y(k))*X3
+        enddo
+ 
+        k=k+1
+        BTX= (BTX+EL%BF_X(k))
+        BTY= (BTY+EL%BF_Y(k))
+        BX= (BX+BTX)*X1
+        BY= (BY+BTY)*X1
+     enddo
+     
+     BTX=0.0_dp
+     BTY=0.0_dp
+     do j=m,1,-1
+        k=k+1
+        BTX= (BTX+EL%BF_X(k))*X3
+        BTY= (BTY+EL%BF_Y(k))*X3
+     enddo
+     k=k+1
+     
+     BX= BX+BTX+EL%BF_X(k)  
+     BY= BY+BTY+EL%BF_Y(k)  
+     
+     if(kic) then
+      if(EL%P%exact) then
+        B(1)=-BY*(1.0_dp+EL%P%B0*X(1))
+        B(2)=BX*(1.0_dp+EL%P%B0*X(1))
+      else
+        B(1)=-BY-el%bn(1)*EL%P%B0*X(1) 
+        B(2)=BX 
+      endif
+     
+      B(3)=0.0_dp
+      
+     else
+      B(1)=BX
+      B(2)=BY
+      B(3)=0.0_dp
+     endif
+ 
+ 
+ END SUBROUTINE GETMAGNETICR
+
+ SUBROUTINE GETMAGNETICP(EL,B,X,kick)
+     IMPLICIT NONE
+     TYPE(REAL_8),INTENT(INOUT):: X(6),B(3)
+     TYPE(TEAPOTP),INTENT(IN):: EL
+     TYPE(REAL_8) X1,X3,BX,BY,BTX,BTY 
+     logical(lp), optional :: kick
+     logical(lp) kic
+     INTEGER J,M,A,K
+ 
+     CALL ALLOC(X1,X3,BX,BY,BTX,BTY)
+   
+   
+     kic=my_false
+     if(present(kick)) kic=kick
+ 
+     X1=X(1)
+     X3=X(3)
+ 
+     BX=0.0_dp
+     BY=0.0_dp
+ 
+     
+     k=0
+     m=EL%P%nmul
+     do a=m,1,-1
+        BTX=0.0_dp
+        BTY=0.0_dp
+        do j=m-a,1,-1
+           k=k+1
+           BTX= (BTX+EL%BF_X(k))*X3  !x1
+           BTY= (BTY+EL%BF_Y(k))*X3
+        enddo
+ 
+        k=k+1
+        BTX= (BTX+EL%BF_X(k))
+        BTY= (BTY+EL%BF_Y(k))
+        BX= (BX+BTX)*X1
+        BY= (BY+BTY)*X1
+     enddo
+     
+     BTX=0.0_dp
+     BTY=0.0_dp
+     do j=m,1,-1
+        k=k+1
+        BTX= (BTX+EL%BF_X(k))*X3
+        BTY= (BTY+EL%BF_Y(k))*X3
+     enddo
+     k=k+1
+     
+     BX= BX+BTX+EL%BF_X(k)  
+     BY= BY+BTY+EL%BF_Y(k)  
+     
+     if(kic) then
+      if(EL%P%exact) then
+        B(1)=-BY*(1.0_dp+EL%P%B0*X(1))
+        B(2)=BX*(1.0_dp+EL%P%B0*X(1))
+      else
+        B(1)=-BY-el%bn(1)*EL%P%B0*X(1) 
+        B(2)=BX 
+      endif
+     
+      B(3)=0.0_dp
+      
+     else
+      B(1)=BX
+      B(2)=BY
+      B(3)=0.0_dp
+     endif
+   
+   
+     CALL KILL(X1,X3,BX,BY,BTX,BTY)
+   
+ END SUBROUTINE GETMAGNETICP
+
+
 
  
  SUBROUTINE GETELECTRICR(EL,E,phi,B,VM,X,kick)
@@ -11030,6 +11180,7 @@ integer :: kkk=0
 
 !    call GETMULB_TEAPOT(EL,B,VM,X,kick=my_true)
     call GETELECTRIC(EL,E,phi,B,VM,X,kick=my_true)
+!    call GETMAGNETIC(EL,B, X, kick=my_true)
 
     X(2)=X(2)+YL*DIR*B(1)
     X(4)=X(4)+YL*DIR*B(2)
@@ -11057,7 +11208,8 @@ integer :: kkk=0
 
    !call GETMULB_TEAPOT(EL,B,VM,X,kick=my_true)
     call GETELECTRIC(EL,E,phi,B,VM,X,kick=my_true)
- 
+   !call GETMAGNETIC(EL,B, X, kick=my_true)
+
 
  
     X(2)=X(2)+YL*DIR*B(1)
