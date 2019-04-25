@@ -2,27 +2,24 @@ module sodom_like
 use pointer_lattice
 implicit none
  private equal_sodom_fourier
-integer,private, parameter :: nres = 3
+
 
 type c_sodom_fourier
  type(complex_quaternion), pointer :: qd(:,:)=>null()   ! 0:nphix,0:nphiy Location of quaternions
  type(complex_quaternion), pointer ::  qout(:,:)=>null() !  -mx:my, -my:my  Fourier terms
- type(complex_quaternion), pointer ::  qin(:,:)=>null() !  -mx:my, -my:my  Fourier terms
  type(complex_quaternion), pointer ::  atot(:,:)=>null() !  -mx:my, -my:my  Fourier terms
  integer nphix,nphiy 
   real(dp)  rx,ry,mux,muy,phix,phiy   !  rx=sqrt(Ix), ry = sqrt(Iy), mux, muy invariant phase advance
   real(dp) dphix,dphiy ! phase spacing  twopi/nphix
  integer  mx,my ! number of Fourier modes  -mx:mx , -my:my
  real(dp) closed_orbit(6),isf(3)
- real(dp) a(4,4),ai(4,4),delta,nu_res ,nu_spin
+ real(dp) a(4,4),ai(4,4),delta,nu_res 
  complex(dp) epsilon
- integer no,nrx(nres),nry(nres),nrs(nres)
- integer nr,nmxy
+ integer no,nrx,nry,nrs
+ logical nr
  type(complex_quaternion) logres
  type(internal_state) state
  type(integration_node), pointer:: t
- complex(dp), pointer :: mat(:,:),mati(:,:),v(:),w(:)
- integer, pointer :: ind(:,:,:),k1(:),k2(:),k3(:)
 end type c_sodom_fourier
  
 
@@ -39,7 +36,7 @@ contains
  implicit none
  type(c_sodom_fourier), intent(inout):: f
  type(c_sodom_fourier), optional, intent(in):: g
- integer i,j,k
+ integer i,j
 
  if(present(g)) then
    f%nphix=g%nphix
@@ -66,15 +63,11 @@ contains
   f%nu_res=g%nu_res
   f%logres=g%logres
   f%isf=g%isf
-  f%nu_spin=g%nu_spin
-
  allocate(f%qd(0:f%nphix,0:f%nphiy)) 
  allocate(f%qout(-f%mx:f%mx,-f%my:f%my))
- allocate(f%qin(-f%mx:f%mx,-f%my:f%my))
  allocate(f%atot(-f%mx:f%mx,-f%my:f%my))
  f%qd=g%qd
  f%qout=g%qout
- f%qin=g%qin
  f%atot=g%atot
 
  f%nrx=g%nrx
@@ -94,7 +87,7 @@ else
   f%rx=0
   f%ry=0
   f%state=only_4d0
- f%nr=0
+ f%nr=.false.
  f%nrx=0
  f%nry=0
  f%nrs=0
@@ -104,69 +97,26 @@ else
   f%logres=0.0_dp
   f%isf=0
   f%isf(2)=1.0_dp
-  f%nu_spin=0
  allocate(f%qd(0:f%nphix,0:f%nphiy)) 
   allocate(f%atot(-f%mx:f%mx,-f%my:f%my))
  allocate(f%qout(-f%mx:f%mx,-f%my:f%my))
- allocate(f%qin(-f%mx:f%mx,-f%my:f%my))
 do i=0,3
  f%qd%x(i)=0.0_dp
  f%qout%x(i)=0.0_dp
- f%qin%x(i)=0.0_dp
  f%atot%x(i)=0.0_dp
 enddo
 
  f%qout(0,0)%x(0)=1.0_dp
- f%qin(0,0)%x(0)=1.0_dp
  f%atot(0,0)%x(0)=1.0_dp
  f%qd%x(0)=1.0_dp
 f%dphix=twopi/f%nphix
 f%dphiy=twopi/f%nphiy
 endif
 
-f%nmxy=0
  
- do i=-f%mx,f%mx
- do j=-f%my,f%my
-   if(i==0.and.j==0) cycle
- do k=0,3
-   f%nmxy=f%nmxy+1
- enddo
- enddo
- enddo
-f%nmxy=4   !!! etienne
-return
- allocate(f%mat(f%nmxy,f%nmxy))
- allocate(f%mati(f%nmxy,f%nmxy))
- allocate(f%v(f%nmxy),f%w(f%nmxy))
-allocate(f%ind(-f%mx:f%mx,-f%my:f%my,0:3))
-allocate(f%k1(f%nmxy),f%k2(f%nmxy),f%k3(f%nmxy) )
 
-f%ind=0
-f%k1=0
-f%k2=0
-f%k3=0
-f%v=0
-f%w=0
-f%mat=0
-f%mati=0
 
-f%nmxy=0
- 
- do i=-f%mx,f%mx
- do j=-f%my,f%my
-   if(i==0.and.j==0) cycle
- do k=0,3
-   f%nmxy=f%nmxy+1
-   f%ind(i,j,k)=f%nmxy
-   f%k1(f%nmxy)=i
-   f%k2(f%nmxy)=j
-   f%k3(f%nmxy)=k
- enddo
- enddo
- enddo
 
-write(6,*) f%nmxy, " terms in matrix "
  end subroutine alloc_sodom_fourier
 
  subroutine equal_sodom_fourier(f,g)
@@ -200,10 +150,9 @@ write(6,*) f%nmxy, " terms in matrix "
   f%nu_res=g%nu_res
   f%logres=g%logres
   f%isf=g%isf
-  f%nu_spin=  g%nu_spin
+
   f%qd=g%qd
   f%qout=g%qout
-  f%qin=g%qin
   f%atot=g%atot
  
  end subroutine equal_sodom_fourier
@@ -354,7 +303,6 @@ do j=-fq%my,fq%my
 i1=lbound(fq%qout,1)+i+fq%mx
 j1=lbound(fq%qout,2)+j+fq%my
  fq%qout(i1,j1)=0.0_dp
- fq%qin(i1,j1)=0.0_dp
 
 do k1=0,fq%nphix-1
 do k2=0,fq%nphiy-1
@@ -368,7 +316,6 @@ k22=lbound(fq%qd,2)+k2
 
 
  fq%qout(i1,j1) = (exp(-i_*(i*phi1+j*phi2))/norm)  * fq%qd(k11,k22)  + fq%qout(i1,j1)
- fq%qin(i1,j1) = fq%qout(i1,j1)
 
 enddo
 enddo
@@ -378,22 +325,22 @@ enddo
 
 end subroutine fourier_c_sodom
 
- subroutine log_one_res_c_sodom_qout(fq,phi,k)
+ subroutine log_one_res_c_sodom_qout(fq,phi)
  implicit none
   type(c_sodom_fourier) fq
   real(dp),optional :: phi(2) 
    type(complex_quaternion) q1,dq1,m1,m2,q,dq
-   integer i,k
+   integer i
    complex(dp) ex
    real(dp) cpsi,spsi,epsilon,co
 
   ex=1.0_dp
    if(present(phi)) then
-     ex=exp(i_*(fq%nrx(k)*phi(1)+fq%nry(k)*phi(2)))
+     ex=exp(i_*(fq%nrx*phi(1)+fq%nry*phi(2)))
     endif
   q1=fq%qout(0,0)
-  m1=fq%qout(fq%nrx(k),fq%nry(k))*ex
-  m2=fq%qout(-fq%nrx(k),-fq%nry(k))*conjg(ex)
+  m1=fq%qout(fq%nrx,fq%nry)*ex
+  m2=fq%qout(-fq%nrx,-fq%nry)*conjg(ex)
 
   dq1=q1+m1+m2
   dq1=(1.0_dp/abs(dq1))*dq1
@@ -420,8 +367,8 @@ spsi=(ex-conjg(ex))/2.0_dp/i_
    fq%isf(2)=fq%delta
    fq%isf(3)=-epsilon*spsi
    fq%isf=   fq%isf/fq%nu_res
-!write(6,*) fq%isf
-
+write(6,*) fq%isf
+pause 555
  end subroutine log_one_res_c_sodom_qout
 
 
@@ -504,10 +451,10 @@ alpha=2*atan2(real(q0%x(2)),real(q0%x(0)))
  implicit none
   type(c_sodom_fourier) fq
 type(complex_quaternion), allocatable :: at(:,:), ai(:,:)
- integer k1,k2,j,i1,j1,nr(2),k
+ integer k1,k2,j,i1,j1,nr(2)
   complex(dp) q,al,qt,alp,qp,qtp
  type(complex_quaternion)m_out,a0
- logical doit
+
 call c_linear_quaternion_fourier(fq%qout(0,0),m_out,a0)  
 
 call constant_simil_fourier_c_sodom(fq,a0)
@@ -516,7 +463,7 @@ call constant_simil_fourier_c_sodom(fq,a0)
 
 allocate(at(-fq%mx:fq%mx,-fq%my:fq%my),ai(-fq%mx:fq%mx,-fq%my:fq%my))
 
-if(fq%nr==0) then  ! no resonance
+if(.not.fq%nr) then  ! no resonance
   do k1=-fq%mx,fq%mx
   do k2=-fq%my,fq%my
   
@@ -544,33 +491,18 @@ else
   if(k1==0.and.k2==0) then 
    ai(0,0)=1.0_dp
   else
-   doit=.true.
-   do k=1,fq%nr
-    nr(1)=abs(fq%nrx(k)-k1)+abs(fq%nry(k)-k2)+abs(fq%nrs(k)+1)
-    nr(2)=abs(fq%nrx(k)+k1)+abs(fq%nry(k)+k2)+abs(fq%nrs(k)-1)
-     if(nr(1)==0.or.nr(2)==0) then
-       doit=.false.
-       exit
-     endif
-   enddo
-
-   if(doit) then
+   nr(1)=abs(fq%nrx-k1)+abs(fq%nry-k2)+abs(fq%nrs+1)
+   nr(2)=abs(fq%nrx+k1)+abs(fq%nry+k2)+abs(fq%nrs-1)
+   if(nr(1)/=0.and.nr(2)/=0) then
    q=(fq%qout(k1,k2)%x(1)-i_*fq%qout(k1,k2)%x(3))/2.0_dp
    qt=fq%qout(0,0)%x(0)+i_*fq%qout(0,0)%x(2)-(fq%qout(0,0)%x(0)-i_*fq%qout(0,0)%x(2))*exp(i_*(k1*fq%mux+k2*fq%muy))
    al=q/qt
    else
     al=0
    endif
-   doit=.true.
-   do k=1,fq%nr
-    nr(1)=abs(fq%nrx(k)-k1)+abs(fq%nry(k)-k2)+abs(fq%nrs(k)-1)
-    nr(2)=abs(fq%nrx(k)+k1)+abs(fq%nry(k)+k2)+abs(fq%nrs(k)+1)
-     if(nr(1)==0.or.nr(2)==0) then
-       doit=.false.
-       exit
-     endif
-   enddo
-   if(doit) then
+   nr(1)=abs(fq%nrx-k1)+abs(fq%nry-k2)+abs(fq%nrs-1)
+   nr(2)=abs(fq%nrx+k1)+abs(fq%nry+k2)+abs(fq%nrs+1)
+   if(nr(1)/=0.and.nr(2)/=0) then
    qp=(fq%qout(k1,k2)%x(1)+i_*fq%qout(k1,k2)%x(3))/2.0_dp
    qtp=fq%qout(0,0)%x(0)-i_*fq%qout(0,0)%x(2)-(fq%qout(0,0)%x(0)+i_*fq%qout(0,0)%x(2))*exp(i_*(k1*fq%mux+k2*fq%muy))
    alp=qp/qtp
@@ -602,179 +534,16 @@ call mul_fourier_c_sodom(fq,at,ai,fq%qout)
 call constant_mul_fourier_c_sodom_r_atot(fq,a0)
 call mul_fourier_c_sodom(fq,fq%atot(:,:),ai,fq%atot(:,:))
 
-!call print(ai(0,0))
-!call print(ai(1,1))
-!call print(ai(fq%mx,fq%my))
+call print(ai(0,0))
+call print(ai(1,1))
+call print(ai(fq%mx,fq%my))
 
-  fq%nu_spin= atan2(real(fq%qout(0,0)%x(2)),real(fq%qout(0,0)%x(0)))*2.0_dp
 deallocate(at,ai)
 
 
 end subroutine normal_fourier_c_sodom
 
 
- subroutine normal_fourier_c_sodom_c(fq,km,m)
- implicit none
-  type(c_sodom_fourier) fq
-type(complex_quaternion), allocatable :: at(:,:), ai(:,:)
- integer k1,k2,j,nr(2),k
-  integer, optional :: km,m
-  complex(dp) q,al,qt,alp,qp,qtp
- real(dp) dx,max,max1
- integer i1,i2,is
- logical doit
- type(complex_quaternion)m_out,a0
-
-dx=1
-if(present(km).and.present(m)) then
- if(km<m) then
-    dx=km
-    dx=dx/m
- endif
-endif
-
-allocate(at(-fq%mx:fq%mx,-fq%my:fq%my),ai(-fq%mx:fq%mx,-fq%my:fq%my))
-
-
-
-call copy_fourier_c_sodom(fq,fq%qin,fq%qout,dx)
- call unit_fourier_c_sodom(fq,fq%qout,fq%qout)
-
-call inv_fourier_c_sodom(fq,fq%atot,ai)
- call unit_fourier_c_sodom(fq,ai,ai)
-
-
-call phase_advance_fourier_c_sodom(fq,ai,at)
-
-call mul_fourier_c_sodom(fq,at,fq%qout,at)
-call mul_fourier_c_sodom(fq,at,fq%atot,fq%qout)
-
-!write(6,*) "norm =",norm_fourier_c_sodom(fq,fq%qout)
-
-call c_linear_quaternion_fourier(fq%qout(0,0),m_out,a0)  
-
-call constant_simil_fourier_c_sodom(fq,a0)
-
-
-max=1.d38
-
-if(fq%nr==0) then  ! no resonance
-  do k1=-fq%mx,fq%mx
-  do k2=-fq%my,fq%my
-  
-  if(k1==0.and.k2==0) then 
-   ai(0,0)=1.0_dp
-  else
-   q=(fq%qout(k1,k2)%x(1)-i_*fq%qout(k1,k2)%x(3))/2.0_dp
-   qt=fq%qout(0,0)%x(0)+i_*fq%qout(0,0)%x(2)-(fq%qout(0,0)%x(0)-i_*fq%qout(0,0)%x(2))*exp(i_*(k1*fq%mux+k2*fq%muy))
-   al=q/qt
-   qp=(fq%qout(k1,k2)%x(1)+i_*fq%qout(k1,k2)%x(3))/2.0_dp
-   qtp=fq%qout(0,0)%x(0)-i_*fq%qout(0,0)%x(2)-(fq%qout(0,0)%x(0)+i_*fq%qout(0,0)%x(2))*exp(i_*(k1*fq%mux+k2*fq%muy))
-   alp=qp/qtp
-   max1=abs(qt)
-  if(max1<max) then
-    i1=k1;i2=k2;is=-1;
-     max=max1
-  endif
-   max1=abs(qtp)
-  if(max1<max) then
-    i1=k1;i2=k2;is=1;
-     max=max1
-  endif
-  ai(k1,k2)%x(0) = 0.0_dp
-  ai(k1,k2)%x(1) = al+alp
-  ai(k1,k2)%x(3) = i_*(al-alp)
-  ai(k1,k2)%x(2) = fq%qout(k1,k2)%x(2)/(1.0_dp-exp(i_*(k1*fq%mux+k2*fq%muy)))/fq%qout(0,0)%x(0) 
-  endif
-  enddo
-  enddo
-else
-  do k1=-fq%mx,fq%mx
-  do k2=-fq%my,fq%my
-  
-  if(k1==0.and.k2==0) then 
-   ai(0,0)=1.0_dp
-  else
-   doit=.true.
-   do k=1,fq%nr
-    nr(1)=abs(fq%nrx(k)-k1)+abs(fq%nry(k)-k2)+abs(fq%nrs(k)+1)
-    nr(2)=abs(fq%nrx(k)+k1)+abs(fq%nry(k)+k2)+abs(fq%nrs(k)-1)
-     if(nr(1)==0.or.nr(2)==0) then
-       doit=.false.
-       exit
-     endif
-   enddo
-
-   if(doit) then
-   q=(fq%qout(k1,k2)%x(1)-i_*fq%qout(k1,k2)%x(3))/2.0_dp
-   qt=fq%qout(0,0)%x(0)+i_*fq%qout(0,0)%x(2)-(fq%qout(0,0)%x(0)-i_*fq%qout(0,0)%x(2))*exp(i_*(k1*fq%mux+k2*fq%muy))
-   al=q/qt
-      max1=abs(qt)
-     if(max1<max) then
-       i1=k1;i2=k2;is=-1;
-        max=max1
-     endif
-   else
-    al=0
-   endif
-   doit=.true.
-   do k=1,fq%nr
-    nr(1)=abs(fq%nrx(k)-k1)+abs(fq%nry(k)-k2)+abs(fq%nrs(k)-1)
-    nr(2)=abs(fq%nrx(k)+k1)+abs(fq%nry(k)+k2)+abs(fq%nrs(k)+1)
-     if(nr(1)==0.or.nr(2)==0) then
-       doit=.false.
-       exit
-     endif
-   enddo
-   if(doit) then
-   qp=(fq%qout(k1,k2)%x(1)+i_*fq%qout(k1,k2)%x(3))/2.0_dp
-   qtp=fq%qout(0,0)%x(0)-i_*fq%qout(0,0)%x(2)-(fq%qout(0,0)%x(0)+i_*fq%qout(0,0)%x(2))*exp(i_*(k1*fq%mux+k2*fq%muy))
-   alp=qp/qtp
-      max1=abs(qtp)
-     if(max1<max) then
-       i1=k1;i2=k2;is=1;
-        max=max1
-     endif
-   else
-   alp=0
-   endif  
-  ai(k1,k2)%x(0) = 0.0_dp
-  ai(k1,k2)%x(1) = al+alp
-  ai(k1,k2)%x(3) = i_*(al-alp)
-  ai(k1,k2)%x(2) = fq%qout(k1,k2)%x(2)/(1.0_dp-exp(i_*(k1*fq%mux+k2*fq%muy)))/fq%qout(0,0)%x(0) 
-  endif
-  enddo
-  enddo
-endif
- 
- call unit_fourier_c_sodom(fq,ai,ai)
- call phase_advance_fourier_c_sodom(fq,ai,at)
-
- call inv_fourier_c_sodom(fq,ai,ai)
-
-
-call mul_fourier_c_sodom(fq,at,fq%qout,at)
-call mul_fourier_c_sodom(fq,at,ai,fq%qout)
-
-
-
-!!!! sum total
-
-call constant_mul_fourier_c_sodom_r_atot(fq,a0)
-call mul_fourier_c_sodom(fq,fq%atot(:,:),ai,fq%atot(:,:))
-
- call unit_fourier_c_sodom(fq,fq%atot,fq%atot)
- call unit_fourier_c_sodom(fq,fq%qout,fq%qout)
-
-  fq%nu_spin= atan2(real(fq%qout(0,0)%x(2)),real(fq%qout(0,0)%x(0)))*2.0_dp
-
-! write(6,*) "i1,i2,is,max"
-! write(6,*) i1,i2,is,max
-
-deallocate(at,ai)
-
-
-end subroutine normal_fourier_c_sodom_c
 
  subroutine constant_mul_fourier_c_sodom_r_atot(fq,a0)
  implicit none
@@ -829,30 +598,6 @@ enddo
 enddo
  
 end subroutine constant_simil_fourier_c_sodom
-
-
- subroutine copy_fourier_c_sodom(fq,f1,ft,dx)
- implicit none
-  type(c_sodom_fourier) fq
- type(complex_quaternion) f1(:,:),ft(:,:)
- integer k1,k2,i,j,k11,k22
- real(dp), optional :: dx
- real(dp) dd
-  dd=1.0_dp
-  if(present(dx))  dd=dx
-do k1=-fq%mx,fq%mx
-do k2=-fq%my,fq%my
-k11=k1+fq%mx+lbound(f1,1)
-k22=k2+fq%my+lbound(f1,2)
- if(k1==0.and.k2==0) then
-  ft(k11,k22) = f1(k11,k22)
- else
-  ft(k11,k22)  = dd*f1(k11,k22)
- endif
-enddo
-enddo
-
-end subroutine copy_fourier_c_sodom
 
  subroutine unit_fourier_c_sodom(fq,f1,ft)
  implicit none
@@ -975,27 +720,6 @@ enddo
  
 end subroutine phase_advance_fourier_c_sodom
 
- function norm_fourier_c_sodom(fq,f)
- implicit none
-  type(c_sodom_fourier) fq
- type(complex_quaternion)  f(:,:)
- real(dp) norm,norm_fourier_c_sodom
- integer k1,k2,k11,k22
- 
-norm=0
- 
-do k1=-fq%mx,fq%mx
-do k2=-fq%my,fq%my
-k11=k1+fq%mx+lbound(f,1)
-k22=k2+fq%my+lbound(f,2)
- norm  =   abs(f(k11,k22)) +norm
-enddo
-enddo
-
-norm_fourier_c_sodom=norm
- 
-end function norm_fourier_c_sodom
-
  subroutine inv_fourier_c_sodom(fq,f1,ft)
  implicit none
   type(c_sodom_fourier) fq
@@ -1022,27 +746,6 @@ enddo
 deallocate(qd)
 
 end subroutine inv_fourier_c_sodom
-
- subroutine identity_fourier_c_sodom(fq,q)
- implicit none
-  type(c_sodom_fourier) fq
- type(complex_quaternion) q(:,:) 
-    integer k1,k2,i1,j1,mf
-
-
-do k1=-fq%mx,fq%mx
-do k2=-fq%my,fq%my
-
-i1=lbound(q,1)+k1+fq%mx
-j1=lbound(q,2)+k2+fq%my
-q(i1,j1)=0.0_dp
-if(k1==0.and.k2==0)q(i1,j1)=1.0_dp
-enddo
-enddo
-
- end subroutine identity_fourier_c_sodom
-
-
 
  subroutine mul_fourier_c_sodom(fq,f1,f2,ft)
  implicit none
