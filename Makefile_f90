@@ -1,15 +1,15 @@
 # |
-# o---------------------------------------------------------------------o
+# o--------------------------------------------------------------------                   
 # |
 # | PTC makefile - Fortran files selection and dependencies
 # |
-# o---------------------------------------------------------------------o
+# o--------------------------------------------------------------------                   
 # |
 # | Polymorphic Tracking Code from Etienne Forest
 # |
 # | For more information, see http:/cern.ch/mad
 # |
-# o---------------------------------------------------------------------o
+# o--------------------------------------------------------------------                   
 # |
 # | $Id$
 # |
@@ -21,21 +21,28 @@ vpath %.F90 fpp_ptc
 FC_DIR := fpp_ptc
 FC_C_DIR := fpp_ptc/complex
 FC_LAT_DIR := book_examples/als
+FC_LAT_DIR := myexamples
 
 FC_C_SRC := $(notdir $(wildcard $(FC_C_DIR)/*.f90 $(FC_C_DIR)/*.F90  ))
 FC_SRC := $(FC_C_SRC)
 FC_SRC += $(notdir $(wildcard $(FC_DIR)/*.f90 $(FC_DIR)/*.F90  ))
 FC_SRC += $(notdir $(wildcard $(FC_LAT_DIR)/*.f90 $(FC_LAT_DIR)/*.F90  ))
 
+PROG_SRC2 += $(wildcard $(PROG_SRCDIR2)/*.f90 $(PROG_SRCDIR2)/*.F90) 
 PROG_SRC := $(wildcard $(PROG_SRCDIR)/*.f90 $(PROG_SRCDIR)/*.F90) 
 
+PROGRAMS2 := $(patsubst %.F90,%.exe,$(patsubst %.f90,%.exe,$(patsubst $(PROG_SRCDIR2)%,$(PROG_DESTDIR)%,$(PROG_SRC2))))
 PROGRAMS := $(patsubst %.F90,%.exe,$(patsubst %.f90,%.exe,$(patsubst $(PROG_SRCDIR)%,$(PROG_DESTDIR)%,$(PROG_SRC))))
+
+$(info PROGRAMS  $(PROGRAMS) )
+$(info OBJDIR $(OBJDIR) )
 
 PROG_LIBS := -L$(PROG_DESTDIR) -lptc$(ARCH) 
 
+
 # files specific compiler flag
 l_complex_taylor.o: NOPT := 2
-Sg_sagan_wiggler.o: FFLAGS += -fdollar-ok
+Sg_sagan_wiggler.o: FFLAGS += -fdollar                   k
 #######################
 # Fortran dependencies (case not automatic!)
 
@@ -96,6 +103,27 @@ z_fodocell.o:               $(FC_LAT_DIR)/z_fodocell.f90
 endif
 
 radiation_map.exe:  $(PROG_SRCDIR)/radiation_map.f90
+
+
+
+bin/radiation_map.exe:  $(PROG_SRCDIR)/radiation_map.f90 
+bin/hamiltonian_guignard_1df_x.exe:  $(PROG_SRCDIR)/hamiltonian_guignard_1df_x.f90 
+bin/one_resonance_map.exe:  $(PROG_SRCDIR)/one_resonance_map.f90 
+bin/modulated_map_jordan.exe:  $(PROG_SRCDIR)/modulated_map_jordan.f90 
+bin/very_damped_map.exe:  $(PROG_SRCDIR)/very_damped_map.f90 
+bin/z_als_lattice.exe:  $(PROG_SRCDIR)/z_als_lattice.f90 
+bin/one_turn_orbital_map_normal_form_2d.exe:  $(PROG_SRCDIR)/one_turn_orbital_map_normal_form_2d.f90 
+bin/hamiltonian_guignard_1df.exe:  $(PROG_SRCDIR)/hamiltonian_guignard_1df.f90 
+bin/modulated_map.exe:  $(PROG_SRCDIR)/modulated_map.f90 
+bin/pendulum.exe:  $(PROG_SRCDIR)/pendulum.f90 
+bin/hamiltonian_guignard_cs.exe:  $(PROG_SRCDIR)/hamiltonian_guignard_cs.f90 
+bin/modulated_map_jordan_test.exe:  $(PROG_SRCDIR)/modulated_map_jordan_test.f90 
+bin/one_turn_cavity_map.exe:  $(PROG_SRCDIR)/one_turn_cavity_map.f90 
+bin/hamiltonian_guignard.exe:  $(PROG_SRCDIR)/hamiltonian_guignard.f90 
+bin/one_turn_orbital_map.exe:  $(PROG_SRCDIR)/one_turn_orbital_map.f90 
+bin/one_turn_orbital_map_phase_ad.exe:  $(PROG_SRCDIR)/one_turn_orbital_map_phase_ad.f90 
+bin/standard_map.exe:  $(PROG_SRCDIR)/standard_map.f90 
+bin/spin_phase_advance_isf.exe:  $(PROG_SRCDIR)/spin_phase_advance_isf.f90 
 
 #######################
 # check for gfortran version >= 4.4

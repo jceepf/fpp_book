@@ -26,7 +26,8 @@ PROJECT := libptc
 DESTDIR := build
 
 #example sprogram srouce 
-PROG_SRCDIR := book_examples
+PROG_SRCDIR2 := book_examples
+PROG_SRCDIR := myexamples
 PROG_DESTDIR := bin
 
 
