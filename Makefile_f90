@@ -42,7 +42,7 @@ PROG_LIBS := -L$(PROG_DESTDIR) -lptc$(ARCH)
 
 # files specific compiler flag
 l_complex_taylor.o: NOPT := 2
-Sg_sagan_wiggler.o: FFLAGS += -fdollar
+Sg_sagan_wiggler.o: FFLAGS += -fdollar-ok
 #######################
 # Fortran dependencies (case not automatic!)
 

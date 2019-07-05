@@ -27,6 +27,8 @@
       character(len=250)   :: fmt
       character(len=17) :: ch16lft
       
+
+      call print(gen,6)
       
 
       ind(:) = 0
@@ -42,7 +44,8 @@
         do r=1,mynres
 
           call c_taylor_cycle(gen,ii=r,value=c_val,j=ind(1:c_%nv))
-
+          
+          
           order = sum(ind(1:6))
 
           if ( order .ne. o) then
@@ -177,9 +180,14 @@ call build_lattice_als(ALS,mis,exact=.false.)
 call get_length(als,circ)
 !!!! AC_modulate.txt sets the magnet QF1 as a modulated magnet !!!! 
 rf=.true.
+rf=.false.
 
 call kanalnummer(mf1,file="AC_modulation.txt")
+
+
+! setup of rf modulation variables (quantities) and their amplitudes
   if(rf) then
+    ! RF cav
     mu_mod=twopi*0.0212345d0; 
 
     write(mf1,*) "select layout"                  
@@ -191,6 +199,7 @@ call kanalnummer(mf1,file="AC_modulation.txt")
     write(mf1,*) " 0.000d0 , 0.1d0 !  d_volt , d_phas"
     write(mf1,*) " return "
   else
+   !dipole
     write(mf1,*) "select layout"                  
     write(mf1,*) 1
     write(mf1,*) " MODULATE"               
@@ -205,7 +214,7 @@ call kanalnummer(mf1,file="AC_modulation.txt")
 endif
 close(mf1)
  
-! call read_ptc_command77("AC_modulation.txt")
+ call read_ptc_command77("AC_modulation.txt")
  
 !  junk_e=.false.
  !call read_ptc_command77("compare.txt")
@@ -224,6 +233,7 @@ ray_closed%ac(1)%om=mu_mod/circ ! (B1) differs from the first edition
 ray_closed%ac(1)%x=0.d0 ;       ! (B2) differs from the first edition 
 write(6,*) " Modulation tune in radians =",circ*ray_closed%ac(1)%om
 
+! Definition of clock
 probe_graphical%nac=1
 probe_graphical%ac(1)%om=mu_mod/circ 
 probe_graphical%ac(1)%x(1)=1.d0
