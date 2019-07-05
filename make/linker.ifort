@@ -46,7 +46,7 @@ endif
 #
 
 ifeq ($(DEBUG),yes)
-LDFLAGS += -g -gdwarf-2 -check all
+LDFLAGS += -g -gdwarf-2 -check all -lifcore
 endif
 
 ifeq ($(PROFILE),yes)

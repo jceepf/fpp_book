@@ -156,8 +156,8 @@ ALS=>m_u%start
 call kanalnummer(mfmap,"maps.txt") 
 
 
-!state= nocavity0 + modulation0 !
-state= nocavity0 
+state= nocavity0 + modulation0 !
+!state= nocavity0 
 
 map_order=3
 call init_all(state,map_order,0)
@@ -180,6 +180,8 @@ rf=.true.
 
 call kanalnummer(mf1,file="AC_modulation.txt")
   if(rf) then
+    mu_mod=twopi*0.0212345d0; 
+
     write(mf1,*) "select layout"                  
     write(mf1,*) 1
     write(mf1,*) " MODULATERF"               
@@ -198,6 +200,8 @@ call kanalnummer(mf1,file="AC_modulation.txt")
     write(mf1,*) "1 0.1d0 0      ! n d_bn(n) d_an(n)  "  ! (A)
     write(mf1,*) "0  0 0 " 
     write(mf1,*) " return "
+    mu_mod=twopi*0.0212345d0; 
+    
 endif
 close(mf1)
  
@@ -215,7 +219,7 @@ close(mf1)
 
  
 !!!! set a modulation clock !!!!!!
-mu_mod=twopi*0.0212345d0; 
+
 ray_closed%ac(1)%om=mu_mod/circ ! (B1) differs from the first edition 
 ray_closed%ac(1)%x=0.d0 ;       ! (B2) differs from the first edition 
 write(6,*) " Modulation tune in radians =",circ*ray_closed%ac(1)%om
@@ -226,7 +230,6 @@ probe_graphical%ac(1)%x(1)=1.d0
 probe_graphical%ac(1)%x(2)=0.d0
 closed_orbit=0.d0;                                                   ! (C)
 
-state= default0+radiation0  !
 call make_node_layout(als)
 
 closed_orbit=0
