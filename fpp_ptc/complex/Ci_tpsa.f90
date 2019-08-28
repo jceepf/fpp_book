@@ -17118,7 +17118,7 @@ end  subroutine normalise_vector_field_fourier_factored
 subroutine symplectify_for_sethna(m,ms,a1,a2,eps_and_norm)
 implicit none
 TYPE(c_damap),intent(inout):: m,ms
-TYPE(c_damap),optional,intent(inout):: a1,a2
+TYPE(c_damap),optional,intent(inout):: a1,a2  ! to get phase advance
 real(dp),optional:: eps_and_norm
 TYPE(c_damap) mt,l,b1,b2
 type(damap) mm
