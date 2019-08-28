@@ -1498,11 +1498,19 @@ endif
                        call alloc(P%MAGp%D_phas) 
                        
                          P%MAG%D0_Volt= P%MAG%Volt
+<<<<<<< HEAD
                          P%MAGp%D0_Volt= P%MAG%Volt
                          P%MAG%D_Volt= d_volt
                          P%MAGp%D_Volt= d_volt
                          P%MAG%D0_phas= P%MAG%phas
                          P%MAGp%D0_phas= P%MAG%phas
+=======
+                         P%MAGp%D0_Volt= P%MAGp%Volt
+                         P%MAG%D_Volt= d_volt
+                         P%MAGp%D_Volt= d_volt
+                         P%MAG%D0_phas= P%MAG%phas
+                         P%MAGp%D0_phas= P%MAGp%phas
+>>>>>>> 6845ab1ff2817ea5e7fe21d469380b4eb8532046
                          P%MAG%D_phas= d_phas
                          P%MAGp%D_phas= d_phas
              
