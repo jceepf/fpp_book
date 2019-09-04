@@ -232,39 +232,76 @@ CONTAINS
 
   SUBROUTINE  REAL6real_8(S2,S1)
     implicit none
-    real(dp),INTENT(inOUT)::S2(ndd)
-    type (real_8),INTENT(IN)::S1(ndd)
+    real(dp),INTENT(inOUT)::S2(:)
+    type (real_8),INTENT(IN)::S1(:)
     integer i
 
 
-    do i=1,ndd
+    do i=1,min(size(s2),size(s1))
        s2(i)=s1(i)          !%t
     enddo
   END SUBROUTINE REAL6real_8
 
+!  SUBROUTINE  REAL6real_8(S2,S1)
+!    implicit none
+!    real(dp),INTENT(inOUT)::S2(ndd)
+!    type (real_8),INTENT(IN)::S1(ndd)
+!    integer i
+
+
+!    do i=1,ndd
+!       s2(i)=s1(i)          !%t
+!    enddo
+!  END SUBROUTINE REAL6real_8
+
   SUBROUTINE  real_8REAL_8(S1,S2)
     implicit none
-    type (real_8),INTENT(in)::S2(ndd)
-    type (real_8),INTENT(inOUT)::S1(ndd)
+    type (real_8),INTENT(in)::S2(:)
+    type (real_8),INTENT(inOUT)::S1(:)
     integer i
 
 
-    do i=1,ndd
+    do i=1,min(size(s2),size(s1))
        s1(i)=s2(i)
     enddo
   END SUBROUTINE real_8REAL_8
 
+ ! SUBROUTINE  real_8REAL_8(S1,S2)
+ !   implicit none
+ !   type (real_8),INTENT(in)::S2(ndd)
+ !   type (real_8),INTENT(inOUT)::S1(ndd)
+ !   integer i
+
+
+ !   do i=1,ndd
+ !      s1(i)=s2(i)
+ !   enddo
+ ! END SUBROUTINE real_8REAL_8
+
+
   SUBROUTINE  real_8REAL6(S1,S2)
     implicit none
-    real(dp),INTENT(in)::S2(ndd)
-    type (real_8),INTENT(inOUT)::S1(ndd)
+    real(dp),INTENT(in)::S2(:)
+    type (real_8),INTENT(inOUT)::S1(:)
     integer i
 
 
-    do i=1,ndd
+    do i=1,min(size(s2),size(s1))
        s1(i)=s2(i)
     enddo
   END SUBROUTINE real_8REAL6
+
+!  SUBROUTINE  real_8REAL6(S1,S2)
+!    implicit none
+!    real(dp),INTENT(in)::S2(ndd)
+!    type (real_8),INTENT(inOUT)::S1(ndd)
+!    integer i
+
+
+!    do i=1,ndd
+!       s1(i)=s2(i)
+!    enddo
+!  END SUBROUTINE real_8REAL6
 
 !!! end of "use to be in extend_poly"
 
