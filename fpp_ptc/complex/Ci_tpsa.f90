@@ -26,7 +26,7 @@ MODULE c_TPSA
   private div,ddivsc,dscdiv,divsc,scdiv,idivsc,iscdiv,equalc_ray_r6r 
   private unaryADD,add,daddsca,dscadd,addsc,scadd,iaddsc,iscadd,print_ql
   private unarySUB,subs,dsubsc,dscsub,subsc,scsub,isubsc,iscsub,c_clean_taylors
-  private c_allocda,c_killda,c_a_opt,K_opt,c_,c_allocdas,filter_part,matrix_to_quaternion_in_c_damap
+  private c_allocda,c_killda,c_a_opt,K_opt,c_,c_allocdas,filter_part
   private dexpt,dcost,dsint,dtant,DAPRINTTAYLORS,c_clean_yu_w,mul_ql_m,mul_ql_cm
   PRIVATE GETCHARnd2,GETintnd2,dputchar,dputint, filter,check_j,c_dputint0,c_dputint0r
   private GETintnd2t,equalc_cspinor_cspinor,c_AIMAG,c_real,equalc_ray_ray,EQUALql_q,EQUALq_ql,EQUALql_i,EQUALql_ql
@@ -37,7 +37,7 @@ MODULE c_TPSA
   private alloc_c_damap,c_DPEKMAP,c_DPOKMAP,kill_c_damap,kill_c_spinmatrix,c_etcct,c_spinmatrix_mul_cray
   private EQUALspinmatrix,c_trxtaylor,powmap,POWMAPs,alloc_c_vector_field,kill_c_vector_field
   private alloc_c_normal_form,kill_c_normal_form,c_EQUALVEC,c_spinmatrix_spinmatrix,c_IdentityEQUALVEC,qua_ql
-  private liebraquaternion,pow_tpsaMAP,c_concat_quaternion_ray
+  private liebraquaternion,pow_tpsaMAP,c_concat_quaternion_ray,matrix_to_quaternion_in_c_damap
   private EQUALql_cmap,EQUALcmap_ql,EQUAL_complex_quaternion_c_quaternion,EQUAL_c_quaternion_complex_quaternion
   private NO,ND,ND2,NP,NDPT,NV,ndptb,rf
   integer, target :: NP,NO,ND,ND2,NDPT,NV,ndptb,rf
@@ -103,7 +103,7 @@ private c_exp_vectorfield_on_quaternion,c_vector_field_quaternion,addql,subql,mu
 real(dp) dts
 real(dp), private :: sj(6,6)
 logical :: use_new_stochastic_normal_form=.true.
-logical :: qphase=.true.
+logical :: qphase=.false.,qphasedef=.false.
 
 type q_linear
  complex(dp) mat(6,6)
@@ -721,7 +721,6 @@ type(q_linear) q_phasor,qi_phasor
      MODULE PROCEDURE matrix_to_quaternion_in_c_damap
   END INTERFACE
 
-
   INTERFACE MAKESO3
      MODULE PROCEDURE quaternion_to_matrix_in_c_damap
      MODULE PROCEDURE q_linear_to_matrix
@@ -1101,7 +1100,7 @@ enddo
     implicit none
     TYPE (real_8) scdaddo(ndd)
     TYPE (c_damap), INTENT (IN) :: S1
-    real(dp) , INTENT (IN) :: S2(:)
+    real(dp) , INTENT (IN) :: S2(ndd)
     integer localmaster  ,nd2h,i
     type(taylor) t
 
@@ -1115,7 +1114,7 @@ enddo
        scdaddo(i)=t
        master=localmaster
     enddo
-    do i=nd2h+1,size(s2)
+    do i=nd2h+1,ndd
        localmaster=master
        call ass(scdaddo(i))
        if(nd2==4.and.(c_%npara==5.or.c_%npara==8).and.i==5+ndpt_bmad) then
@@ -1131,41 +1130,6 @@ enddo
     call kill(t)
 
   END FUNCTION scdaddo
-
-!  FUNCTION scdaddo( S2,S1  )
-!    implicit none
-!    TYPE (real_8) scdaddo(ndd)
-!    TYPE (c_damap), INTENT (IN) :: S1
-!    real(dp) , INTENT (IN) :: S2(ndd)
-!    integer localmaster  ,nd2h,i
-!    type(taylor) t
-
-!      nd2h=nd2-2*rf 
-
-!    call alloc(t)
-!    do i=1,nd2h
-!       localmaster=master
-!       call ass(scdaddo(i))
-!       t=s1%v(i)+s2(i)-(s1%v(i).sub.'0')
-!       scdaddo(i)=t
-!       master=localmaster
-!    enddo
-!    do i=nd2h+1,ndd
-!       localmaster=master
-!       call ass(scdaddo(i))
-!       if(nd2==4.and.(c_%npara==5.or.c_%npara==8).and.i==5+ndpt_bmad) then
-!          scdaddo(i)=s2(i)+(1.0_dp.mono.'00001')
-!       elseif(nd2==2.and.(c_%npara==3.or.c_%npara==6).and.i==5+ndpt_bmad) then
-!          scdaddo(i)=s2(i)+(1.0_dp.mono.'001')
-!       else
-!          scdaddo(i)=s2(i)
-!       endif
-!       master=localmaster
-!    enddo
-
-!    call kill(t)
-
-!  END FUNCTION scdaddo
 
   FUNCTION unaryADD( S1 )
     implicit none
@@ -5986,8 +5950,7 @@ m%q=p%q
 
  
 
-
-subroutine  quaternion_to_matrix_in_c_damap(p)
+  subroutine  quaternion_to_matrix_in_c_damap(p)
     implicit none
     TYPE(c_damap), INTENT(INOUT) :: p
     type(c_quaternion) s,sf
@@ -6008,7 +5971,6 @@ subroutine  quaternion_to_matrix_in_c_damap(p)
      call kill(sf)
 
     end subroutine  quaternion_to_matrix_in_c_damap
-
 
   subroutine  q_linear_to_matrix (q_lin,m)
     implicit none
@@ -11127,7 +11089,7 @@ subroutine c_full_factor_map(U,Q,U_0,U_1,U_2)
     call alloc(a)
     qphase=.false.
     call c_full_canonise(U,a,Q,U_0,U_1,U_2,irot=0) 
-    qphase=.true.
+    qphase=qphasedef
     call kill(a)
 end subroutine c_full_factor_map   
 
@@ -11842,10 +11804,10 @@ endif
       endif
           qphase=.false.
       call c_full_canonise(m1,a1,phase=phase,nu_spin=nu_spin)
-       if(dospinr.and.present(nu_spin)) then
-        if(real(nu_spin.sub.'0')<0) nu_spin=-nu_spin   ! 2018.11.01  to match phase advance
-       endif
-          qphase=.true.
+    !   if(dospinr.and.present(nu_spin)) then
+    !    if(real(nu_spin.sub.'0')<0) nu_spin=-nu_spin   ! 2018.11.01  to match phase advance
+   !    endif
+          qphase=qphasedef
     endif
 
 
@@ -16435,7 +16397,7 @@ end subroutine extract_a2
     enddo
 
     if(i>nmax-10) then
-       write(6,*) "no convergence in remove_y_rot "
+       write(6,*) "no convergence in factor_ely_rest "
        !stop 1067
     endif
     
@@ -16625,7 +16587,7 @@ endif
     endif
        if(present(tune)) then
         tune=0.0_dp
-        tune=spin_def_tune*tune0%v(2)   ! in phasors
+        tune=-spin_def_tune*tune0%v(2)   ! in phasors
        endif
 
  
@@ -17878,7 +17840,6 @@ REAL(dp) FUNCTION FindDet(mat, n)
     
 END FUNCTION FindDet
 
-
  subroutine c_normal(xyso3,n,dospin,no_used,rot,phase,nu_spin)
 !#general:  normal
 !# This routine normalises the map xy
@@ -17906,7 +17867,7 @@ END FUNCTION FindDet
     logical(lp), optional :: dospin
     logical dospinr,change
     type(c_spinor) n0,nr
-    type(c_quaternion) qn0,qnr
+    type(c_quaternion) qnr
     integer mker, mkers,mdiss,mdis
     if(lielib_print(13)/=0) then
      call kanalnummer(mker,"kernel.txt")
@@ -18265,19 +18226,21 @@ endif
             endif
           enddo ! cycle
         enddo ! k
-        
+     
         call c_nr_to_n0(nr,nr)  !   (10)
-
+ 
 
 if(use_quaternion)then
 qnr=nr
- AS=1 ; AS%q=exp(qnr)
+ AS=1 ; 
+AS%q=exp(qnr)
 else
       AS=1 ; AS%s=exp(nr)*AS%s 
 endif
 
 
  
+
         n%AS=n%AS*AS             ! (12)
  
 
@@ -18291,7 +18254,7 @@ endif
  
       n%AS=n%A_t*n%AS*n%a_t**(-1)
  
-      call kill(AS,xy) 
+      call kill(AS) 
       call kill(mt) 
       call kill(n0) 
       call kill(nr) 
@@ -18324,10 +18287,10 @@ endif
       endif
           qphase=.false.
       call c_full_canonise(m1,a1,phase=phase,nu_spin=nu_spin)
-       if(dospinr.and.present(nu_spin)) then
-        if(real(nu_spin.sub.'0')<0) nu_spin=-nu_spin   ! 2018.11.01  to match phase advance
-       endif
-          qphase=.true.
+      ! if(dospinr.and.present(nu_spin)) then
+      !  if(real(nu_spin.sub.'0')<0) nu_spin=-nu_spin   ! 2018.11.01  to match phase advance
+      ! endif
+          qphase=qphasedef
     endif
 
 
@@ -18361,10 +18324,18 @@ endif
      n%n%q=0.0_dp
      use_quaternion=.false.
     endif
-   
- end subroutine c_normal
- 
+   call kill(xy)
+ end subroutine c_normal !_with_quaternion
 
+! FPP alone
+  subroutine init_map_all(NO1,ND1,NP1,NDPT1)
+    implicit none
+    integer NO1,ND1,NP1
+    integer,optional ::  NDPT1
+    logical(lp) PACKAGE1
+    integer ndptt,i
+    call init(NO1,ND1,NP1,NDPT1)
+    call c_init(NO1,nd1,np1,ndpt1,0,ptc=my_false)
+  end subroutine init_map_all 
 
   END MODULE  c_tpsa
- 

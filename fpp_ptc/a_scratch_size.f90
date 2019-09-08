@@ -75,7 +75,7 @@ module precision_constants
   real(dp)::rpi4
   real(dp),parameter::RAD_TO_DEG_=180.0_dp/pi,DEG_TO_RAD_=pi/180.0_dp
   !Physical Constants
-  real(dp),parameter::A_ELECTRON=1.1596521809126e-3_dp   ! NIST CODATA 2014
+  real(dp),parameter::A_ELECTRON=1.1596521809126e-3_dp ! NIST CODATA 2014
    real(dp),parameter::A_MUON=1.1659208963e-3_dp        ! NIST CODATA 2014
    real(dp),parameter::A_PROTON=1.79284735e-0_dp        !
    real(dp),parameter::pmaMUON=105.658374524E-3_dp      ! NIST CODATA 2014
