@@ -2366,7 +2366,8 @@ ds%x0(1:6)=r%x0
     logical(lp) rad_in
     INTEGER I,J,nd2t1
     type(taylor) t
-
+type(c_damap) mm
+call alloc(mm)
     call alloc(t)
 
     nd2t1=c_%nd2-2*rf
@@ -2408,7 +2409,10 @@ endif
     call c_check_rad(ds%e_ij,rad_in)
         r%e_ij=0.0_dp
     if(rad_in) then
-       m=ds**(-1)
+     call alloc(mm)
+        mm=ds
+        m=mm**(-1)
+     call kill(mm)
        r%e_ij=matmul(matmul(m,ds%e_ij),transpose(m))
     endif
  
