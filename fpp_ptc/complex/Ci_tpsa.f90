@@ -17891,7 +17891,7 @@ END FUNCTION FindDet
     if(present(dospin)) dospinr=dospin
     call alloc(xy);
     xy=xyso3
-    if(.not.use_quaternion) then
+    if(.not.use_quaternion.and.dospinr) then
      call makequaternion(xy)
      use_quaternion=.true.
      change=.true.
@@ -17908,7 +17908,7 @@ END FUNCTION FindDet
     ! Brings the map to the parameter dependent fixed point
     ! including the coasting beam gymnastic: time-energy is canonical
     ! but energy is constant. (Momentum compaction, phase slip etc.. falls from there)
- 
+ ! etienne
     call  c_gofix(m1,a1) 
 
      m1=c_simil(a1,m1,-1)
