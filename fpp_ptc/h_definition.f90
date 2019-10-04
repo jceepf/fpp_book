@@ -26,6 +26,7 @@ module definition
   integer master,c_master
   !  integer,parameter::lnv=100
   !  scratch variables
+  logical :: use_quaternion_in_so3 = .false.
   INTEGER iassdoluser(ndumt)
   integer DUMMY  !,temp
   integer iass0user(ndumt)
