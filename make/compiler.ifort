@@ -65,7 +65,9 @@ endif
 #
 
 FFLAGS += -mp1 -fp-model strict -assume noold_unit_star \
-          -module $(OBJDIR) $(addprefix -I,$(FC_DIR))
+          -module $(OBJDIR) $(addprefix -I,$(FC_DIR)) -I 
+
+PROG_FFLAGS += -I$(OBJDIR)
 
 ifneq ($(CXXNAME),)
 FFLAGS += -fexceptions
@@ -126,7 +128,7 @@ IFORT_FC1 := -D%  -I%  /O0
 IFORT_FC2 := /D%  /I%  /Od
 
 FC_tr = $(strip $(subst $(SPACE)-o , /Fo,$(call trans,$(IFORT_FC1),$(IFORT_FC2),$1)))
-
+$info( FC_tr = $(FC_tr) )
 endif # Windows Settings
 
 # end of makefile
