@@ -5,6 +5,10 @@ implicit none
   public EQUAL_PROBE_REAL6_zhe,print,zhe_ini,track_TREE_probe_complex_ptc, dp,INTERNAL_STATE
   public DEFAULT0,TOTALPATH0 ,TIME0,ONLY_4d0,DELTA0,SPIN0,MODULATION0,only_2d0   ,nrmax_zhe
   public RADIATION0, NOCAVITY0, FRINGE0 ,STOCHASTIC0,ENVELOPE0,gaussian_seed_zhe,nrmax_used_zhe
+ public file_zhe,number_zhe_maps
+ character(255) ::    file_zhe="zhe"
+  integer ::  number_zhe_maps = 1
+
      public CHECK_STABLE_ZHE
      public c_verbose_zhe 
  ! public EQUALi_zhe,EQUALt_zhe

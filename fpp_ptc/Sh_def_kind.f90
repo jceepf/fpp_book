@@ -3921,7 +3921,9 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
        else
           X(1)=X(1)+L*X(2)/(1.0_dp+X(5))
           X(3)=X(3)+L*X(4)/(1.0_dp+X(5))
-          X(6)=X(6)+(L/(1.0_dp+X(5)))*(X(2)*X(2)+X(4)*X(4))/2.0_dp/(1.0_dp+X(5))+T*L
+
+         X(6)=X(6)+(L/(1.0_dp+X(5)))*(X(2)*X(2)+X(4)*X(4))/2.0_dp/(1.0_dp+X(5))+T*L
+ 
        endif
     ENDIF
 

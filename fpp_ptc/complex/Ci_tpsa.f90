@@ -10510,13 +10510,13 @@ subroutine c_linear_a_stoch(xy,a1)
 !# in the energy plane, or even a rotation sink if radiation is present. 
 !# R can also have rotations for clocks concerning AC modulation. (See Chap.4 of my Springer book)
     implicit none
-    integer i,j
+    integer i,j,ier
     type(c_damap), intent(inout) ::  xy,a1 
     real(dp) reval(ndim2t),imval(ndim2t),vr(ndim2t,ndim2t),vi(ndim2t,ndim2t),vrt(ndim2t,ndim2t),vit(ndim2t,ndim2t)
     real(dp) fm0(ndim2t,ndim2t),x(ndim2t/2),xx(ndim2t/2)
     integer idef(ndim2t/2)
     real(dp), allocatable :: fm(:,:),fmi(:,:),fmii(:,:)
-    type(c_damap) s1
+ !   type(c_damap) s1
     real(dp) :: eps_eigen = 1.e-12_dp,norm
 
     if(.not.c_stable_da) return
@@ -10667,36 +10667,31 @@ endif
         fm(2*j,i)=vi(i,idef(j))/x(j)
       enddo
     enddo
-    
-   
-    a1 = fm
-
-    call alloc(s1)
- 
-    
- 
 
 
+    call matinv(fm,fm,xy%n,xy%n,ier)
 
-    !!! In the case of a symplectic map, without magnet modulation,
-    !!! everything is done.
-    !!! However magnet modulations do not produce a symplectic matrix
-    !!! if there is a longitudinal coasting beam.
-    !!! Therefore time must be adjusted to make sure that the map
-    !!! is truly diagonalised.
+    if(ier/=0) then
+     write(6,*) " Problems with  c_matinv "
+     write(6,*) " ier = ",ier
+    endif
     a1%s=1
     a1%q=1.0_dp
 
+    a1 = fm
 
-
+ !   call alloc(s1)
+ 
  
 
-    a1=a1**(-1)
+
+
+   ! a1=a1**(-1)
     
 
  
 !    a1%s=1  ! make sure spin is non-zero
-    call kill(s1)    
+!    call kill(s1)    
     deallocate(fm,fmi,fmii)   
 
 
@@ -11369,8 +11364,7 @@ subroutine c_full_factorise(at,as,a0,a1,a2,dir)
  
 end subroutine c_full_factorise
 
-
-
+ 
  subroutine c_normal_spin_linear_quaternion(m_in,m_out,as,alpha) 
 !#restricted: normal
 !# This routine normalises the constant part of the spin matrix. 
@@ -11678,22 +11672,29 @@ endif
     enddo
      do i=1,3
       if(ki(2*i-1)<0) then
-       write(6,*) "fluctuations ill defined in plane ",i
-        write(6,*) i,ki(2*i-1:2*i)
+        if(c_verbose) then
+         write(6,*) "fluctuations ill defined in plane ",i
+         write(6,*) i,ki(2*i-1:2*i)
+        endif
          ki(2*i-1)=0
          ki(2*i)=0
        endif
       if(ki(2*i)<0) then
-       write(6,*) "fluctuations ill defined in plane ",i
-        write(6,*) i,ki(2*i-1:2*i)
+        if(c_verbose) then
+         write(6,*) "fluctuations ill defined in plane ",i
+         write(6,*) i,ki(2*i-1:2*i)
+        endif
          ki(2*i-1)=0
          ki(2*i)=0
        endif
       if(ki(2*i-1)/=0.and.ki(2*i)/=0) then
         if(ki(2*i-1)-ki(2*i)/=0) then
           if(abs( (ki(2*i-1)-ki(2*i))/(abs(ki(2*i-1))+abs(ki(2*i))))>1.d-4) then
+        if(c_verbose) then
           write(6,*) "fluctuations ill defined in plane ",i
           write(6,*) i,ki(2*i-1:2*i)
+        endif
+
            ki(2*i-1)=0
            ki(2*i)=0
           endif

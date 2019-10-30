@@ -5874,7 +5874,7 @@ call kill(xs);call kill(m);call kill(mr)
  
 end subroutine fill_tree_element_line_zhe0
 
-subroutine fill_tree_element_line_zhe(state,f1,f2,no,fix0,filef,stochprec,sagan_tree)   ! fix0 is the initial condition for the maps
+subroutine fill_tree_element_line_zhe(state,f1,f2,no,fix0,filef,stochprec,as_is,sagan_tree)   ! fix0 is the initial condition for the maps
 implicit none
 type(fibre), target :: f1,f2
 type(layout), pointer :: r
@@ -5883,6 +5883,8 @@ TYPE (NODE_LAYOUT), POINTER :: t
 type(internal_state), intent(in):: state
 real(dp) fixr(6),fixs(6),fix(6),fix0(6),mat(6,6),xn,stoch
 real(dp), optional :: stochprec
+logical, optional :: as_is
+logical  as_is0
  
 type(probe) xs0
 type(probe_8) xs
@@ -5893,7 +5895,9 @@ type(tree_element), pointer :: forward(:) =>null()
 character(*),optional :: filef
 type(tree_element),optional, target :: sagan_tree(3)
 
- 
+ as_is0=.false.
+
+ if(present(as_is)) as_is0=as_is
 
 if(present(sagan_tree)) then
  forward=>sagan_tree
@@ -5945,8 +5949,11 @@ enddo
 
  
 
-
-call SET_TREE_G_complex_zhe(forward,m)
+if( as_is0)  then
+ call SET_TREE_G_complex_zhe_as_is(forward,m)
+else
+ call SET_TREE_G_complex_zhe(forward,m)
+endif
 
   stoch=-1.0_dp
 if(present(stochprec)) stoch=stochprec
@@ -5981,13 +5988,13 @@ call kill(xs);call kill(m);call kill(mr)
 
 end subroutine fill_tree_element_line_zhe
 
-subroutine fill_tree_element_line_zhe_outside_map(minput ,filef)   ! fix0 is the initial condition for the maps
+subroutine fill_tree_element_line_zhe_outside_map(minput ,filef,fix0,as_is,stochprec)   ! fix0 is the initial condition for the maps
 implicit none
+logical, optional :: as_is
+real(dp), optional :: fix0(6),stochprec
+logical  as_is0
  
- 
-real(dp)  fix0(6),mat(6,6) 
- 
- 
+real(dp)  fix(6),mat(6,6) ,f0(6),stoch
  
 type(c_damap) m,minput
 integer  i,inf
@@ -5995,7 +6002,7 @@ integer  i,inf
 type(tree_element), pointer :: forward(:) =>null()
 character(*),optional :: filef
  
- 
+  as_is0=.false.
  
   allocate(forward(3))
  
@@ -6011,9 +6018,9 @@ enddo
 
 
 
-fix0=minput 
-  
-
+fix=minput 
+f0=fix  
+if(present(fix0)) f0=fix0
 
  
 m=minput  
@@ -6024,15 +6031,27 @@ enddo
 
  
 
+if( as_is0)  then
+ call SET_TREE_G_complex_zhe_as_is(forward,m)
+else
+ call SET_TREE_G_complex_zhe(forward,m)
+endif
 
-call SET_TREE_G_complex_zhe(forward,m)
+  stoch=-1.0_dp
+if(present(stochprec)) stoch=stochprec
 
+if(stoch>=0) then
+  call c_stochastic_kick(m,forward(2)%rad,forward(2)%fix0,stoch)
+endif
  
 
 forward(1)%rad=mat
-forward(1)%fix0(1:6)=fix0
-forward(1)%fixr(1:6)=fix0
-forward(1)%fix(1:6)=fix0    ! always same fixed point
+forward(1)%fix0(1:6)=f0 ! entrance
+forward(1)%fixr(1:6)=fix
+forward(1)%fix(1:6)=fix    ! exit
+forward(3)%fix0(1:6)=f0 ! entrance
+forward(3)%fixr(1:6)=fix
+forward(3)%fix(1:6)=fix    ! exit
 
  forward(1)%ds=0.0_dp
  
@@ -6190,6 +6209,129 @@ endif
 
   END SUBROUTINE SET_TREE_G_complex_zhe
 
+  SUBROUTINE SET_TREE_G_complex_zhe_as_is(T,Ma)
+    IMPLICIT NONE
+    TYPE(TREE_ELEMENT), INTENT(INOUT) :: T(:)
+    TYPE(c_damap), INTENT(INOUT) :: Ma
+    INTEGER N,NP,i,k,j,kq
+ 
+    real(dp) norm,mat(6,6)
+    TYPE(taylor), ALLOCATABLE :: M(:), MG(:)
+    TYPE(damap) ms
+    integer js(6)
+    type(c_damap) L_ns , N_pure_ns , N_s , L_s
+
+
+ 
+
+    call alloc(L_ns , N_pure_ns , N_s , L_s)
+    
+  !  call symplectify_for_zhe(ma,L_ns , N_pure_ns, L_s , N_s )
+
+!    np=ma%n+18
+    if(ma%n/=6) then
+     write(6,*) " you need a 6-d map in SET_TREE_G_complex for PTC "
+     stop
+    endif
+    np=size_tree
+
+
+    ALLOCATE(M(NP))
+    CALL ALLOC(M,NP)
+    ALLOCATE(Mg(NP))
+    CALL ALLOC(mg,NP)
+    do i=1,np
+     m(i)=0.e0_dp
+     mg(i)=0.e0_dp
+    enddo
+
+      L_ns = ma  ! L_ns*N_pure_ns
+      L_s=1
+     do i=1,L_ns%n
+      m(i)=L_ns%v(i)   ! orbital part
+     enddo
+
+    call c_full_norm_spin(Ma%s,k,norm)
+
+
+if(use_quaternion) then
+    call c_full_norm_quaternion(Ma%q,kq,norm)
+    if(kq==-1) then
+      do i=0,3
+        m(ind_spin(1,1)+i)=ma%q%x(i)
+      enddo
+    elseif(kq/=-1) then
+      m(ind_spin(1,1))=1.0_dp
+      do i=ind_spin(1,1)+1,size_tree
+        m(i)=0.0_dp
+      enddo
+    endif
+else
+    if(k==-1) then
+      do i=1,3
+      do j=1,3
+        m(ind_spin(i,j))=ma%s%s(i,j)
+      enddo
+      enddo
+    else
+      do i=1,3
+        m(ind_spin(i,i))=1.0e0_dp
+      enddo
+    endif
+endif
+      js=0
+     js(1)=1;js(3)=1;js(5)=1; ! q_i(q_f,p_i) and p_f(q_f,p_i)
+     call alloc(ms)
+
+
+       ms=1  !n_s
+
+
+
+     ms=ms**js
+!     do i=1,3
+!      mg(i)=ms%v(2*i-1)   !  q_i(q_f,p_i)
+!      mg(3+i)=ms%v(2*i)   !  p_f(q_f,p_i)
+!     enddo
+     do i=1,6
+      mg(i)=ms%v(i)
+     enddo
+     do i=1,3
+     do j=1,3
+       mg(ind_spin(i,j))=ms%v(2*i-1).d.(2*j-1)  !   Jacobian for Newton search
+     enddo
+     enddo
+     call kill(ms)  
+
+     call SET_TREE_g(T(1),m(1:6))
+ !    do i=1,ma%n
+ !     m(i)=1.0_dp.cmono.i
+ !    enddo 
+ !    do i=ma%n+1,6
+ !     m(i)=0.0_dp
+ !    enddo
+     call SET_TREE_g(T(2),m(7:15))
+ 
+ !    call SET_TREE_g(T(2),m(1:size_tree))
+     call SET_TREE_g(T(3),mg(1:size_tree))
+
+!T(3)%ng=mul
+!     write(6,*) " mul ",mul
+      t(3)%rad=L_s
+
+
+       mat=ma**(-1)
+       t(1)%e_ij=ma%e_ij     !matmul(matmul(mat,ma%e_ij),transpose(mat))  not necessary I think
+
+  
+
+    call kill(m); call kill(mg);
+    deallocate(M);    deallocate(Mg);
+    call kill(L_ns , N_pure_ns , N_s , L_s)
+
+  END SUBROUTINE SET_TREE_G_complex_zhe_as_is
+
+ 
   SUBROUTINE SET_TREE_G_complex_zhe0(T,Ma,ma_0)
     IMPLICIT NONE
     TYPE(TREE_ELEMENT), INTENT(INOUT) :: T(:)

@@ -1528,7 +1528,7 @@ CONTAINS
     n_rf=0
 !    call dd_p !valishev
     doing_ac_modulation_in_ptc=.false.
-    package=my_true
+    package=old_package
     if(present(pack))     package=my_true
     only2d=0
     n_acc=0

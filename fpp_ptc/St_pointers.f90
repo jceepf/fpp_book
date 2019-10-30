@@ -1,5 +1,11 @@
 module pointer_lattice
   use madx_ptc_module !etienne, my_state_mad=>my_state, my_ring_mad=>my_ring
+use duan_zhe_map, probe_zhe=>probe,tree_element_zhe=>tree_element,dp_zhe=>dp, &
+DEFAULT0_zhe=>DEFAULT0,TOTALPATH0_zhe=>TOTALPATH0,TIME0_zhe=>TIME0,ONLY_4d0_zhe=>ONLY_4d0,RADIATION0_zhe=>RADIATION0, &
+NOCAVITY0_zhe=>NOCAVITY0,FRINGE0_zhe=>FRINGE0,STOCHASTIC0_zhe=>STOCHASTIC0,ENVELOPE0_zhe=>ENVELOPE0, &
+DELTA0_zhe=>DELTA0,SPIN0_zhe=>SPIN0,MODULATION0_zhe=>MODULATION0,only_2d0_zhe=>only_2d0 , &
+INTERNAL_STATE_zhe=>INTERNAL_STATE
+
   !  use madx_keywords
   USE gauss_dis
   implicit none
@@ -22,7 +28,7 @@ module pointer_lattice
   character(nlp) name_ap,namet(2)
   character(255) :: filename_ap = "Tracking.txt"
   character(255), private :: file_zher,filezhe, name_zhe
-  integer, private :: k_zhe,number_zhe_maps
+  integer, private :: k_zhe, number_zhe_maps_local
   integer last_npara 
   integer :: i_layout=0,i_layout_t=1,pos_layout=1
   integer my_lost_position
@@ -1526,7 +1532,7 @@ endif
       !    endif
 
        case('MAPSFORZHE')
-          READ(MF,*) i11,I22,number_zhe_maps ,hgap ! position  i1=i2 one turn map,  fact is precision of stochastic kick
+          READ(MF,*) i11,I22,number_zhe_maps_local ,hgap ! position  i1=i2 one turn map,  fact is precision of stochastic kick
           READ(MF,*) MY_A_NO,do_state0   ! ORDER OF THE MAP  
           READ(MF,*) filename
           state0=my_estate-radiation0-envelope0
@@ -1535,8 +1541,8 @@ endif
           endif
           if(.not.associated(my_ering%t)) call make_node_layout(my_ering)
           if(i11==i22) i22=i11+my_ering%n
-          di12=float(i22-i11)/number_zhe_maps
-                        do k_zhe=1,number_zhe_maps
+          di12=float(i22-i11)/number_zhe_maps_local
+                        do k_zhe=1,number_zhe_maps_local
                              write(name_zhe,*) k_zhe
                            file_zher(1:len_trim(filename))=filename(1:len_trim(filename))
                            file_zher(1+len_trim(filename):len_trim(filename)+len_trim(name_zhe))=name_zhe(1:len_trim(name_zhe))
@@ -1545,7 +1551,7 @@ endif
            
           i1=i11+(k_zhe-1)*di12
           i2=i1+di12
-          if(i2>i22.or.k_zhe==number_zhe_maps) i2=i22
+          if(i2>i22.or.k_zhe==number_zhe_maps_local) i2=i22
           write(6,*)" from to ", i1,i2,i22
 !pause 873
            p=>my_ering%start

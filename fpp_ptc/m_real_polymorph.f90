@@ -7198,17 +7198,6 @@ FUNCTION sin_quaternionp( S1 )
 
   END SUBROUTINE clean_real_8
 
-  SUBROUTINE  flip_real_8(S1,S2,i)
-    implicit none
-    type (real_8),INTENT(INOUT)::S2
-    type (real_8), intent(INOUT):: s1
-    integer i
-    if(s1%kind==2) then
-       s2=s1  ! to make s2 taylor!
-       call flip_taylor(S1%t,S2%t,i)
-    endif
-  end SUBROUTINE  flip_real_8
-
 
  
 
