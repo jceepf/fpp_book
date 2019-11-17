@@ -8434,16 +8434,42 @@ else
       call c_inv_as(y%s,y%s)
 endif
 
-
-
-
-
-
     call kill(ie1)
 
     call kill(ie2)
 
   end subroutine c_etinv
+
+ subroutine c_etpin(x,y,jind)
+!*
+    implicit none
+    ! Y=X^-1
+    integer i,jind(:)
+    type(c_damap) ie1,ie2 
+    type(c_damap), intent(inout):: x,y
+    if(.not.c_stable_da) return
+    
+    ie1%n=nv;ie2%n=nv;
+    call alloc(ie1)
+    call alloc(ie2)
+      do i=1,x%n
+       ie1%v(i)=x%v(i)
+      enddo
+      do i=x%n+1,nv
+         ie1%v(i)=1.0_dp.cmono.i
+      enddo
+ 
+    call c_dapint(ie1%v(1:nv)%i,nv,ie2%v(1:nv)%i,nv,jind)
+       do i=1,x%n
+       y%v(i)=ie2%v(i)
+      enddo
+
+    call kill(ie1)
+
+    call kill(ie2)
+
+  end subroutine c_etpin
+
 
 
  FUNCTION transform_vector_field_by_map(S1,S2)
@@ -9827,6 +9853,42 @@ endif
 
   END FUNCTION POWMAP
 
+  FUNCTION POWMAP_INV( S1, R2 )
+    implicit none
+    TYPE (c_damap) POWMAP_INV
+    TYPE (c_damap), INTENT (IN) :: S1
+    INTEGER, INTENT (IN) :: R2(:)
+    TYPE (c_damap) S11
+    INTEGER I,jn(lnv)
+    integer localmaster
+    IF(.NOT.C_%STABLE_DA) RETURN
+    localmaster=c_master
+
+
+    do i=1,lnv
+       jn(i)=0
+    enddo
+    do i=1,nd2
+       jn(i)=R2(I)
+    enddo
+
+    call c_assmap(POWMAP_INV)
+
+    call alloc(s11)
+
+
+    call etpin(S1%V%i,S11%v%i,jn)
+
+
+    POWMAP_INV=s11
+
+
+    ! powmap=junk
+    call kill(s11)
+
+    c_master=localmaster
+
+  END FUNCTION POWMAP_INV
 
   FUNCTION pow_tpsaMAP( S1, R2 )
     implicit none
@@ -10011,7 +10073,6 @@ SUBROUTINE  c_EQUALcray(S2,S1)
 
     ! if(old) then
         s2%s=s1
-        s1r=s1
         s1r=s1
         s2%q=s1r
     IF(S1.EQ.1) then

@@ -2,7 +2,7 @@
 !Copyright (C) Etienne Forest
 
 module tpsalie
-  use tpsa,  difd_lielib => difd, intd_lielib=> intd!
+  use tpsa,  difd_lielib => difd, intd_lielib=> intd !
   implicit none
   public
   private  ASSVEC,ASSMAP,ASSPB,asstaylor,explieflo,expliepb,expflot,exppb
