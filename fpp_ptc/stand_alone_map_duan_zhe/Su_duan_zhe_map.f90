@@ -2,15 +2,17 @@ module duan_zhe_map
 implicit none
   private    !  this private can be removed outside PTC
   public track_TREE_probe_complex_zhe,probe,tree_element, read_tree_zhe,kill_tree_zhe,print_tree_elements_zhe
-  public EQUAL_PROBE_REAL6_zhe,print,zhe_ini,track_TREE_probe_complex_ptc, dp,INTERNAL_STATE
+  public print,zhe_ini,track_TREE_probe_complex_ptc, dp,INTERNAL_STATE !,EQUAL_PROBE_REAL6_zhe,
   public DEFAULT0,TOTALPATH0 ,TIME0,ONLY_4d0,DELTA0,SPIN0,MODULATION0,only_2d0   ,nrmax_zhe
-  public RADIATION0, NOCAVITY0, FRINGE0 ,STOCHASTIC0,ENVELOPE0,gaussian_seed_zhe,nrmax_used_zhe
+  public RADIATION0, NOCAVITY0, FRINGE0 ,STOCHASTIC0,ENVELOPE0,gaussian_seed_zhe,nrmax_used_zhe,alloc_bunch,kill_bunch
   PUBLIC track_TREE_probe_complex_ji,track_TREE_probe_complex_ji_symp,TRACK_TREE_PROBE_COMPLEX_JI_VEC
- public file_zhe,number_zhe_maps
+ public file_zhe,number_zhe_maps,get_seed,set_seed
  character(255) ::    file_zhe="zhe"
   integer ::  number_zhe_maps = 1
   public use_ji
   logical :: use_ji =.false.
+  private alex_ISEED
+  integer :: alex_ISEED=1000
 
      public CHECK_STABLE_ZHE
      public c_verbose_zhe 
@@ -27,11 +29,19 @@ implicit none
   integer,parameter::lno=200,lnv=100
   public zhe_ISEED
   integer :: zhe_ISEED=1000,nrmax_used, ntot=100
+public change_ntot
 private subq,unarysubq,addq,unaryADDq,absq,absq2,mulq,divq,ranf
 private EQUALq,EQUALqr,EQUALqi,powq,printq ,invq
 real(dp),parameter::pi=3.141592653589793238462643383279502e0_dp
 real(dp) :: cut_zhe=6.0_dp
  logical :: use_quaternion = .false.
+ public bunch
+TYPE bunch
+ type(probe), pointer :: xs(:)
+ integer n,r,reloaded
+ logical, pointer :: stable(:)
+ real(dp) , pointer :: turn(:)
+end TYPE bunch
 
 TYPE INTERNAL_STATE
    INTEGER TOTALPATH   ! total time or path length is used
@@ -141,6 +151,7 @@ private orthonormaliser
      MODULE PROCEDURE EQUALt_zhe
      MODULE PROCEDURE EQUALi_zhe
      MODULE PROCEDURE EQUAL_PROBE_REAL6_zhe
+     MODULE PROCEDURE EQUAL_PROBE_REAL6_bunch
      MODULE PROCEDURE EQUALq
      MODULE PROCEDURE EQUALqi
      MODULE PROCEDURE EQUALqr
@@ -225,7 +236,7 @@ contains
     do i=1,6
      T%rad(i,i)=1.0_dp
     enddo
-    t%eps=1.d-7
+    t%eps=1.d-5
     t%symptrack=.false.
     t%usenonsymp=.false.
      t%factored=.false.
@@ -296,8 +307,37 @@ else
 
 
 
- 
+  subroutine EQUAL_PROBE_REAL6_bunch(P,X)
+    implicit none
+    TYPE(bunch), INTENT(INOUT) :: P
+    REAL(DP), INTENT(IN) :: X(6)
+    INTEGER I
+    do i=1,p%n
+     p%xs(i)=x
+    enddo
+  END    subroutine EQUAL_PROBE_REAL6_bunch
 
+  subroutine alloc_bunch(P,n)
+    implicit none
+    integer n
+    TYPE(bunch), INTENT(INOUT) :: P
+    p%n=n
+    p%r=n
+
+    p%reloaded=0
+     allocate(p%xs(n),p%stable(n),p%turn(n))
+
+     p%stable =.true.
+     p%turn=0
+ 
+  END    subroutine alloc_bunch
+
+   subroutine kill_bunch(P)
+    implicit none
+    integer n
+    TYPE(bunch), INTENT(INOUT) :: P
+    deallocate(p%xs,p%turn,p%stable)
+  END    subroutine kill_bunch
 
   FUNCTION minu_zhe( S1,S2  )
     implicit none
@@ -1030,7 +1070,7 @@ endif ! jumpnot
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   new zhe tracking   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE track_TREE_probe_complex_zhe(T,xs,spin,rad,stoch)
+  SUBROUTINE track_TREE_probe_complex_zhe(T,xs,spin,rad,stoch,linear)
 !    use da_arrays
     IMPLICIT NONE
     TYPE(TREE_ELEMENT),target, INTENT(INout) :: T(3)
@@ -1039,19 +1079,27 @@ endif ! jumpnot
     real(dp) x(size_tree),x0(size_tree),s0(3,3),r(3,3),dx6,beta,q(3),p(3),qg(3),qf(3)
     real(dp) normb,norm,x0_begin(size_tree),xr(6),normbb
     integer i,j,k,ier,is
-    logical, optional  :: spin,stoch,rad
-    logical  spin0,stoch0,rad0,doit
+    logical, optional  :: spin,stoch,rad,linear
+    logical  spin0,stoch0,rad0,doit,as_is0
+    integer no1
     type(quaternion) qu
 
+    as_is0=t(1)%usenonsymp
     spin0=.true.
     stoch0=.true.
     rad0=.true.
-
+    no1=t(1)%no
+    if(present(linear)) then
+     if(linear) no1=1
+    endif
     if(present(spin)) spin0=spin
     if(present(stoch)) stoch0=stoch
     if(present(rad)) rad0=rad
-    doit=rad0.or.stoch0
 
+    if(as_is0) rad0=.true.
+    doit=rad0.or.stoch0
+    x=0
+    x0=0
 !    nrmax=1000
    check_stable_zhe=.true.
        xs%u=.false.
@@ -1110,7 +1158,7 @@ endif
 
       x0(1:6)=x(1:6)
       x(7:12)=x(1:6)
-if(t(1)%no>1) then
+if(no1>1.and.(.not.as_is0)) then
     do i=1,3
      q(i)=x(2*i-1)
      p(i)=x(2*i)
@@ -1164,7 +1212,9 @@ do is=1,nrmax
       normbb=normb  ! saving for debugging
      normb=norm
    else
-     if(normb<=norm) then 
+      normbb=abs(qf(1))+abs(qf(2))+abs(qf(3))
+      
+     if(normb<=norm.or.norm/normbb<1.d-2  ) then 
        x(1)=qf(1)
        x(3)=qf(2)
        x(5)=qf(3)
@@ -1188,7 +1238,7 @@ enddo  ! is
    check_stable_zhe=.false.
   return
  endif
-else
+elseif(.not.as_is0) then
        x(1:6)=matmul(t(3)%rad,x(1:6))
 !!!    
  endif  ! no > 1
@@ -1235,10 +1285,27 @@ else
      endif  
     endif ! spin
 
-
+if(as_is0) then 
+ if(no1>1) then
+  call track_TREE_G_complex(T(1),X(1:6))
+ else
+       x(1:6)=matmul(t(3)%rad,x(1:6))
+ endif
+else
   if(rad0)   call track_TREE_G_complex(T(1),X(1:6))
+endif
 
+ norm=0
+do i=1,6
+ norm=norm+abs(x(i))
+enddo
 
+ if(norm>1) then
+   if(c_verbose_zhe) write(6,*) " unstable " 
+   xs%u=.true.
+   check_stable_zhe=.false.
+  return
+ endif
 
 if(doit) then
 
@@ -1411,6 +1478,13 @@ enddo  ! is
 
   end SUBROUTINE track_TREE_probe_complex_ji_symp
 
+  SUBROUTINE change_ntot(n)
+!    use da_arrays
+    IMPLICIT NONE
+    integer n
+    ntot=n
+ end   SUBROUTINE change_ntot
+
   SUBROUTINE track_TREE_probe_complex_ji_vec(T,xs)
 !    use da_arrays
     IMPLICIT NONE
@@ -1467,22 +1541,30 @@ real(dp), INTENT(INout) ::  x(6)
 real(dp)  f(6),e,de(6),x0(size_ji_vec)
 integer i
 
+!111 x=0
+!write(6,*) "x(1:4)"
+!read(5,*) x(1:4)
 x0=0
 x0(1:6)=x
-  call track_TREE_G_complex(T,X(1:size_ji_vec))
-
+ 
+  call track_TREE_G_complex(T,X0(1:size_ji_vec))
+ 
 e=1
 do i=1,6
- e=e*exp(t%fixr(i)*x0(i)**2)
- de(i)=2*t%fixr(i)*x0(i)
+ e=e*exp(-t%fixr(i)*x0(i)**2)
+ de(i)=-2*t%fixr(i)*x0(i)
 enddo
 de=de*e
 
+ 
 do i=1,3
-f(2*i-1)=e*x(2*i)+x(2*i+6)+de(2*i-1)*x(size_ji_vec)
-f(2*i)=-e*x(2*i-1)-x(2*i-1+6)-de(2*i)*x(size_ji_vec)
+f(2*i-1)=e*x0(2*i-1)+x0(2*i-1+6)+de(2*i-1)*x0(size_ji_vec)
+f(2*i)= e*x0(2*i)+x0(2*i+6)-de(2*i)*x0(size_ji_vec)
 enddo
 
+!write(6,*) f(1:4)
+!write(6,*) f(5:6)
+!goto 111
 end subroutine fev
 
   subroutine rk6_vec(y,gr,h)
@@ -1497,8 +1579,9 @@ end subroutine fev
     integer j
     real(dp), intent(inout) :: h
 
-
+ 
     call fev(y,f,gr)
+ 
     do  j=1,ne
        a(j)=h*f(j)
     enddo
@@ -1688,7 +1771,7 @@ x(1:6)= x(1:6)+x(7:12)
     nrmax_u=nrmax_used
   end SUBROUTINE nrmax_used_zhe
 
-   real(dp) function GRNF_zhe()
+   real(dp) function GRNF_zhe_gaussian()
     implicit none
     real(dp) r1,r2,x 
 
@@ -1698,10 +1781,53 @@ x(1:6)= x(1:6)+x(7:12)
     R1 = SQRT(2.0_dp*R1)
     X  = R1*COS(R2)
     if(abs(x)>cut_zhe) goto 1
-     GRNF_zhe=x
+     GRNF_zhe_gaussian=x
+     
+ 
+    ! Y  = R1*SIN(R2)
+    RETURN
+  END function GRNF_zhe_gaussian
+
+    subroutine get_seed(k)
+    implicit none
+    integer k
+    k=alex_ISEED
+   end  subroutine get_seed
+
+    subroutine set_seed(k)
+    implicit none
+    integer k
+    alex_ISEED=k
+   end  subroutine set_seed
+ 
+
+  
+   real(dp) function GRNF_zhe()
+    implicit none
+    integer ia,ic,iq,ir,ih,il,it
+    DATA IA/16807/,IC/2147483647/,IQ/127773/,IR/2836/
+    IH = alex_ISEED/IQ
+    IL = MOD(alex_ISEED,IQ)
+    IT = IA*IL-IR*IH
+    IF(IT.GT.0) THEN
+       alex_ISEED = IT
+    ELSE
+       alex_ISEED = IC+IT
+    END IF
+    GRNF_zhe = alex_ISEED/FLOAT(IC)
+    
+
+
+       if(GRNF_zhe>0.5_dp) then
+          GRNF_zhe=1.0_dp
+       else
+          GRNF_zhe=-1.0_dp
+       endif
+ 
     ! Y  = R1*SIN(R2)
     RETURN
   END function GRNF_zhe
+ 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! end of   new zhe tracking   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  
   subroutine matinv(a,ai,n,nmx,ier)

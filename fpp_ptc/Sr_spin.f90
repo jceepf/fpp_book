@@ -5874,6 +5874,136 @@ call kill(xs);call kill(m);call kill(mr)
  
 end subroutine fill_tree_element_line_zhe0
 
+subroutine fill_tree_element_line_zhe0_node(state_0,state,t1,t2,no,fix0_0,fix0,filef,stochprec,sagan_tree)   ! fix0 is the initial condition for the maps
+implicit none
+TYPE(INTEGRATION_NODE), target :: t1,t2 
+type(layout), pointer :: r
+TYPE(INTEGRATION_NODE),POINTER:: t1c,t2c
+TYPE (NODE_LAYOUT), POINTER :: t
+type(internal_state), intent(in):: state,state_0
+real(dp) fixr(6),fixs(6),fix(6),fix0(6),fix0_0(6),mat(6,6),xn,stoch,fix_0(6)
+real(dp), optional :: stochprec
+ 
+type(probe) xs0,xs0_0
+type(probe_8) xs,xs_0
+type(c_damap) m,mr,m_0
+integer no,i,inf
+type(fibre), pointer :: p
+type(tree_element), pointer :: forward(:) =>null()
+character(*),optional :: filef
+type(tree_element),optional, target :: sagan_tree(3)
+
+ 
+
+if(present(sagan_tree)) then
+ forward=>sagan_tree
+else
+  allocate(forward(3))
+endif
+if(.not.associated(t1%parent_fibre%parent_layout)) then
+ write(6,*) " parent layout not associated "
+ stop
+else
+ r=>t1%parent_fibre%parent_layout
+endif
+
+ t=>t1%parent_fibre%parent_layout%t
+ t1c=>t1 !%next
+ t2c=>t2
+
+
+mat=0
+do i=1,size(mat,1)
+mat(i,i)=1
+enddo
+
+ 
+call init_all(state,no,0)
+call alloc(xs);call alloc(m,m_0);call alloc(mr)
+ call alloc(xs_0);
+
+
+xs0=fix0
+m=1
+xs=xs0+m
+if(associated(t1c,t2c)) then
+ call propagate(xs,state,node1=t1c)
+else
+ call propagate(xs,state,node1=t1c,node2=t2c)
+endif
+ 
+
+
+xs0_0=fix0_0
+m=1
+xs_0=xs0_0+m
+if(associated(t1c,t2c)) then
+ call propagate(xs_0,state_0,node1=t1c)
+else
+ call propagate(xs_0,state_0,node1=t1c,node2=t2c)
+endif
+ 
+! For David
+!!  The full nonlinear map m is computed and the final orbit
+!!  
+fix=xs%x  ! <---   
+m=xs  ! <---   
+ 
+do i=1,6
+ m%v(i)=m%v(i)-(m%v(i).sub.0)
+enddo 
+
+fix_0=xs_0%x  ! <---   
+m_0=xs_0 ! <---   
+ 
+do i=1,6
+ m_0%v(i)=m_0%v(i)-(m_0%v(i).sub.0)
+enddo 
+
+ 
+
+ 
+call SET_TREE_G_complex_zhe0(forward,m,m_0)
+
+  stoch=-1.0_dp
+if(present(stochprec)) stoch=stochprec
+
+if(stoch>=0) then
+  call c_stochastic_kick(m,forward(2)%rad,forward(2)%fix0,stoch)  
+endif
+
+ 
+forward(1)%rad=mat
+forward(1)%fix0(1:6)=fix0
+forward(1)%fixr(1:6)=fix
+forward(1)%fix(1:6)=fix    ! always same fixed point
+ 
+ 
+forward(3)%fix0(1:6)=fix0_0
+forward(3)%fixr(1:6)=fix_0
+forward(3)%fix(1:6)=fix_0    ! always same fixed point
+
+
+ forward(1)%ds=0.0_dp
+ p=>t1%parent_fibre
+ do while(.not.associated(p,t2%parent_fibre))
+  forward(1)%ds=p%mag%p%ld +forward(1)%ds
+  p=>p%next
+ enddo
+forward(1)%beta0=t1%parent_fibre%beta0
+
+ if(present(filef)) then
+  call kanalnummer(inf,filef)
+    call print_tree_elements(forward,inf)
+   close(inf)
+  call KILL(forward)
+  deallocate(forward)
+endif
+
+call kill(xs);call kill(m);call kill(mr)
+ 
+end subroutine fill_tree_element_line_zhe0_node
+
 subroutine fill_tree_element_line_zhe(state,f1,f2,no,fix0,filef,stochprec,as_is,sagan_tree)   ! fix0 is the initial condition for the maps
 implicit none
 type(fibre), target :: f1,f2
@@ -6004,6 +6134,7 @@ character(*),optional :: filef
  
   as_is0=.false.
  
+if(present(as_is)) as_is0=as_is
   allocate(forward(3))
  
 
@@ -6044,7 +6175,7 @@ if(stoch>=0) then
   call c_stochastic_kick(m,forward(2)%rad,forward(2)%fix0,stoch)
 endif
  
-
+forward(1)%usenonsymp=as_is0
 forward(1)%rad=mat
 forward(1)%fix0(1:6)=f0 ! entrance
 forward(1)%fixr(1:6)=fix
@@ -6370,7 +6501,6 @@ end subroutine fill_tree_element_line_zhe_outside_map_ji_symp
       m(i)=L_ns%v(i)   ! orbital part
      enddo
 
-    call c_full_norm_spin(Ma%s,k,norm)
 
 
 if(use_quaternion) then
@@ -6386,6 +6516,8 @@ if(use_quaternion) then
       enddo
     endif
 else
+    call c_full_norm_spin(Ma%s,k,norm)
+
     if(k==-1) then
       do i=1,3
       do j=1,3
@@ -6487,63 +6619,41 @@ endif
      mg(i)=0.e0_dp
     enddo
 
-      L_ns = ma  ! L_ns*N_pure_ns
-      L_s=1
+      
+      L_s=ma
      do i=1,L_ns%n
-      m(i)=L_ns%v(i)   ! orbital part
+      m(i)=L_s%v(i)   ! orbital part full
      enddo
 
-    call c_full_norm_spin(Ma%s,k,norm)
 
 
 if(use_quaternion) then
     call c_full_norm_quaternion(Ma%q,kq,norm)
     if(kq==-1) then
       do i=0,3
-        m(ind_spin(1,1)+i)=ma%q%x(i)
+        mg(ind_spin(1,1)+i)=ma%q%x(i)
       enddo
     elseif(kq/=-1) then
-      m(ind_spin(1,1))=1.0_dp
+      mg(ind_spin(1,1))=1.0_dp
       do i=ind_spin(1,1)+1,size_tree
-        m(i)=0.0_dp
+        mg(i)=0.0_dp
       enddo
     endif
 else
+    call c_full_norm_spin(Ma%s,k,norm)
     if(k==-1) then
       do i=1,3
       do j=1,3
-        m(ind_spin(i,j))=ma%s%s(i,j)
+        mg(ind_spin(i,j))=ma%s%s(i,j)
       enddo
       enddo
     else
       do i=1,3
-        m(ind_spin(i,i))=1.0e0_dp
+        mg(ind_spin(i,i))=1.0e0_dp
       enddo
     endif
 endif
-      js=0
-     js(1)=1;js(3)=1;js(5)=1; ! q_i(q_f,p_i) and p_f(q_f,p_i)
-     call alloc(ms)
-
-
-       ms=1  !n_s
-
-
-
-     ms=ms**js
-!     do i=1,3
-!      mg(i)=ms%v(2*i-1)   !  q_i(q_f,p_i)
-!      mg(3+i)=ms%v(2*i)   !  p_f(q_f,p_i)
-!     enddo
-     do i=1,6
-      mg(i)=ms%v(i)
-     enddo
-     do i=1,3
-     do j=1,3
-       mg(ind_spin(i,j))=ms%v(2*i-1).d.(2*j-1)  !   Jacobian for Newton search
-     enddo
-     enddo
-     call kill(ms)  
+ 
 
      call SET_TREE_g(T(1),m(1:6))
  !    do i=1,ma%n
@@ -6552,14 +6662,16 @@ endif
  !    do i=ma%n+1,6
  !     m(i)=0.0_dp
  !    enddo
-     call SET_TREE_g(T(2),m(7:15))
+     call SET_TREE_g(T(2),mg(7:15))
  
- !    call SET_TREE_g(T(2),m(1:size_tree))
+    do i=1,np
+     mg(i)=0.e0_dp
+    enddo
      call SET_TREE_g(T(3),mg(1:size_tree))
 
 !T(3)%ng=mul
 !     write(6,*) " mul ",mul
-      t(3)%rad=L_s
+      t(3)%rad=L_s   !linear
 
 
        mat=ma**(-1)
@@ -6778,12 +6890,12 @@ enddo
  
     call c_normal(l_s,cn)
    
-
-    phase=cn%tune(1)*((1.0_dp.cmono.'2')+(1.0_dp.cmono.'02'))
+     phase=cn%tune(1)*((1.0_dp.cmono.'2')+(1.0_dp.cmono.'02'))
     phase=phase+cn%tune(2)*((1.0_dp.cmono.'002')+(1.0_dp.cmono.'0002'))
     phase=-pi*phase
     phase=phase*cn%a_t**(-1)
 
+ 
 
      ft=1.d0
      do i=1,6
@@ -6797,10 +6909,13 @@ enddo
 
     call symplectify_for_zhe(ma,L_ns , N_pure_ns, L_s , N_s )
     call c_normal(l_s,cn)
+
+ 
     phase2=cn%tune(1)*((1.0_dp.cmono.'2')+(1.0_dp.cmono.'02'))
     phase2=phase2+cn%tune(2)*((1.0_dp.cmono.'002')+(1.0_dp.cmono.'0002'))
     phase2=-pi*phase2
     phase2=phase2*cn%a_t**(-1)   
+ 
 
      fv2=log(n_s)
 
@@ -6835,10 +6950,10 @@ enddo
         mk(2*i+6)=g.d.(2*i-1)
        enddo
        mk(13)=f
-call print(g)
-call print(f)
-call print(ft)
-pause 777
+!call print(g)
+!call print(f)
+!call print(ft)
+!pause 777
 
 !    np=ma%n+18
 

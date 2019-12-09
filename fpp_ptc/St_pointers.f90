@@ -2770,7 +2770,7 @@ write(6,*) x_ref
 
   END subroutine read_ptc_command
 
- SUBROUTINE radia_new(R,loc,estate,FILE1,fix,em,sij,sijr,tune,damping)
+ SUBROUTINE radia_new(R,loc,estate,FILE1,fix,em,sij,sijr,tune,damping,init_tpsa)
     implicit none
     TYPE(LAYOUT) R
 
@@ -2780,6 +2780,7 @@ write(6,*) x_ref
     type(c_normal_form) normal
     integer  i,j 
     real(dp), optional :: fix(6), em(3),sij(6,6),tune(3),damping(3)
+    logical, optional ::  init_tpsa
     complex(dp), optional :: sijr(6,6)   
     TYPE(INTERNAL_STATE) state
     TYPE(INTERNAL_STATE), target :: estate
@@ -2797,8 +2798,15 @@ fmd= '(a12,1X,a3,I1,a3,i1,a4,D18.11,1x,D18.11)'
 fmd1='(1X,a3,I1,a3,i1,a4,2(D18.11,1x),(f10.3,1x),a2)'
 
 
-
-    state=(estate-nocavity0)+radiation0
+    if(present(init_tpsa)) then
+     if(init_tpsa)     then 
+        state=(estate-nocavity0)+radiation0
+     else
+     state =estate
+    endif
+    else 
+        state=(estate-nocavity0)+radiation0
+    endif
     x=0.d0
 
     CALL FIND_ORBIT_x(R,X,STATE,1.0e-8_dp,fibre1=loc)
@@ -2816,7 +2824,15 @@ fmd1='(1X,a3,I1,a3,i1,a4,2(D18.11,1x),(f10.3,1x),a2)'
     write(mf1,"(6(1X,D18.11))") x
     write(mf1,*) "energy loss: GEV and DeltaP/p0c ",energy,deltap
     endif
-    CALL INIT(state,1,0)
+
+   if(present(init_tpsa)) then
+     if(init_tpsa)     then 
+        CALL INIT(state,1,0)
+    endif
+    else 
+        CALL INIT(state,1,0)
+    endif
+ 
     CALL ALLOC(NORMAL)
     CALL ALLOC(ID)
     call alloc(xs)
@@ -2850,7 +2866,7 @@ fmd1='(1X,a3,I1,a3,i1,a4,2(D18.11,1x),(f10.3,1x),a2)'
 
     write(mf1,*)" Equilibrium Beam Sizes "
     do i=1,6
-       do j=1,6
+       do j=i,6
           write(mf1,*) i,j,normal%s_ij0(i,j)
        enddo
     enddo
