@@ -1077,13 +1077,12 @@ endif ! jumpnot
  
     type(probe) xs
     real(dp) x(size_tree),x0(size_tree),s0(3,3),r(3,3),dx6,beta,q(3),p(3),qg(3),qf(3)
-    real(dp) normb,norm,x0_begin(size_tree),xr(6),normbb
+    real(dp) normb,norm,x0_begin(size_tree),xr(6),normbb 
     integer i,j,k,ier,is
     logical, optional  :: spin,stoch,rad,linear
     logical  spin0,stoch0,rad0,doit,as_is0
     integer no1
     type(quaternion) qu
-
     as_is0=t(1)%usenonsymp
     spin0=.true.
     stoch0=.true.
@@ -1214,7 +1213,7 @@ do is=1,nrmax
    else
       normbb=abs(qf(1))+abs(qf(2))+abs(qf(3))
       
-     if(normb<=norm.or.norm/normbb<1.d-2  ) then 
+     if(normb<=norm) then 
        x(1)=qf(1)
        x(3)=qf(2)
        x(5)=qf(3)
