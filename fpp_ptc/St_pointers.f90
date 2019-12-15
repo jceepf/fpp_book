@@ -76,11 +76,13 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE
     real(dp) ::f(6)=0
     real(dp) b(2,2)
     integer :: gen =0
-    type(probe_8) , pointer :: p(:,:)
+    type(damap), pointer :: g(:,:)
+    type(probe_8), pointer :: p(:,:)
     real(dp), pointer ::  x0(:,:,:) => null()
     type(internal_state) state
     type(layout), pointer ::r
     integer pos
+    integer noh
     integer no
     integer :: maxite =100, nint=10
     logical :: linear =.true.
@@ -3369,6 +3371,71 @@ close(mf)
 end subroutine read_ptc_rays
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   Oleksii's   Hermite   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!mp=noh
+! z(1:2)
+! h(2)
+! ord1  ord2  (0 no derivatives)
+!  U is %he
+! val is array of size (0:ord1,0:ord2)
+
+subroutine eval_new(mp, z, h, ord1, ord2,  u, val)
+    implicit none
+    integer, intent(in) :: mp, ord1, ord2
+    real(kind=dp), dimension(2), intent(in) :: z
+    real(kind=dp), dimension(2), intent(in) :: h
+    real(kind=dp), dimension(0:mp, 0:mp, 0:1, 0:1), intent(in) :: u
+    real(kind=dp), intent(out) :: val(0:ord1, 0:ord2)
+    integer :: i, j, k, idx, idy
+    real(kind=dp), dimension(0:2*mp+1,0:2*mp+1) :: scofsmp, smcofsmp
+    real(kind=dp), dimension(0:2*mp+1) :: mpdata
+    real(kind=dp) :: zx, zy, xfact, yfact
+
+    i = 0
+    j = 0
+
+
+    do idy = 0,mp
+        mpdata(0:mp)        = u(:, idy, i  ,j)
+        mpdata(mp+1:2*mp+1) = u(:, idy, i+1,j)
+        call interpolate(mp, mpdata, smcofsmp(:,idy))
+
+    end do
+    do idy = 0,mp
+        mpdata(0:mp)        = u(:,idy,i,   j+1)
+        mpdata(mp+1:2*mp+1) = u(:,idy,i+1, j+1)
+        call interpolate(mp, mpdata, smcofsmp(:,mp+1+idy))
+    end do
+
+    do idx = 0,2*mp+1
+        call interpolate(mp, smcofsmp(idx,:), scofsmp(idx,:))
+    end do
+
+
+
+   do idy = 0, ord2
+    do idx = 0, ord1
+        val(idx, idy) = 0._dp
+        zy = 1._dp
+        do j = idy, 2*mp+1
+        zx = 1._dp 
+        do i = idx, 2*mp+1 ! - j   ! for total degree etienne
+            xfact = 1._dp
+            yfact = 1._dp
+            do k = i-idx+1,i
+               xfact = xfact * dble(k) / h(1)
+            enddo
+            do k = j-idy+1,j
+               yfact = yfact * dble(k) / h(2)
+            enddo
+            val(idx, idy) = val(idx, idy) + xfact*yfact*scofsmp(i,j) * zx * zy
+            zx = zx * z(1)
+        enddo
+        zy = zy * z(2)
+        enddo
+    enddo
+    enddo
+end subroutine eval_new
+
 subroutine eval(mp, np, z, h, der, stride, u, val)
     implicit none
     integer, intent(in) :: mp, np, der, stride
@@ -3405,9 +3472,9 @@ subroutine eval(mp, np, z, h, der, stride, u, val)
     val = 0._dp
     do idx = 0, der
         zy = 1._dp
-        do j = 0, 2*mp+1
+        do j = 0, 2*mp +1
         zx = 1._dp
-        do i = idx, 2*mp+1
+        do i = idx, 2*mp +1
             xfact = 1._dp
             do k = i-idx+1,i
                xfact = xfact * dble(k) / h(1)
@@ -3462,29 +3529,51 @@ subroutine track_hermite(mh,xs0)
 implicit none
 type(hermite), intent(in) :: mh
 type(probe), intent(inout) :: xs0
-real(dp) x(6), z0(1,6), xf(1,6) 
+real(dp) x(6), z0(6), xf(1,6) ,  val(0:0,0:0)
 integer blk(6),nd2
  
+write(6,*) mh%gen
 if(mh%gen==0) then
 blk=0
 nd2=2
  
-  blk(1:nd2) = floor((xs0%x(1:nd2)-mh%x0(1:nd2,0,0)) * mh%n / (mh%b(:,nd2)))
-
+  blk(1:nd2) = floor((xs0%x(1:nd2)-mh%x0(1:nd2,0,0)) * mh%n / (mh%b(:,2)))
+ 
   xs0%u= blk(1)>mh%n.or.blk(1)<-mh%n.or.blk(2)>mh%n.or.blk(2)<-mh%n
   if(xs0%u) then
+    write(6,*) " grid 1"
     return
   endif
-  z0(1,1:nd2) = (xs0%x(1:nd2) - mh%h*( 0.5d0)-mh%x0(1:nd2,blk(1),blk(2)) ) / mh%h
+  z0(1:nd2) = (xs0%x(1:nd2) - mh%h*( 0.5d0)-mh%x0(1:nd2,blk(1),blk(2)) ) / mh%h
   
-  call  eval(mh%no, 1, z0,mh%h, 0, 6, mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,1), xf(1,1))
-  call  eval(mh%no, 1, z0,mh%h,0, 6, mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,2), xf(1,2))
- 
- xs0%x(1:nd2) = xf(1,1:2)
+  !call  eval(mh%noh, 1, z0,mh%h, 0, 6, mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,1), xf(1,1))
+  !call  eval(mh%noh, 1, z0,mh%h,0, 6, mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,2), xf(1,2))
+
+
+   call  eval_new(mh%noh,  z0,mh%h, 0, 1, mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,1), val)
+  xs0%x(1) = val(0,0)
+   call  eval_new(mh%noh,  z0,mh%h, 0, 1, mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,2), val)
+  xs0%x(2) = val(0,0)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   Oleksii's   Hermite   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!mp=noh
+! z(1:2)
+! h(2)
+! ord1  ord2  (0 no derivatives)
+!  U is %he
+! val is array of size (0:ord1,0:ord2)
+
+!subroutine eval_new(mp, z, h, ord1, ord2,  u, val)
+
+
+
+
   
  elseif(mh%gen==1) then
-   call track_hermite_linear(mh,xs0) 
-   call track_hermite_invert(mh,xs0)
+   call track_hermite_linear(mh,xs0)! no Hermite
+   call track_hermite_invert(mh,xs0)   ! Hermite
+ elseif(mh%gen==2) then
+   call track_hermite_linear(mh,xs0)! no Hermite
+   call track_hermite_invert2(mh,xs0)   ! Hermite
  endif
 end subroutine track_hermite
 
@@ -3492,11 +3581,12 @@ subroutine track_hermite_invert(mh,xs0)
 implicit none
 type(hermite), intent(in) :: mh
 type(probe), intent(inout) :: xs0
-real(dp) z(1:15), z0(1,6), xf(1,6),dz(3),normb,norm 
+real(dp) z(1:15), z0(1,6), xf(1,6),dz(3),normb,norm ,pit,xi
 integer blk(6),nd2
 integer i
 blk=0
-
+xi=xs0%x(1)
+pit=xs0%x(2)
 !!! guess for z(1)
 z(1)=xs0%x(1) 
 z(2)=xs0%x(2) 
@@ -3504,8 +3594,8 @@ normb=1.d38
 do i=1, mh%maxite
 nd2=2
 xf=0
-  blk(1:nd2) = floor((z(1:nd2)-mh%x0(1:nd2,0,0)) * mh%n / (mh%b(:,nd2)))
-
+  blk(1:nd2) = floor((z(1:nd2)-mh%x0(1:nd2,0,0)) * mh%n / (mh%b(:,2)))
+ 
    xs0%u= blk(1)>mh%n.or.blk(1)<-mh%n.or.blk(2)>mh%n.or.blk(2)<-mh%n
   if(xs0%u) then
     return
@@ -3517,21 +3607,22 @@ xf=0
 ! xf(1,2)=0
 ! xf(1,3)=derivative
 
-  call  eval(mh%no, 1, z0, mh%h,1, 2,  mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,1), xf(1,1:3))
+  call  eval(mh%noh, 1, z0, mh%h,1, 2,  mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,1), xf(1,1:3))
 
  dz=0
 dz(1)=(xs0%x(1)-xf(1,1))/xf(1,3)
 z(1)=z(1)+dz(1)
-norm=abs(dz(1))+abs(dz(2))+abs(dz(3))
-
+norm=abs(dz(1))  !+abs(dz(2))+abs(dz(3))
+!write(6,*) " norm ", norm
 if(norm>mh%eps) then
   normb=norm
 else
  if(normb>=norm) then
   xs0%x(1)=z(1)
+z(2)= xs0%x(2)
  ! xf(1,2) in position 2
 ! xf(1,1) still preserved
-  blk(1:nd2) = floor((z(1:nd2)-mh%x0(1:nd2,0,0)) * mh%n / (mh%b(:,nd2)))
+  blk(1:nd2) = floor((z(1:nd2)-mh%x0(1:nd2,0,0)) * mh%n / (mh%b(:,2)))
 
    xs0%u= blk(1)>mh%n.or.blk(1)<-mh%n.or.blk(2)>mh%n.or.blk(2)<-mh%n
   if(xs0%u) then
@@ -3539,8 +3630,19 @@ else
   endif
   z0(1,1:nd2) = (z(1:nd2) - mh%h*( 0.5d0)-mh%x0(1:nd2,blk(1),blk(2)) ) / mh%h
 
-  call  eval(mh%no, 1, z0, mh%h,0, 6,  mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,2), xf(1,2))
+  call  eval(mh%noh, 1, z0, mh%h,0, 6,  mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,2), xf(1,2))
   xs0%x(2)=xf(1,2)
+  
+!  z(1)=xs0%x(1)
+ ! z(2)=pit
+!  blk(1:nd2) = floor((z(1:nd2)-mh%x0(1:nd2,0,0)) * mh%n / (mh%b(:,2)))
+
+ !  xs0%u= blk(1)>mh%n.or.blk(1)<-mh%n.or.blk(2)>mh%n.or.blk(2)<-mh%n
+ ! z0(1,1:nd2) = (z(1:nd2) - mh%h*( 0.5d0)-mh%x0(1:nd2,blk(1),blk(2)) ) / mh%h
+
+!  call  eval(mh%noh, 1, z0, mh%h,0, 6,  mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,1), xf(1,1))
+ ! write(6,*) xf(1,1)
+ ! write(6,*) xi
   return
  endif
   normb=norm
@@ -3553,6 +3655,97 @@ enddo
 
 end subroutine track_hermite_invert
 
+subroutine track_hermite_invert2(mh,xs0)
+implicit none
+type(hermite), intent(in) :: mh
+type(probe), intent(inout) :: xs0
+real(dp) z(1:15), z0(6), xf(1,6),dz(3),normb,norm ,pit,xi,val(0:1,0:1),val2(0:1,0:0)
+integer blk(6),nd2
+integer i
+blk=0
+xi=xs0%x(1)
+pit=xs0%x(2)
+!!! guess for z(1)
+z(1)=xs0%x(1) 
+z(2)=xs0%x(2) 
+normb=1.d38
+do i=1, mh%maxite
+nd2=2
+xf=0
+  blk(1:nd2) = floor((z(1:nd2)-mh%x0(1:nd2,0,0)) * mh%n / (mh%b(:,2)))
+ 
+   xs0%u= blk(1)>mh%n.or.blk(1)<-mh%n.or.blk(2)>mh%n.or.blk(2)<-mh%n
+  if(xs0%u) then
+    write(6,*) " grid 1",z(1:2)
+
+    return
+  endif
+  z0(1:nd2) = (z(1:nd2) - mh%h*( 0.5d0)-mh%x0(1:nd2,blk(1),blk(2)) ) / mh%h
+  
+!!! value and derivative in the original not scaled 
+! xf(1,1)  value
+! xf(1,2)=0
+! xf(1,3)=derivative
+!subroutine eval_new(mp, z, h, ord1, ord2,  u, val)
+
+  call  eval_new(mh%noh, z0, mh%h, 1,1,  mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,1), val)
+
+ dz=0
+dz(1)=(xs0%x(1)-val(0,1))/val(1,1)
+z(1)=z(1)+dz(1)
+norm=abs(dz(1))  !+abs(dz(2))+abs(dz(3))
+ IF(blk(1)==0.and.blk(2)==0) then
+write(6,*) norm 
+write(6,*) val(0,1),mh%f(1)
+write(6,*) val(1,1)
+
+ 
+
+endif
+if(norm>mh%eps) then
+  normb=norm
+else
+ if(norm>=normb) then
+  xs0%x(1)=z(1)
+z(2)= xs0%x(2)
+ ! xf(1,2) in position 2
+! xf(1,1) still preserved
+  blk(1:nd2) = floor((z(1:nd2)-mh%x0(1:nd2,0,0)) * mh%n / (mh%b(:,2)))
+
+   xs0%u= blk(1)>mh%n.or.blk(1)<-mh%n.or.blk(2)>mh%n.or.blk(2)<-mh%n
+  if(xs0%u) then
+    write(6,*) " grid 2"
+
+    return
+  endif
+  z0(1:nd2) = (z(1:nd2) - mh%h*( 0.5d0)-mh%x0(1:nd2,blk(1),blk(2)) ) / mh%h
+
+  call  eval_new(mh%noh, z0, mh%h, 1,0,  mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,1), val2)
+
+  xs0%x(2)=val2(1,0)
+ !  z(1)=xs0%x(1)
+ ! z(2)=pit
+!  blk(1:nd2) = floor((z(1:nd2)-mh%x0(1:nd2,0,0)) * mh%n / (mh%b(:,2)))
+
+ !  xs0%u= blk(1)>mh%n.or.blk(1)<-mh%n.or.blk(2)>mh%n.or.blk(2)<-mh%n
+ ! z0(1,1:nd2) = (z(1:nd2) - mh%h*( 0.5d0)-mh%x0(1:nd2,blk(1),blk(2)) ) / mh%h
+
+!  call  eval(mh%noh, 1, z0, mh%h,0, 6,  mh%he(:,:,blk(1):blk(1)+1,blk(2):blk(2)+1,1), xf(1,1))
+ ! write(6,*) xf(1,1)
+ ! write(6,*) xi
+  return
+ endif
+  normb=norm
+endif
+ if(i>mh%maxite) then
+   xs0%u=.true.
+   write(6,*) " used too many iterations "
+ endif
+enddo
+
+end subroutine track_hermite_invert2
+
+
   subroutine alloc_hermite(mh)
     implicit none
     type(hermite), intent(inout) :: mh
@@ -3561,10 +3754,11 @@ end subroutine track_hermite_invert
     type(probe)xs0
     type(c_damap) a,c_map,id
     type(c_normal_form) c_n
-
+    mh%no=2*mh%noh
     allocate(mh%p(-mh%n:mh%n,-mh%n:mh%n))
+    allocate(mh%g(-mh%n:mh%n,-mh%n:mh%n))
     allocate(mh%x0(1:6,-mh%n:mh%n,-mh%n:mh%n))
-    allocate(mh%he(0:mh%no,0:mh%no,-mh%n:mh%n,-mh%n:mh%n,2))
+    allocate(mh%he(0:mh%noh,0:mh%noh,-mh%n:mh%n,-mh%n:mh%n,2))
     mh%x0=0
     mh%he=0
     mh%f=0
@@ -3599,6 +3793,7 @@ end subroutine track_hermite_invert
     do i=-mh%n,mh%n
     do  j = -mh%n,mh%n
     call alloc(mh%P(i,j))
+    call alloc(mh%g(i,j))
 
     mh%x0(1,i,j)=mh%f(1)+i*mh%h(1)
     mh%x0(2,i,j)=mh%f(2)+j*mh%h(2)
@@ -3639,7 +3834,7 @@ end subroutine track_hermite_invert
     enddo
     enddo
      
-    else
+    elseif(mh%gen==1) then
       call alloc(ms,idr)
 
     id=1
@@ -3662,7 +3857,7 @@ end subroutine track_hermite_invert
     CALL propagate(mh%r,mh%p(i,j),mh%STATE,FIBRE1=mh%pos)  ! (4)
  !    mh%xf(1:6,i,j)=mh%p(i,j)%x
      
-    ms=mh%p(i,j)%x
+    ms=mh%p(i,j)%x    ! compute a damap
      cu=mh%p(i,j)%x(1)
 
  
@@ -3673,9 +3868,9 @@ end subroutine track_hermite_invert
       js=0
      js(1)=1;js(3)=1;js(5)=1;  
      
-     ms=ms**(js(1:c_%nd2))
+     ms=ms**(js(1:c_%nd2))  !partial inversion
 
-    ms=ms*idr
+    ms=ms*idr   ! scales
 
  
 
@@ -3683,12 +3878,65 @@ end subroutine track_hermite_invert
        mh%p(i,j)%x(k)%t=ms%v(k) +mh%x0(k,i,j)
      enddo
  
-111 continue
+
     enddo
     enddo
 
       call kill(ms,idr)
+    else
+  mh%he=0
+      call alloc(ms,idr)
 
+    id=1
+    idr=1
+    do i=1,c_%nd2
+      idr%v(i)=idr%v(i)*mh%h(i)
+     enddo
+ 
+
+    do i=-mh%n,mh%n
+    do  j =-mh%n,mh%n
+    CALL compute_partially_inverted_location(mh,i,j,x0)
+
+    xs0=mh%x0(1:6,i,j)
+    xs0%x(1)= x0(1)
+
+    mh%p(i,j)=xs0+id
+ 
+    call track_hermite_linear_inv_8(mh,mh%p(i,j))
+    CALL propagate(mh%r,mh%p(i,j),mh%STATE,FIBRE1=mh%pos)  ! (4)
+
+
+     
+    ms=mh%p(i,j)%x    ! compute a damap
+
+ 
+ 
+    do k=1,c_%nd2
+     ms%v(k)=ms%v(k)-(ms%v(k).sub.'0')
+    enddo
+ 
+      js=0
+     js(1)=1;js(3)=1;js(5)=1;  
+          
+ 
+     ms=ms**(js(1:c_%nd2))  !partial inversion
+ 
+     call fill_hermite_gen(mh,i,j,ms,idr)
+
+    call kill(mh%p(i,j))
+ 
+      
+ 
+ 
+ 
+ 
+     enddo
+    enddo
+
+      call kill(ms,idr)
+
+      deallocate(mh%p)
     endif
     call kill(a,c_map,id)
     call kill(c_n)
@@ -3827,7 +4075,7 @@ end   subroutine track_hermite_linear_inv_8
     real(dp) x
     integer i,j,k,n,l
     integer, allocatable :: jc(:)
-
+     if(mh%gen==2) return
     allocate(jc(c_%nd2))
 
     do i=-mh%n,mh%n
@@ -3836,6 +4084,8 @@ end   subroutine track_hermite_linear_inv_8
      call taylor_cycle(mh%P(i,j)%x(k)%t,size=n)
      do l=1,n
      call taylor_cycle(mh%P(i,j)%x(k)%t,ii=l,value=x,j=jc)
+      if(jc(1)>mh%noh) cycle
+      if(jc(2)>mh%noh) cycle
      mh%he(jc(1),jc(2),i,j,k)=x
     enddo
     enddo
@@ -3847,6 +4097,52 @@ end   subroutine track_hermite_linear_inv_8
     deallocate(jc)
 
   end subroutine fill_hermite
+
+  subroutine fill_hermite_gen(mh,i,j,ms,idr)
+    implicit none
+    type(hermite) mh
+    type(damap), intent(in):: ms,idr
+    type(taylor) t
+    real(dp) x
+    real(dp) val(1,1)
+    integer i,j,k,n,l
+    integer, allocatable :: jc(:),ji(:)
+
+     call alloc(t)
+    allocate(jc(c_%nd2))
+    allocate(ji(c_%nd2))
+
+    call intd_lielib(ms%v%i,t%i,1.0_dp)
+t=t+(mh%x0(1,i,j).mono.2)+(mh%x0(2,i,j).mono.1)
+  !   t=t*idr
+ 
+     call taylor_cycle(t,size=n)
+    do l=1,n
+     call taylor_cycle(t,ii=l,value=x,j=jc)
+
+     if(jc(1)<=mh%noh.and.jc(2)<=mh%noh) mh%he(jc(1),jc(2),i,j,1)=x * mh%h(1) ** jc(1) * mh%h(2) ** jc(2)
+    enddo
+
+if((i==1.and.j==1).or.(i==0.and.j==0)) then
+
+ do k=0,mh%noh
+do l=0,mh%noh
+!write(6,'(F6.4)',advance='no') mh%he(k,l,i,j,1)
+ if(mh%he(k,l,i,j,1)/=0) write(6,*) k,l,mh%he(k,l,i,j,1)
+enddo
+write(6,*)
+enddo
+call print(t)
+!call print((t.d.2))
+!call print((t.d.2).d.1)
+pause 222
+endif
+         call kill(t)
+
+    deallocate(ji)
+    deallocate(jc)
+
+  end subroutine fill_hermite_gen
 
   subroutine kill_hermite(mh)
     implicit none
@@ -3866,6 +4162,14 @@ end   subroutine track_hermite_linear_inv_8
        enddo
        enddo
       deallocate(mh%p)
+    endif
+    if(associated(mh%g)) then
+       do i=-mh%n,mh%n
+       do  j = -mh%n,mh%n
+          call kill(mh%g(i,j))
+       enddo
+       enddo
+      deallocate(mh%g)
     endif
     if(associated(mh%x0)) deallocate(mh%x0)
     if(associated(mh%he)) deallocate(mh%he)

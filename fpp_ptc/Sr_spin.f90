@@ -434,21 +434,22 @@ contains
     endif
   END subroutine rot_spin_zp
 
-  subroutine radiate_2r(c,DS,FAC,X,b2,dlds,before,k,POS)
+  subroutine radiate_2r(c,DS,FAC,p,b2,dlds,before,k,POS)
     use gauss_dis
     implicit none
     TYPE(integration_node), POINTER::c
     TYPE(ELEMENT), POINTER::EL
     INTEGER,OPTIONAL,INTENT(IN) ::POS
-    real(dp),INTENT(INOUT) :: X(6)  !,XP(2)
+    type(probe),INTENT(INOUT) :: p !,XP(2)
     real(dp), INTENT(IN) :: DS
     REAL(DP), INTENT(IN) :: FAC
     real(dp), intent(in):: B2,dlds
     LOGICAL(LP),intent(in) :: BEFORE
-    real(dp)  st,z,av(3),t
+    real(dp)  st,z,av(3),t,x(6)
     type(internal_state) k
 
     IF(.NOT.CHECK_STABLE) return
+    x=p%x
     el=>c%parent_fibre%mag
 
     if(k%TIME) then
@@ -526,28 +527,31 @@ contains
     !       X(2)=X_MEC(2)*(one+X(5))/(one+X5)-EL%B_SOL*EL%P%CHARGE*X(3)/two
     !       X(4)=X_MEC(4)*(one+X(5))/(one+X5)+EL%B_SOL*EL%P%CHARGE*X(1)/two
 
-
+   p%x=x
   end subroutine radiate_2r
 
 
-  subroutine radiate_2p(c,DS,FAC,X,E_IJ,b2,dlds,XP,before,k,POS)
+  subroutine radiate_2p(c,DS,FAC,p,b2,dlds,XP,before,k,POS)
     implicit none
     TYPE(integration_node), POINTER::c
     TYPE(ELEMENTP), POINTER::EL
     INTEGER,OPTIONAL,INTENT(IN) ::POS
-    TYPE(REAL_8),INTENT(INOUT) :: X(6),XP(2)
-    real(dp),INTENT(INOUT) :: E_IJ(6,6)
+    TYPE(REAL_8),INTENT(INOUT) ::XP(2)
+    TYPE(probe_8),INTENT(INOUT) :: p
     TYPE(REAL_8), INTENT(IN) :: DS
     REAL(DP), INTENT(IN) :: FAC
     TYPE(REAL_8), intent(in):: B2,dlds
     LOGICAL(LP),intent(in) :: BEFORE
-    TYPE(REAL_8) st,av(3),z
+    TYPE(REAL_8) st,av(3),z,x(6)
     real(dp) b30,x1,x3,denf
     type(damap) xpmap
     integer i,j
     type(internal_state) k
 
     IF(.NOT.CHECK_STABLE) return
+    call alloc(x)
+    x=p%x
+
     el=>c%parent_fibre%magp
     if(.not.before.and.k%envelope) then
 
@@ -572,9 +576,18 @@ contains
           do j=1,6
              X1=(xpmap%v(i)).sub.'000010'   ! Still works if BMAD units are used because xpmax**(-1) is needed!!!
              X3=(xpmap%v(j)).sub.'000010'
-             E_IJ(i,j)=E_IJ(i,j)+denf*x1*x3 ! In a code internally using BMAD units '000001' is needed!!!
+             P%E_IJ(i,j)=p%E_IJ(i,j)+denf*x1*x3 ! In a code internally using BMAD units '000001' is needed!!!
           enddo
-       enddo
+       enddo    
+       if(k%spin) then
+        x1=(1.0_dp+x(5))**2 
+        x1=(1.0_dp-denf*9.0_dp/(x1/11.0_dp))
+        x1=0.999d0
+        do i=0,3
+         p%q%x(i)= x1*p%q%x(i)
+        enddo
+        x3=sqrt(p%q%x(0)**2+p%q%x(1)**2+p%q%x(2)**2+p%q%x(3)**2)
+       endif
        if(compute_stoch_kick) c%delta_rad_out=root(denf)
        call kill(xpmap)
     endif
@@ -666,13 +679,21 @@ contains
           do j=1,6
              X1=(xpmap%v(i)).sub.'000010'
              X3=(xpmap%v(j)).sub.'000010'
-             E_IJ(i,j)=E_IJ(i,j)+denf*x1*x3
+             p%E_IJ(i,j)=p%E_IJ(i,j)+denf*x1*x3
           enddo
        enddo
+       if(k%spin) then
+        x1=(1.0_dp+x(5))**2 
+        x1=(1.0_dp-denf*9.0_dp/(x1/11.0_dp))
+        do i=0,3
+         p%q%x(i)= x1*p%q%x(i)
+        enddo
+       endif
        if(compute_stoch_kick) c%delta_rad_in=root(denf)
        call kill(xpmap)
     endif
-
+    p%x=x
+    call kill(x)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -897,7 +918,7 @@ endif
     if((k%radiation.or.k%envelope).AND.BEFORE) then
        !if(el%p%radiation.AND.BEFORE) then
        !       call radiate_2(c,DS,FAC,P%X,b2,dlds,XP,before,k,POS)
-       call radiate_2(c,DS,FAC,P%X,b2,dlds,before,k,POS)
+       call radiate_2(c,DS,FAC,P,b2,dlds,before,k,POS)
     endif
    if(k%spin) then
     if(p%use_q) then
@@ -965,7 +986,7 @@ endif
     !if(el%p%radiation.AND.(.NOT.BEFORE)) then
     if((k%radiation.or.k%envelope).AND.(.NOT.BEFORE)) then
        !       call radiate_2(c,DS,FAC,P%X,b2,dlds,XP,before,k,POS)
-       call radiate_2(c,DS,FAC,P%X,b2,dlds,before,k,POS)
+       call radiate_2(c,DS,FAC,P,b2,dlds,before,k,POS)
     endif
 
   END subroutine PUSH_SPINR
@@ -1005,7 +1026,7 @@ endif
     CALL get_omega_spin(c,OM,B2,dlds,XP,P%X,POS,k)
     if((k%radiation.or.k%envelope).AND.BEFORE) then
        !if(el%p%radiation.AND.BEFORE) then
-       call radiate_2(c,DS,FAC,P%X,P%E_IJ,b2,dlds,XP,before,k,POS)
+       call radiate_2(c,DS,FAC,P,b2,dlds,XP,before,k,POS)
        !       call radiate_2(c,DS,FAC,P%X,E_IJ,b2,dlds,XP,before,k,POS)
 
     endif
@@ -1073,7 +1094,7 @@ endif
     endif
     if((k%radiation.or.k%envelope).AND.(.NOT.BEFORE)) then
        !if(el%p%radiation.AND.(.NOT.BEFORE)) then
-       call radiate_2(c,DS,FAC,P%X,P%E_IJ,b2,dlds,XP,before,k,POS)
+       call radiate_2(c,DS,FAC,P,b2,dlds,XP,before,k,POS)
        !       call radiate_2(c,DS,FAC,P%X,E_IJ,b2,dlds,XP,before,k,POS)
     endif
 
