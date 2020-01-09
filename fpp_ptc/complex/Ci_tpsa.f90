@@ -98,7 +98,7 @@ private EQUAL_probe_3_by_3,equalc_cspinor_spinor,EQUAL_3_by_3_c_spinmatrix
 private EQUALq_r,EQUALq_8_c,EQUALq_c_8,EQUALq,POWq,c_invq,subq,mulq,addq,alloc_c_quaternion,kill_c_quaternion
 private c_pri_quaternion,CUTORDERquaternion,c_trxquaternion,EQUALq_c_r,EQUALq_r_c,mulcq,c_exp_quaternion
 private equalc_quaternion_c_spinor,equalc_spinor_c_quaternion,unarySUB_q,c_trxquaternion_tpsa
-private c_exp_vectorfield_on_quaternion,c_vector_field_quaternion,addql,subql,mulqdiv,powql
+private c_exp_vectorfield_on_quaternion,c_vector_field_quaternion,addql,subql,mulqdiv,powql,quaternion_to_matrix
 !private equal_map_real8,equal_map_complex8,equal_real8_map,equal_complex8_map
 real(dp) dts
 real(dp), private :: sj(6,6)
@@ -106,6 +106,7 @@ logical :: use_new_stochastic_normal_form=.true.
 logical :: qphase=.false.,qphasedef=.false.
   integer :: size_tree=15
   integer :: ind_spin(3,3),k1_spin(9),k2_spin(9)
+logical :: hypercube_integration = .true.
 
 type q_linear
  complex(dp) mat(6,6)
@@ -727,6 +728,7 @@ type(q_linear) q_phasor,qi_phasor
      MODULE PROCEDURE quaternion_to_matrix_in_c_damap
      MODULE PROCEDURE q_linear_to_matrix
      MODULE PROCEDURE q_linear_to_3_by_3_by_6
+     MODULE PROCEDURE quaternion_to_matrix
   END INTERFACE
   ! management routines
 
@@ -917,10 +919,13 @@ enddo
     ENDDO
 
 !endif
-
+    scdadd%damps=s1%damps
+    scdadd%d_spin=s1%d_spin
+    scdadd%b_kin=s1%b_kin
+   
     scdadd%e_ij=s1%e_ij
     scdadd%x0(1:6)=s2%x
-
+ 
     call kill(d)
 
   END FUNCTION scdadd 
@@ -1032,6 +1037,9 @@ enddo
           master=localmaster
        ENDDO
 
+    daddsc%damps=s1%damps
+    daddsc%d_spin=s1%d_spin
+    daddsc%b_kin=s1%b_kin
     daddsc%e_ij=s1%e_ij
     daddsc%x0(1:6)=s2%x
     call kill(d)
@@ -1552,6 +1560,13 @@ enddo
      s1%v(i)%i=0
     enddo
     s1%e_ij=0.0_dp
+    s1%damps=0.0_dp
+    s1%sm=0.0_dp
+    s1%b_kin=0.0_dp
+    s1%d_spin=0.0_dp
+    do i=1,3
+      s1%sm(i,i)=1.0_dp
+    enddo
     s1%x0=0.0_dp
     s1%tpsa=use_tpsa
   END SUBROUTINE alloc_c_damap
@@ -1727,12 +1742,20 @@ enddo
 !*
     implicit none
     type (c_damap),INTENT(INOUT) :: S1
-
+    integer i
     call kill(s1%v,s1%n)
     CALL kill(s1%s)
     CALL kill(s1%q)
     s1%n=0
     s1%e_ij=0.0_dp
+    s1%damps=0.0_dp
+    s1%sm=0.0_dp
+    s1%d_spin=0.0_dp
+    s1%b_kin=0.0_dp
+    s1%e_ij=0.0_dp
+    do i=1,3
+      s1%sm(i,i)=1.0_dp
+    enddo
   END SUBROUTINE kill_c_damap
 
   SUBROUTINE  kill_c_vector_field(S1)
@@ -2353,8 +2376,16 @@ endif
        m=ds
        ds%e_ij=matmul(matmul(m,r%e_ij),transpose(m))
     endif
+
+ds%damps=r%damps
+ds%d_spin=r%d_spin
+ds%b_kin=r%b_kin
+
 DS%x0=0
 ds%x0(1:6)=r%x0
+if(use_quaternion) then
+ call makeso3(DS%q,ds%sm)
+endif
     call kill(t)
 
   END subroutine EQUAL_c_map_RAY8
@@ -6034,6 +6065,30 @@ m%q=p%q
 
     end subroutine  q_linear_to_3_by_3_by_6 
 
+  subroutine  quaternion_to_matrix(q_lin,m)
+    implicit none
+    real(dp) m(3,3) 
+    TYPE(c_quaternion), INTENT(IN) :: q_lin
+    type(c_quaternion) s,sf
+    integer i,j
+
+    call alloc(s)
+    call alloc(sf)
+
+    do i=1,3
+     s=0.0_dp
+     s%x(i)=1.0_dp
+     sf=q_lin*s*q_lin**(-1) 
+     do j=1,3
+      m(j,i)=sf%x(j)
+     enddo
+    enddo
+
+    call kill(s)
+    call kill(sf)
+
+   end subroutine quaternion_to_matrix 
+
 
   FUNCTION cdaddsc( S1, sc )
     implicit none
@@ -7164,6 +7219,36 @@ endif
         else
          write(mfi,*) "No Stochastic Radiation "
         endif   
+            call c_check_rad_spin(s1%damps,rad_in)
+        if(rad_in) then
+         write(mfi,*) "Stochastic Spin Fluctuation"
+          do i=1,3
+          do j=1,3
+           write(mfi,*) i,j,s1%b_kin(i,j)
+          enddo
+          enddo
+        else
+         write(mfi,*) "No Stochastic Spin Fluctuation "
+        endif   
+        if(rad_in) then
+         write(mfi,*) "Stochastic Spin Damping"
+          do i=1,3
+          do j=1,3
+           write(mfi,*) i,j,s1%damps(i,j)
+          enddo
+          enddo
+        else
+         write(mfi,*) "No Stochastic Spin Damping "
+        endif   
+        if(rad_in) then
+         write(mfi,*) "Stochastic Spin Kick"
+          do i=1,3
+           write(mfi,*) i,s1%d_spin(i)
+          enddo
+        else
+         write(mfi,*) "No Stochastic Spin Kick "
+        endif   
+
 
   END SUBROUTINE c_pri_map
 
@@ -8602,6 +8687,12 @@ endif
       tempnew%e_ij=t1%e_ij + matmul(matmul(f2i,t2%e_ij),f2it)
     endif
 endif
+    if(use_quaternion) then
+      tempnew%sm=matmul(t1%sm,t2%sm)
+      tempnew%d_spin=matmul(t1%sm,t2%d_spin) + t1%d_spin
+      tempnew%damps=matmul(matmul(t1%sm,t2%damps),transpose(t1%sm)) + t1%damps
+      tempnew%b_kin=matmul(matmul(t1%sm,t2%b_kin),transpose(t1%sm)) + t1%b_kin
+    endif
     c_concat=tempnew
     c_concat%x0=s2%x0
     c_concat%tpsa=s2%tpsa
@@ -10039,6 +10130,12 @@ endif
      s2%e_ij=s1%e_ij
      s2%x0=s1%x0
      s2%tpsa=s1%tpsa
+     if(use_quaternion) then
+       s2%sm=s1%sm
+       s2%damps=s1%damps
+       s2%d_spin=s1%d_spin
+       s2%b_kin=s1%b_kin
+     endif
   END SUBROUTINE c_EQUALMAP
 
  SUBROUTINE  c_EQUALVEC(S2,S1)
@@ -10112,6 +10209,13 @@ SUBROUTINE  c_EQUALcray(S2,S1)
    endif
 
      s2%e_ij=0.0_dp
+     s2%damps=0.0_dp
+     s2%d_spin=0.0_dp
+     s2%b_kin=0.0_dp
+     s2%sm=0.0_dp
+    do i=1,3
+     s2%sm(i,i)=1.0_dp
+    enddo
   END SUBROUTINE c_IdentityEQUALMAP
 
 
@@ -11621,8 +11725,9 @@ alpha=2*atan2(q0%x(2),q0%x(0))
     type(c_damap) , intent(inout) :: m1
     type(c_normal_form), intent(inout) ::  n
     complex(dp) r(6,6)
-    integer i,j
-   
+    real(dp) sd(3,3), ms(3,3),sf(3)
+    integer i,j,ier
+    logical spin_in
 
 
     r=m1
@@ -11639,6 +11744,32 @@ alpha=2*atan2(q0%x(2),q0%x(0))
    m1=c_simil(n%a_t,c_simil(from_phasor(),m1,1),1)
    
    n%s_ij0=m1%e_ij
+
+   if(use_quaternion.and.(.false.)) then
+    call c_check_rad_spin(m1%damps,spin_in)
+     if(spin_in) then
+      call exp_mat(m1%damps,sd )
+      call makeso3(m1%q,ms)
+      ms=sd*ms
+      sd=0
+      do i=1,3
+       sd(i,i)=1
+      enddo
+       ms=sd-ms
+   !    write(6,*) ms(1,1:3)
+   !    write(6,*) ms(2,1:3)
+   !    write(6,*) ms(3,1:3)
+      call matinv(ms,ms,3,3,ier)
+    !   write(6,*) "ier ",ier
+    !   write(6,*) ms(1,1:3)
+     !  write(6,*) ms(2,1:3)
+     !  write(6,*) ms(3,1:3)
+       sf=matmul(ms,m1%d_spin)
+    !   write(6,*) "sf " 
+     !  write(6,*) sf
+     endif  
+   endif
+
 
    end  subroutine  c_normal_radiation 
 
@@ -13771,6 +13902,78 @@ function c_vector_field_quaternion(h,ds) ! spin routine
     endif
 
   end  subroutine c_check_rad
+
+ subroutine c_check_rad_spin(e_ij,rad_in)
+    implicit none
+    logical(lp), INTENT(INout) :: rad_in
+    real(dp) e_ij(3,3)
+    integer i,j
+    real(dp) norm
+
+    rad_in=my_true
+    norm=0.0_dp
+    do i=1,3
+       do j=1,3
+          norm=norm+abs(e_ij(i,j))
+       enddo
+    enddo
+
+    if(norm==0.0_dp) then
+        rad_in=.false.
+    endif
+
+  end  subroutine c_check_rad_spin
+
+
+ subroutine exp_mat(f,m)
+    implicit none
+    real(dp), intent(in) :: f(:,:) 
+    real(dp), intent(out) ::  m(:,:)
+    integer i,n
+    real(dp) norma,normb,x,y
+    real(dp), allocatable :: t(:,:)
+
+    
+    n=size(m,1)
+     allocate(t(n,n))
+ t=f
+ m=0
+  do i=1,n
+   m(i,i)=1
+   t(i,i)=1
+ enddo
+       normb=norm_matrix(f)
+    x=1
+    do i=1,1000
+      t=matmul(f,t)/x
+      norma=norm_matrix(f)
+      m= m+t
+      x=x+1
+      if(norma>=normb.and.i>10) exit
+      normb=norma
+    enddo
+write(6,*) "exp_mat",i
+  deallocate(t)
+  end  subroutine exp_mat
+
+    function norm_matrix(f)
+    implicit none
+    real(dp) norm_matrix
+    real(dp), intent(in) :: f(:,:) 
+     integer i,j,n
+ 
+
+    norm_matrix=0
+    n=size(f,1)
+
+    do i=1,n
+    do j=1,n
+     norm_matrix=norm_matrix+abs(f(i,j))
+    enddo
+    enddo
+
+ end function norm_matrix
+
 
 !!!!!!!!!!!!!!!!!!!!!!! eig6
 
@@ -17534,7 +17737,6 @@ END FUNCTION FindDet
     
     m1=xy
 
-
     ! Brings the map to the parameter dependent fixed point
     ! including the coasting beam gymnastic: time-energy is canonical
     ! but energy is constant. (Momentum compaction, phase slip etc.. falls from there)
@@ -18376,14 +18578,14 @@ end subroutine read_tree_elements
 subroutine symplectify_for_zhe(m,L_ns , N_pure_ns , L_s, N_s )
 implicit none
 TYPE(c_damap),intent(inout):: m ,L_ns , N_pure_ns , N_s , L_s
-type(c_vector_field) f,fs
+type(c_vector_field) f,fs,ft
 complex(dp) v
 type(c_taylor) t,dt
 real(dp),allocatable::  mat(:,:)
 integer i,j,k,n(11),nv,nd2,al,ii,a,mul
 integer, allocatable :: je(:)
-real(dp) dm,norm,normb,norma
-TYPE(c_damap) mt
+real(dp) dm,norm,normb,norma,h(4)
+TYPE(c_damap) mt,ids,m4,ml
 real(dp),allocatable::   S(:,:),id(:,:)
 
 ! m = L_ns o N_pure_ns o L_s o N_s
@@ -18406,14 +18608,15 @@ enddo
 
 
 
- call alloc(f);call alloc(fs);
-call alloc(t,dt);call alloc(mt);
+ call alloc(f);call alloc(fs);call alloc(ft);
+call alloc(t,dt);call alloc(mt,ids,m4,ml);
 
 allocate(mat(m%n,m%n))
 
 mat=0
 
 
+! constructing Furman's contracting matrix from my review sec.3.8.2
 
 if(nv-nd2==0) then
 mat=m.sub.1
@@ -18423,10 +18626,73 @@ stop 444
 endif
 
 
-! constructing Furman's contracting matrix from my review sec.3.8.2
 
-call furman_symp(mat)
-L_s=mat
+if(hypercube_integration) then
+  if(nv-nd2==0) then
+  mat=m.sub.1
+  else
+  write(6,*) " this map should not have parameters or modulated magnets " 
+   stop 444
+ endif
+
+ call furman_symp(mat)
+ L_s=mat
+else
+  if(nv-nd2==0) then
+  mt=m.sub.1
+ids=1
+ids%v(5)=0.0_dp
+ids%v(6)=0.0_dp
+   m4=1
+  do i=1,4
+   m4%v(i)=mt%v(i)*ids
+  enddo
+ mat=m4
+ call furman_symp(mat)
+ m4=mat
+ mt=mt*m4**(-1)
+ if(ndpt_bmad==0) then
+  h(1)= mt%v(2).sub.'000010'
+  h(2)= -mt%v(1).sub.'000010'
+  h(3)= mt%v(4).sub.'000010'
+  h(4)= -mt%v(3).sub.'000010'
+  ml=1
+  ml%v(1)=ml%v(1)-(h(2).cmono.5)
+  ml%v(2)=ml%v(2)+(h(1).cmono.5)
+  ml%v(3)=ml%v(3)-(h(4).cmono.5)
+  ml%v(4)=ml%v(4)+(h(3).cmono.5)
+  do i=1,4
+   ml%v(6)=ml%v(6)+(h(i).cmono.i)
+  enddo
+  else
+  h(1)= mt%v(2).sub.'000001'
+  h(2)=-mt%v(1).sub.'000001'
+  h(3)= mt%v(4).sub.'000001'
+  h(4)=-mt%v(3).sub.'000001'
+  ml=1
+  ml%v(1)=ml%v(1)-(h(2).cmono.6)
+  ml%v(2)=ml%v(2)+(h(1).cmono.6)
+  ml%v(3)=ml%v(3)-(h(4).cmono.6)
+  ml%v(4)=ml%v(4)+(h(3).cmono.6)
+  do i=1,4
+   ml%v(5)=ml%v(5)-(h(i).cmono.i)
+  enddo
+ endif
+ 
+ mt=mt*ml**(-1)
+ mat=mt
+ call furman_symp(mat)
+ mt=mat
+L_s=mt*ml*m4
+ 
+
+  else
+  write(6,*) " this map should not have parameters or modulated magnets " 
+   stop 445
+ endif
+
+endif
+
 
 mt=m*L_s**(-1)
 L_ns=mt.sub.1
@@ -18437,6 +18703,7 @@ f=log(mt)
 
 fs=0
 
+if(hypercube_integration) then
 ! Integrating a symplectic operator using the hypercube's diagonal
 
 allocate(je(nv))
@@ -18465,6 +18732,85 @@ do i=1,f%n
 
 enddo
  
+else
+
+
+
+allocate(je(nv))
+
+do i=1,nd2
+ft%v(i)=f%v(i)
+enddo
+f%v(5)=0.0_dp
+f%v(6)=0.0_dp
+
+ 
+!!! over the transverse
+je=0
+do i=1,f%n
+
+       j=1
+
+        do while(.true.)
+
+          call  c_cycle(f%v(i),j,v ,je); if(j==0) exit;
+         dm=1
+         do ii=1,nd2-2
+          dm=dm+je(ii)
+         enddo
+        t=v.cmono.je
+        do a=1,nd2
+         dt=t.d.a
+        do al=1,nd2
+        do k=1,nd2
+          fs%v(al)=fs%v(al)+s(a,al)*s(k,i)*(id(k,a)*t+(1.0_dp.cmono.k)*dt)/dm
+        enddo ! k
+        enddo ! al
+        enddo ! a
+        enddo
+
+enddo
+ 
+do i=1,4
+ f%v(i)=0.0_dp
+enddo
+ f%v(5)=ft%v(5)
+ f%v(6)=ft%v(6)
+ids=0
+ids%v(5)=1.0_dp.cmono.5
+ids%v(6)=1.0_dp.cmono.6
+
+ f%v(5)= f%v(5)*ids
+ f%v(6)= f%v(6)*ids
+ 
+!!! over the logitudinal 
+je=0
+do i=1,f%n
+
+       j=1
+
+        do while(.true.)
+
+          call  c_cycle(f%v(i),j,v ,je); if(j==0) exit;
+         dm=1
+         do ii=5,6
+          dm=dm+je(ii)
+         enddo
+        t=v.cmono.je
+        do a=1,nd2
+         dt=t.d.a
+        do al=1,nd2
+        do k=1,nd2
+          fs%v(al)=fs%v(al)+s(a,al)*s(k,i)*(id(k,a)*t+(1.0_dp.cmono.k)*dt)/dm
+        enddo ! k
+        enddo ! al
+        enddo ! a
+        enddo
+
+enddo
+
+
+endif
 
 
 N_s=exp(fs)
@@ -18478,8 +18824,8 @@ N_s= L_s**(-1)*N_s*L_s
 
 
 deallocate(je);deallocate(s,id);
- call kill(f);call kill(fs);
-call kill(t,dt);call kill(mt);
+ call kill(f);call kill(fs);call kill(ft);
+call kill(t,dt);call kill(mt,ids,m4,ml);
 deallocate(mat)
 end subroutine symplectify_for_zhe
 

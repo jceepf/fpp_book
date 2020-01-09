@@ -343,6 +343,8 @@ type probe_8
    logical u,use_q
    type(integration_node),pointer :: last_node=>null()
   real(dp) e
+  real(dp) damps(3,3)
+  real(dp) b_kin(3,3),D_spin(3)
 end type probe_8
   !@3 ---------------------------------------------</br>
   type TEMPORAL_PROBE
@@ -409,9 +411,12 @@ type c_damap
  integer :: n=0 !@1 number of plane allocated
  type(c_spinmatrix) s !@1 spin matrix
  type(c_quaternion) q
- complex(dp) e_ij(6,6) !@1 stochastic fluctuation in radiation theory
  complex(dp) x0(lnv)
  logical :: tpsa=.false.
+ complex(dp) e_ij(6,6) !@1 stochastic fluctuation in radiation theory
+  real(dp) sm(3,3)
+  real(dp) damps(3,3)
+  real(dp) b_kin(3,3),D_spin(3)
 end type c_damap
 
   !@3 ---------------------------------------------</br>

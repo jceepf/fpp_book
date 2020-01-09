@@ -5121,6 +5121,7 @@ contains
     implicit none
     real(dp),INTENT(inOUT)::S2
     type (real_8),INTENT(IN)::S1
+    integer i
     !    integer localmaster
 
 
@@ -5145,7 +5146,9 @@ contains
        !w_p%fc='((1X,A72,/,1x,a72))'
        !w_p%fi='(2((1X,i4)))'
          write(6,*) " trouble in realEQUAL "
-         write(6,*) "s1%kind   "
+         write(6,*) "s1%kind   "  
+         read(5,*) i
+     
        !w_p=(/s1%kind  /)
        ! call !write_e(0)
     end select
@@ -5156,6 +5159,7 @@ contains
     implicit none
     real(sp),INTENT(inOUT)::S2
     type (real_8),INTENT(IN)::S1
+    integer i
     !    integer localmaster
 
 
@@ -5179,8 +5183,9 @@ contains
        !w_p%nc=2
        !w_p%fc='((1X,A72,/,1x,a72))'
        !w_p%fi='(2((1X,i4)))'
-         write(6,*) " trouble in realEQUAL "
+         write(6,*) " trouble in singleEQUAL "
          write(6,*) "s1%kind   "
+          read(5,*) i
        !w_p=(/s1%kind  /)
        ! call !write_e(0)
     end select

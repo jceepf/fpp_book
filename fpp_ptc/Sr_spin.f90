@@ -27,7 +27,7 @@ module ptc_spin
   PRIVATE TRACK_SPIN_FRONTR,TRACK_SPIN_FRONTP,TRACK_SPIN_FRONT
   PRIVATE TRACK_SPIN_BACKR,TRACK_SPIN_BACKP,TRACK_SPIN_BACK
   !  private PUSH_SPIN_RAY8
-  private radiate_2p,radiate_2r,radiate_2
+  private radiate_2p,radiate_2r,radiate_2,crossp
   private TRACK_NODE_FLAG_probe_R,TRACK_NODE_FLAG_probe_p,TRACK_NODE_LAYOUT_FLAG_spinr_x
 
   PRIVATE get_Bfield_fringeR,get_Bfield_fringeP,get_Bfield_fringe,TRACK_NODE_LAYOUT_FLAG_spinp_x
@@ -531,24 +531,28 @@ contains
   end subroutine radiate_2r
 
 
-  subroutine radiate_2p(c,DS,FAC,p,b2,dlds,XP,before,k,POS)
+  subroutine radiate_2p(c,DS,FAC,p,b2,dlds,XP,before,k,POS,E,B)
     implicit none
     TYPE(integration_node), POINTER::c
     TYPE(ELEMENTP), POINTER::EL
     INTEGER,OPTIONAL,INTENT(IN) ::POS
-    TYPE(REAL_8),INTENT(INOUT) ::XP(2)
+    TYPE(REAL_8),INTENT(INOUT) ::XP(2),E(3),B(3)
     TYPE(probe_8),INTENT(INOUT) :: p
     TYPE(REAL_8), INTENT(IN) :: DS
     REAL(DP), INTENT(IN) :: FAC
     TYPE(REAL_8), intent(in):: B2,dlds
     LOGICAL(LP),intent(in) :: BEFORE
     TYPE(REAL_8) st,av(3),z,x(6)
-    real(dp) b30,x1,x3,denf
+    real(dp) b30,x1,x3,denf,a(3),dspin(3),bs(3),ee(3),bb(3),lambda
     type(damap) xpmap
     integer i,j
     type(internal_state) k
 
     IF(.NOT.CHECK_STABLE) return
+        do i=1,3
+         ee(i)=e(i)
+         bb(i)=b(i)
+        enddo
     call alloc(x)
     x=p%x
 
@@ -579,15 +583,44 @@ contains
              P%E_IJ(i,j)=p%E_IJ(i,j)+denf*x1*x3 ! In a code internally using BMAD units '000001' is needed!!!
           enddo
        enddo    
-       if(k%spin) then
-        x1=(1.0_dp+x(5))**2 
-        x1=(1.0_dp-denf*9.0_dp/(x1/11.0_dp))
-        x1=0.999d0
-        do i=0,3
-         p%q%x(i)= x1*p%q%x(i)
+       if(k%spin.and.k%envelope) then
+ !!  lambda
+        lambda=denf*24.0_dp*sqrt(3.0_dp)/(1.0_dp+x(5))**2/55.0_dp
+
+        x1=5.0_dp*sqrt(3.0_dp)/8.0_dp*lambda
+ 
+        do i=1,3
+         p%damps(i,i)=p%damps(i,i)-x1
         enddo
-        x3=sqrt(p%q%x(0)**2+p%q%x(1)**2+p%q%x(2)**2+p%q%x(3)**2)
+        do i=1,3
+         do j=1,3
+             p%damps(i,j)= x1*2.0_dp/9.0_dp*ee(i)*ee(j)   + p%damps(i,j)
+         enddo
+        enddo
+
+        call crossp(ee,bb,a)
+        call crossp(ee,a,dspin)
+        x3=sqrt(a(1)**2+a(2)**2+a(3)**2)
+        
+       if(x3>1.d-38) then
+          x1=24.0_dp*sqrt(3.0_dp)/55.0_dp*lambda
+          do i=1,3
+          do j=1,3
+           p%b_kin(i,j)=x1*dspin(i)*dspin(j)/x3**2 + p%b_kin(i,j)
+          enddo
+          enddo
+            do i=1,3
+               dspin(i)=dspin(i)*lambda/x3
+            enddo
+           do i=1,3
+            p%d_spin(i)=p%d_spin(i)+dspin(i)
+           enddo
+
+
+        endif
+ 
        endif
+
        if(compute_stoch_kick) c%delta_rad_out=root(denf)
        call kill(xpmap)
     endif
@@ -682,22 +715,69 @@ contains
              p%E_IJ(i,j)=p%E_IJ(i,j)+denf*x1*x3
           enddo
        enddo
-       if(k%spin) then
-        x1=(1.0_dp+x(5))**2 
-        x1=(1.0_dp-denf*9.0_dp/(x1/11.0_dp))
-        do i=0,3
-         p%q%x(i)= x1*p%q%x(i)
+       if(k%spin.and.k%envelope) then
+ 
+        x1=denf*9.0_dp/((1.0_dp+x(5))**2 *11.0_dp)
+        do i=1,3
+         p%damps(i,i)=p%damps(i,i)-x1
         enddo
+        do i=1,3
+         do j=1,3
+             p%damps(i,j)= x1*2.0_dp/9.0_dp*ee(i)*ee(j)   + p%damps(i,j)
+         enddo
+        enddo
+!!  lambda
+        lambda=denf*24.0_dp*sqrt(3.0_dp)/(1.0_dp+x(5))**2/55.0_dp
+
+        call crossp(ee,bb,a)
+        call crossp(ee,a,dspin)
+        x3=sqrt(a(1)**2+a(2)**2+a(3)**2)
+        
+       if(x3>1.d-38) then
+          x1=24.0_dp*sqrt(3.0_dp)/55.0_dp*lambda
+          do i=1,3
+          do j=1,3
+           p%b_kin(i,j)=x1*dspin(i)*dspin(j)/x3**2 + p%b_kin(i,j)
+          enddo
+          enddo
+            do i=1,3
+               dspin(i)=dspin(i)*lambda/x3
+            enddo
+           do i=1,3
+            p%d_spin(i)=p%d_spin(i)+dspin(i)
+           enddo
+
+        endif
+ 
        endif
        if(compute_stoch_kick) c%delta_rad_in=root(denf)
        call kill(xpmap)
     endif
     p%x=x
     call kill(x)
+ 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
   end subroutine radiate_2p
+
+  subroutine crossp(a,b,c)
+  implicit none
+    real(dp),INTENT(INOUT) ::a(3),b(3),c(3)
+    real(dp) t(3)
+
+ 
+
+     t(1)=a(2)*b(3)-a(3)*b(2)
+     t(2)=a(3)*b(1)-a(1)*b(3)
+     t(3)=a(1)*b(2)-a(2)*b(1)
+     c(1)=t(1)
+     c(2)=t(2)
+     c(3)=t(3)
+  
+
+  end subroutine crossp 
+
 
   !  subroutine PUSH_SPIN_fake_fringer(c,p,before,k,POS)
   subroutine PUSH_SPIN_fake_fringer(c,p,k,POS)
@@ -708,7 +788,7 @@ contains
     !    real(dp),INTENT(INOUT) :: X(6),S(3)
     type(probe),INTENT(INOUT) :: p
 
-    real(dp) OM(3),CO(3),SI(3),B2,XP(2)
+    real(dp) OM(3),CO(3),SI(3),B2,XP(2),E(3),B(3)
     real(dp) ST,dlds,norm,stheta
     !    LOGICAL(LP),intent(in) :: BEFORE
     type(internal_state) k
@@ -724,7 +804,7 @@ contains
 
 
 
-    CALL get_omega_spin(c,OM,B2,dlds,XP,p%X,POS,k)
+    CALL get_omega_spin(c,OM,B2,dlds,XP,p%X,POS,k,E,B)
     !if(k%radiation.AND.BEFORE) then
     !if(el%p%radiation.AND.BEFORE) then
     ! call radiate_2(EL,DS,FAC,X,E_IJ,b2,dlds,XP,before,k,POS)
@@ -787,7 +867,7 @@ endif
     TYPE(probe_8),INTENT(INOUT) :: p
     !    TYPE(REAL_8),INTENT(INOUT) :: X(6),S(3)
 
-    TYPE(REAL_8) OM(3),CO(3),SI(3),B2,XP(2)
+    TYPE(REAL_8) OM(3),CO(3),SI(3),B2,XP(2),E(3),B(3)
     TYPE(REAL_8) ST,dlds,norm,stheta
     !    LOGICAL(LP),intent(in) :: BEFORE
     type(internal_state) k
@@ -804,12 +884,14 @@ endif
 
 
     CALL ALLOC(OM,3)
+    CALL ALLOC(E,3)
+    CALL ALLOC(B,3)
     CALL ALLOC(CO,3)
     CALL ALLOC(SI,3)
     CALL ALLOC(XP,2)
     CALL ALLOC(ST,B2,dlds)
 
-    CALL get_omega_spin(c,OM,B2,dlds,XP,p%X,POS,k)
+    CALL get_omega_spin(c,OM,B2,dlds,XP,p%X,POS,k,E,B)
     !if(k%radiation.AND.BEFORE) then
     !if(el%p%radiation.AND.BEFORE) then
     ! call radiate_2(EL,DS,FAC,X,E_IJ,b2,dlds,XP,before,k,POS)
@@ -883,6 +965,8 @@ endif
     !endif
 
     CALL KILL(OM,3)
+    CALL KILL(E,3)
+    CALL KILL(B,3)
     CALL KILL(CO,3)
     CALL KILL(SI,3)
     CALL KILL(XP,2)
@@ -899,7 +983,7 @@ endif
     TYPE(PROBE), INTENT(INOUT) :: P
     !    REAL(DP),INTENT(INOUT) :: X(6),S(3)
     REAL(DP), INTENT(IN) :: DS,FAC
-    REAL(DP) OM(3),CO(3),SI(3),B2,XP(2)
+    REAL(DP) OM(3),CO(3),SI(3),B2,XP(2),E(3),B(3)
     REAL(DP) ST,dlds,norm,stheta
     type(quaternion) dq,mulq
     LOGICAL(LP),intent(in) :: BEFORE
@@ -914,7 +998,7 @@ endif
     !    if(EL%kind>=kind11.and.EL%kind<=kind14) return    ! should I prevent monitor here??? instead of xp=Px,y in get_omega_spin
     !    if(EL%kind>=kind18.and.EL%kind<=kind19) return    ! should I prevent monitor here??? instead of xp=Px,y in get_omega_spin
 
-    CALL get_omega_spin(c,OM,B2,dlds,XP,P%X,POS,k)
+    CALL get_omega_spin(c,OM,B2,dlds,XP,P%X,POS,k,E,B)
     if((k%radiation.or.k%envelope).AND.BEFORE) then
        !if(el%p%radiation.AND.BEFORE) then
        !       call radiate_2(c,DS,FAC,P%X,b2,dlds,XP,before,k,POS)
@@ -1001,9 +1085,10 @@ endif
     !    real(dp),INTENT(INOUT) :: E_IJ(6,6)
     TYPE(REAL_8), INTENT(INout) :: DS
     REAL(DP), INTENT(IN) :: FAC
-    TYPE(REAL_8) OM(3),CO(3),SI(3),B2,XP(2)
+    TYPE(REAL_8) OM(3),CO(3),SI(3),B2,XP(2),E(3),B(3)
     TYPE(REAL_8) ST,dlds,norm,stheta
     type(quaternion_8) dq
+    type(quaternion) dq0
     LOGICAL(LP),intent(in) :: BEFORE
     type(internal_state) k
     INTEGER I
@@ -1016,6 +1101,8 @@ endif
     !    if(EL%kind>=kind18.and.EL%kind<=kind19) return    ! should I prevent monitor here??? instead of xp=Px,y in get_omega_spin
 
     CALL ALLOC(OM,3)
+    CALL ALLOC(E,3)
+    CALL ALLOC(B,3)
     CALL ALLOC(CO,3)
     CALL ALLOC(SI,3)
     CALL ALLOC(XP,2)
@@ -1023,10 +1110,10 @@ endif
 
 
     IF(K%PARA_IN ) KNOB=.TRUE.
-    CALL get_omega_spin(c,OM,B2,dlds,XP,P%X,POS,k)
+    CALL get_omega_spin(c,OM,B2,dlds,XP,P%X,POS,k,E,B)
     if((k%radiation.or.k%envelope).AND.BEFORE) then
        !if(el%p%radiation.AND.BEFORE) then
-       call radiate_2(c,DS,FAC,P,b2,dlds,XP,before,k,POS)
+       call radiate_2(c,DS,FAC,P,b2,dlds,XP,before,k,POS,E,B)
        !       call radiate_2(c,DS,FAC,P%X,E_IJ,b2,dlds,XP,before,k,POS)
 
     endif
@@ -1052,7 +1139,10 @@ endif
         dq%x(2)=stheta*om(2)
         dq%x(3)=stheta*om(3)
         p%q=dq*p%q
-
+      if(k%envelope.and.k%radiation) then
+         dq0=dq
+       call quaternion_to_damps (dq0,p)
+      endif
        call kill(norm,stheta)
        call kill(dq)
 
@@ -1094,11 +1184,13 @@ endif
     endif
     if((k%radiation.or.k%envelope).AND.(.NOT.BEFORE)) then
        !if(el%p%radiation.AND.(.NOT.BEFORE)) then
-       call radiate_2(c,DS,FAC,P,b2,dlds,XP,before,k,POS)
+       call radiate_2(c,DS,FAC,P,b2,dlds,XP,before,k,POS,E,B)
        !       call radiate_2(c,DS,FAC,P%X,E_IJ,b2,dlds,XP,before,k,POS)
     endif
 
     CALL KILL(OM,3)
+    CALL KILL(E,3)
+    CALL KILL(B,3)
     CALL KILL(CO,3)
     CALL KILL(SI,3)
     CALL KILL(XP,2)
@@ -1106,14 +1198,37 @@ endif
     knob=.false.
   END subroutine PUSH_SPINP
 
-  subroutine get_omega_spinr(c,OM,B2,dlds,XP,X,POS,k)
+  subroutine  quaternion_to_damps (q_lin,p)
+    implicit none
+    real(dp) m(3,3) 
+    TYPE(quaternion), INTENT(IN) :: q_lin
+    type(probe_8), intent(inout) :: p
+    type(quaternion) s,sf
+    integer i,j
+
+    do i=1,3
+     s=0.0_dp
+     s%x(i)=1.0_dp
+     sf=q_lin*s*q_lin**(-1) 
+     do j=1,3
+      m(j,i)=sf%x(j)
+     enddo
+    enddo
+    p%damps=matmul(m,p%damps)
+    p%b_kin=matmul(m,p%b_kin)
+    p%b_kin=matmul(p%b_kin,transpose(m))
+    p%d_spin=matmul(m,p%d_spin)
+
+    end subroutine  quaternion_to_damps 
+
+  subroutine get_omega_spinr(c,OM,B2,dlds,XP,X,POS,k,ED,B)
     implicit none
     TYPE(integration_node), POINTER::c
     TYPE(ELEMENT), POINTER::EL
     TYPE(MAGNET_CHART), POINTER::P
     INTEGER,OPTIONAL,INTENT(IN) ::POS
-    REAL(DP),INTENT(INOUT) :: X(6),OM(3),B2,XP(2),DLDS
-    REAL(DP)  B(3),E(3),BPA(3),BPE(3),D1,D2,GAMMA,EB(3),EFD(3),beta,ed(3)
+    REAL(DP),INTENT(INOUT) :: X(6),OM(3),B2,XP(2),DLDS,B(3),ED(3)
+    REAL(DP)  BPA(3),BPE(3),D1,D2,GAMMA,EB(3),EFD(3),beta,e(3)
     REAL(DP) BETA0,GAMMA0I,XPA(2),phi,del,z
     INTEGER I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
@@ -1135,6 +1250,7 @@ endif
     BPE=0.0_dp
     B=0.0_dp
     E=0.0_dp
+    ED=0.0_dp
     EFD=0.0_dp
     phi=0.0_dp
 
@@ -1265,14 +1381,14 @@ endif
 
   end subroutine get_omega_spinr
 
-  subroutine get_omega_spinp(c,OM,B2,dlds,XP,X,POS,k)
+  subroutine get_omega_spinp(c,OM,B2,dlds,XP,X,POS,k,ED,B)
     implicit none
     TYPE(integration_node), POINTER::c
     TYPE(ELEMENTp), POINTER::EL
     TYPE(MAGNET_CHART), POINTER::P
     INTEGER,OPTIONAL,INTENT(IN) ::POS
-    TYPE(REAL_8), INTENT(INOUT) :: X(6),OM(3),B2,XP(2)
-    TYPE(REAL_8)  B(3),E(3),BPA(3),BPE(3),DLDS,D1,D2,GAMMA,EB(3),efd(3),XPA(2),ed(3),beta,phi,del,z
+    TYPE(REAL_8), INTENT(INOUT) :: X(6),OM(3),B2,XP(2),B(3),ED(3)
+    TYPE(REAL_8)  BPA(3),BPE(3),DLDS,D1,D2,GAMMA,EB(3),efd(3),XPA(2),e(3),beta,phi,del,z
     REAL(DP) BETA0,GAMMA0I
     INTEGER I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
@@ -1291,9 +1407,9 @@ endif
 
     IF(.NOT.CHECK_STABLE) return
 
-    CALL ALLOC(B,3)
+  !  CALL ALLOC(B,3)
+    !CALL ALLOC(ED,3)
     CALL ALLOC(E,3)
-    CALL ALLOC(Ed,3)
     CALL ALLOC(efd,3)
     CALL ALLOC(beta,del,z)
     CALL ALLOC(EB,3)
@@ -1440,17 +1556,18 @@ endif
     ENDIF
 
 
-    CALL KILL(B,3)
+ !   CALL KILL(B,3)
+  !  CALL KILL(ED,3)
+ 
+
     CALL KILL(E,3)
+    CALL KILL(efd,3)
+    CALL KILL(beta,del,z)
     CALL KILL(EB,3)
     CALL KILL(BPA,3)
     CALL KILL(BPE,3)
-    CALL KILL(D1,D2,GAMMA,phi,z)
     CALL KILL(XPA,2)
-    CALL KILL(Ed,3)
-    CALL KILL(efd,3)
-    CALL KILL(beta,del)
-
+    CALL KILL(D1,D2,GAMMA,phi)
     !  TESTBUG SATEESH
     !    CALL KILL(XS)
     !     CALL KILL(ID)
@@ -2786,7 +2903,7 @@ call kill(vm,phi,z)
         elem_name = C%PARENT_FIBRE%MAGP%name  ! LD: 22.03.2019
         CALL TRACK_NODE_PROBE(C,XS,K)  !,R%charge)
         if(.not.check_stable) exit
-
+ 
        C=>C%NEXT
        J=J+1
     ENDDO
@@ -3307,7 +3424,7 @@ call kill(vm,phi,z)
           CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
           if(k%spin) then
             CALL TRACK_SPIN_FRONT(C%PARENT_FIBRE,XS)
-            if(xs%use_q) xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
+   if(xs%use_q.and.assume_c_quaternion_normalised) xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
 
           endif
        
@@ -3315,7 +3432,7 @@ call kill(vm,phi,z)
           if(k%spin) then
 
                  CALL TRACK_SPIN_BACK(C%PARENT_FIBRE,XS)
-             if(xs%use_q) xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
+   if(xs%use_q.and.assume_c_quaternion_normalised) xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
 
            endif
           CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
@@ -3480,7 +3597,7 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
           if(k%spin) then
 
                  CALL TRACK_SPIN_FRONT(C%PARENT_FIBRE,XS)
-       if(xs%use_q) then
+   if(xs%use_q.and.assume_c_quaternion_normalised) then
            ds=1.0_dp/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
            xs%q%x(0)=xs%q%x(0)*ds
            xs%q%x(1)=xs%q%x(1)*ds
@@ -3493,7 +3610,7 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
           if(k%spin) then
 
                  CALL TRACK_SPIN_BACK(C%PARENT_FIBRE,XS)
-        if(xs%use_q) then
+   if(xs%use_q.and.assume_c_quaternion_normalised) then
            ds=1.0_dp/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
            xs%q%x(0)=xs%q%x(0)*ds
            xs%q%x(1)=xs%q%x(1)*ds
@@ -6684,7 +6801,7 @@ enddo
     TYPE(damap) ms
     integer js(6)
     type(c_damap) L_ns , N_pure_ns , N_s , L_s
-
+    logical :: nothing
 
  
 
@@ -6728,8 +6845,9 @@ enddo
       m(i)=L_ns%v(i)   ! orbital part
      enddo
 
-    call c_full_norm_spin(Ma%s,k,norm)
 
+nothing=.true.
+    call c_full_norm_spin(Ma%s,k,norm)
 
 if(use_quaternion) then
     call c_full_norm_quaternion(Ma%q,kq,norm)
@@ -6737,6 +6855,7 @@ if(use_quaternion) then
       do i=0,3
         m(ind_spin(1,1)+i)=ma%q%x(i)
       enddo
+    nothing=.false.
     elseif(kq/=-1) then
       m(ind_spin(1,1))=1.0_dp
       do i=ind_spin(1,1)+1,size_tree
@@ -6750,12 +6869,45 @@ else
         m(ind_spin(i,j))=ma%s%s(i,j)
       enddo
       enddo
+    nothing=.false.
     else
       do i=1,3
         m(ind_spin(i,i))=1.0e0_dp
       enddo
     endif
 endif
+ if(nothing) then
+    call c_full_norm_spin(Ma_0%s,k,norm)
+
+if(use_quaternion) then
+    call c_full_norm_quaternion(Ma_0%q,kq,norm)
+    if(kq==-1) then
+      do i=0,3
+        m(ind_spin(1,1)+i)=Ma_0%q%x(i)
+      enddo
+    nothing=.false.
+    elseif(kq/=-1) then
+      m(ind_spin(1,1))=1.0_dp
+      do i=ind_spin(1,1)+1,size_tree
+        m(i)=0.0_dp
+      enddo
+    endif
+else
+    if(k==-1) then
+      do i=1,3
+      do j=1,3
+        m(ind_spin(i,j))=Ma_0%s%s(i,j)
+      enddo
+      enddo
+    nothing=.false.
+    else
+      do i=1,3
+        m(ind_spin(i,i))=1.0e0_dp
+      enddo
+    endif
+endif
+
+ endif
       js=0
      js(1)=1;js(3)=1;js(5)=1; ! q_i(q_f,p_i) and p_f(q_f,p_i)
      call alloc(ms)
