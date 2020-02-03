@@ -758,8 +758,60 @@ contains
  
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
   end subroutine radiate_2p
+
+  subroutine fluc_spin(p,De_ij)
+  implicit none
+   TYPE(probe_8),target,INTENT(INOUT) :: p    
+   real(dp) De_ij(6,6),ds(3,3,0:6),v(9),s(3,3),t(9,9)
+   integer je(6),i1,i2,i3,j1,j2,j3
+   type(c_damap) m
+   call alloc(m)
+   m=p
+   call makeso3(m)
+   ds=0
+   do i1=1,3
+   do i2=1,3
+   s(i1,i2)=m%s%s(i1,i2)
+   do j1=1,6
+   je=0
+   je(j1)=1
+    ds(i1,i2,j1)= m%s%s(i1,i2).sub.je
+   enddo
+   enddo
+   enddo
+
+   do i1=1,3
+   do i2=1,3
+   do j3=1,3
+   do j1=1,6
+   do j2=1,6
+    ds(i1,i3,0)= ds(i1,i3,0) + ds(i1,i2,j1)*ds(i2,i3,j2)*De_ij(j1,j2)
+   enddo
+   enddo
+   enddo
+   enddo
+   enddo
+
+   do i1=1,9
+    v(i1) = ds(k1_spin(i1),k2_spin(i1),0)
+   enddo
+   
+   t=0
+
+  do i1=1,3
+  do i2=1,3
+  do i3=1,3
+     t(ind_spin0(i1,i3),ind_spin0(i3,i2))=  t(ind_spin0(i1,i3),ind_spin0(i3,i2)) - s(i1,i2)
+      t(ind_spin0(i1,i3),ind_spin0(i1,i2))=  t(ind_spin0(i1,i3),ind_spin0(i1,i2)) - s(i3,i2)
+  enddo
+  enddo
+  enddo
+
+   
+  call kill(m)
+  end subroutine fluc_spin 
+
 
   subroutine crossp(a,b,c)
   implicit none

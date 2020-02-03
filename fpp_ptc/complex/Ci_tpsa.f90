@@ -105,7 +105,7 @@ real(dp), private :: sj(6,6)
 logical :: use_new_stochastic_normal_form=.true.
 logical :: qphase=.false.,qphasedef=.false.
   integer :: size_tree=15
-  integer :: ind_spin(3,3),k1_spin(9),k2_spin(9)
+  integer :: ind_spin0(3,3),ind_spin(3,3),k1_spin(9),k2_spin(9)
 logical :: hypercube_integration = .true.
 
 type q_linear
@@ -8435,6 +8435,9 @@ endif
     ind_spin(1,1)=1+6;ind_spin(1,2)=2+6;ind_spin(1,3)=3+6;
     ind_spin(2,1)=4+6;ind_spin(2,2)=5+6;ind_spin(2,3)=6+6;
     ind_spin(3,1)=7+6;ind_spin(3,2)=8+6;ind_spin(3,3)=9+6;    
+    ind_spin0(1,1)=1;ind_spin0(1,2)=2;ind_spin0(1,3)=3;
+    ind_spin0(2,1)=4;ind_spin0(2,2)=5;ind_spin0(2,3)=6;
+    ind_spin0(3,1)=7;ind_spin0(3,2)=8;ind_spin0(3,3)=9;    
     k1_spin(1)=1;k2_spin(1)=1;
     k1_spin(2)=1;k2_spin(2)=2;
     k1_spin(3)=1;k2_spin(3)=3;
@@ -11737,7 +11740,7 @@ alpha=2*atan2(q0%x(2),q0%x(0))
     enddo ;enddo;
 
      do i=1,3
-      n%emittance(i)=abs(n%s_ijr(2*i-1,2*i))/2.0_dp
+      n%emittance(i)=abs(n%s_ijr(2*i-1,2*i))/abs(n_cai)
      enddo
 
    m1%e_ij= n%s_ijr  !using m1 to transform equilibrium beam sizes

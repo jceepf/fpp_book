@@ -60,7 +60,7 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE
  type(probe), pointer :: xs0g(:) => null()
  logical ::  use_hermite =.false.
 
-   
+
   INTERFACE SCRIPT
      MODULE PROCEDURE read_ptc_command
   END INTERFACE
@@ -95,6 +95,9 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE
 
 
 contains
+
+
+
   subroutine set_lattice_pointers
     implicit none
 
@@ -928,6 +931,7 @@ endif
              endif
              TL=>TL%NEXT
           ENDDO
+          if(b_b.and.tl%cas/=case0) tl=>tl%next
           if(b_b.and.tl%cas==case0) then
              write(6,*) " Beam-Beam position at ",tl%parent_fibre%mag%name
              if(.not.associated(tl%BB)) call alloc(tl%BB)
@@ -2755,7 +2759,7 @@ write(6,*) x_ref
 
   END subroutine read_ptc_command
 
- SUBROUTINE radia_new(R,loc,estate,FILE1,fix,em,sij,sijr,tune,damping,init_tpsa)
+ SUBROUTINE radia_new(R,loc,estate,FILE1,fix,em,sij,sijr,tune,damping,e_ij,spin_damp,init_tpsa)
     implicit none
     TYPE(LAYOUT) R
 
@@ -2764,7 +2768,7 @@ write(6,*) x_ref
     type(c_damap)  Id,a0,a_cs
     type(c_normal_form) normal
     integer  i,j 
-    real(dp), optional :: fix(6), em(3),sij(6,6),tune(3),damping(3)
+    real(dp), optional :: fix(6), em(3),sij(6,6),tune(3),damping(3),e_ij(6,6),spin_damp(6,6) 
     logical, optional ::  init_tpsa
     complex(dp), optional :: sijr(6,6)   
     TYPE(INTERNAL_STATE) state
@@ -2774,6 +2778,8 @@ write(6,*) x_ref
     type(probe) xs0
     type(probe_8) xs
     character*48 fmd,fmd1
+    real(dp) mat(6,6),matf(6,6)
+ 
 
     if(present(FILE1)) then
     call kanalnummer(mf1)
@@ -2832,6 +2838,7 @@ fmd1='(1X,a3,I1,a3,i1,a4,2(D18.11,1x),(f10.3,1x),a2)'
     CALL TRACK_PROBE(r,xs,state, fibre1=loc)
      id=xs
  
+    if(present(e_ij)) e_ij=xs%e_ij
    if(present(FILE1)) then
     write(mf1,*) " Full Map "    
      call print(id,mf1)
@@ -2868,6 +2875,29 @@ write(mf1,'(16X,a50)') "   Equilibrium moments in Phasors Basis           "
  enddo 
     close(mf1)
 endif
+if(present(spin_damp)) then
+mat=id
+matf=mat
+
+call furman_symp(matf)
+
+
+id=0
+id=matf
+ 
+id=id**(-1)
+ 
+matf=id 
+ 
+matf=matmul(matf,mat)
+do i=1,6
+ matf(i,i)=matf(i,i)-1
+enddo
+ 
+ spin_damp=matmul(matmul(matf,normal%s_ij0),transpose(matf))
+ 
+endif
+
 if(present(em)) em=normal%emittance
 if(present(tune)) tune=normal%tune(1:3)
 if(present(damping)) damping=normal%damping(1:3)
