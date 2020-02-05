@@ -1070,7 +1070,7 @@ endif ! jumpnot
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   new zhe tracking   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  SUBROUTINE track_TREE_probe_complex_zhe(T,xs,spin,rad,stoch,linear)
+  SUBROUTINE track_TREE_probe_complex_zhe(T,xs,spin,rad,stoch,linear,slim)
 !    use da_arrays
     IMPLICIT NONE
     TYPE(TREE_ELEMENT),target, INTENT(INout) :: T(3)
@@ -1079,8 +1079,8 @@ endif ! jumpnot
     real(dp) x(size_tree),x0(size_tree),s0(3,3),r(3,3),dx6,beta,q(3),p(3),qg(3),qf(3)
     real(dp) normb,norm,x0_begin(size_tree),xr(6),normbb 
     integer i,j,k,ier,is
-    logical, optional  :: spin,stoch,rad,linear
-    logical  spin0,stoch0,rad0,doit,as_is0
+    logical, optional  :: spin,stoch,rad,linear,slim
+    logical  spin0,stoch0,rad0,doit,as_is0,slim0
     integer no1
     type(quaternion) qu
     as_is0=t(1)%usenonsymp
@@ -1088,6 +1088,8 @@ endif ! jumpnot
     stoch0=.true.
     rad0=.true.
     no1=t(1)%no
+    slim0=.false.
+    if(present(slim)) slim0=slim
     if(present(linear)) then
      if(linear) no1=1
     endif
@@ -1246,9 +1248,28 @@ elseif(.not.as_is0) then
 
 !if(jumpnot) then
     if(spin0) then  ! spin
+    if(slim0) then
+     if(xs%use_q) then
+        ! actually using quaternion if SLIM not not used
+          qf=0
+          qf(1)=t(2)%e_ij(5,5)*xs%q%x(1)+t(2)%e_ij(5,6)*xs%q%x(3)
+          qf(3)=t(2)%e_ij(6,5)*xs%q%x(1)+t(2)%e_ij(6,6)*xs%q%x(3)
+          do i=1,3
+
+            qf(1)=qf(1)+t(2)%e_ij(1,i)*x0_begin(i)
+            qf(3)=qf(3)+t(2)%e_ij(3,i)*x0_begin(i)
+
+          enddo
+          qf(2)=1
+         xs%q%x(1:3)=qf
+      else
+       write(6,*) "SLIM not permitted unless quaternion are the prime method "
+          stop
+      endif
+    else
+     if(xs%use_q) then
     call track_TREE_G_complex(T(2),x0_begin(7:15))
 
-     if(xs%use_q) then
        do k=0,3
          qu%x(k)=x0_begin(7+k)
        enddo 
@@ -1256,6 +1277,7 @@ elseif(.not.as_is0) then
        xs%q=qu*xs%q
        xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
      else
+    call track_TREE_G_complex(T(2),x0_begin(7:15))
 
     s0=0.0e0_dp
  
@@ -1282,8 +1304,9 @@ elseif(.not.as_is0) then
      enddo
     enddo 
      endif  
+    endif ! slim
     endif ! spin
-
+   
 if(as_is0) then 
  if(no1>1) then
   call track_TREE_G_complex(T(1),X(1:6))

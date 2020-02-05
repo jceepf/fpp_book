@@ -1696,8 +1696,13 @@ write(6,*) " no convergence  in  log_quaternion"
     endif
 if(check_gtpsa(i=s2)) then
  else
-  write(6,*) " check_gtpsa failed dputint0 "
-  stop 999
+    localmaster=master
+    call ass(dputint0)
+   dputint0=S1
+    master=localmaster
+       return
+!  write(6,*) " check_gtpsa failed dputint0 "
+!  stop 999
  endif
 
     localmaster=master
@@ -3243,10 +3248,12 @@ endif
    ! if(s1%i==0) call crap1("pek000  1" )  !call etall1(s1%i)
  !   k=s1%i
 !    write(6,*) r1,k
-     if(.not.check_gtpsa(j=j)) then
-        write(6,*) "error in pek000"
-         write(6,*) j
-         write(6,*)"c_%nv,c_%no",c_%nv,c_%no
+     if(.not.check_gtpsa(j=j)) then  
+         r1=0
+     !   write(6,*) "error in pek000"
+     !    write(6,*) j
+     !    write(6,*)"c_%nv,c_%no",c_%nv,c_%no
+       return
      endif
     if(old_package) then
        CALL DApek(s1%i,j,r1)
@@ -3269,8 +3276,9 @@ endif
 
 if(check_gtpsa(j=j)) then
  else
-  write(6,*) " check_gtpsa failed pok000 "
-  stop 999
+ ! write(6,*) " check_gtpsa failed pok000 "
+  return
+!  stop 999
  endif
 !    if(check_j(j)/=0) return
     ! if(old) then
@@ -4211,9 +4219,11 @@ endif
   subroutine printunitaylor(ut,iunit)
     implicit none
     type(universal_taylor) :: ut
-    integer                :: iunit
+    integer, optional               :: iunit
     integer                :: i,ii
-
+    integer inuit0
+    inuit0=6
+    if(present(iunit)) inuit0=iunit
     if (.not. associated(ut%n)) then
        write(iunit,'(A)') '    UNIVERSAL_TAYLOR IS EMPTY (NOT ASSOCIATED)'
        write(6,'(A)') '    UNIVERSAL_TAYLOR IS EMPTY (NOT ASSOCIATED)'
