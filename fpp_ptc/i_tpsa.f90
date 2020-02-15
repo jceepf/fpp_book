@@ -1998,7 +1998,7 @@ endif
  enddo
  if(k>c_%no) then
    check_gtpsa=.false.
-    write(6,*)"k>c_%no", k,c_%no
+ !   write(6,*)"k>c_%no", k,c_%no
   endif
  k=0
   do ii=c_%nv+1,size(j)
@@ -3216,7 +3216,7 @@ endif
  !   integer k
     IF(.NOT.C_%STABLE_DA) RETURN
       do i=1,j
-       r1(j)=s1(j)
+       r1(i)=s1(i)
       enddo
     !
   END SUBROUTINE pek0
