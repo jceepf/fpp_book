@@ -1262,7 +1262,7 @@ elseif(.not.as_is0) then
           enddo
           qf(2)=xs%q%x(2)
           
-         xs%q%x(1:3)=qf   !/sqrt(qf(1)**2+qf(2)**2+qf(3)**2)
+         xs%q%x(1:3)=qf/sqrt(qf(1)**2+qf(2)**2+qf(3)**2)
       else
        write(6,*) "SLIM not permitted unless quaternion is the prime method "
           stop

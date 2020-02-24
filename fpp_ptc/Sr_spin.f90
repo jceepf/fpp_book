@@ -783,7 +783,7 @@ contains
 
    do i1=1,3
    do i2=1,3
-   do j3=1,3
+   do i3=1,3
    do j1=1,6
    do j2=1,6
     ds(i1,i3,0)= ds(i1,i3,0) + ds(i1,i2,j1)*ds(i2,i3,j2)*De_ij(j1,j2)
