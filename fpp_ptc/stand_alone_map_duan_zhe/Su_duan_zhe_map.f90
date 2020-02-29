@@ -1113,7 +1113,7 @@ endif ! jumpnot
 
     xr=0.0_dp
   do i=1,6
-    xr(i)=GRNF_zhe()*t(2)%fix0(i)
+    xr(i)=GRNF_zhe()*t(2)%fix0(i)  
   enddo
     xr(1:6)=matmul(t(2)%rad,xr)
 
