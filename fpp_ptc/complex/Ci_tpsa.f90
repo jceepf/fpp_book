@@ -2378,6 +2378,7 @@ endif
     endif
 
 ds%damps=r%damps
+
 ds%d_spin=r%d_spin
 ds%b_kin=r%b_kin
 
