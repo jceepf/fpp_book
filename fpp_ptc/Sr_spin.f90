@@ -640,8 +640,10 @@ contains
 !! equation 15 of Barber in Chao's handbook
 
         theta=(denf/2.0_dp/11.0_dp)*18.0_dp !  comparing to tau_dep
-        
-        p%t_bks0=p%t_bks0+theta  
+! if(c%parent_fibre%mag%p%b0/=0)         then
+p%t_bks0=p%t_bks0+theta  
+!write(6,*) c%parent_fibre%mag%p%b0**2,b30t,denf
+!endif 
 
         do j=1,3 
           do i=1,3
@@ -795,10 +797,14 @@ contains
 !!  lambda
         lambda=denf*24.0_dp*sqrt(3.0_dp)/(1.0_dp+x(5))**2/55.0_dp
 !! equation 15 of Barber in Chao's handbook
-
+ 
         theta=(denf/2.0_dp/11.0_dp)*18.0_dp !  comparing to tau_dep
         
-        p%t_bks0=p%t_bks0+theta  
+! if(c%parent_fibre%mag%p%b0/=0)         then
+p%t_bks0=p%t_bks0+theta  
+!write(6,*) c%parent_fibre%mag%p%b0**2,b30t,denf
+!endif 
+
         do j=1,3 
           do i=1,3
             do ja=1,3 

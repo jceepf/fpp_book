@@ -2777,7 +2777,7 @@ CHARACTER(*) snake
 integer isnake,nlm
 !!!!!!  PTC stuff
 real(dp) closed_orbit(6) , x(6),cut,energy,deltap,de,rotator,n_ave(3),xij,ang(3),dlm
-real(dp)  orb(6) ,n0i(3),spin_damp(6,6),e_ij(6,6) ,circum,lm(2) 
+real(dp)  n0i(3),spin_damp(6,6),e_ij(6,6) ,circum,lm(2) 
 
 type(internal_state), target :: state,state_trackptc ,state0 
 type(probe) ray   
@@ -3004,11 +3004,10 @@ call alloc(phase)
  
   id=1
  
-orb=closed_orbit
 ray=closed_orbit
  
 rayp=ray+id
- 
+   x=rayp%x
   call propagate(rayp,state,node1=it)
  
 !!! create files "olek#" where #=1,2,3,....,n
@@ -3256,7 +3255,17 @@ fmd1='(1X,a3,I1,a3,i1,a4,2(D18.11,1x),(f10.3,1x),a2)'
     endif
     x=0.d0
 
+!do i=1,10
+!radfac=float(i)/10.d0
+ 
     CALL FIND_ORBIT_x(R,X,STATE,1.0e-8_dp,fibre1=loc)
+!write(6,format6) x
+    if(.not.check_stable) then
+      write(6,*) "Unstable in radia_new ",i
+      stop
+     endif
+!enddo
+
     if(present(FILE1)) then
         WRITE(mf1,*) " CLOSED ORBIT AT LOCATION ",loc
         write(mf1,*) x
