@@ -4451,6 +4451,7 @@ we=1
        !      IF(iteM==MAX_FIND_ITER+100) THEN
        !        write(6,*) " Unstable in find_orbit without TPSA"
        write(6,*) "Maximum number of iterations in find_orbit without TPSA"
+        check_Stable=.false.
         radfac=1
        return
        
