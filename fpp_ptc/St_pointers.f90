@@ -35,7 +35,8 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE
   private thin
   real(dp) thin
   !  BEAM STUFF
-  REAL(DP) SIG(6) ,Lbb,nbb
+  REAL(DP) SIG(6) ,Lbb
+  integer nbb
   REAL(DP) ait(6,6)
  
   logical :: nophase=.false. 
@@ -908,6 +909,12 @@ endif
         endif
        case('BEAMBEAM')
           READ(MF,*) SC,pos,patchbb
+          nbb=0 
+          lbb=0
+          if(sc<0) then
+           read(mf,*) Lbb,nbb
+            sc=-sc
+          endif
           read(mf,*) X_ref(1), X_ref(2), X_ref(3), X_ref(4)
           if(patchbb) then
            read(mf,*) x
@@ -919,7 +926,7 @@ endif
           ! s(2) local integration distance
           !          SC=MOD(SC,MY_RING%T%END%S(1))
 if(pos<1) then
-call locate_b_b(TL,sc,x_ref,patchbb,x)
+call locate_b_b(TL,sc,x_ref,patchbb,x,Lbb,nbb)
 endif
 
 if(pos>=1) then
@@ -959,53 +966,7 @@ if(pos>=1) then
           endif
 endif
   
-       case('BEAMBEAMS')
-          READ(MF,*) SC,Lbb,nbb  !,patchbb
-          read(mf,*) X_ref(1), X_ref(2), X_ref(3), X_ref(4)
-          !if(patchbb) then
-         !  read(mf,*) x
-         ! endif
-          IF(.NOT.ASSOCIATED(my_ering%T)) THEN
-             CALL MAKE_NODE_LAYOUT(my_ering)
-          ENDIF
-          ! s(1) total ld
-          ! s(2) local integration distance
-          !          SC=MOD(SC,MY_RING%T%END%S(1))
-          b_b=.false.
-          TL=>my_ering%T%START
-          DO j=1,my_ering%T%N
-             if(pos<1) then
-                IF(TL%S(1)<=SC.AND.TL%NEXT%S(1)>SC) then
-                   b_b=.true.
-                   exit
-                endif
-             else
-                if(j==pos) then
-                   b_b=.true.
-                   exit
-                endif
-             endif
-             TL=>TL%NEXT
-          ENDDO
-          if(b_b.and.tl%cas/=case0) tl=>tl%next
-          if(b_b.and.tl%cas==case0) then
-             write(6,*) " Beam-Beam position at ",tl%parent_fibre%mag%name
-             if(.not.associated(tl%BB)) call alloc(tl%BB)
-             tl%bb%fk=X_ref(1)* X_ref(4)**2
-             tl%bb%sx=X_ref(2)* X_ref(4)
-             tl%bb%sy=X_ref(3)* X_ref(4)
-             !           if(pos<1) tl%bb%ds=SC-TL%S(1)
-             write(6,*) tl%pos,tl%parent_fibre%mag%name,' created'
-             !              write(6,*) " ds = ",tl%bb%ds
-             if(patchbb) then
-              tl%bb%patch=patchbb
-              tl%bb%a=x(1:3)
-              tl%bb%d=x(4:6)              
-             endif
-          else
-             write(6,*) " Beam-Beam position not found "
-          endif
-
+ 
 
        case('TAPERING','TAPER')
            read(mf,*) i1    ! staircase for reachuing full radiation
@@ -2822,13 +2783,13 @@ write(6,*) x_ref
 
   END subroutine read_ptc_command
 
-subroutine locate_b_b(TL,sc,x_ref,patch,x)
+subroutine locate_b_b(TL,sc,x_ref,patch,x,lbb,nbb)
 implicit none
-real(dp) sc,x_ref(6)
+real(dp) sc,x_ref(6),lbb
 real(dp), optional :: x(6)
 logical, optional :: patch
 logical b_b
-integer j
+integer j,nbb
 type(integration_node),pointer :: tl
           b_b=.false.
           TL=>my_ering%T%START
@@ -2843,8 +2804,15 @@ type(integration_node),pointer :: tl
         if(b_b.and.tl%cas/=case0) tl=>tl%next
           if(b_b.and.tl%cas==case0) then
              write(6,*) " Beam-Beam position at ",tl%parent_fibre%mag%name
-             if(.not.associated(tl%BB)) call alloc(tl%BB)
-             tl%bb%fk=X_ref(1)* X_ref(4)**2
+             if(.not.associated(tl%BB)) then
+              if(nbb==0) then
+               call alloc(tl%BB)
+                nbb=1
+              else
+               call alloc(tl%BB,nbb,lbb)
+              endif
+            endif
+             tl%bb%fk=X_ref(1)* X_ref(4)**2/nbb
              tl%bb%sx=X_ref(2)* X_ref(4)
              tl%bb%sy=X_ref(3)* X_ref(4)
              !           if(pos<1) tl%bb%ds=SC-TL%S(1)

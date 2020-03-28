@@ -4,7 +4,7 @@ module beam_beam_ptc
   ! use madx_ptc_module
   implicit none
   public
-  private BBKICKP, BBKICKR,PATCH_BBR,PATCH_BBP
+  private BBKICKP, BBKICKR, BBKICKnP, BBKICKnR,PATCH_BBR,PATCH_BBP
   private ccperrfP, ccperrfr ,ccperrf
   !  private TRACK_NODE_LAYOUT_FLAG_R,TRACK_NODE_LAYOUT_FLAG_P
   private imax
@@ -16,10 +16,17 @@ module beam_beam_ptc
   END INTERFACE
 
 
+  INTERFACE BBKICKn
+     MODULE PROCEDURE BBKICKnR
+     MODULE PROCEDURE BBKICKnP
+  END INTERFACE
+
+
   INTERFACE BBKICK
      MODULE PROCEDURE BBKICKR
      MODULE PROCEDURE BBKICKP
   END INTERFACE
+
   INTERFACE PATCH_BB
      MODULE PROCEDURE PATCH_BBR
      MODULE PROCEDURE PATCH_BBP
@@ -91,8 +98,64 @@ contains
 
   END SUBROUTINE PATCH_BBP
 
+ 
+  subroutine BBKICKR(BB,X,beta0,exact,time)
+  implicit none
+  TYPE(BEAM_BEAM_NODE), INTENT(INOUT) ::BB
+  REAL(DP), INTENT(INOUT) :: X(6)
+  logical, intent(in) ::  exact,time
+  real(dp), intent(in) :: beta0
+  real(dp) b(3),lh,dh
+  integer i
 
-  subroutine BBKICKR(BB,X)
+  if(bb%n>1) then
+  b=0
+   lh=bb%s/2
+   dh=bb%s/(bb%n-1)
+   b(3)=-lh
+       CALL TRANS(B,X,BETA0,exact,TIME)
+       b(3)=dh
+       call BBKICKn(BB,X,1)
+     do i=2,bb%n
+       CALL TRANS(B,X,BETA0,exact,TIME)
+       call BBKICKn(BB,X,i)
+     enddo
+   b(3)=lh
+       CALL TRANS(B,X,BETA0,exact,TIME)
+  else
+       call BBKICKn(BB,X,1)
+  endif
+  end subroutine BBKICKR
+
+  subroutine BBKICKP(BB,X,beta0,exact,time)
+  implicit none
+  TYPE(BEAM_BEAM_NODE), INTENT(INOUT) ::BB
+  type(real_8), INTENT(INOUT) :: X(6)
+  logical, intent(in) ::  exact,time
+  real(dp), intent(in) :: beta0
+  real(dp) b(3),lh,dh
+  integer i
+
+  if(bb%n>1) then
+  b=0
+   lh=bb%s/2
+   dh=bb%s/(bb%n-1)
+   b(3)=-lh
+       CALL TRANS(B,X,BETA0,exact,TIME)
+       b(3)=dh
+       call BBKICKn(BB,X,1)
+     do i=2,bb%n
+       CALL TRANS(B,X,BETA0,exact,TIME)
+       call BBKICKn(BB,X,i)
+     enddo
+   b(3)=lh
+       CALL TRANS(B,X,BETA0,exact,TIME)
+  else
+       call BBKICKn(BB,X,1)
+  endif
+  end subroutine BBKICKP
+
+  subroutine BBKICKnR(BB,X,n)
 
     implicit none
     !----------------------------------------------------------------------*
@@ -109,11 +172,13 @@ contains
     TYPE(BEAM_BEAM_NODE), INTENT(INOUT) ::BB
     REAL(DP), INTENT(INOUT) :: X(6)
     parameter(ten3m=1.0e-3_dp,explim=150.0_dp)
-    SX=BB%SX
-    SY=BB%SY
-    XM=BB%XM
-    YM=BB%YM
-    FK=BB%FK
+    integer n
+
+    SX=BB%SX(n)
+    SY=BB%SY(n)
+    XM=BB%XM(n)
+    YM=BB%YM(n)
+    FK=BB%FK(n)
     !    write(6,*) "bb%FK = " ,bb%FK
 
     if (fk == 0.0_dp)  return
@@ -135,8 +200,8 @@ contains
           phix = 0.0_dp
           phiy = 0.0_dp
        endif
-       phix = phix - bb%bbk(1) ! subtract horizontal bb kick
-       phiy = phiy - bb%bbk(2) ! subtract vertical co
+       phix = phix - bb%bbk(n,1) ! subtract horizontal bb kick
+       phiy = phiy - bb%bbk(n,2) ! subtract vertical co
        x(2) = x(2) + phix
        x(4) = x(4) + phiy
 
@@ -163,8 +228,8 @@ contains
        endif
        x(2) = x(2) + phix * sign(1.0_dp,xs)
        x(4) = x(4) + phiy * sign(1.0_dp,ys)
-       x(2) = x(2) - BB%bbk(1)
-       x(4) = x(4) - BB%bbk(2)
+       x(2) = x(2) - BB%bbk(n,1)
+       x(4) = x(4) - BB%bbk(n,2)
 
        !---- case sigma(x) < sigma(y).
     else
@@ -195,13 +260,13 @@ contains
        x(2) = x(2) + phix * sign(1.0_dp,xs)
        x(4) = x(4) + phiy * sign(1.0_dp,ys)
 
-       x(2) = x(2) - BB%bbk(1)
-       x(4) = x(4) - BB%bbk(2)
+       x(2) = x(2) - BB%bbk(n,1)
+       x(4) = x(4) - BB%bbk(n,2)
 
     endif
     !    IF(DZ/=ZERO) CALL DRIFT_BEAM_BACK_TO_POSITION(th,DZ,B)
 
-  end subroutine BBKICKR
+  end subroutine BBKICKnR
 
   subroutine ccperrfr(xx, yy, wx, wy)
     implicit none
@@ -286,7 +351,7 @@ contains
 
 
 
-  subroutine BBKICKP(BB,X)
+  subroutine BBKICKnP(BB,X,n1)
 
     implicit none
     !----------------------------------------------------------------------*
@@ -306,19 +371,20 @@ contains
     TYPE(BEAM_BEAM_NODE), INTENT(INOUT) ::BB
     TYPE(REAL_8), INTENT(INOUT) :: X(6)
     parameter(ten3m=1.0e-3_dp,arglim=1.0e-2_dp,explim=150.0_dp)
+    integer n1
 
-    if (BB%fk == 0.0_dp)  return
+    if (BB%fk(n1) == 0.0_dp)  return
 
     CALL ALLOC(xr,yr,cbx,cby,rho2)
     CALL ALLOC(xs,ys,tk,phix,phiy)
     CALL ALLOC(xb,yb,crx,cry)
 
 
-    SX=BB%SX
-    SY=BB%SY
-    XM=BB%XM
-    YM=BB%YM
-    FK=BB%FK
+    SX=BB%SX(n)
+    SY=BB%SY(n)
+    XM=BB%XM(n)
+    YM=BB%YM(n)
+    FK=BB%FK(n)
 
     sx2 = sx*sx
     sy2 = sy*sy
@@ -358,8 +424,8 @@ contains
           phiY = Ys * fk / (2.0_dp * sx2) * YR ! fudge
        endif
 
-       phix = phix - bb%bbk(1)
-       phiy = phiy - bb%bbk(2)
+       phix = phix - bb%bbk(n1,1)
+       phiy = phiy - bb%bbk(n1,2)
 
        x(2) = x(2) + phix
        x(4) = x(4) + phiy
@@ -401,8 +467,8 @@ contains
           x(2) = x(2) + phix
           x(4) = x(4) + phiy
           !          if (.NOT.bborbit)  then
-          x(2) = x(2) - BB%bbk(1)
-          x(4) = x(4) - BB%bbk(2)
+          x(2) = x(2) - BB%bbk(n1,1)
+          x(4) = x(4) - BB%bbk(n1,2)
           !          endif
           !       enddo
 
@@ -443,8 +509,8 @@ contains
           !--- subtract closed orbit kick
           !            track(2,itrack) = track(2,itrack) - bb_kick(1,ipos)
           !            track(4,itrack) = track(4,itrack) - bb_kick(2,ipos)
-          x(2) = x(2) - BB%bbk(1)
-          x(4) = x(4) - BB%bbk(2)
+          x(2) = x(2) - BB%bbk(n1,1)
+          x(4) = x(4) - BB%bbk(n1,2)
           !          endif
           !       enddo
        endif
@@ -454,7 +520,7 @@ contains
     CALL KILL(xs,ys,tk,phix,phiy)
     CALL KILL(xb,yb,crx,cry)
 
-  end subroutine BBKICKP
+  end subroutine BBKICKnP
 
   subroutine ccperrfP(xx, yy, wx, wy)
     implicit none
