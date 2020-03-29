@@ -2605,24 +2605,22 @@ CONTAINS
     np=.false.
     if(present(n)) then
      np=.true.
-     n0=n
-     if(mod(n0,2)==0.or.n0==1) then
-       write(6,*) " the number of beam-beam kicks must be odd and greater than 1"
-     endif
+     n0=n 
     endif
     if(present(S)) then
      S0=S
     sp=.true.
     endif
-    if((np.and.(.not.sp)).or.(sp.and.(.not.np))) then
-      write(6,*) "both S and N must be present if one is present "
-       stop 
-    endif
+ !   if((np.and.(.not.sp)).or.(sp.and.(.not.np))) then
+ !     write(6,*) "both S and N must be present if one is present "
+ !      stop 
+ !   endif
     allocate(B)
-    if(n0>1) ALLOCATE(B%dS(n0-1))
-        if(present(n)) then
-           b%ds=s0/(n0-1)
-        endif
+    if(n0>1) then
+      ALLOCATE(B%dS(n0-1))
+      b%ds=s0/(n0-1)
+    endif
+ 
 
     !    ALLOCATE(B%DS)
     ALLOCATE(B%S)
