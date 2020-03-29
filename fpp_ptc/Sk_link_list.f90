@@ -2616,16 +2616,7 @@ CONTAINS
  !      stop 
  !   endif
     allocate(B)
-    if(n0>1) then
-      ALLOCATE(B%dS(n0-1))
-      b%ds=s0/(n0-1)
-    endif
- 
-
-    !    ALLOCATE(B%DS)
-    ALLOCATE(B%S)
-   
-
+      ALLOCATE(B%S(n0))
     ALLOCATE(B%n)
     ALLOCATE(B%FK(N0))
     ALLOCATE(B%SX(N0))
@@ -2657,7 +2648,6 @@ CONTAINS
     B%YM=0.0_dp
     !    B%DS=ZERO
     B%S=0.0_dp
-    B%dS=0.0_dp
     !    B%DPOS=0
     B%FK=0.0_dp
     B%N=n0
@@ -2671,14 +2661,12 @@ CONTAINS
     !    DEALLOCATE(B%DS)
     DEALLOCATE(B%FK)
     DEALLOCATE(B%S)
-    if(b%n>1) DEALLOCATE(B%ds)
     DEALLOCATE(B%N)
     DEALLOCATE(B%n)
     DEALLOCATE(B%SX)
     DEALLOCATE(B%SY)
     DEALLOCATE(B%XM)
     DEALLOCATE(B%YM)
-    DEALLOCATE(B%s)
     !    DEALLOCATE(B%DPOS)
     DEALLOCATE(B%bbk)
     !    DEALLOCATE(B%mid)

@@ -110,12 +110,12 @@ contains
 
   if(bb%n>1) then
   b=0
-   lh=bb%s/2
+   lh=(bb%s(bb%n)-bb%s(1))/2
    b(3)=-lh
        CALL TRANS(B,X,BETA0,exact,TIME)
        call BBKICKn(BB,X,1)
      do i=2,bb%n
-       b(3)=bb%ds(i-1)
+       b(3)=(bb%s(i)-bb%s(i-1))/2
 
        CALL TRANS(B,X,BETA0,exact,TIME)
        call BBKICKn(BB,X,i)
@@ -138,12 +138,12 @@ contains
 
   if(bb%n>1) then
   b=0
-   lh=bb%s/2
+   lh=(bb%s(bb%n)-bb%s(1))/2
    b(3)=-lh
        CALL TRANS(B,X,BETA0,exact,TIME)
        call BBKICKn(BB,X,1)
      do i=2,bb%n
-       b(3)=bb%ds(i-1)
+       b(3)=(bb%s(i)-bb%s(i-1))/2
 
        CALL TRANS(B,X,BETA0,exact,TIME)
        call BBKICKn(BB,X,i)
@@ -153,6 +153,7 @@ contains
   else
        call BBKICKn(BB,X,1)
   endif
+
   end subroutine BBKICKP
 
   subroutine BBKICKnR(BB,X,n)
@@ -351,7 +352,7 @@ contains
 
 
 
-  subroutine BBKICKnP(BB,X,n1)
+  subroutine BBKICKnP(BB,X,n)
 
     implicit none
     !----------------------------------------------------------------------*
@@ -367,13 +368,13 @@ contains
     TYPE(REAL_8) xs,ys,tk,phix,phiy,xb,yb,crx,cry
     TYPE(REAL_8) xr,yr,cbx,cby,rho2
     REAL(DP) sx2,sy2,sx,sy,xm,ym,fk,ten3m,explim,xn1,xn2,xs1,xs2,arglim,rk
-    REAL(DP) r,r2,n
+    REAL(DP) r,r2 ,nr
     TYPE(BEAM_BEAM_NODE), INTENT(INOUT) ::BB
     TYPE(REAL_8), INTENT(INOUT) :: X(6)
     parameter(ten3m=1.0e-3_dp,arglim=1.0e-2_dp,explim=150.0_dp)
-    integer n1
+    integer n
 
-    if (BB%fk(n1) == 0.0_dp)  return
+    if (BB%fk(n) == 0.0_dp)  return
 
     CALL ALLOC(xr,yr,cbx,cby,rho2)
     CALL ALLOC(xs,ys,tk,phix,phiy)
@@ -409,23 +410,23 @@ contains
           xr=1.0_dp
           yr=1.0_dp
 
-          n=mybig
+          nr=mybig
           do it=1,imax
              xr=-xr*tk/(it+1)
              yr=yr+xr
-             if(it>10)n=full_abs(xr)
+             if(it>10)nr=full_abs(xr)
              if(n<=puny) exit
           enddo
           if(it>imax-2) then
-             write(6,*) it,n
+             write(6,*) it,nr
              write(6,*) " Stopped in Beam-Beam "
           endif
           phix = xs * fk / (2.0_dp * sx2) * YR ! fudge
           phiY = Ys * fk / (2.0_dp * sx2) * YR ! fudge
        endif
 
-       phix = phix - bb%bbk(n1,1)
-       phiy = phiy - bb%bbk(n1,2)
+       phix = phix - bb%bbk(n,1)
+       phiy = phiy - bb%bbk(n,2)
 
        x(2) = x(2) + phix
        x(4) = x(4) + phiy
@@ -467,8 +468,8 @@ contains
           x(2) = x(2) + phix
           x(4) = x(4) + phiy
           !          if (.NOT.bborbit)  then
-          x(2) = x(2) - BB%bbk(n1,1)
-          x(4) = x(4) - BB%bbk(n1,2)
+          x(2) = x(2) - BB%bbk(n,1)
+          x(4) = x(4) - BB%bbk(n,2)
           !          endif
           !       enddo
 
@@ -509,8 +510,8 @@ contains
           !--- subtract closed orbit kick
           !            track(2,itrack) = track(2,itrack) - bb_kick(1,ipos)
           !            track(4,itrack) = track(4,itrack) - bb_kick(2,ipos)
-          x(2) = x(2) - BB%bbk(n1,1)
-          x(4) = x(4) - BB%bbk(n1,2)
+          x(2) = x(2) - BB%bbk(n,1)
+          x(4) = x(4) - BB%bbk(n,2)
           !          endif
           !       enddo
        endif

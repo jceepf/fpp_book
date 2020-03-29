@@ -2810,6 +2810,12 @@ type(integration_node),pointer :: tl
                 nbb=1
               else
                call alloc(tl%BB,nbb,lbb)
+                if(nbb>1) then
+               
+               do j=0,nbb-1
+                   tl%bb%s(j+1)= (j*lbb)/(nbb-1)-lbb/2.0_dp+tl%s(1)
+               enddo
+              endif
               endif
             endif
              tl%bb%fk=X_ref(1)* X_ref(4)**2/nbb
