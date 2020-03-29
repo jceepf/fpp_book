@@ -2597,16 +2597,17 @@ CONTAINS
     integer n0
     logical np,sp
     real(dp), optional :: S
-    real(dp) s0
+    real(dp) s0,ds
     n0=1
     s0=0
+    ds=0
     sp=.false.
     np=.false.
     if(present(n)) then
      np=.true.
      n0=n
-     if(mod(n0,2)==0) then
-       write(6,*) " the number of beam-beam kicks must be odd "
+     if(mod(n0,2)==0.or.n0==1) then
+       write(6,*) " the number of beam-beam kicks must be odd and greater than 1"
      endif
     endif
     if(present(S)) then
@@ -2617,10 +2618,16 @@ CONTAINS
       write(6,*) "both S and N must be present if one is present "
        stop 
     endif
-    
     allocate(B)
+    if(n0>1) ALLOCATE(B%dS(n0-1))
+        if(present(n)) then
+           b%ds=s0/(n0-1)
+        endif
+
     !    ALLOCATE(B%DS)
     ALLOCATE(B%S)
+   
+
     ALLOCATE(B%n)
     ALLOCATE(B%FK(N0))
     ALLOCATE(B%SX(N0))
@@ -2652,6 +2659,7 @@ CONTAINS
     B%YM=0.0_dp
     !    B%DS=ZERO
     B%S=0.0_dp
+    B%dS=0.0_dp
     !    B%DPOS=0
     B%FK=0.0_dp
     B%N=n0
@@ -2664,8 +2672,10 @@ CONTAINS
 
     !    DEALLOCATE(B%DS)
     DEALLOCATE(B%FK)
-    DEALLOCATE(B%N)
     DEALLOCATE(B%S)
+    if(b%n>1) DEALLOCATE(B%ds)
+    DEALLOCATE(B%N)
+    DEALLOCATE(B%n)
     DEALLOCATE(B%SX)
     DEALLOCATE(B%SY)
     DEALLOCATE(B%XM)

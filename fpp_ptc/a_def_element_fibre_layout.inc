@@ -476,6 +476,7 @@ END TYPE ORBIT_LATTICE
 
 TYPE BEAM_BEAM_NODE
    REAL(DP), POINTER :: S  => null()
+   REAL(DP), POINTER :: dS(:)  => null()
    integer, POINTER :: N  => null()
    REAL(DP), POINTER :: SX(:) => null(),SY(:) => null(),FK(:) => null()
    REAL(DP), POINTER :: XM(:) => null(),YM(:) => null()  ! trivial transverse displacement: not needed

@@ -105,18 +105,18 @@ contains
   REAL(DP), INTENT(INOUT) :: X(6)
   logical, intent(in) ::  exact,time
   real(dp), intent(in) :: beta0
-  real(dp) b(3),lh,dh
+  real(dp) b(3),lh 
   integer i
 
   if(bb%n>1) then
   b=0
    lh=bb%s/2
-   dh=bb%s/(bb%n-1)
    b(3)=-lh
        CALL TRANS(B,X,BETA0,exact,TIME)
-       b(3)=dh
        call BBKICKn(BB,X,1)
      do i=2,bb%n
+       b(3)=bb%ds(i-1)
+
        CALL TRANS(B,X,BETA0,exact,TIME)
        call BBKICKn(BB,X,i)
      enddo
@@ -139,12 +139,12 @@ contains
   if(bb%n>1) then
   b=0
    lh=bb%s/2
-   dh=bb%s/(bb%n-1)
    b(3)=-lh
        CALL TRANS(B,X,BETA0,exact,TIME)
-       b(3)=dh
        call BBKICKn(BB,X,1)
      do i=2,bb%n
+       b(3)=bb%ds(i-1)
+
        CALL TRANS(B,X,BETA0,exact,TIME)
        call BBKICKn(BB,X,i)
      enddo
