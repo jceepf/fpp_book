@@ -946,7 +946,10 @@ if(pos>=1) then
           !   endif
              TL=>TL%NEXT
           ENDDO
-        if(b_b.and.tl%cas/=case0) tl=>tl%next
+        do while(.true.) 
+           if(tl%cas==case0) exit
+           if(b_b.and.tl%cas/=case0) tl=>tl%next
+        enddo
           if(b_b.and.tl%cas==case0) then
              write(6,*) " Beam-Beam position at ",tl%parent_fibre%mag%name
              if(.not.associated(tl%BB)) call alloc(tl%BB)

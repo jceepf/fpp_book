@@ -115,7 +115,7 @@ contains
        CALL TRANS(B,X,BETA0,exact,TIME)
        call BBKICKn(BB,X,1)
      do i=2,bb%n
-       b(3)=(bb%s(i)-bb%s(i-1))/2
+       b(3)=(bb%s(i)-bb%s(i-1))    !/2
 
        CALL TRANS(B,X,BETA0,exact,TIME)
        call BBKICKn(BB,X,i)
@@ -143,7 +143,7 @@ contains
        CALL TRANS(B,X,BETA0,exact,TIME)
        call BBKICKn(BB,X,1)
      do i=2,bb%n
-       b(3)=(bb%s(i)-bb%s(i-1))/2
+       b(3)=(bb%s(i)-bb%s(i-1))  !/2
 
        CALL TRANS(B,X,BETA0,exact,TIME)
        call BBKICKn(BB,X,i)
@@ -245,7 +245,10 @@ contains
        ys = x(3) - ym
        xr = abs(xs) / r
        yr = abs(ys) / r
+
        call ccperrf(yr, xr, cry, crx)
+
+
        tk = (xs * xs / sx2 + ys * ys / sy2) / 2.0_dp
        if (tk .gt. explim) then
           phix = rk * cry
@@ -254,6 +257,7 @@ contains
           xb  = (sy / sx) * xr
           yb  = (sx / sy) * yr
           call ccperrf(yb, xb, cby, cbx)
+
           phix = rk * (cry - exp(-tk) * cby)
           phiy = rk * (crx - exp(-tk) * cbx)
        endif
@@ -447,10 +451,12 @@ contains
           xr = xs / r   !
           yr = ys / r   !
           
-          if( (xr.sub.'0') < 0) then
+!          if( (xr.sub.'0') < 0) then
+          if( (xr.sub.0) < 0) then    ! should same but faster perhaps
             xr = -xr
           endif
-          if( (yr.sub.'0') < 0) then
+!          if( (yr.sub.'0') < 0) then
+          if( (yr.sub.0) < 0) then   ! should same but faster perhaps
             yr = -yr
           endif
           
@@ -483,6 +489,7 @@ contains
           !       ys = x(3) - ym
           xr = xs / r !abs
           yr = ys / r !abs
+
           if( (xr.sub.'0') < 0) then
             xr = -xr
           endif
@@ -490,7 +497,9 @@ contains
             yr = -yr
           endif
 
+
           call ccperrf(yr, xr, cry, crx)
+
           !       tk = (xs * xs / sx2 + ys * ys / sy2) / two
           if (tk .gt. explim) then
              phix = rk * cry
@@ -504,8 +513,17 @@ contains
           endif
           !          track(2,itrack) = track(2,itrack) + phix * sign(one,xs)
           !          track(4,itrack) = track(4,itrack) + phiy * sign(one,ys)
-          x(2) = x(2) + phix
+          if(xs<0) then
+           x(2) = x(2) - phix
+          else
+           x(2) = x(2) + phix
+          endif
+          if(ys<0) then
+          x(4) = x(4) - phiy
+          else
           x(4) = x(4) + phiy
+          endif
+
           !          if (.NOT.bborbit)  then
           !--- subtract closed orbit kick
           !            track(2,itrack) = track(2,itrack) - bb_kick(1,ipos)
