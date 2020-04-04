@@ -2873,8 +2873,7 @@ real(dp) tune(1:3) , spin_tune
 
 TYPE(c_spinor) ISF  
      type(quaternion) q,q0
- type(q_linear)  q_c,q_ptc
-
+ 
     call get_length(r,circum)
     circum=circum/clight
  

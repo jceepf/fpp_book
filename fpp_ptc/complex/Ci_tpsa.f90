@@ -28,7 +28,7 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
   private equal,DAABSEQUAL,Dequaldacon ,equaldacon ,Iequaldacon,derive,DEQUALDACONS  !,AABSEQUAL 2002.10.17
   private pow, GETORDER,CUTORDER,getchar,GETint,GETORDERMAP  !, c_bra_v_spinmatrix
   private getdiff,getdATRA  ,mul,dmulsc,dscmul,GETintmat   !,c_spinor_spinmatrix
-  private mulsc,scmul,imulsc,iscmul,DAREADTAYLORS,c_pri_c_ray
+  private mulsc,scmul,imulsc,iscmul,DAREADTAYLORS,c_pri_c_ray,EQUALql_c_spin
   private div,ddivsc,dscdiv,divsc,scdiv,idivsc,iscdiv,equalc_ray_r6r 
   private unaryADD,add,daddsca,dscadd,addsc,scadd,iaddsc,iscadd,print_ql
   private unarySUB,subs,dsubsc,dscsub,subsc,scsub,isubsc,iscsub,c_clean_taylors
@@ -115,14 +115,24 @@ logical :: qphase=.false.,qphasedef=.false.
   integer :: ind_spin0(3,3),ind_spin(3,3),k1_spin(9),k2_spin(9)
 logical :: hypercube_integration = .true.
 
-type q_linear
+type c_linear_map
  complex(dp) mat(6,6)
  complex(dp)  q(0:3,0:6) 
-end type q_linear
+end type c_linear_map
+
+!type c_linear_map
+! complex(dp) mat(6,6)
+! type(c_linear_quaternion)
+!end type c_linear_map
+
+!type c_linear_quaternion
+! complex(dp)  x(0:3,0:6) 
+!end type c_linear_quaternion
 
 
 
-type(q_linear) q_phasor,qi_phasor
+
+type(c_linear_map) q_phasor,qi_phasor
 
   INTERFACE assignment (=)
      MODULE PROCEDURE EQUAL
@@ -130,6 +140,7 @@ type(q_linear) q_phasor,qi_phasor
      MODULE PROCEDURE EQUALq_8_c
      MODULE PROCEDURE EQUALq_c_8
      MODULE PROCEDURE EQUALql_q
+     MODULE PROCEDURE EQUALql_c_spin
      MODULE PROCEDURE EQUALq_ql
      MODULE PROCEDURE EQUALql_i
      MODULE PROCEDURE EQUALq_i
@@ -733,8 +744,8 @@ type(q_linear) q_phasor,qi_phasor
 
   INTERFACE MAKESO3
      MODULE PROCEDURE quaternion_to_matrix_in_c_damap
-     MODULE PROCEDURE q_linear_to_matrix
-     MODULE PROCEDURE q_linear_to_3_by_3_by_6
+     MODULE PROCEDURE c_linear_map_to_matrix
+     MODULE PROCEDURE c_linear_map_to_3_by_3_by_6
      MODULE PROCEDURE quaternion_to_matrix
   END INTERFACE
   ! management routines
@@ -5425,8 +5436,8 @@ endif
 
   FUNCTION POWql( S1, R2 )
     implicit none
-    TYPE (q_linear) POWql,qtemp
-    TYPE (q_linear), INTENT (IN) :: S1
+    TYPE (c_linear_map) POWql,qtemp
+    TYPE (c_linear_map), INTENT (IN) :: S1
     INTEGER, INTENT (IN) :: R2
     INTEGER I,R22
     integer localmaster
@@ -5442,7 +5453,7 @@ endif
        qtemp=qtemp*s1
     ENDDO
     IF(R2.LT.0) THEN
-       qtemp=inv_q_linear(qtemp)
+       qtemp=inv_c_linear_map(qtemp)
     ENDIF
       powql=qtemp
  
@@ -5496,7 +5507,7 @@ endif
   SUBROUTINE  EQUALql_i(S2,S1)
     implicit none
     integer ipause, mypauses
-    type (q_linear),INTENT(inOUT)::S2
+    type (c_linear_map),INTENT(inOUT)::S2
     integer,INTENT(IN)::S1
     integer i 
 
@@ -5512,7 +5523,7 @@ endif
   SUBROUTINE  EQUALql_r(S2,S1)
     implicit none
     integer ipause, mypauses
-    type (q_linear),INTENT(inOUT)::S2
+    type (c_linear_map),INTENT(inOUT)::S2
     real(dp) ,INTENT(IN)::S1
     integer i,j
 
@@ -5525,8 +5536,8 @@ endif
   function  qua_ql(S2)
     implicit none
     integer ipause, mypauses
-    type (q_linear) qua_ql
-    type (q_linear),INTENT(inOUT)::S2
+    type (c_linear_map) qua_ql
+    type (c_linear_map),INTENT(inOUT)::S2
  
       qua_ql=0
       qua_ql%q = s2%q 
@@ -5534,12 +5545,22 @@ endif
 
  end   function  qua_ql
 
-
+  SUBROUTINE  EQUALql_c_spin(S2,S1)
+    implicit none
+    integer ipause, mypauses
+    type (c_linear_map),INTENT(inOUT)::S2
+    type (c_spinor),INTENT(IN)::S1
+    type (c_quaternion) q
+    call alloc(q)    
+    q=s1
+    s2=q
+    call kill(q)
+ end   SUBROUTINE  EQUALql_c_spin
 
   SUBROUTINE  EQUALql_q(S2,S1)
     implicit none
     integer ipause, mypauses
-    type (q_linear),INTENT(inOUT)::S2
+    type (c_linear_map),INTENT(inOUT)::S2
     type (c_quaternion),INTENT(IN)::S1
     integer i,j
 
@@ -5555,7 +5576,7 @@ endif
   SUBROUTINE  EQUALql_cmap(S2,S1)
     implicit none
     integer ipause, mypauses
-    type (q_linear),INTENT(inOUT)::S2
+    type (c_linear_map),INTENT(inOUT)::S2
     type (c_damap),INTENT(IN)::S1
   
        s2%mat=s1
@@ -5566,7 +5587,7 @@ endif
   SUBROUTINE  EQUALcmap_ql(S1,S2)
     implicit none
     integer ipause, mypauses
-    type (q_linear),INTENT(in)::S2
+    type (c_linear_map),INTENT(in)::S2
     type (c_damap),INTENT(INOUT)::S1
   
        s1=s2%mat
@@ -5578,7 +5599,7 @@ endif
   SUBROUTINE  EQUALq_ql(S1,S2)
     implicit none
     integer ipause, mypauses
-    type (q_linear),INTENT(in)::S2
+    type (c_linear_map),INTENT(in)::S2
     type (c_quaternion),INTENT(INout)::S1
     integer i,j
 
@@ -5627,8 +5648,8 @@ endif
 
   SUBROUTINE  EQUALql_ql(S1,S2)
     implicit none
-    type (q_linear),INTENT(in)::S2
-    type (q_linear),INTENT(INout)::S1
+    type (c_linear_map),INTENT(in)::S2
+    type (c_linear_map),INTENT(INout)::S1
  
 
    s1%mat=s2%mat
@@ -5639,7 +5660,7 @@ endif
 
   SUBROUTINE  print_ql(S2,imaginary,quaternion_only,mf)
     implicit none
-    type (q_linear),INTENT(inOUT)::S2
+    type (c_linear_map),INTENT(inOUT)::S2
     integer, optional :: mf
     logical, optional :: imaginary,quaternion_only
     integer i,mff
@@ -5706,27 +5727,27 @@ endif
 
  end   function  inv_symplectic66
 
-  function   inv_q_linear(S1)
+  function   inv_c_linear_map(S1)
     implicit none
     integer ipause, mypauses
-    type(q_linear) inv_q_linear 
-    type(q_linear),intent (IN) :: s1 
+    type(c_linear_map) inv_c_linear_map 
+    type(c_linear_map),intent (IN) :: s1 
     integer i
-       call c_matinv(s1%mat,inv_q_linear%mat,6,6,i)
-      inv_q_linear%q(0,0:6)=s1%q(0,0:6)
-      inv_q_linear%q(1:3,0:6)=-s1%q(1:3,0:6)
+       call c_matinv(s1%mat,inv_c_linear_map%mat,6,6,i)
+      inv_c_linear_map%q(0,0:6)=s1%q(0,0:6)
+      inv_c_linear_map%q(1:3,0:6)=-s1%q(1:3,0:6)
 
-      inv_q_linear=inv_q_linear*inv_q_linear%mat
+      inv_c_linear_map=inv_c_linear_map*inv_c_linear_map%mat
 
- end   function  inv_q_linear
+ end   function  inv_c_linear_map
 
   function   mulqdiv(S1,s2)
     implicit none
     integer ipause, mypauses
-    type(q_linear) mulqdiv 
-    type(q_linear),intent (IN) :: s1 ,s2
+    type(c_linear_map) mulqdiv 
+    type(c_linear_map),intent (IN) :: s1 ,s2
 
-     mulqdiv=s1*inv_q_linear(s2)
+     mulqdiv=s1*inv_c_linear_map(s2)
 
  end   function  mulqdiv
 
@@ -5734,8 +5755,8 @@ endif
   function   mul_ql_m(S1,S2)
     implicit none
     integer ipause, mypauses
-    type (q_linear) mul_ql_m
-    type (q_linear),INTENT(IN)::S1
+    type (c_linear_map) mul_ql_m
+    type (c_linear_map),INTENT(IN)::S1
     real(dp), INTENT(IN)::S2(6,6)
     integer i,j
 
@@ -5753,8 +5774,8 @@ endif
   function   mul_ql_cm(S1,S2)
     implicit none
     integer ipause, mypauses
-    type (q_linear) mul_ql_cm
-    type (q_linear),INTENT(IN)::S1
+    type (c_linear_map) mul_ql_cm
+    type (c_linear_map),INTENT(IN)::S1
     complex(dp), INTENT(IN)::S2(6,6)
     integer i,j
 
@@ -5771,9 +5792,9 @@ endif
   function   addql(S1,S2)
     implicit none
     integer ipause, mypauses
-    type (q_linear) addql
-    type (q_linear),INTENT(IN)::S1
-    type (q_linear),INTENT(IN)::S2
+    type (c_linear_map) addql
+    type (c_linear_map),INTENT(IN)::S1
+    type (c_linear_map),INTENT(IN)::S2
     integer i,j
 
       addql%q=s1%q+s2%q
@@ -5786,12 +5807,12 @@ endif
   function   mulql(S1,S2)
     implicit none
     integer ipause, mypauses
-    type (q_linear) mulql
-    type (q_linear),INTENT(IN)::S1
-    type (q_linear),INTENT(IN)::S2
+    type (c_linear_map) mulql
+    type (c_linear_map),INTENT(IN)::S1
+    type (c_linear_map),INTENT(IN)::S2
     complex(dp) temp(0:3),q0(0:3),p0(0:3),p1(0:3,6),q1(0:3,6)
     integer i,j
-    type(q_linear) qt
+    type(c_linear_map) qt
         
  
         qt=s1
@@ -5843,9 +5864,9 @@ enddo
   function   subql(S1,S2)
     implicit none
     integer ipause, mypauses
-    type (q_linear) subql
-    type (q_linear),INTENT(IN)::S1
-    type (q_linear),INTENT(IN)::S2
+    type (c_linear_map) subql
+    type (c_linear_map),INTENT(IN)::S1
+    type (c_linear_map),INTENT(IN)::S2
     integer i,j
 
       subql%q=s1%q-s2%q
@@ -6023,10 +6044,10 @@ m%q=p%q
 
     end subroutine  quaternion_to_matrix_in_c_damap
 
-  subroutine  q_linear_to_matrix (q_lin,m)
+  subroutine  c_linear_map_to_matrix (q_lin,m)
     implicit none
     TYPE(c_spinmatrix), INTENT(INOUT) :: m
-    TYPE(q_linear), INTENT(IN) :: q_lin
+    TYPE(c_linear_map), INTENT(IN) :: q_lin
     type(c_quaternion) s,sf
     type(c_damap) p
     integer i,j
@@ -6047,19 +6068,19 @@ m%q=p%q
      call kill(sf)
      call kill(p)
 
-    end subroutine  q_linear_to_matrix 
+    end subroutine  c_linear_map_to_matrix 
 
-  subroutine  q_linear_to_3_by_3_by_6 (q_lin,m)
+  subroutine  c_linear_map_to_3_by_3_by_6 (q_lin,m)
     implicit none
     real(dp), INTENT(INOUT) :: m(3,3,0:6)
-    TYPE(q_linear), INTENT(IN) :: q_lin
-    type(q_linear) sf,q,s
+    TYPE(c_linear_map), INTENT(IN) :: q_lin
+    type(c_linear_map) sf,q,s
     integer i,j
 
-!type q_linear
+!type c_linear_map
 ! complex(dp) mat(6,6)
 ! complex(dp)  q(0:3,0:6) 
-!end type q_linear
+!end type c_linear_map
 
      q=1
      q%q=q_lin%q
@@ -6077,7 +6098,7 @@ m%q=p%q
     enddo
  
 
-    end subroutine  q_linear_to_3_by_3_by_6 
+    end subroutine  c_linear_map_to_3_by_3_by_6 
 
   subroutine  quaternion_to_matrix(q_lin,m)
     implicit none
@@ -8318,7 +8339,7 @@ end   SUBROUTINE  c_clean_yu_w
     integer, optional :: np1,ndpt1,AC_RF
     logical(lp), optional :: ptc  !spin,
     integer ndpt_ptc,i
-
+    if(use_quaternion) spin_def_tune=-1
    ! order_gofix=no1
      if(associated(dz_c)) then
       call kill(dz_c)
@@ -16288,7 +16309,7 @@ end subroutine extract_a2
      real(dp) si0,co0
     type(c_taylor) t
     type(c_quaternion) qnr
-    type(q_linear) q,qr
+    type(c_linear_map) q,qr
     integer i
     integer  nmax
     real(dp) eps,norm1,norm2,d,dt,aq
@@ -17464,14 +17485,14 @@ enddo
 end subroutine transform_c_yu_w
 
 !!!!!!!!!!!!!!!!!!   End of Yu Li Hua  factorization   !!!!!!!!!!!!!!!!!! 
-subroutine c_fast_canonise(u,u_c,phase,damping,q_c,q_ptc,q_rot,spin_tune ,dospin)
+subroutine c_fast_canonise(u,u_c,phase,damping,q_cs,q_as,q_orb,q_rot,spin_tune ,dospin)
 implicit none
 type(c_damap), intent(inout) ::  u,u_c
 real(dp), optional, intent(inout) :: phase(:),damping(:)
 real(dp), optional, intent(inout) :: spin_tune(2)
-type(q_linear), optional :: q_c,q_ptc,q_rot   ! q_c is properly factorised
+type(c_linear_map), optional :: q_cs,q_as,q_rot,q_orb   ! q_c is properly factorised
 real(dp) b(6,6),b0(6,6),ri(6,6),ang,damp(3),t,cphi,sphi,s(6,6),aq,daq
-type(q_linear) q ,qr,qc,qrot
+type(c_linear_map) q ,qr,qc,qrot
 complex(dp) cri(6,6)
 integer i
 logical dos
@@ -17596,10 +17617,10 @@ endif
 cri=ri
 qc=qc*cri
  u_c%q=qc 
-if(present(q_c) ) then 
-q_c=1 
+if(present(q_as) ) then 
+q_as=1 
 cri=inv_symplectic66(s)
-q_c=qc*cri
+q_as=qc*cri
 endif
 
 endif
@@ -17608,8 +17629,12 @@ endif
   spin_tune(2)=spin_tune(2)+daq/pi   ! changed 2018.11.01
  endif
 
-if(present(q_ptc) ) then 
-q_ptc=u_c 
+if(present(q_cs) ) then 
+q_cs=u_c 
+endif
+if(present(q_orb)) then
+q_orb=u_c 
+q_orb=1.0_dp
 endif
 if(present(q_rot) ) then 
  qrot%q=qr%q 
