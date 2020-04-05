@@ -114,21 +114,24 @@ logical :: qphase=.false.,qphasedef=.false.
   integer :: size_tree=15
   integer :: ind_spin0(3,3),ind_spin(3,3),k1_spin(9),k2_spin(9)
 logical :: hypercube_integration = .true.
+!private ip_mat,jp_mat,jt_mat
+real(dp) ip_mat(3,6,6),jp_mat(3,6,6),jt_mat(6,6)
+character(24)  formatlf(6)
+!-----------------------------------
+
+
 
 type c_linear_map
  complex(dp) mat(6,6)
  complex(dp)  q(0:3,0:6) 
 end type c_linear_map
 
-!type c_linear_map
-! complex(dp) mat(6,6)
-! type(c_linear_quaternion)
-!end type c_linear_map
-
-!type c_linear_quaternion
-! complex(dp)  x(0:3,0:6) 
-!end type c_linear_quaternion
-
+type c_lattice_function
+ real(dp) E(3,6,6),K(3,6,6),B(3,6,6)
+ real(dp) H(3,6,6)
+ real(dp)  S(1:3,1:3,0:6)
+ logical symplectic 
+end type c_lattice_function
 
 
 
@@ -149,6 +152,7 @@ type(c_linear_map) q_phasor,qi_phasor
      MODULE PROCEDURE EQUALq_c_r
      MODULE PROCEDURE EQUALq_r_c
      MODULE PROCEDURE EQUALql_ql
+     MODULE PROCEDURE EQUAL_c_l_f  ! c_lattice_function = true or false (symplectic)
      MODULE PROCEDURE EQUAL_complex_quaternion_c_quaternion
      MODULE PROCEDURE EQUAL_c_quaternion_complex_quaternion
      MODULE PROCEDURE EQUALql_cmap
@@ -5545,6 +5549,71 @@ endif
 
  end   function  qua_ql
 
+  SUBROUTINE  EQUAL_c_l_f(S2,S1)
+    implicit none
+    type(c_lattice_function), intent(out) :: s2
+    logical, intent(in) :: s1
+    s2%e=0
+    s2%k=0
+    s2%h=0
+    s2%b=0
+    s2%s=0
+    s2%symplectic= s1
+ end SUBROUTINE  EQUAL_c_l_f
+
+  SUBROUTINE  compute_lattice_functions(m,f)
+    implicit none
+    type(c_lattice_function) f
+    type(c_linear_map) m
+    type(c_linear_map) mi
+    type(c_linear_map) q
+    integer i,j
+
+    if(f%symplectic) then
+      mi=inv_c_linear_map_symplectic(m)
+    else
+      mi=m**(-1)
+    endif
+
+    f%h=0
+    f%b=0
+    f%k=0
+    f%e=0
+    f%s=0
+ 
+     do i = 1,3
+      f%B(i,:,:)=matmul(matmul(m%mat,jp_mat(i,:,:)),mi%mat)
+     enddo
+
+
+      do i = 1,3
+      f%K(i,:,:)= -matmul(jt_mat,f%B(i,:,:))
+     enddo
+     do i = 1,3
+      f%E(i,:,:)= -matmul(f%B(i,:,:),jt_mat)
+     enddo
+     do i = 1,3
+      f%H(i,:,:)=matmul(matmul(m%mat,ip_mat(i,:,:)),mi%mat)
+     enddo
+
+
+     do i = 1,3
+       q=i
+       q=m*q*mi
+       do j=1,3
+        f%S(i,j,0:6)=q%q(j,0:6)
+       enddo
+     enddo
+
+  end SUBROUTINE  compute_lattice_functions
+
+!type c_lattice_function
+! real(dp) E(3,6,6),K(3,6,6),B(3,6,6)
+! real(dp) H(3,6,6)
+! real(dp)  S(1:3,0:6)
+! logical symplectic 
+!end type c_lattice_function
+
   SUBROUTINE  EQUALql_c_spin(S2,S1)
     implicit none
     integer ipause, mypauses
@@ -5740,6 +5809,22 @@ endif
       inv_c_linear_map=inv_c_linear_map*inv_c_linear_map%mat
 
  end   function  inv_c_linear_map
+
+  function   inv_c_linear_map_symplectic(S1)
+    implicit none
+    integer ipause, mypauses
+    type(c_linear_map) inv_c_linear_map_symplectic 
+    type(c_linear_map),intent (IN) :: s1 
+    real(dp) matr(6,6)
+    integer i
+    matr=s1%mat 
+       inv_c_linear_map_symplectic%mat=  inv_symplectic66(matr) 
+      inv_c_linear_map_symplectic%q(0,0:6)=s1%q(0,0:6)
+      inv_c_linear_map_symplectic%q(1:3,0:6)=-s1%q(1:3,0:6)
+
+      inv_c_linear_map_symplectic=inv_c_linear_map_symplectic*inv_c_linear_map_symplectic%mat
+
+ end   function  inv_c_linear_map_symplectic
 
   function   mulqdiv(S1,s2)
     implicit none
@@ -8338,8 +8423,26 @@ end   SUBROUTINE  c_clean_yu_w
     integer, intent(in) :: NO1,NV1
     integer, optional :: np1,ndpt1,AC_RF
     logical(lp), optional :: ptc  !spin,
-    integer ndpt_ptc,i
+    integer ndpt_ptc,i 
     if(use_quaternion) spin_def_tune=-1
+ 
+   ip_mat=0; jp_mat=0; jt_mat=0;
+   
+   do i=1,3
+    ip_mat(i,2*i-1,2*i-1)=1
+    ip_mat(i,2*i,2*i)=1
+    jp_mat(i,2*i-1,2*i)=-1
+    jp_mat(i,2*i,2*i-1)=1
+    jt_mat(2*i-1,2*i)=-1
+    jt_mat(2*i,2*i-1)=1
+   enddo
+formatlf(1)="(6(1x,g23.16,1x))       "
+formatlf(2)="(1(25x),5(1x,g23.16,1x))"
+formatlf(3)="(2(25x),4(1x,g23.16,1x))"
+formatlf(4)="(3(25x),4(1x,g23.16,1x))"
+formatlf(5)="(4(25x),2(1x,g23.16,1x))"
+formatlf(6)="(5(25x),1(1x,g23.16,1x))"
+
    ! order_gofix=no1
      if(associated(dz_c)) then
       call kill(dz_c)
@@ -17646,6 +17749,8 @@ if(present(q_rot) ) then
 endif
  
 end subroutine c_fast_canonise
+
+
 
 subroutine extract_a0_mat(a,a0)
 !#internal: manipulation
