@@ -17622,7 +17622,7 @@ b=u
 if(ndpt/=0)  call extract_a0_mat(b,b0)
 
 s=matmul(matmul(b,s),transpose(b))
-
+damp=0
 do i=1,ndt
     damp(i)=sqrt(abs(s(2*i-1,2*i)))
 enddo
@@ -17691,18 +17691,22 @@ if(use_quaternion.and.dos) then
 q=1
  q=u%q
 !  make sure isf not below y plane
-       aq=q%q(0,0)**2-(q%q(1,0)**2+q%q(2,0)**2+q%q(3,0)**2)
-if(aq<0) then
-          qr=1   !  = i 
-          qr=0.0_dp
-          qr%q(1,0)=1.0_dp
-          q=q*qr
-endif
+    !   aq=q%q(0,0)**2-(q%q(1,0)**2+q%q(2,0)**2+q%q(3,0)**2)
+      ! aq=real(q%q(2,0))   
+ 
+!if(aq<0) then
+!          qr=1   !  = i 
+!          qr=0.0_dp
+!          qr%q(1,0)=1.0_dp
+!          q=q*qr
+!endif
+ 
  qr=1
  qr=0.0_dp
 
+ 
  aq=-atan2(real(q%q(2,0)),real(q%q(0,0)))
-
+ 
  qr%q(0,0)= cos(aq)
  qr%q(2,0)= sin(aq)
 
@@ -17714,15 +17718,23 @@ endif
   qr%q(2,ndpt)= daq*qr%q(0,0)
  endif
  qc=q*qr
+ 
  if(present(spin_tune)) then
   spin_tune(1)=spin_tune(1)+aq/pi   ! changed 2018.11.01
  endif
 cri=ri
 qc=qc*cri
  u_c%q=qc 
+
+
 if(present(q_as) ) then 
 q_as=1 
-cri=inv_symplectic66(s)
+ if(abs(damp(1))+abs(damp(2))+abs(damp(3))<1.d-10) then
+   cri=inv_symplectic66(s)
+ else
+   call matinv(s,s,6,6,i)
+   cri=s
+ endif
 q_as=qc*cri
 endif
 
