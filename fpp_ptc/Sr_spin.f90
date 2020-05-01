@@ -49,6 +49,7 @@ module ptc_spin
    ! oleksii 
   real(dp) n_oleksii(3)
   real(dp) :: t_ns_oleksii=0,t_nb_oleksii=0,t_bks_approx=0, i_bks=0 ,theta_oleksii=0
+  integer :: print_oleksii =0
 type(work) w_bks
 
   INTERFACE assignment (=)
@@ -546,9 +547,9 @@ contains
     type(quaternion) sq,sf
     
 
-
+    s=0.0_dp
     do i=1,3
-     s=0.0_dp
+     sq=0.0_dp
      sq%x(i)=1.0_dp
      sf=q*sq*q**(-1)
      do j=1,3
@@ -626,8 +627,10 @@ contains
 ! new eq 15
        if(k%spin.and.k%envelope) then
        if(p%use_q) then
-         q=p%q   
+         q=p%q 
+    
          call makeso3(q,s)
+
        else
         DO I=1,3
            DO J=1,3
@@ -669,7 +672,8 @@ dspin=matmul(s,n_oleksii)
                  x3=1
                else
                  x3=1.d0/sqrt(x3)
-            endif            
+            endif   
+  
     t_nb_oleksii=t_nb_oleksii+ (bb(1)*dspin(1)+bb(2)*dspin(2)+bb(3)*dspin(3)) *b30*FAC*DS*x3
 
  
@@ -792,8 +796,12 @@ dspin=matmul(s,n_oleksii)
        call kill(xpmap)
        if(k%spin.and.k%envelope) then
         if(p%use_q) then
-         q=p%q   
+  
+         q=p%q 
+
+  
          call makeso3(q,s)
+
        else
         DO I=1,3
            DO J=1,3
@@ -831,7 +839,7 @@ dspin=matmul(s,n_oleksii)
             endif            
     t_nb_oleksii=t_nb_oleksii+ (bb(1)*dspin(1)+bb(2)*dspin(2)+bb(3)*dspin(3)) *b30*FAC*DS*x3
 
- 
+
 
         call crossp(ee,bb,a)
         call crossp(ee,a,dspin)
