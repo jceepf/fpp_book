@@ -11173,6 +11173,7 @@ integer :: kkk=0
     real(dp),INTENT(IN):: YL,DL
     TYPE(TEAPOT),INTENT(IN):: EL
     real(dp) XN(6),PZ,PZS,DPX,PT
+    real(dp) dpxn,xt1,xt2,xi,zeta,v,w
     real(dp)  A,b,R
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     real(dp) dir
@@ -11191,7 +11192,26 @@ integer :: kkk=0
        PT=ROOT(1.0_dp+2.0_dp*x(5)/b+X(5)**2-X(4)**2)
        PZS=ROOT(1.0_dp+2.0_dp*x(5)/b+X(5)**2-XN(2)**2-X(4)**2)
        XN(1)=PZS/DIR/EL%BN(1)-DPX-R
-       XN(3)=(A+ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/DIR/EL%BN(1)
+     !  XN(1)=PZS/DIR/EL%BN(1)-DPX-R
+       dpxn=(-x(2)*SIN(a)+(pz-(DIR*EL%BN(1))*(R+x(1)))*COS(a))
+
+       xt1=(-(DIR*EL%BN(1))*x(1)**2)+pz*(2*x(1)+2*r)-2*(DIR*EL%BN(1))*r*x(1)-(DIR*EL%BN(1))*r**2
+       xt2=dpxn+pzs
+       xn(1)=xt1/xt2-r
+
+xi=x(2)/pt
+zeta=xn(2)/pt
+w=sin(a)*ROOT(1.d0-xi**2)+cos(a)*xi
+v=sin(a)*xi-cos(a)*ROOT(1.d0-xi**2)
+xt2=w*ROOT(1.d0-zeta**2)-v*zeta
+
+   !    XN(3)=(A+ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/DIR/EL%BN(1)
+xt1=(sin(2*a)*x(2)+sin(a)**2*(2*pz-(DIR*EL%BN(1))*(x(1)+r)))*(x(1)+r)*(DIR*EL%BN(1))/pt**2
+ xn(3)=asin(xt1/xt2)/(DIR*EL%BN(1))
+
+
+
+ !      XN(3)=(A+ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/DIR/EL%BN(1)
        XN(6)=X(6)+XN(3)*(1.0_dp/b+x(5))
        XN(6)=XN(6)+(k%TOTALPATH-1)*DL/EL%P%BETA0
        XN(3)=X(3)+X(4)*XN(3)
@@ -11201,9 +11221,23 @@ integer :: kkk=0
        DPX=(-X(2)*SIN(A)+(PZ-DIR*EL%BN(1)*(R+X(1)))*COS(A))/DIR/EL%BN(1)  !DPX*R/B1
        PT=ROOT((1.0_dp+X(5))**2-X(4)**2)
        PZS=ROOT((1.0_dp+X(5))**2-XN(2)**2-X(4)**2)
-       XN(1)=PZS/DIR/EL%BN(1)-DPX-R
 
-       XN(3)=(A+ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/DIR/EL%BN(1)
+     !  XN(1)=PZS/DIR/EL%BN(1)-DPX-R
+       dpxn=(-x(2)*SIN(a)+(pz-(DIR*EL%BN(1))*(R+x(1)))*COS(a))
+
+       xt1=(-(DIR*EL%BN(1))*x(1)**2)+pz*(2*x(1)+2*r)-2*(DIR*EL%BN(1))*r*x(1)-(DIR*EL%BN(1))*r**2
+       xt2=dpxn+pzs
+       xn(1)=xt1/xt2-r
+
+xi=x(2)/pt
+zeta=xn(2)/pt
+w=sin(a)*ROOT(1.d0-xi**2)+cos(a)*xi
+v=sin(a)*xi-cos(a)*ROOT(1.d0-xi**2)
+xt2=w*ROOT(1.d0-zeta**2)-v*zeta
+
+   !    XN(3)=(A+ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/DIR/EL%BN(1)
+xt1=(sin(2*a)*x(2)+sin(a)**2*(2*pz-(DIR*EL%BN(1))*(x(1)+r)))*(x(1)+r)*(DIR*EL%BN(1))/pt**2
+ xn(3)=asin(xt1/xt2)/(DIR*EL%BN(1))
 
        XN(6)=X(6)+XN(3)*(1.0_dp+X(5))
        XN(6)=XN(6)+(k%TOTALPATH-1)*DL
@@ -11226,10 +11260,13 @@ integer :: kkk=0
     real(dp),INTENT(IN):: DL
     TYPE(TEAPOTP),INTENT(IN):: EL
     TYPE(REAL_8) XN(6),PZ,PT,A,PZS,DPX
+    TYPE(REAL_8)  dpxn,xt1,xt2,xi,zeta,v,w
+
     real(dp)  b,R
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     real(dp) dir
 
+    call alloc(dpxn,xt1,xt2,xi,zeta,v,w)
     call PRTP("SSEC:0", X)
 
     DIR=EL%P%DIR*EL%P%CHARGE
@@ -11245,16 +11282,28 @@ integer :: kkk=0
        DPX=(-X(2)*SIN(A)+(PZ-DIR*EL%BN(1)*(R+X(1)))*COS(A))/DIR/EL%BN(1)  !DPX*R/B1
        PT=SQRT(1.0_dp+2.0_dp*x(5)/b+X(5)**2-X(4)**2)
        PZS=SQRT(1.0_dp+2.0_dp*x(5)/b+X(5)**2-XN(2)**2-X(4)**2)
+      ! XN(1)=PZS/DIR/EL%BN(1)-DPX-R
+       dpxn=(-x(2)*SIN(a)+(pz-(DIR*EL%BN(1))*(R+x(1)))*COS(a))
 
-!       write (*,('(4(A,E25.16))')) "@@ . beta0= ", B, " Rho= ", R
-!       call PRTP1("PZS", PZS)
-!       call PRTP1("DPX", DPX)
-!       call PRTP1("B1" , EL%BN(1))
-!       call PRTP1("A"  , A)
+       xt1=(-(DIR*EL%BN(1))*x(1)**2)+pz*(2*x(1)+2*r)-2*(DIR*EL%BN(1))*r*x(1)-(DIR*EL%BN(1))*r**2
+       xt2=dpxn+pzs
+       xn(1)=xt1/xt2-r
 
-       XN(1)=PZS/DIR/EL%BN(1)-DPX-R
+xi=x(2)/pt
+zeta=xn(2)/pt
+w=sin(a)*sqrt(1.d0-xi**2)+cos(a)*xi
+v=sin(a)*xi-cos(a)*sqrt(1.d0-xi**2)
+xt2=w*sqrt(1.d0-zeta**2)-v*zeta
 
-       XN(3)=(A+ASIN(X(2)/PT)-ASIN(XN(2)/PT))/DIR/EL%BN(1)
+xt1=(sin(2*a)*x(2)+sin(a)**2*(2*pz-(DIR*EL%BN(1))*(x(1)+r)))*(x(1)+r)*(DIR*EL%BN(1))/pt**2
+ xn(3)=asin(xt1/xt2)/(DIR*EL%BN(1))
+
+
+
+
+!       XN(1)=PZS/DIR/EL%BN(1)-DPX-R
+
+!       XN(3)=(A+ASIN(X(2)/PT)-ASIN(XN(2)/PT))/DIR/EL%BN(1)
 
        XN(6)=X(6)+XN(3)*(1.0_dp/b+x(5))
        XN(6)=XN(6)+(k%TOTALPATH-1)*DL/EL%P%BETA0
@@ -11266,9 +11315,24 @@ integer :: kkk=0
        DPX=(-X(2)*SIN(A)+(PZ-DIR*EL%BN(1)*(R+X(1)))*COS(A))/DIR/EL%BN(1)  !DPX*R/B1
        PT=SQRT((1.0_dp+X(5))**2-X(4)**2)
        PZS=SQRT((1.0_dp+X(5))**2-XN(2)**2-X(4)**2)
-       XN(1)=PZS/DIR/EL%BN(1)-DPX-R
+      ! XN(1)=PZS/DIR/EL%BN(1)-DPX-R
+       dpxn=(-x(2)*SIN(a)+(pz-(DIR*EL%BN(1))*(R+x(1)))*COS(a))
 
-       XN(3)=(A+ASIN(X(2)/PT)-ASIN(XN(2)/PT))/DIR/EL%BN(1)
+       xt1=(-(DIR*EL%BN(1))*x(1)**2)+pz*(2*x(1)+2*r)-2*(DIR*EL%BN(1))*r*x(1)-(DIR*EL%BN(1))*r**2
+       xt2=dpxn+pzs
+       xn(1)=xt1/xt2-r
+
+xi=x(2)/pt
+zeta=xn(2)/pt
+w=sin(a)*sqrt(1.d0-xi**2)+cos(a)*xi
+v=sin(a)*xi-cos(a)*sqrt(1.d0-xi**2)
+xt2=w*sqrt(1.d0-zeta**2)-v*zeta
+
+!       XN(3)=(A+ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/DIR/EL%BN(1)
+xt1=(sin(2*a)*x(2)+sin(a)**2*(2*pz-(DIR*EL%BN(1))*(x(1)+r)))*(x(1)+r)*(DIR*EL%BN(1))/pt**2
+ xn(3)=asin(xt1/xt2)/(DIR*EL%BN(1))
+
+
 
        XN(6)=X(6)+XN(3)*(1.0_dp+X(5))
        XN(6)=XN(6)+(k%TOTALPATH-1)*DL
@@ -11282,6 +11346,7 @@ integer :: kkk=0
 
     CALL KILL( XN,6)
     CALL KILL( PZ,PT,A,PZS,DPX)
+    call KILL(dpxn,xt1,xt2,xi,zeta,v,w)
 
     call PRTP("SSEC:1", X)
 
@@ -13479,6 +13544,8 @@ integer :: kkk=0
     real(dp)  b
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     real(dp) dir
+    real(dp) xi,zeta,w,v,xt1,xt2
+    
 
     DIR=EL%P%DIR*EL%P%CHARGE
 
@@ -13488,10 +13555,17 @@ integer :: kkk=0
        XN(2)=X(2)-YL*DIR*EL%BN(1)
        PT=ROOT(1.0_dp+2.0_dp*x(5)/b+X(5)**2-X(4)**2)
        PZS=ROOT(1.0_dp+2.0_dp*x(5)/b+X(5)**2-XN(2)**2-X(4)**2)
-       XN(1)=X(1)+(PZS-PZ)/DIR/EL%BN(1)
+ !       XN(1)=X(1)+(PZS-PZ)/DIR/EL%BN(1)
+        xn(1)=x(1)+(2*YL*x(2)-YL**2*DIR*EL%BN(1))/(PZS+pz)
+!       XN(3)=(ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/DIR/EL%BN(1)
+xi=x(2)/pt
+zeta=xn(2)/pt
+w= xi
+v=-root(1.d0-xi**2)
 
-       XN(3)=(ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/DIR/EL%BN(1)
-
+xt1=(2*YL*x(2)-YL**2*DIR*EL%BN(1))*DIR*EL%BN(1)/pt**2
+xt2= w*root(1-zeta**2)-v*zeta
+xn(3)= asin(xt1/xt2)/DIR/EL%BN(1)
        XN(6)=X(6)+XN(3)*(1.0_dp/b+x(5))
        XN(6)=XN(6)+(k%TOTALPATH-1)*DL/b
 
@@ -13501,10 +13575,18 @@ integer :: kkk=0
        XN(2)=X(2)-YL*DIR*EL%BN(1)
        PT=ROOT((1.0_dp+X(5))**2-X(4)**2)
        PZS=ROOT((1.0_dp+X(5))**2-XN(2)**2-X(4)**2)
-       XN(1)=X(1)+(PZS-PZ)/DIR/EL%BN(1)
+!       XN(1)=X(1)+(PZS-PZ)/DIR/EL%BN(1)
+        xn(1)=x(1)+(2*YL*x(2)-YL**2*DIR*EL%BN(1))/(PZS+pz)
 
-       XN(3)=(ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/DIR/EL%BN(1)
+!       XN(3)=(ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/DIR/EL%BN(1)
+xi=x(2)/pt
+zeta=xn(2)/pt
+w= xi
+v=-root(1.d0-xi**2)
 
+xt1=(2*YL*x(2)-YL**2*DIR*EL%BN(1))*DIR*EL%BN(1)/pt**2
+xt2= w*root(1-zeta**2)-v*zeta
+xn(3)= asin(xt1/xt2)/DIR/EL%BN(1)
        XN(6)=X(6)+XN(3)*(1.0_dp+X(5))
        XN(6)=XN(6)+(k%TOTALPATH-1)*DL
 
@@ -13528,6 +13610,7 @@ integer :: kkk=0
     real(dp)  b
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     real(dp) dir
+    TYPE(REAL_8) xi,zeta,w,v,xt1,xt2
 
     call PRTP("SPAR:0", X)
 
@@ -13535,17 +13618,24 @@ integer :: kkk=0
 
     CALL ALLOC(XN,6)
     CALL ALLOC(PZ,PZS,PT)
-
+    CALL ALLOC(xi,zeta,w,v,xt1,xt2)
     if(k%TIME) then
        B=EL%P%BETA0
        PZ=SQRT(1.0_dp+2.0_dp*x(5)/b+X(5)**2-X(2)**2-X(4)**2)
        XN(2)=X(2)-YL*DIR*EL%BN(1)
        PT=SQRT(1.0_dp+2.0_dp*x(5)/b+X(5)**2-X(4)**2)
        PZS=SQRT(1.0_dp+2.0_dp*x(5)/b+X(5)**2-XN(2)**2-X(4)**2)
-       XN(1)=X(1)+(PZS-PZ)/DIR/EL%BN(1)
+!       XN(1)=X(1)+(PZS-PZ)/DIR/EL%BN(1)
+        xn(1)=x(1)+(2*YL*x(2)-YL**2*DIR*EL%BN(1))/(PZS+pz)
+!       XN(3)=(ASIN(X(2)/PT)-ASIN(XN(2)/PT))/DIR/EL%BN(1)
+xi=x(2)/pt
+zeta=xn(2)/pt
+w= xi
+v=-sqrt(1.d0-xi**2)
 
-       XN(3)=(ASIN(X(2)/PT)-ASIN(XN(2)/PT))/DIR/EL%BN(1)
-
+xt1=(2*YL*x(2)-YL**2*DIR*EL%BN(1))*DIR*EL%BN(1)/pt**2
+xt2= w*sqrt(1-zeta**2)-v*zeta
+xn(3)= asin(xt1/xt2)/DIR/EL%BN(1)
        XN(6)=X(6)+XN(3)*(1.0_dp/b+x(5))
        XN(6)=XN(6)+(k%TOTALPATH-1)*DL/b
 
@@ -13555,10 +13645,18 @@ integer :: kkk=0
        XN(2)=X(2)-YL*DIR*EL%BN(1)
        PT=SQRT((1.0_dp+X(5))**2-X(4)**2)
        PZS=SQRT((1.0_dp+X(5))**2-XN(2)**2-X(4)**2)
-       XN(1)=X(1)+(PZS-PZ)/DIR/EL%BN(1)
+!       XN(1)=X(1)+(PZS-PZ)/DIR/EL%BN(1)
+        xn(1)=x(1)+(2*YL*x(2)-YL**2*DIR*EL%BN(1))/(PZS+pz)
 
-       XN(3)=(ASIN(X(2)/PT)-ASIN(XN(2)/PT))/DIR/EL%BN(1)
+   !      XN(3)=(ASIN(X(2)/PT)-ASIN(XN(2)/PT))/DIR/EL%BN(1)
+ xi=x(2)/pt
+zeta=xn(2)/pt
+w= xi
+v=-SQRT(1.d0-xi**2)
 
+xt1=(2*YL*x(2)-YL**2*DIR*EL%BN(1))*DIR*EL%BN(1)/pt**2
+xt2= w*SQRT(1-zeta**2)-v*zeta
+xn(3)= asin(xt1/xt2)/DIR/EL%BN(1)
        XN(6)=X(6)+XN(3)*(1.0_dp+X(5))
        XN(6)=XN(6)+(k%TOTALPATH-1)*DL
 
@@ -13572,6 +13670,7 @@ integer :: kkk=0
 
     CALL KILL(XN,6)
     CALL KILL(PZ,PZS,PT)
+    CALL kill(xi,zeta,w,v,xt1,xt2)
 
     call PRTP("SPAR:1", X)
 
@@ -13608,6 +13707,7 @@ integer :: kkk=0
     integer TOTALPATH
     logical(lp) time,EXACT
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+ real(dp) xi,zeta,w,v,xt1,xt2
 
     EXACT=.TRUE.
 
@@ -13654,12 +13754,19 @@ integer :: kkk=0
 
           XN(1)=X(1)*COS(A)+(X(1)*X(2)*SIN(2.0_dp*A)+SIN(A)**2*(2.0_dp*X(1)*PZ-B1*X(1)**2) )&
                & /(PZS+PZ*COS(A)-X(2)*SIN(A))
-          XN(3)=(A+ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/B1
-
+  !        XN(3)=(A+ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/B1
+xi=x(2)/pt
+zeta=xn(2)/pt
+w=sin(a)*sqrt(1.d0-xi**2)+cos(a)*xi
+v=sin(a)*xi-cos(a)*sqrt(1.d0-xi**2)
+xt1=w*sqrt(1.d0-zeta**2)-v*zeta
+xt2=(sin(2*a)*x(2)+sin(a)**2*(2*pz-b1*x(1)))*x(1)*b1/pt**2
+      xn(3)=arcsin(xt2/xt1)/b1
           XN(6)=X(6)+XN(3)*(1.0_dp/b+x(5))
 
           XN(3)=X(3)+X(4)*XN(3)
        else
+ 
           PZ=ROOT((1.0_dp+X(5))**2-X(2)**2-X(4)**2)
           XN(2)=X(2)*COS(A)+(PZ-B1*X(1))*SIN(A)
           PT=ROOT((1.0_dp+X(5))**2-X(4)**2)
@@ -13667,7 +13774,15 @@ integer :: kkk=0
           XN(1)=X(1)*COS(A)+(X(1)*X(2)*SIN(2.0_dp*A)+SIN(A)**2*(2.0_dp*X(1)*PZ-B1*X(1)**2))&
                & /(PZS+PZ*COS(A)-X(2)*SIN(A))
 
-          XN(3)=(A+ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/B1
+   !       XN(3)=(A+ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/B1
+
+xi=x(2)/pt
+zeta=xn(2)/pt
+w=sin(a)*sqrt(1.d0-xi**2)+cos(a)*xi
+v=sin(a)*xi-cos(a)*sqrt(1.d0-xi**2)
+xt1=w*sqrt(1.d0-zeta**2)-v*zeta
+xt2=(sin(2*a)*x(2)+sin(a)**2*(2*pz-b1*x(1)))*x(1)*b1/pt**2
+      xn(3)=arcsin(xt2/xt1)/b1
 
           XN(6)=X(6)+XN(3)*(1.0_dp+X(5))
 
@@ -13680,8 +13795,16 @@ integer :: kkk=0
        X(6)=XN(6)
     ENDIF
     !    CALL CHECK_STABILITY(X)
-
+ 
   END SUBROUTINE wedger
+
+  function arcsin_x(x)
+    IMPLICIT NONE
+    real(dp) arcsin_x,x
+
+    arcsin_x=arcsin(x)/x
+
+  end function arcsin_x 
 
 
   SUBROUTINE wedgeP(A,X,k,EL1,EL2)
@@ -13694,6 +13817,8 @@ integer :: kkk=0
     real(dp)  b
     integer TOTALPATH
     logical(lp) time,EXACT
+    TYPE(REAL_8) xi,zeta,w,v,xt1,xt2
+
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
     call PRTP("WEDGE:0", X)
@@ -13701,6 +13826,7 @@ integer :: kkk=0
     EXACT=.TRUE.
 
     CALL ALLOC(PZ,PZS,PT,B1)
+    CALL ALLOC(xi,zeta,w,v,xt1,xt2)
     CALL ALLOC(XN,6)
 
 
@@ -13739,8 +13865,14 @@ integer :: kkk=0
           XN(1)=X(1)*COS(A)+(X(1)*X(2)*SIN(2.0_dp*A)+SIN(A)**2*(2.0_dp*X(1)*PZ-B1*X(1)**2))&
                & /(PZS+PZ*COS(A)-X(2)*SIN(A))
 
-          XN(3)=(A+ASIN(X(2)/PT)-ASIN(XN(2)/PT))/B1
-
+!          XN(3)=(A+ASIN(X(2)/PT)-ASIN(XN(2)/PT))/B1
+xi=x(2)/pt
+zeta=xn(2)/pt
+w=sin(a)*sqrt(1.d0-xi**2)+cos(a)*xi
+v=sin(a)*xi-cos(a)*sqrt(1.d0-xi**2)
+xt1=w*sqrt(1.d0-zeta**2)-v*zeta
+xt2=(sin(2*a)*x(2)+sin(a)**2*(2*pz-b1*x(1)))*x(1)*b1/pt**2
+      xn(3)=asin(xt2/xt1)/b1
           XN(6)=X(6)+XN(3)*(1.0_dp/b+x(5))
 
           XN(3)=X(3)+X(4)*XN(3)
@@ -13752,8 +13884,14 @@ integer :: kkk=0
           XN(1)=X(1)*COS(A)+(X(1)*X(2)*SIN(2.0_dp*A)+SIN(A)**2*(2.0_dp*X(1)*PZ-B1*X(1)**2))&
                & /(PZS+PZ*COS(A)-X(2)*SIN(A))
 
-          XN(3)=(A+ASIN(X(2)/PT)-ASIN(XN(2)/PT))/B1
-
+!          XN(3)=(A+ASIN(X(2)/PT)-ASIN(XN(2)/PT))/B1
+xi=x(2)/pt
+zeta=xn(2)/pt
+w=sin(a)*sqrt(1.d0-xi**2)+cos(a)*xi
+v=sin(a)*xi-cos(a)*sqrt(1.d0-xi**2)
+xt1=w*sqrt(1.d0-zeta**2)-v*zeta
+xt2=(sin(2*a)*x(2)+sin(a)**2*(2*pz-b1*x(1)))*x(1)*b1/pt**2
+      xn(3)=asin(xt2/xt1)/b1
           XN(6)=X(6)+XN(3)*(1.0_dp+X(5))
 
           XN(3)=X(3)+X(4)*XN(3)
@@ -13766,9 +13904,10 @@ integer :: kkk=0
     ENDIF
     CALL KILL(PZ,PZS,PT,B1)
     CALL KILL(XN,6)
+    CALL KILL(xi,zeta,w,v,xt1,xt2)
 
     call PRTP("WEDGE:1", X)
-
+ 
   END SUBROUTINE wedgeP
 
   !  CAV_TRAV
