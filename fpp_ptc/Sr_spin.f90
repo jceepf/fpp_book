@@ -6874,7 +6874,7 @@ enddo
 
  
 
-     ft=1.d0
+     ft=1.e0_dp
      do i=1,6
      ft=ft*exp(-e(i)*(1.0_dp.cmono.i)**2)
     enddo
