@@ -489,18 +489,18 @@ do i=1,6
 enddo
  wyoshik(id)=wyosh(7)
  wyoshid(id)=wyosh(7)/2
-write(6,*) id
-pause 777
- a=wyoshid(0) 
- b=0
- write(6,*) 0,wyoshid(0) 
-do id=1,15
-  a=a+wyoshid(id)
-  b=b+wyoshik(id)
- write(6,*) id,wyoshid(id),wyoshik(id)
-enddo
-write(6,*) a,b
-pause 444
+!write(6,*) id
+!pause 777
+ !a=wyoshid(0) 
+ !b=0
+ !write(6,*) 0,wyoshid(0) 
+!do id=1,15
+!  a=a+wyoshid(id)
+!  b=b+wyoshik(id)
+! write(6,*) id,wyoshid(id),wyoshik(id)
+!enddo
+!write(6,*) a,b
+ 
   END SUBROUTINE MAKE_YOSHIDA
 
   SUBROUTINE input_sector(se2,se1)
