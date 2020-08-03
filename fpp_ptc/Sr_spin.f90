@@ -2919,11 +2919,11 @@ call kill(vm,phi,z)
     if(donew) then   ! actually calling old stuff pre-node
      call TRACK(xs%x,K,fibre1,fibre2=fibre2)
     else
-   !  if(use_bmad_units.and.(.not.inside_bmad)) then 
-   !    beta=C%PARENT_FIBRE%beta0
-   !    if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
-   !    call convert_bmad_to_ptc(xs,beta,k%time)
-   !  endif
+     if(use_bmad_units.and.(.not.inside_bmad)) then 
+       beta=C%PARENT_FIBRE%beta0
+       if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
+       call convert_bmad_to_ptc(xs,beta,k%time)
+     endif
      DO  WHILE(.not.ASSOCIATED(C,n2))
         CALL TRACK_NODE_PROBE(C,XS,K)
         if(.not.check_stable) exit
@@ -2933,11 +2933,11 @@ call kill(vm,phi,z)
      if(associated(last).and.check_stable) then
        CALL TRACK_NODE_PROBE(last,XS,K)
      endif
- !   if(use_bmad_units.and.(.not.inside_bmad)) then 
- !     beta=C%PARENT_FIBRE%beta0
- !     if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
- !     call convert_ptc_to_bmad(xs,beta,k%time)
- !   endif
+    if(use_bmad_units.and.(.not.inside_bmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_ptc_to_bmad(xs,beta,k%time)
+    endif
     endif
 
 
@@ -3007,11 +3007,11 @@ call kill(vm,phi,z)
     if(donew) then   ! actually calling old stuff pre-node
      call TRACK(xs%x,K,fibre1,fibre2=fibre2)
     else
- !    if(use_bmad_units.and.(.not.inside_bmad)) then 
- !      beta=C%PARENT_FIBRE%beta0
- !      if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
- !      call convert_bmad_to_ptc(xs,beta,k%time)
- !    endif
+    if(use_bmad_units.and.(.not.inside_bmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_bmad_to_ptc(xs,beta,k%time)
+    endif
      DO  WHILE(.not.ASSOCIATED(C,n2))
         CALL TRACK_NODE_PROBE(C,XS,K)
         if(.not.check_stable) exit
@@ -3022,11 +3022,11 @@ call kill(vm,phi,z)
        elem_name = C%PARENT_FIBRE%MAGP%name  ! LD: 22.03.2019
        CALL TRACK_NODE_PROBE(last,XS,K)
      endif
- !   if(use_bmad_units.and.(.not.inside_bmad)) then 
- !     beta=C%PARENT_FIBRE%beta0
- !     if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
- !     call convert_ptc_to_bmad(xs,beta,k%time)
- !   endif
+    if(use_bmad_units.and.(.not.inside_bmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_ptc_to_bmad(xs,beta,k%time)
+    endif
     endif
 
 
@@ -3061,11 +3061,11 @@ call kill(vm,phi,z)
 
     J=I1
 
- !   if(use_bmad_units.and.(.not.inside_bmad)) then 
- !     beta=C%PARENT_FIBRE%beta0
- !     if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
- !     call convert_bmad_to_ptc(xs,beta,k%time)
- !   endif
+    if(use_bmad_units.and.(.not.inside_bmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_bmad_to_ptc(xs,beta,k%time)
+    endif
 
     DO  WHILE(J<I22.AND.ASSOCIATED(C))
        CALL TRACK_NODE_PROBE(C,XS,K)
@@ -3077,11 +3077,11 @@ call kill(vm,phi,z)
        J=J+1
     ENDDO
 
- !   if(use_bmad_units.and.(.not.inside_bmad)) then 
- !     beta=C%PARENT_FIBRE%beta0
- !     if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
- !     call convert_ptc_to_bmad(xs,beta,k%time)
- !   endif
+    if(use_bmad_units.and.(.not.inside_bmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_ptc_to_bmad(xs,beta,k%time)
+    endif
 
     C_%STABLE_DA=.true.
 
@@ -3118,11 +3118,11 @@ call kill(vm,phi,z)
 
     J=I1
 
- !   if(use_bmad_units.and.(.not.inside_bmad)) then 
- !     beta=C%PARENT_FIBRE%beta0
- !     if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
- !     call convert_bmad_to_ptc(xs,beta,k%time)
- !   endif
+    if(use_bmad_units.and.(.not.inside_bmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==4) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_bmad_to_ptc(xs,beta,k%time)
+    endif
 
     DO  WHILE(J<I22.AND.ASSOCIATED(C))
         elem_name = C%PARENT_FIBRE%MAGP%name  ! LD: 22.03.2019
@@ -3133,11 +3133,11 @@ call kill(vm,phi,z)
        J=J+1
     ENDDO
 
- !   if(use_bmad_units.and.(.not.inside_bmad)) then 
- !     beta=C%PARENT_FIBRE%beta0
- !     if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
- !     call convert_ptc_to_bmad(xs,beta,k%time)
- !   endif
+    if(use_bmad_units.and.(.not.inside_bmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      if(C%PARENT_FIBRE%PATCH%ENERGY==5) beta=C%PARENT_FIBRE%PATCH%b0b
+      call convert_ptc_to_bmad(xs,beta,k%time)
+    endif
 
     C_%STABLE_DA=.true.
 
