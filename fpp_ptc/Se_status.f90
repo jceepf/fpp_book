@@ -10621,8 +10621,7 @@ SUBROUTINE track_TREE_probe_complexp_new(T,xs,dofix0,dofix,sta)
     type(internal_state) sta
     logical dofix0,dofix
     integer, allocatable :: js(:)
- 
-    call alloc(x,size_tree)
+     call alloc(x,size_tree)
     call alloc(x0,size_tree)
     call alloc(dx6,beta)
     do i=1,3
@@ -10711,8 +10710,9 @@ SUBROUTINE track_TREE_probe_complexp_new(T,xs,dofix0,dofix,sta)
       xi(i)=x0(i)
      enddo
  
+ 
       call  track_TREE_probe_complexr(T,xs0,.false.,.false.,sta,jump=.true.,all_map=.not.t(3)%factored)
-
+ 
 !!! compute map  for speed up
      norm=0.d0
      do i=1,6
@@ -10863,7 +10863,7 @@ endif
        if(sta%totalpath==1) then
         x(6)=x(6)+t(1)%ds
        endif
-    call kill(dx6)
+!    call kill(dx6)
     else
         if(sta%totalpath==1) then
         x(6)=x(6)+t(1)%ds/t(1)%beta0 
@@ -10876,9 +10876,11 @@ endif
       z0(i)=x(i)
     enddo
 
+ 
     mt=xs
+ 
     xs=mt*m0
-    
+  
     do i=1,6
      xs%x(i)=xs%x(i)-(xs%x(i).sub.'0')+z0(i)
     enddo
@@ -10896,7 +10898,7 @@ endif
     enddo
     enddo
     XS%X0 = X0_PROBE
-
+ 
   end SUBROUTINE track_TREE_probe_complexp_new
 
   SUBROUTINE orthonormalisep(r)

@@ -2442,7 +2442,6 @@ endif
     INTEGER I,J,nd2t1
     type(taylor) t
 type(c_damap) mm
-call alloc(mm)
     call alloc(t)
 
     nd2t1=c_%nd2-2*rf
@@ -2487,7 +2486,7 @@ endif
      call alloc(mm)
         mm=ds
         m=mm**(-1)
-     call kill(mm)
+         call kill(mm)
        r%e_ij=matmul(matmul(m,ds%e_ij),transpose(m))
     endif
  

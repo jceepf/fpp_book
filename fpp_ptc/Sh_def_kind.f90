@@ -13746,7 +13746,7 @@ xi=x(2)/pt
 zeta=xn(2)/pt
 w= xi
 v=-root(1.e0_dp-xi**2)
-write(6,*) " sparr ", w*ROOT(1.e0_dp-zeta**2)-v*zeta
+! write(6,*) " sparr ", w*ROOT(1.e0_dp-zeta**2)-v*zeta
 
 !xt1=(2*YL*x(2)-YL**2*DIR*EL%BN(1))*DIR*EL%BN(1)/pt**2
 !xt2= w*root(1-zeta**2)-v*zeta
