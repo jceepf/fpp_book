@@ -20,6 +20,8 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
 
   IMPLICIT NONE
   public
+ private ety2,etdiv,ety,etyt
+
   integer,private::nd2par,nd2part,nd2partt
   integer,private,target ::pos_of_delta  
 
@@ -105,7 +107,7 @@ private EQUALq_r,EQUALq_8_c,EQUALq_c_8,EQUALq,POWq,c_invq,subq,mulq,addq,alloc_c
 private c_pri_quaternion,CUTORDERquaternion,c_trxquaternion,EQUALq_c_r,EQUALq_r_c,mulcq,c_exp_quaternion
 private equalc_quaternion_c_spinor,equalc_spinor_c_quaternion,unarySUB_q,c_trxquaternion_tpsa
 private c_exp_vectorfield_on_quaternion,c_vector_field_quaternion,addql,subql,mulqdiv,powql,quaternion_to_matrix
-private copy_tree_into_tree_zhe
+private copy_tree_into_tree_zhe,absq2,absq
 !private equal_map_real8,equal_map_complex8,equal_real8_map,equal_complex8_map
 real(dp) dts
 real(dp), private :: sj(6,6)
@@ -134,9 +136,16 @@ type c_lattice_function
  logical symplectic 
 end type c_lattice_function
 
-
-
 type(c_linear_map) q_phasor,qi_phasor
+
+  INTERFACE abs_square
+     MODULE PROCEDURE absq2
+  END INTERFACE
+
+  INTERFACE abs
+     MODULE PROCEDURE absq
+  END INTERFACE
+
 
   INTERFACE assignment (=)
      MODULE PROCEDURE EQUAL
@@ -542,6 +551,7 @@ type(c_linear_map) q_phasor,qi_phasor
   INTERFACE abs
      MODULE PROCEDURE DAABSEQUAL  ! remove 2002.10.17
   END INTERFACE
+
   INTERFACE dabs
      MODULE PROCEDURE DAABSEQUAL  ! remove 2002.10.17
   END INTERFACE
@@ -3850,10 +3860,10 @@ endif
 
 
     call c_ass_quaternion(CUTORDERquaternion)
-      CUTORDERquaternion=S1
+   !   CUTORDERquaternion=S1
 
      DO I=0,3
-      CUTORDERquaternion%x(i)=CUTORDERquaternion%x(i) 
+      CUTORDERquaternion%x(i)=S1%x(i).cut.s2 
     enddo
 
     c_master=localmaster
@@ -5306,6 +5316,42 @@ cgetvectorfield=0
           c_master=localmaster
  
   END FUNCTION addq
+
+ 
+  FUNCTION absq2( S1 )
+    implicit none
+    type(c_taylor)   absq2
+    TYPE (c_quaternion), INTENT (IN) :: S1
+    integer i,localmaster
+
+    IF(.NOT.C_%STABLE_DA) then
+     absq2=0
+     RETURN
+    endif
+              localmaster=c_master
+              call ass(absq2)
+           absq2=0
+       do i=0,3
+         absq2 = s1%x(i)**2+absq2
+       enddo
+          c_master=localmaster
+  END FUNCTION absq2
+
+  FUNCTION absq( S1 )
+    implicit none
+        type(c_taylor)  absq
+    TYPE (c_quaternion), INTENT (IN) :: S1
+    integer i,localmaster
+
+    IF(.NOT.C_%STABLE_DA) then
+     absq=0
+     RETURN
+    endif
+              localmaster=c_master
+              call ass(absq)
+           absq=sqrt(abs_square(s1))
+             c_master=localmaster         
+  END FUNCTION absq
 
   FUNCTION mulq( S1, S2 )
     implicit none

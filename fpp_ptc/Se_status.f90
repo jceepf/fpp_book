@@ -10613,7 +10613,7 @@ SUBROUTINE track_TREE_probe_complexp_new(T,xs,dofix0,dofix,sta)
     type(probe_8) xs
     type(probe) xs0
     type(real_8) x(size_tree),x0(size_tree),s0(3,3),r(3,3),dx6,beta,ds
-    real(dp) m(6,6),xi(6),norm,z0(6)
+    real(dp) m(6,6),xi(6),norm,z0(6),X0_PROBE(6)
     type(damap) dm,md,iq
     type(c_damap) m0,mt
     type(quaternion_8) qu
@@ -10639,7 +10639,7 @@ SUBROUTINE track_TREE_probe_complexp_new(T,xs,dofix0,dofix,sta)
   ! else
     call alloc(m0,mt)
     m0=xs
-
+    X0_PROBE=XS%X0 
     do o=1,6
      z0(o)=xs%x(o)
      enddo
@@ -10895,6 +10895,7 @@ endif
      call kill(r(i,j))
     enddo
     enddo
+    XS%X0 = X0_PROBE
 
   end SUBROUTINE track_TREE_probe_complexp_new
 
