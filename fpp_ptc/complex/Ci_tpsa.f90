@@ -5634,23 +5634,28 @@ endif
     f%k=0
     f%e=0
     f%s=0
- 
+ !!!!    computing the de Moivre Lattice Functions  !!!!
+ !!!!  equivalent to Ripken ones
+
+!!!!  Coefficient of vector field matrices  B**2=-H
      do i = 1,3
       f%B(i,:,:)=matmul(matmul(m%mat,jp_mat(i,:,:)),mi%mat)
      enddo
 
-
+!!!! coefficient of invariants
       do i = 1,3
       f%K(i,:,:)= -matmul(jt_mat,f%B(i,:,:))
      enddo
+!!!! coefficient of moments
      do i = 1,3
       f%E(i,:,:)= -matmul(f%B(i,:,:),jt_mat)
      enddo
+!!!!  Dispersive quantities containing zeta and eta for example
      do i = 1,3
       f%H(i,:,:)=matmul(matmul(m%mat,ip_mat(i,:,:)),mi%mat)
      enddo
 
-
+!!!!    computing the n vector using quaternion
      do i = 1,3
        q=i
        q=m*q*mi
