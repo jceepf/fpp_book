@@ -4510,6 +4510,7 @@ endif
     !    real(dp), INTENT(INOUT):: s(3)
     logical(lp),INTENT(IN):: ENTERING
     real(dp) da
+    if(C%PATCH%track) then
     IF(ENTERING) THEN
        da=C%PATCH%A_ANG(1)+((C%PATCH%A_X1-1)/2)*pi
        call rot_spin_x(P,da)
@@ -4527,6 +4528,7 @@ endif
        da=((C%PATCH%B_X2-1)/2)*pi
        call rot_spin_x(P,da)
     ENDIF
+    endif
 
   END SUBROUTINE PATCH_SPINR
 
@@ -4539,6 +4541,7 @@ endif
     logical(lp),INTENT(IN):: ENTERING
     real(dp) da
 
+    if(C%PATCH%track) then
     IF(ENTERING) THEN
        da=C%PATCH%A_ANG(1)+((C%PATCH%A_X1-1)/2)*pi
 
@@ -4563,7 +4566,7 @@ endif
 
        call rot_spin_x(P,da)
     ENDIF
-
+    endif
 
   END SUBROUTINE PATCH_SPINp
 
