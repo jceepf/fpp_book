@@ -4592,25 +4592,16 @@ endif
           ENDIF
        ELSE
           IF(ENTERING) THEN  ! BACKWARD PROPAGATION
-             C%CHART%D_OUT(1)=-C%CHART%D_OUT(1)
-             C%CHART%D_OUT(2)=-C%CHART%D_OUT(2)
-             C%CHART%ANG_OUT(3)=-C%CHART%ANG_OUT(3)
-             call rot_spin_Z(P,C%CHART%ANG_OUT(3))
+
+             call rot_spin_Z(P,-C%CHART%ANG_OUT(3))
              call rot_spin_Y(P,-C%CHART%ANG_OUT(2))   !2016_5_9
-             call rot_spin_X(P,C%CHART%ANG_OUT(1))
-             C%CHART%D_OUT(1)=-C%CHART%D_OUT(1)
-             C%CHART%D_OUT(2)=-C%CHART%D_OUT(2)
-             C%CHART%ANG_OUT(3)=-C%CHART%ANG_OUT(3)
+             call rot_spin_X(P,-C%CHART%ANG_OUT(1))
+
           ELSE
-             C%CHART%D_IN(1)=-C%CHART%D_IN(1)
-             C%CHART%D_IN(2)=-C%CHART%D_IN(2)
-             C%CHART%ANG_IN(3)=-C%CHART%ANG_IN(3)
-             call rot_spin_Z(P,C%CHART%ANG_IN(3))
+             call rot_spin_Z(P,-C%CHART%ANG_IN(3))
              call rot_spin_Y(P,-C%CHART%ANG_IN(2))   !2016_5_9
-             call rot_spin_X(P,C%CHART%ANG_IN(1))
-             C%CHART%D_IN(1)=-C%CHART%D_IN(1)
-             C%CHART%D_IN(2)=-C%CHART%D_IN(2)
-             C%CHART%ANG_IN(3)=-C%CHART%ANG_IN(3)
+             call rot_spin_X(P,-C%CHART%ANG_IN(1))
+
           ENDIF
        ENDIF
     ENDIF
@@ -4636,30 +4627,18 @@ endif
           ENDIF
        ELSE
           IF(ENTERING) THEN  ! BACKWARD PROPAGATION
-             C%CHART%D_OUT(1)=-C%CHART%D_OUT(1)
-             C%CHART%D_OUT(2)=-C%CHART%D_OUT(2)
-             C%CHART%ANG_OUT(3)=-C%CHART%ANG_OUT(3)
 
-
-             call rot_spin_Z(P,C%CHART%ANG_OUT(3))
+             call rot_spin_Z(P,-C%CHART%ANG_OUT(3))
              call rot_spin_Y(P,-C%CHART%ANG_OUT(2))   !2016_5_9
-             call rot_spin_X(P,C%CHART%ANG_OUT(1))
+             call rot_spin_X(P,-C%CHART%ANG_OUT(1))
 
-             C%CHART%D_OUT(1)=-C%CHART%D_OUT(1)
-             C%CHART%D_OUT(2)=-C%CHART%D_OUT(2)
-             C%CHART%ANG_OUT(3)=-C%CHART%ANG_OUT(3)
           ELSE
-             C%CHART%D_IN(1)=-C%CHART%D_IN(1)
-             C%CHART%D_IN(2)=-C%CHART%D_IN(2)
-             C%CHART%ANG_IN(3)=-C%CHART%ANG_IN(3)
 
-             call rot_spin_Z(P,C%CHART%ANG_IN(3))
+
+             call rot_spin_Z(P,-C%CHART%ANG_IN(3))
              call rot_spin_Y(P,-C%CHART%ANG_IN(2))    !2016_5_9
-             call rot_spin_X(P,C%CHART%ANG_IN(1))
+             call rot_spin_X(P,-C%CHART%ANG_IN(1))
 
-             C%CHART%D_IN(1)=-C%CHART%D_IN(1)
-             C%CHART%D_IN(2)=-C%CHART%D_IN(2)
-             C%CHART%ANG_IN(3)=-C%CHART%ANG_IN(3)
           ENDIF
        ENDIF
     ENDIF
