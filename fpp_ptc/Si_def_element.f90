@@ -2184,8 +2184,8 @@ CONTAINS
   SUBROUTINE change_settings_fibre(EL,volt,FREQ,phase,B_SOL,TILT,EDGE,fringe,permfringe,bend_like)
     IMPLICIT NONE
     TYPE(fibre), target ::  EL
-    logical(lp), optional ::  bend_like
-    integer, optional :: fringe(2,2) , permfringe
+    logical(lp), optional ::  bend_like,fringe(2,2) 
+    integer, optional ::  permfringe
     real(dp), optional ::volt,TILT,EDGE(2),FREQ,phase,B_SOL
 
     call change_settings_magnetr(EL%mag ,volt,FREQ,phase,B_SOL,TILT,EDGE,fringe,permfringe,bend_like)
@@ -2198,8 +2198,8 @@ fringe,permfringe,bend_like,fint,hgap)
 
     IMPLICIT NONE
     TYPE(ELEMENT), target ::  EL
-    logical(lp), optional ::  bend_like
-    integer, optional :: fringe(2,2) , permfringe
+    logical(lp), optional ::  bend_like,fringe(2,2) 
+    integer, optional ::  permfringe
     real(dp), optional ::TILT,EDGE(2),volt,FREQ,phase,B_SOL,fint,hgap
   !!!!   
 !   bend_like  puts regular vertical focussing rather than cos(phi) type fringe field
@@ -2231,7 +2231,7 @@ fringe,permfringe,bend_like,fint,hgap)
 !  edge(1:2) are the entrance effective angle. Here they are measured from the "design orbit"
 !  so edge = 0 means entering and exiting along the pipe
 
-     EL%p%bend_fringe=.false.
+ 
     if(present(bend_like)) then
      EL%p%bend_fringe=bend_like
     endif
@@ -2279,11 +2279,11 @@ fringe,permfringe,bend_like,fint,hgap)
 fringe,permfringe,bend_like,fint,hgap)
     IMPLICIT NONE
     TYPE(ELEMENTP), target ::  EL
-    logical(lp), optional ::  bend_like
-    integer, optional :: fringe(2,2) , permfringe 
+    logical(lp), optional ::  bend_like,fringe(2,2)
+    integer, optional :: permfringe 
     real(dp), optional ::volt,TILT,EDGE(2),FREQ,phase,B_SOL,fint,hgap
  
-     EL%p%bend_fringe=.false.
+ 
     if(present(bend_like)) then
      EL%p%bend_fringe=bend_like
     endif
@@ -2346,7 +2346,7 @@ fringe,permfringe,bend_like,fint,hgap)
     real(dp), ALLOCATABLE,dimension(:)::AN,BN
     logical(lp), optional :: electric
     logical(lp) elec
-!!!!  On fibre call  add(EL,NM,F,V,electric)
+!!!!  On fibre call  add(FIBRE,NM,F,V,electric)
 !!      nm  > 0   bn(nm)  is changed
 !!      nm  < 0   an(nm)  is changed
 !!    EL%CN(NM)   = F*EL%CN(NM)+V         where cn=an,bn 
