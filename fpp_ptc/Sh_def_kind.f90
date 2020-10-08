@@ -15404,12 +15404,12 @@ SUBROUTINE ZEROr_teapot(EL,I)
        if(ASSOCIATED(EL%N_BESSEL)) then
           deallocate(EL%N_BESSEL)
        endif
-       if(ASSOCIATED(EL%H1)) then
-          deallocate(EL%H1)
-       endif
-       if(ASSOCIATED(EL%H2)) then
-          deallocate(EL%H2)
-       endif
+     !  if(ASSOCIATED(EL%H1)) then
+     !     deallocate(EL%H1)
+     !  endif
+    !   if(ASSOCIATED(EL%H2)) then
+    !      deallocate(EL%H2)
+    !   endif
        if(ASSOCIATED(EL%t)) then
           deallocate(EL%t)
        endif
@@ -15473,14 +15473,14 @@ SUBROUTINE ZEROr_teapot(EL,I)
        if(ASSOCIATED(EL%N_BESSEL)) then
           deallocate(EL%N_BESSEL)
        endif
-       if(ASSOCIATED(EL%H1)) then
-          CALL KILL(EL%h1)
-          deallocate(EL%H1)
-       endif
-       if(ASSOCIATED(EL%H2)) then
-          CALL KILL(EL%h2)
-          deallocate(EL%H2)
-       endif
+  !     if(ASSOCIATED(EL%H1)) then
+  !        CALL KILL(EL%h1)
+  !        deallocate(EL%H1)
+  !     endif
+  !     if(ASSOCIATED(EL%H2)) then
+  !        CALL KILL(EL%h2)
+  !        deallocate(EL%H2)
+  !     endif
        if(ASSOCIATED(EL%CAVITY_TOTALPATH)) then
           deallocate(EL%CAVITY_TOTALPATH)
        endif
