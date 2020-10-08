@@ -1098,6 +1098,8 @@ CONTAINS
        EL%C4%VOLT=>EL%VOLT
        EL%C4%FREQ=>EL%FREQ
        EL%C4%PHAS=>EL%PHAS
+       EL%C4%H1=>EL%H1
+       EL%C4%H2=>EL%H2
        !       EL%C4%P0C=>EL%P0C
        EL%C4%DELTA_E=>EL%DELTA_E
        EL%C4%THIN=>EL%THIN
@@ -1587,6 +1589,8 @@ CONTAINS
        EL%C4%VOLT=>EL%VOLT
        EL%C4%FREQ=>EL%FREQ
        EL%C4%PHAS=>EL%PHAS
+       EL%c4%H1=>EL%H1
+       EL%c4%H2=>EL%H2
        !       EL%C4%P0C=>EL%P0C
        EL%C4%DELTA_E=>EL%DELTA_E
        EL%C4%THIN=>EL%THIN
@@ -3487,6 +3491,8 @@ nullify(EL%filef,el%fileb);
        ELP%DELTA_E = EL%DELTA_E               ! DELTA_E IS real(dp)
        ELP%THIN = EL%THIN
        N_CAV4_F=EL%C4%NF
+       ELP%H1 = EL%H1
+       ELP%H2 = EL%H2
        CALL SETFAMILY(ELP)
        ELP%C4%N_BESSEL = EL%C4%N_BESSEL
        ELP%C4%cavity_totalpath = EL%C4%cavity_totalpath
