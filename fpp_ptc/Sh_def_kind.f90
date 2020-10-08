@@ -95,7 +95,7 @@ MODULE S_DEF_KIND
   PRIVATE FEVAL_pancaker,FEVAL_pancakeP,rks_pancaker,rks_pancakep,rks_pancake
   PRIVATE INTPANCAKER,INTPANCAKEP,conv_to_xpr,conv_to_xpp,conv_to_pxr
   private conv_to_pxp, conv_to_pxpabell ,conv_to_xprabell,conv_to_xppabell,conv_to_pxrabell
-  private ADJUST_TIMER_CAV4,ADJUST_TIME_CAV4p,INTER_CAV4,INTEp_CAV4
+  private ADJUST_TIME_CAV4R,ADJUST_TIME_CAV4p,INTER_CAV4,INTEp_CAV4
   private INTER_STREX,INTEP_STREX,INTER_SOL5,INTEP_SOL5,INTER_KTK,INTEP_KTK
   private fringe_STRAIGHTr,fringe_STRAIGHTP
   private INTEr_dkd2,INTEP_dkd2,INTER_DRIFT1,INTEP_DRIFT1
@@ -15474,9 +15474,11 @@ SUBROUTINE ZEROr_teapot(EL,I)
           deallocate(EL%N_BESSEL)
        endif
        if(ASSOCIATED(EL%H1)) then
+          CALL KILL(EL%h1)
           deallocate(EL%H1)
        endif
        if(ASSOCIATED(EL%H2)) then
+          CALL KILL(EL%h2)
           deallocate(EL%H2)
        endif
        if(ASSOCIATED(EL%CAVITY_TOTALPATH)) then
