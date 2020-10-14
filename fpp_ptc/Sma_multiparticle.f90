@@ -2434,13 +2434,21 @@ if(present(a)) then
  a0=a
 else
  !a0=global_origin
- a0=p%chart%f%a          !global_origin
+if(p%dir==1) then
+  a0=p%chart%f%a          !global_origin
+else
+  a0=p%chart%f%b          !global_origin
+endif
 endif
 if(present(ent)) then
  ent0=ent
 else
  !ent0=global_FRAME
+if(p%dir==1) then
  ent0=p%chart%f%ent !global_FRAME
+else
+ ent0=p%chart%f%exi !global_FRAME
+endif
 endif
 
  
@@ -2456,9 +2464,11 @@ endif
  
 do while(.not.associated(p2,p1))
  
- 
-call survey_integration_fibre(p1,p1%previous%t2%b,p1%previous%t2%exi)
- 
+if(p%previous%dir==1) then 
+ call survey_integration_fibre(p1,p1%previous%t2%b,p1%previous%t2%exi)
+else
+ call survey_integration_fibre(p1,p1%previous%t2%a,p1%previous%t2%ent)
+endif 
 !call survey_integration_fibre(p1,p1%previous%chart%f%b,p1%previous%chart%f%exi)
  
 p1=>p1%next
@@ -2492,23 +2502,28 @@ t=>p%t1
  j=1
 if(p%dir==-1) j=2
  
-call survey_integration_node_p1(t,a0,ent0)
+call survey_integration_node_p(t,a0,ent0,1)
 
-
+ 
 t=>t%next
 call survey_integration_fringe(t,a0,ent0,j)
-
+ 
 do i=1,p%mag%p%nst
  t=>t%next
+
  call survey_integration_node_case0(t,a0,ent0)
+ 
 enddo
 t=>t%next
  j=2
 if(p%dir==-1) j=1
 call survey_integration_fringe(t,a0,ent0,j)
 t=>t%next
-call survey_integration_node_p2(t,a0,ent0)
-
+call survey_integration_node_p(t,a0,ent0,2)
+ 
+ 
+ 
+ 
  
 
  
@@ -2533,167 +2548,15 @@ p%magp%p%f%o=p%mag%p%f%o
 
 end subroutine survey_integration_fibre
 
-
-
-subroutine survey_integration_fringe(t,a0,ent0,j)
-implicit none
-type(integration_node), target :: t
-type(fibre), pointer :: f
-real(dp) a0(3),ent0(3,3)
-integer j
-
-f=>t%parent_fibre
-if(associated(t%parent_fibre%mag%sdr)) then
- call survey_integration_special_superdrift(t,a0,ent0)
-else
-
- t%a=a0
- t%ent=ent0
-
-if(.true.) then
-if(f%mag%kind==kindpa) then
-
-call ADJUST_PANCAKE_frame(f%mag%pa,a0,ent0,j)
-!
-!write(6,*) " I am here in survey_integration_node_p1 1"
-endif 
-
-if(f%mag%kind==kind4) then
-
-
-call ADJUST_cav_frame(f%mag%c4,a0,ent0,j)
-!
-!write(6,*) " I am here in survey_integration_node_p1  2"
-endif
-
-if(f%mag%kind==kindabell) then
-
-call ADJUST_abell_frame(f%mag%ab,a0,ent0,j)
-!
-!write(6,*) " I am here in survey_integration_node_p1 3"
-endif  
-endif
-
-
- !t%parent_fibre%chart%f%a=a0
- !t%parent_fibre%chart%f%ent=ent0
- !t%parent_fibre%chart%f%b=a0
- !t%parent_fibre%chart%f%exi=ent0
- t%b=a0
- t%exi=ent0
- a0=t%b
- ent0=t%exi
-! t%next%b=t%a
-! t%next%ent=t%exi
-endif
-
-end subroutine survey_integration_fringe
-
-
-
-
-subroutine survey_integration_node_case0(t,b0,ent0)
-implicit none
-type(integration_node), target :: t
-type(fibre), pointer :: f
-type(element), pointer :: m
-type(magnet_chart), pointer :: p
-real(dp) h,d(3),ang(3),b0(3),exi0(3,3),ent0(3,3)
-
-f=>t%parent_fibre
-m=>f%mag
-p=>m%p
-
-t%a=b0
-t%ent=ent0
-exi0=t%ent
- 
-select case(m%kind) 
-
-CASE(KIND0,KIND1,KIND3:KIND5,KIND8:KIND9,KIND11:KIND15,KIND17:KIND22,kindwiggler,kindsuperdrift)
-   h=p%lc/p%nst
-   d=(/0.0_dp,0.0_dp,h/)
-
-   call geo_tra(b0,exi0,d,1)
-CASE(KIND2,KIND6:KIND7,KIND10)
-   h=p%ld/p%nst
-  if(p%b0==0.0_dp) then
-   d=(/0.0_dp,0.0_dp,h/)
-
-   call geo_tra(b0,exi0,d,1)
-  else
-  ang=0.0_dp
-  ang(2)=h*p%b0/2
-  h=2*sin(ang(2))/p%b0
-  d=(/0.0_dp,0.0_dp,h/)
-  call geo_rot(exi0,exi0,ang,exi0)
-  call geo_tra(b0,exi0,d,1)
-  call geo_rot(exi0,exi0,ang,exi0)
-
-  endif
-
-CASE(KINDPA)
-   h=m%l/p%nst
-  if(m%pa%hc==0.0_dp) then
-   d=(/0.0_dp,0.0_dp,h/)
-
-   call geo_tra(b0,exi0,d,1)
-  else
-  ang=0.0_dp
-  ang(2)=h*m%pa%hc/2
-  h=2*sin(ang(2))/m%pa%hc
-  d=(/0.0_dp,0.0_dp,h/)
-  call geo_rot(exi0,exi0,ang,exi0)
-  call geo_tra(b0,exi0,d,1)
-  call geo_rot(exi0,exi0,ang,exi0)
-  endif
-
-CASE(KINDabell)
-   h=m%l/p%nst
-  if(m%ab%hc==0.0_dp) then
-   d=(/0.0_dp,0.0_dp,h/)
-
-   call geo_tra(b0,exi0,d,1)
-  else
-  ang=0.0_dp
-  ang(2)=h*m%ab%hc/2
-
-
-
-  h=2*sin(ang(2))/m%ab%hc
-  d=(/0.0_dp,0.0_dp,h/)
-  call geo_rot(exi0,exi0,ang,exi0)
-  call geo_tra(b0,exi0,d,1)
-  call geo_rot(exi0,exi0,ang,exi0)
-  endif
-
-CASE(KIND16)
-   h=m%l/p%nst
-   d=(/0.0_dp,0.0_dp,h/)
-   call geo_tra(b0,exi0,d,1)
-
-CASE default
- write(6,*) " not supported in survey_integration_node_case0 "
- stop
-
-end select
-t%b=b0
-t%exi=exi0
-
-ent0=exi0
-!t%next%a=t%b
-!t%next%ent=t%exi
-
-end subroutine survey_integration_node_case0
-
-subroutine survey_integration_node_p1(t,a0,ent0)
+subroutine survey_integration_node_p(t,a0,ent0,k)
 implicit none
 type(integration_node), target :: t
 type(fibre), pointer :: f
 real(dp) pix1(3),pix2(3) ,a0(3),exi0(3,3),ent0(3,3)
 logical(lp) :: ENTERING=my_true
-integer j
+ integer k
 
+if(k==1) then
 f=>t%parent_fibre
 pix1=0.0_dp;pix2=0.0_dp;
 
@@ -2720,47 +2583,26 @@ pix1(3)=f%MAG%P%TILTD
  call GEO_ROT(exi0,pix1,1, exi0)
 
 
+! previous prot location
 
 
-pix1=0.0_dp
-if(f%mag%p%exact.and.(f%mag%kind/=kind10)) then
-if(f%dir==1) then
- pix1(2)=f%MAG%P%edge(1)
-else
- pix1(2)=f%MAG%P%edge(2)
-endif
-
- call GEO_ROT(exi0,pix1,1, exi0)
-endif
 
 
     IF(f%MAG%MIS) THEN
       call MIS_survey(a0,exi0,f,a0,exi0,ENTERING)
     ENDIF
  
-j=1
-if(f%dir==-1) j=2
-if(.false.) then
-if(f%mag%kind==kindpa) then
+ ! new prot location
 
-call ADJUST_PANCAKE_frame(f%mag%pa,a0,exi0,j)
-!
-!write(6,*) " I am here in survey_integration_node_p1  1"
-endif
-if(f%mag%kind==kind4) then
-
-call ADJUST_cav_frame(f%mag%c4,a0,exi0,j)
-!
-!write(6,*) " I am here in survey_integration_node_p1  2"
+ pix1=0.0_dp
+if(f%mag%p%exact.and.(f%mag%kind/=kind10)) then
+if(f%dir==1) then
+ pix1(2)=f%MAG%P%edge(1)
+else
+ pix1(2)=-f%MAG%P%edge(2)
 endif
 
-if(f%mag%kind==kindabell) then
-
-call ADJUST_abell_frame(f%mag%ab,a0,exi0,j)
-!
-!write(6,*) " I am here in survey_integration_node_p1  3"
-endif  
-
+ call GEO_ROT(exi0,pix1,1, exi0)
 endif
 
 
@@ -2771,24 +2613,255 @@ t%exi=exi0
 
 ent0=exi0
 
- if(f%dir==1) then
+! if(f%dir==1) then
   f%mag%p%f%ent=ent0
   f%mag%p%f%a=a0
   f%magp%p%f%ent=ent0
   f%magp%p%f%a=a0
-else
-  f%mag%p%f%exi=ent0
-  f%mag%p%f%b=a0
-  f%magp%p%f%exi=ent0
-  f%magp%p%f%b=a0
-endif
+!else
+!  f%mag%p%f%exi=ent0
+!  f%mag%p%f%b=a0
+!  f%magp%p%f%exi=ent0
+!  f%magp%p%f%b=a0
+!endif
 
 
 !t%next%a=t%b
 !t%next%ent=t%exi
  
+else ! k
 
-end subroutine survey_integration_node_p1
+
+f=>t%parent_fibre
+
+t%a=a0
+t%ent=ent0
+exi0=t%ent
+
+ !if(f%dir==-1) then
+ ! f%mag%p%f%ent=ent0
+ ! f%mag%p%f%a=a0
+ ! f%magp%p%f%ent=ent0
+ ! f%magp%p%f%a=a0
+!else
+  f%mag%p%f%exi=ent0
+  f%mag%p%f%b=a0
+  f%magp%p%f%exi=ent0
+  f%magp%p%f%b=a0
+!endif
+ 
+pix1=0.0_dp
+if(f%mag%p%exact.and.(f%mag%kind/=kind10)) then
+if(f%dir==1) then
+ pix1(2)=f%MAG%P%edge(2)
+else
+ pix1(2)=-f%MAG%P%edge(1)   
+endif
+ call GEO_ROT(exi0,pix1,1, exi0)
+endif
+
+
+
+    IF(f%MAG%MIS) THEN
+      call MIS_survey(a0,exi0,f,a0,exi0,.not.ENTERING)
+    ENDIF
+
+
+pix1=0.0_dp
+pix1(3)=-f%MAG%P%TILTD
+ call GEO_ROT(exi0,pix1,1, exi0)
+
+f%chart%f%exi=exi0
+f%chart%f%b=a0
+
+
+
+pix1=0.0_dp;pix2=0.0_dp;
+if(f%patch%B_X1==-1) pix1(1)=pi
+if(f%patch%B_X2==-1) pix2(1)=pi
+
+!
+call GEO_ROT(exi0,pix1,1, ent0)
+call GEO_ROT(exi0,f%patch%B_ang,1, exi0)
+call TRANSLATE_point(a0,f%patch%b_D,1,exi0)  
+call GEO_ROT(exi0,pix2,1, exi0)
+
+
+!!!!  all missing
+t%b=a0
+!t%ent=ent0   ! mistake????
+t%exi=exi0
+
+ent0=exi0
+!t%next%a=t%b
+!t%next%ent=t%exi
+
+
+
+!       X(3)=C%PATCH%B_X1*X(3);X(4)=C%PATCH%B_X1*X(4);
+!       CALL ROT_YZ(C%PATCH%B_ANG(1),X,C%MAG%P%BETA0,PATCH,k%TIME)
+!       CALL ROT_XZ(C%PATCH%B_ANG(2),X,C%MAG%P%BETA0,PATCH,k%TIME)
+!       CALL ROT_XY(C%PATCH%B_ANG(3),X)  !,PATCH)
+!       CALL TRANS(C%PATCH%B_D,X,C%MAG%P%BETA0,PATCH,k%TIME)
+!       X(3)=C%PATCH%B_X2*X(3);X(4)=C%PATCH%B_X2*X(4);
+
+
+endif
+
+end subroutine survey_integration_node_p
+
+subroutine survey_integration_fringe(t,a0,ent0,j)
+implicit none
+type(integration_node), target :: t
+type(fibre), pointer :: f
+real(dp) a0(3),ent0(3,3)
+integer j
+
+f=>t%parent_fibre
+if(associated(t%parent_fibre%mag%sdr)) then
+ call survey_integration_special_superdrift(t,a0,ent0)
+else
+
+ t%a=a0
+ t%ent=ent0
+
+if(f%mag%kind==kindpa) then
+
+call ADJUST_PANCAKE_frame(f%mag%pa,a0,ent0,j)
+!
+!write(6,*) " I am here in  1"
+endif 
+
+if(f%mag%kind==kind4) then
+
+
+call ADJUST_cav_frame(f%mag%c4,a0,ent0,j)
+!
+!write(6,*) " I am here in   2"
+endif
+
+if(f%mag%kind==kindabell) then
+
+call ADJUST_abell_frame(f%mag%ab,a0,ent0,j)
+!
+!write(6,*) " I am here in   3"
+endif  
+
+
+
+ !t%parent_fibre%chart%f%a=a0
+ !t%parent_fibre%chart%f%ent=ent0
+ !t%parent_fibre%chart%f%b=a0
+ !t%parent_fibre%chart%f%exi=ent0
+ t%b=a0
+ t%exi=ent0
+ a0=t%b
+ ent0=t%exi
+! t%next%b=t%a
+! t%next%ent=t%exi
+endif
+
+end subroutine survey_integration_fringe
+
+
+
+
+subroutine survey_integration_node_case0(t,b0,ent0)
+implicit none
+type(integration_node), target :: t
+type(fibre), pointer :: f
+type(element), pointer :: m
+type(magnet_chart), pointer :: p
+real(dp) h,d(3),ang(3),b0(3),exi0(3,3),ent0(3,3)
+integer dir
+f=>t%parent_fibre
+m=>f%mag
+p=>m%p
+
+t%a=b0
+t%ent=ent0
+exi0=t%ent
+ dir=f%dir
+select case(m%kind) 
+
+CASE(KIND0,KIND1,KIND3:KIND5,KIND8:KIND9,KIND11:KIND15,KIND17:KIND22,kindwiggler,kindsuperdrift)
+   h=dir*p%lc/p%nst
+   d=(/0.0_dp,0.0_dp,h/)
+
+   call geo_tra(b0,exi0,d,1)
+CASE(KIND2,KIND6:KIND7,KIND10)
+   h=dir*p%ld/p%nst
+  if(p%b0==0.0_dp) then
+   d=(/0.0_dp,0.0_dp,h/)
+
+   call geo_tra(b0,exi0,d,1)
+  else
+  ang=0.0_dp
+  ang(2)=h*p%b0/2
+  h=2*sin(ang(2))/p%b0
+  d=(/0.0_dp,0.0_dp,h/)
+  call geo_rot(exi0,exi0,ang,exi0)
+  call geo_tra(b0,exi0,d,1)
+  call geo_rot(exi0,exi0,ang,exi0)
+
+  endif
+
+CASE(KINDPA)
+   h=dir*m%l/p%nst
+  if(m%pa%hc==0.0_dp) then
+   d=(/0.0_dp,0.0_dp,h/)
+
+   call geo_tra(b0,exi0,d,1)
+  else
+  ang=0.0_dp
+  ang(2)=h*m%pa%hc/2
+  h=2*sin(ang(2))/m%pa%hc
+  d=(/0.0_dp,0.0_dp,h/)
+  call geo_rot(exi0,exi0,ang,exi0)
+  call geo_tra(b0,exi0,d,1)
+  call geo_rot(exi0,exi0,ang,exi0)
+  endif
+
+CASE(KINDabell)
+   h=dir*m%l/p%nst
+  if(m%ab%hc==0.0_dp) then
+   d=(/0.0_dp,0.0_dp,h/)
+
+   call geo_tra(b0,exi0,d,1)
+  else
+  ang=0.0_dp
+  ang(2)=h*m%ab%hc/2
+
+
+
+  h=2*sin(ang(2))/m%ab%hc
+  d=(/0.0_dp,0.0_dp,h/)
+  call geo_rot(exi0,exi0,ang,exi0)
+  call geo_tra(b0,exi0,d,1)
+  call geo_rot(exi0,exi0,ang,exi0)
+  endif
+
+CASE(KIND16)
+   h=dir*m%l/p%nst
+   d=(/0.0_dp,0.0_dp,h/)
+   call geo_tra(b0,exi0,d,1)
+
+CASE default
+ write(6,*) " not supported in survey_integration_node_case0 "
+ stop
+
+end select
+t%b=b0
+t%exi=exi0
+
+ent0=exi0
+!t%next%a=t%b
+!t%next%ent=t%exi
+
+end subroutine survey_integration_node_case0
+
+
+
 
 
 subroutine survey_integration_special_superdrift(t,a0,ent0)
@@ -3004,114 +3077,7 @@ end subroutine survey_integration_special_superdrift
     endif
   END SUBROUTINE ADJUST_abell_frame
 
-subroutine survey_integration_node_p2(t,a0,ent0)
-implicit none
-type(integration_node), target :: t
-type(fibre), pointer :: f
-real(dp) pix1(3),pix2(3),ent0(3,3),a0(3),exi0(3,3)
-logical(lp) :: ENTERING=my_FALSE
-integer j
-f=>t%parent_fibre
 
-j=2
-if(f%dir==-1) j=1
- 
-t%a=a0
-t%ent=ent0
-exi0=t%ent
-
- if(f%dir==-1) then
-  f%mag%p%f%ent=ent0
-  f%mag%p%f%a=a0
-  f%magp%p%f%ent=ent0
-  f%magp%p%f%a=a0
-else
-  f%mag%p%f%exi=ent0
-  f%mag%p%f%b=a0
-  f%magp%p%f%exi=ent0
-  f%magp%p%f%b=a0
-endif
-
-if(.false.) then
-if(f%mag%kind==kindpa) then
-
-call ADJUST_PANCAKE_frame(f%mag%pa,a0,exi0,j)
-!
-!write(6,*) " I am here in survey_integration_node_p1 1"
-endif 
-
-if(f%mag%kind==kind4) then
-
-
-call ADJUST_cav_frame(f%mag%c4,a0,exi0,j)
-!
-!write(6,*) " I am here in survey_integration_node_p1  2"
-endif
-
-if(f%mag%kind==kindabell) then
-
-call ADJUST_abell_frame(f%mag%ab,a0,exi0,j)
-!
-!write(6,*) " I am here in survey_integration_node_p1 3"
-endif  
-endif 
-
-pix1=0.0_dp
-if(f%mag%p%exact.and.(f%mag%kind/=kind10)) then
-if(f%dir==1) then
- pix1(2)=f%MAG%P%edge(2)
-else
- pix1(2)=f%MAG%P%edge(1)
-endif
- call GEO_ROT(exi0,pix1,1, exi0)
-endif
-
-
-
-    IF(f%MAG%MIS) THEN
-      call MIS_survey(a0,exi0,f,a0,exi0,ENTERING)
-    ENDIF
-
-
-pix1=0.0_dp
-pix1(3)=-f%MAG%P%TILTD
- call GEO_ROT(exi0,pix1,1, exi0)
-
-f%chart%f%exi=exi0
-f%chart%f%b=a0
-
-
-
-pix1=0.0_dp;pix2=0.0_dp;
-if(f%patch%B_X1==-1) pix1(1)=pi
-if(f%patch%B_X2==-1) pix2(1)=pi
-
-!
-call GEO_ROT(exi0,pix1,1, ent0)
-call GEO_ROT(exi0,f%patch%B_ang,1, exi0)
-call TRANSLATE_point(a0,f%patch%b_D,1,exi0)  
-call GEO_ROT(exi0,pix2,1, exi0)
-
-
-!!!!  all missing
-t%b=a0
-!t%ent=ent0   ! mistake????
-t%exi=exi0
-
-ent0=exi0
-!t%next%a=t%b
-!t%next%ent=t%exi
-
-
-
-!       X(3)=C%PATCH%B_X1*X(3);X(4)=C%PATCH%B_X1*X(4);
-!       CALL ROT_YZ(C%PATCH%B_ANG(1),X,C%MAG%P%BETA0,PATCH,k%TIME)
-!       CALL ROT_XZ(C%PATCH%B_ANG(2),X,C%MAG%P%BETA0,PATCH,k%TIME)
-!       CALL ROT_XY(C%PATCH%B_ANG(3),X)  !,PATCH)
-!       CALL TRANS(C%PATCH%B_D,X,C%MAG%P%BETA0,PATCH,k%TIME)
-!       X(3)=C%PATCH%B_X2*X(3);X(4)=C%PATCH%B_X2*X(4);
-
-end subroutine survey_integration_node_p2
 
  SUBROUTINE MIS_survey(a0,ent0,C,b0,exi0,ENTERING)
     implicit none
