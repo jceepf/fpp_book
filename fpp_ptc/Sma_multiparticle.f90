@@ -17,8 +17,11 @@ module ptc_multiparticle
   private DRIFTr_BACK_TO_POSITION,DRIFTp_BACK_TO_POSITION  !,DRIFT_BACK_TO_POSITION
   private MAKE_NODE_LAYOUT_2 !,DRIFT_TO_TIME
   PRIVATE MODULATE_R,MODULATE_P
+  PRIVATE SURVEY_EXIST_PLANAR_L_NEW,SURVEY_FIBRE_new,SURVEY_EXIST_PLANAR_IJ_new,SURVEY_EXIST_PLANAR_I_new
+
   PRIVATE TRACK_MODULATION_R,TRACK_MODULATION_P
   logical :: old_survey=.true.
+ 
 !!!!!!!  Old Survey   !!!!!!!!
 private MISALIGN_FIBRE_EQUAL
 
@@ -40,6 +43,9 @@ private MISALIGN_FIBRE_EQUAL
      MODULE PROCEDURE MISALIGN_FIBRE_EQUAL
   END  INTERFACE
 
+ ! INTERFACE survey_new
+
+ ! END INTERFACE
 
   INTERFACE TRACK_NODE_SINGLE
      MODULE PROCEDURE TRACK_NODE_SINGLER     !@1  t,x,state,charge
@@ -110,6 +116,12 @@ private MISALIGN_FIBRE_EQUAL
      logical(lp) u(2)   ! unstable flag for both ray and reference_ray
   END type three_d_info
 
+  INTERFACE survey_new
+    MODULE PROCEDURE SURVEY_EXIST_PLANAR_L_NEW
+    MODULE PROCEDURE SURVEY_FIBRE_new
+    MODULE PROCEDURE SURVEY_EXIST_PLANAR_IJ_new
+    MODULE PROCEDURE SURVEY_EXIST_PLANAR_I_new
+  end INTERFACE survey_new
 !  real :: ttime0,ttime1,dt1=0.0,dt2=0.0;
 
 CONTAINS
@@ -2476,6 +2488,100 @@ enddo
  
 end subroutine survey_integration_layout
 
+  SUBROUTINE SURVEY_FIBRE_new(C,ENT,A,nogirder)   !,MAGNETFRAME
+    !changed
+    ! SURVEYS A SINGLE ELEMENT FILLS IN CHART AND MAGNET_CHART; LOCATES ORIGIN AT THE ENTRANCE OR EXIT
+    IMPLICIT NONE
+    TYPE(FIBRE), TARGET , INTENT(INOUT):: C
+    !    TYPE(MAGNET_FRAME), OPTIONAL :: MAGNETFRAME
+    logical(lp), OPTIONAL :: nogirder
+    REAL(DP), INTENT(INOUT)  :: ENT(3,3),A(3)
+    REAL(DP) D(3),ANG(3),DT(3)
+    LOGICAL(LP) dog
+
+    REAL(DP)dg1(3),ag1(3),ENT0(3,3)
+    REAL(DP)dg2(3),ag2(3)
+    dog=.true.
+    if(present(nogirder)) dog=.not.nogirder     ! IF  DOGIRDER IS SET TO TRUE, MOVES GIRDER FRAME DURING SURVEY
+!!!  RECORDS RELATIVE POSITION OF GIRDER
+    IF(ASSOCIATED(C%MAG%GIRDER_FRAME).and.dog) THEN
+       call FIND_PATCH(C%chart%F%a,C%chart%F%ENT, &
+            C%MAG%GIRDER_FRAME%a, C%MAG%GIRDER_FRAME%ent,dg1,ag1)
+       call FIND_PATCH(C%chart%F%a,C%chart%F%ENT, &
+            C%MAG%GIRDER_FRAME%b, C%MAG%GIRDER_FRAME%exi,dg2,ag2)
+    ENDIF
+
+
+     call survey_integration_fibre(C,a,ent)
+
+
+!!!  PLACES INTO THE COMPUTED RELATIVE POSITION OF GIRDER
+    IF(ASSOCIATED(C%MAG%GIRDER_FRAME).and.dog) THEN    ! IF  DOGIRDER IS SET TO TRUE, MOVES GIRDER FRAME DURING SURVEY
+       call INVERSE_FIND_PATCH(C%chart%F%a,C%chart%F%ENT, &
+            dg1,ag1,C%MAG%GIRDER_FRAME%a, C%MAG%GIRDER_FRAME%ent)
+       call INVERSE_FIND_PATCH(C%chart%F%a,C%chart%F%ENT, &
+            dg2,ag2,C%MAG%GIRDER_FRAME%b, C%MAG%GIRDER_FRAME%exi)
+    ENDIF
+
+  END SUBROUTINE SURVEY_FIBRE_new
+
+  SUBROUTINE SURVEY_EXIST_PLANAR_IJ_new(PLAN,I1,I2,ENT,A) ! STANDARD SURVEY FROM FIBRE #I1 TO #I2
+    IMPLICIT NONE
+    TYPE(LAYOUT),target, INTENT(INOUT):: PLAN
+    TYPE (FIBRE), POINTER :: C
+    TYPE (PATCH), POINTER :: P
+    REAL(DP),OPTIONAL, INTENT(INOUT) :: A(3),ENT(3,3)
+    INTEGER , INTENT(IN)::I1,I2
+    INTEGER I,i22
+    REAL(DP) AT(3),ENTT(3,3),NORM
+ 
+ 
+    NULLIFY(C);
+
+    if(i2>=i1) then
+       i22=i2
+    else
+       i22=PLAN%n+i2
+    endif
+
+
+    CALL MOVE_TO(PLAN,C,MOD_N(I1,PLAN%N))
+
+
+
+    I=I1
+
+    DO  WHILE(I<I22.AND.ASSOCIATED(C))
+
+       CALL survey_FIBRE_new(C,ENTT,AT)
+ 
+       C=>C%NEXT
+       I=I+1
+    ENDDO
+
+  END SUBROUTINE SURVEY_EXIST_PLANAR_IJ_new
+
+  SUBROUTINE SURVEY_EXIST_PLANAR_L_NEW(PLAN,ENT,A) ! CALLS ABOVE ROUTINE FROM FIBRE #1 TO #PLAN%N : STANDARD SURVEY
+    IMPLICIT NONE
+    TYPE(LAYOUT),target, INTENT(INOUT):: PLAN
+    REAL(DP),OPTIONAL, INTENT(INOUT) :: A(3),ENT(3,3)
+
+    CALL survey_new(PLAN,1,ENT,A)
+ 
+  END SUBROUTINE SURVEY_EXIST_PLANAR_L_NEW
+
+
+  SUBROUTINE SURVEY_EXIST_PLANAR_I_new(PLAN,I1,ENT,A) ! STANDARD SURVEY FROM FIBRE #I1 TO #I2
+    IMPLICIT NONE
+    TYPE(LAYOUT),target, INTENT(INOUT):: PLAN
+    REAL(DP),OPTIONAL, INTENT(INOUT) :: A(3),ENT(3,3)
+    INTEGER , INTENT(IN)::I1
+    INTEGER I2
+    I2=PLAN%N+I1
+
+    CALL survey_new(PLAN,I1,I2,ENT,A)
+
+  END SUBROUTINE SURVEY_EXIST_PLANAR_I_new
 
 subroutine survey_integration_fibre(p,b0,exi0)
 implicit none
@@ -2501,7 +2607,8 @@ if(.not.associated(p%t1%a))     CALL  allocate_node_frame( R)   !call FILL_SURVE
 t=>p%t1
  j=1
 if(p%dir==-1) j=2
- 
+! write(6,*) p%mag%name
+! write(6,*) a0
 call survey_integration_node_p(t,a0,ent0,1)
 
  
@@ -2522,8 +2629,7 @@ t=>t%next
 call survey_integration_node_p(t,a0,ent0,2)
  
  
- 
- 
+  
  
 
  
@@ -2540,9 +2646,11 @@ p%mag%p%f%mid=p%mag%p%f%ent
 ang=ang/2
 p%mag%p%f%o=0.5_dp*(p%mag%p%f%a+p%mag%p%f%b)
 CALL GEO_ROT(p%mag%p%f%mid,ANG,1,basis=p%mag%p%f%ent)
+
+if(.not.p%mag%mis) then
 p%magp%p%f%mid=p%mag%p%f%mid
 p%magp%p%f%o=p%mag%p%f%o
-
+endif
  
 
 
@@ -2555,14 +2663,22 @@ type(fibre), pointer :: f
 real(dp) pix1(3),pix2(3) ,a0(3),exi0(3,3),ent0(3,3)
 logical(lp) :: ENTERING=my_true
  integer k
+f=>t%parent_fibre
+ 
 
 if(k==1) then
 f=>t%parent_fibre
 pix1=0.0_dp;pix2=0.0_dp;
 
-t%a=a0
-t%ent=ent0
-exi0=t%ent
+if(f%dir==1) then
+ t%a=a0
+ t%ent=ent0
+ exi0=t%ent
+else
+ t%b=a0
+ t%exi=ent0
+ exi0=t%exi
+endif
 
 if(f%patch%A_X1==-1) pix1(1)=pi
 if(f%patch%A_X2==-1) pix2(1)=pi
@@ -2574,12 +2690,20 @@ call TRANSLATE_point(a0,f%patch%A_D,1,exi0)
 call GEO_ROT(exi0,pix2,1, exi0)
 
 !!! entrance chart
+if(f%dir==1) then
 f%chart%f%ent=exi0
 f%chart%f%a=a0
-
+else
+f%chart%f%exi=exi0
+f%chart%f%b=a0
+endif
 
 pix1=0.0_dp
-pix1(3)=f%MAG%P%TILTD
+if(f%dir==1) then
+ pix1(3)=f%MAG%P%TILTD
+else
+  pix1(3)=f%MAG%P%TILTD
+endif
  call GEO_ROT(exi0,pix1,1, exi0)
 
 
@@ -2589,92 +2713,101 @@ pix1(3)=f%MAG%P%TILTD
 
 
     IF(f%MAG%MIS) THEN
-      call MIS_survey(a0,exi0,f,a0,exi0,ENTERING)
+ 
+        call MIS_survey(a0,exi0,f,a0,exi0,ENTERING)
+ 
     ENDIF
  
- ! new prot location
-
- pix1=0.0_dp
-if(f%mag%p%exact.and.(f%mag%kind/=kind10)) then
-if(f%dir==1) then
- pix1(2)=f%MAG%P%edge(1)
-else
- pix1(2)=-f%MAG%P%edge(2)
-endif
-
- call GEO_ROT(exi0,pix1,1, exi0)
-endif
-
-
-t%b=a0
-!t%ent=ent0   ! mistake????
-t%exi=exi0
-
-
-ent0=exi0
-
-! if(f%dir==1) then
-  f%mag%p%f%ent=ent0
+ if(f%dir==1) then
+  f%mag%p%f%ent=exi0
   f%mag%p%f%a=a0
-  f%magp%p%f%ent=ent0
+  if(.not.f%mag%mis) then
+  f%magp%p%f%ent=exi0
   f%magp%p%f%a=a0
-!else
-!  f%mag%p%f%exi=ent0
-!  f%mag%p%f%b=a0
-!  f%magp%p%f%exi=ent0
-!  f%magp%p%f%b=a0
-!endif
+  endif
+else
+  f%mag%p%f%exi=exi0
+  f%mag%p%f%b=a0
+  if(.not.f%mag%mis) then
+  f%magp%p%f%exi=exi0
+  f%magp%p%f%b=a0
+ endif
+endif
+
+ ! new prot location
+ 
 
 
-!t%next%a=t%b
-!t%next%ent=t%exi
+
+
+if(f%dir==1) then
+ t%b=a0
+ t%exi=exi0
+ ent0=exi0
+else
+ t%a=a0
+ t%ent=exi0
+ ent0=exi0
+endif
+ 
  
 else ! k
 
 
 f=>t%parent_fibre
 
-t%a=a0
-t%ent=ent0
-exi0=t%ent
+ 
+if(f%dir==1) then
+ t%a=a0
+ t%ent=ent0
+ exi0=t%ent
+else
+ t%b=a0
+ t%exi=ent0
+ exi0=t%exi
+endif
 
- !if(f%dir==-1) then
- ! f%mag%p%f%ent=ent0
- ! f%mag%p%f%a=a0
- ! f%magp%p%f%ent=ent0
- ! f%magp%p%f%a=a0
-!else
+
+
+ if(f%dir==-1) then
+  f%mag%p%f%ent=ent0
+  f%mag%p%f%a=a0
+  if(.not. f%mag%mis) then
+  f%magp%p%f%ent=ent0
+  f%magp%p%f%a=a0
+  endif
+else
   f%mag%p%f%exi=ent0
   f%mag%p%f%b=a0
+  if(.not. f%mag%mis) then
   f%magp%p%f%exi=ent0
   f%magp%p%f%b=a0
-!endif
+ endif
+endif
+
  
+        call MIS_survey(a0,exi0,f,a0,exi0,.not.ENTERING)
+ 
+
+
 pix1=0.0_dp
-if(f%mag%p%exact.and.(f%mag%kind/=kind10)) then
 if(f%dir==1) then
- pix1(2)=f%MAG%P%edge(2)
+ pix1(3)=-f%MAG%P%TILTD
 else
- pix1(2)=-f%MAG%P%edge(1)   
-endif
- call GEO_ROT(exi0,pix1,1, exi0)
+  pix1(3)=f%MAG%P%TILTD    ! strange
 endif
 
-
-
-    IF(f%MAG%MIS) THEN
-      call MIS_survey(a0,exi0,f,a0,exi0,.not.ENTERING)
-    ENDIF
-
-
-pix1=0.0_dp
-pix1(3)=-f%MAG%P%TILTD
  call GEO_ROT(exi0,pix1,1, exi0)
 
-f%chart%f%exi=exi0
-f%chart%f%b=a0
+if(f%dir==1) then
+ f%chart%f%exi=exi0
+ f%chart%f%b=a0
+else
+ f%chart%f%ent=exi0
+ f%chart%f%a=a0
+endif
 
-
+ 
 
 pix1=0.0_dp;pix2=0.0_dp;
 if(f%patch%B_X1==-1) pix1(1)=pi
@@ -2689,13 +2822,19 @@ call GEO_ROT(exi0,pix2,1, exi0)
 
 !!!!  all missing
 t%b=a0
-!t%ent=ent0   ! mistake????
 t%exi=exi0
-
 ent0=exi0
-!t%next%a=t%b
-!t%next%ent=t%exi
+ 
 
+if(f%dir==1) then
+ t%b=a0
+ t%exi=exi0
+ ent0=exi0
+else
+ t%a=a0
+ t%ent=exi0
+ ent0=exi0
+endif
 
 
 !       X(3)=C%PATCH%B_X1*X(3);X(4)=C%PATCH%B_X1*X(4);
@@ -2708,22 +2847,62 @@ ent0=exi0
 
 endif
 
+ 
+
+
 end subroutine survey_integration_node_p
 
 subroutine survey_integration_fringe(t,a0,ent0,j)
 implicit none
 type(integration_node), target :: t
 type(fibre), pointer :: f
-real(dp) a0(3),ent0(3,3)
+real(dp) a0(3),ent0(3,3),pix1(3)
 integer j
 
 f=>t%parent_fibre
+
+ if(f%dir==1) then
+ t%a=a0
+ t%ent=ent0
+else
+ t%b=a0
+ t%exi=ent0
+endif
+
+
+
+
 if(associated(t%parent_fibre%mag%sdr)) then
  call survey_integration_special_superdrift(t,a0,ent0)
 else
 
- t%a=a0
- t%ent=ent0
+
+ pix1=0.0_dp
+if(f%mag%p%exact.and.(f%mag%kind/=kind10)) then
+
+if(j==1) then
+if(f%dir==1) then
+ pix1(2)=f%MAG%P%edge(1)
+else
+ pix1(2)=-f%MAG%P%edge(2)
+endif
+else
+if(f%dir==1) then
+ pix1(2)=f%MAG%P%edge(2)
+else
+ pix1(2)=-f%MAG%P%edge(1)   
+endif
+
+endif
+
+ call GEO_ROT(ent0,pix1,1, ent0)
+endif
+ 
+
+ 
+ 
+
+
 
 if(f%mag%kind==kindpa) then
 
@@ -2735,7 +2914,7 @@ endif
 if(f%mag%kind==kind4) then
 
 
-call ADJUST_cav_frame(f%mag%c4,a0,ent0,j)
+call ADJUST_cav_frame(f%mag%c4,a0,ent0,j,f%dir)
 !
 !write(6,*) " I am here in   2"
 endif
@@ -2748,17 +2927,19 @@ call ADJUST_abell_frame(f%mag%ab,a0,ent0,j)
 endif  
 
 
-
- !t%parent_fibre%chart%f%a=a0
- !t%parent_fibre%chart%f%ent=ent0
- !t%parent_fibre%chart%f%b=a0
- !t%parent_fibre%chart%f%exi=ent0
- t%b=a0
- t%exi=ent0
- a0=t%b
- ent0=t%exi
-! t%next%b=t%a
-! t%next%ent=t%exi
+ 
+if(f%dir==1) then
+  t%b=a0
+  t%exi=ent0
+  a0=t%b
+  ent0=t%exi
+ else
+  t%a=a0
+  t%ent=ent0
+  a0=t%a
+  ent0=t%ent
+ endif
+ 
 endif
 
 end subroutine survey_integration_fringe
@@ -2778,10 +2959,22 @@ f=>t%parent_fibre
 m=>f%mag
 p=>m%p
 
+
+
+ dir=f%dir
+
+ if(f%dir==1) then
 t%a=b0
 t%ent=ent0
 exi0=t%ent
- dir=f%dir
+else
+ t%b=b0
+  t%exi=ent0
+ exi0=t%exi
+endif
+
+
+
 select case(m%kind) 
 
 CASE(KIND0,KIND1,KIND3:KIND5,KIND8:KIND9,KIND11:KIND15,KIND17:KIND22,kindwiggler,kindsuperdrift)
@@ -2851,12 +3044,16 @@ CASE default
  stop
 
 end select
+
+
+ if(f%dir==1) then
 t%b=b0
 t%exi=exi0
-
+else
+t%a=b0
+t%ent=exi0
+endif
 ent0=exi0
-!t%next%a=t%b
-!t%next%ent=t%exi
 
 end subroutine survey_integration_node_case0
 
@@ -2983,21 +3180,21 @@ ent0=exi0
 end subroutine survey_integration_special_superdrift
 
 
- SUBROUTINE ADJUST_cav_frame(EL,a0,exi0,J)
+ SUBROUTINE ADJUST_cav_frame(EL,a0,exi0,J,dir)
     IMPLICIT NONE
     real(dp), target :: a0(3),exi0(3,3)
     TYPE(CAV4),INTENT(INOUT):: EL
-    INTEGER, INTENT(IN) :: J
+    INTEGER, INTENT(IN) :: J,dir
     real(dp) d(3),ang(3)
     d=0
     ang=0
 
     IF(J==1) then
-     d(3)=el%H1
+     d(3)= dir*el%H1
         call GEO_ROT(exi0,ang,1, exi0)
         call TRANSLATE_point(a0,D,1,exi0)  
     else
-    d(3)=el%H2
+    d(3)= dir*el%H2
  
         call TRANSLATE_point(a0,D,1,exi0)  
         call GEO_ROT(exi0,ang,1, exi0)
@@ -3109,18 +3306,12 @@ end subroutine survey_integration_special_superdrift
           IF(ENTERING) THEN  ! BACKWARD PROPAGATION
               d=c%chart%D_OUT
               ang=C%CHART%ANG_OUT
-             C%CHART%D_OUT(1)=-C%CHART%D_OUT(1)
-             C%CHART%D_OUT(2)=-C%CHART%D_OUT(2)
-             C%CHART%ANG_OUT(3)=-C%CHART%ANG_OUT(3)
-
+    
+            !   d(1:2)=-d(1:2)   
              call TRANSLATE_point(b0,d,-1,exi0)  
-!             CALL TRANS(C%CHART%D_OUT,X,C%MAG%P%BETA0,OU,k%TIME)        ! TRANSLATION
-!             CALL ROT_XY(C%CHART%ANG_OUT(3),X)  !,OU)
-!             CALL ROT_XZ(C%CHART%ANG_OUT(2),X,C%MAG%P%BETA0,OU,k%TIME)
-!             CALL ROT_YZ(C%CHART%ANG_OUT(1),X,C%MAG%P%BETA0,OU,k%TIME)  ! ROTATIONS
-             d=ang
-             ang=0.d0
-             ang(3)=-d(3)
+               d=ang
+               ang=0
+               ang(3)=-d(3)  
              call GEO_ROT(exi0,ang,1, exi0)  
              ang=0.d0
              ang(2)=-d(2)
@@ -3128,33 +3319,22 @@ end subroutine survey_integration_special_superdrift
              ang=0.d0
              ang(1)=-d(1)
              call GEO_ROT(exi0,ang,1, exi0)
-             C%CHART%D_OUT(1)=-C%CHART%D_OUT(1)
-             C%CHART%D_OUT(2)=-C%CHART%D_OUT(2)
-             C%CHART%ANG_OUT(3)=-C%CHART%ANG_OUT(3)
           ELSE
               d=C%CHART%D_IN
               ang=C%CHART%ANG_IN
-             C%CHART%D_IN(1)=-C%CHART%D_IN(1)
-             C%CHART%D_IN(2)=-C%CHART%D_IN(2)
-             C%CHART%ANG_IN(3)=-C%CHART%ANG_IN(3)
-             call TRANSLATE_point(b0,d,-1,exi0)
-!             CALL TRANS(C%CHART%D_IN,X,C%MAG%P%BETA0,OU,k%TIME)         ! TRANSLATION
-!             CALL ROT_XY(C%CHART%ANG_IN(3),X)  !,OU)
-!             CALL ROT_XZ(C%CHART%ANG_IN(2),X,C%MAG%P%BETA0,OU,k%TIME)
-!             CALL ROT_YZ(C%CHART%ANG_IN(1),X,C%MAG%P%BETA0,OU,k%TIME)   ! ROTATIONS
-             d=ang
-             ang=0.d0
-             ang(3)=-d(3)
+                 
+          !     d(1:2)=-d(1:2)   
+             call TRANSLATE_point(b0,d,-1,exi0)  
+               d=ang
+               ang=0
+               ang(3)=d(3)  
              call GEO_ROT(exi0,ang,1, exi0)  
              ang=0.d0
-             ang(2)=-d(2)
+             ang(2)=d(2)
              call GEO_ROT(exi0,ang,1, exi0)  
              ang=0.d0
              ang(1)=-d(1)
              call GEO_ROT(exi0,ang,1, exi0)
-             C%CHART%D_IN(1)=-C%CHART%D_IN(1)
-             C%CHART%D_IN(2)=-C%CHART%D_IN(2)
-             C%CHART%ANG_IN(3)=-C%CHART%ANG_IN(3)
           ENDIF
        ENDIF
     ENDIF
@@ -3168,77 +3348,6 @@ end subroutine survey_integration_special_superdrift
     
   end subroutine set_aperture_all_case0
 
-
-
-subroutine survey_integration_fibre_no_patch(p,b0,exi0)
-implicit none
-type(fibre), target :: p
-type(integration_node), pointer :: t
-integer i,j
-type(layout), pointer  :: r
-real(dp),optional,intent(in):: b0(3),exi0(3,3) 
-real(dp) a0(3),ent0(3,3),ang(3)
-
-if(present(b0) ) then
- a0=b0
- ent0=exi0
- else
- a0=p%mag%p%f%a
- ent0=p%mag%p%f%ent
-endif
-
-r=>p%parent_layout
-!if(.not.associated(r%t)) then
-! call make_node_layout(r)
-! call survey(r)
-!    CALL  allocate_node_frame( R)
-!endif
-!if(.not.associated(p%t1%a))     CALL  allocate_node_frame( R)   !call FILL_SURVEY_DATA_IN_NODE_LAYOUT(r)
-if(.not.associated(r%t))     stop 900
-if(.not.associated(p%t1%a))  stop 901
-
-j=1
-if(p%dir==-1) j=2
-
-t=>p%t1
-!call survey_integration_node_p1(t,a0,ent0)
-t=>t%next
-call survey_integration_fringe(t,a0,ent0,j)
-
-do i=1,p%mag%p%nst
- t=>t%next
- call survey_integration_node_case0(t,a0,ent0)
-enddo
-t=>t%next
-j=2
-if(p%dir==-1) j=1
-call survey_integration_fringe(t,a0,ent0,j)
-!t=>t%next
-!call survey_integration_node_p2(t,a0,ent0)
-
- 
-!!! entrance chart
- CALL COMPUTE_ENTRANCE_ANGLE(p%chart%f%ent,p%chart%f%exi,ANG)
-p%chart%f%mid=p%chart%f%ent
-!write(6,*) p%mag%name
-!write(6,*) ang
-ang=ang/2
-p%chart%f%o=0.5_dp*(p%chart%f%a+p%chart%f%b)
-CALL GEO_ROT(p%chart%f%mid,ANG,1,basis=p%chart%f%ent)
- 
-CALL COMPUTE_ENTRANCE_ANGLE(p%mag%p%f%ent,p%mag%p%f%exi,ANG)
-p%mag%p%f%mid=p%mag%p%f%ent
-ang=ang/2
-p%mag%p%f%o=0.5_dp*(p%mag%p%f%a+p%mag%p%f%b)
-CALL GEO_ROT(p%mag%p%f%mid,ANG,1,basis=p%mag%p%f%ent)
-p%magp%p%f%mid=p%mag%p%f%mid
-p%magp%p%f%o=p%mag%p%f%o
-
- 
-! I am here 
-!etienne
-
-end subroutine survey_integration_fibre_no_patch
 
 !!!!!!!!!!!!!!!!!!   Old Survey    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -3431,33 +3540,273 @@ end subroutine survey_integration_fibre_no_patch
 
   END SUBROUTINE MISALIGN_FIBRE
 
-!  subroutine print_magnet_framet(m,mf)
-!    implicit none
-!    type(magnet_frame), pointer :: m
-!    integer mf,i
-! 
-!       write(mf,'(a72)') "MAGNET FRAME MAGNET FRAME MAGNET FRAME MAGNET FRAME MAGNET FRAME MAGNET FRAME "
-!       WRITE(MF,*) m%a
-!       WRITE(MF,*) m%o
-!       WRITE(MF,*) m%b
-!       write(mf,'(a)') " ENTRANCE "
-!
-!       do i=1,3
-!          WRITE(MF,*) m%ent(i,1:3)
-!       enddo
-!       write(mf,'(a)') " MIDDLE "
-!
-!       do i=1,3
-!          WRITE(MF,*) m%mid(i,1:3)
-!       enddo
-!       write(mf,'(a)') " EXIT "
-!
-!       do i=1,3
-!          WRITE(MF,*) m%exi(i,1:3)
-!       enddo
-!       write(mf,'(a68)') "END MAGNET FRAME END MAGNET FRAME END MAGNET FRAME END MAGNET FRAME "
-! 
-!  end subroutine print_magnet_framet
+SUBROUTINE MOVE_FRAMES(S2,s1,OMEGA,BASIS)
+    IMPLICIT NONE
+    REAL(DP),INTENT(IN):: S1(6)
+    REAL(DP), OPTIONAL, INTENT(IN) :: OMEGA(3),BASIS(3,3)
+    TYPE(FIBRE),target,INTENT(INOUT):: S2
+    real(dp) d(3),ANGLE(3),OMEGAT(3),BASIST(3,3),e1(3,3),e2(3,3),T_GLOBAL(3),d_in(3),d_out(3)
+    type(integration_node), pointer :: t,t2
+    integer i,k
+    TYPE (MAGNET_FRAME), pointer :: F0,F,fmag,fbasis
+
+       CALL ALLOC(F)
+       CALL ALLOC(F0)
+       CALL ALLOC(fmag)
+       CALL ALLOC(fbasis)
+ 
+       DO I=1,3
+          D(I)=S1(I);   !D(I)=S1(I);
+          ANGLE(I)=S1(3+I); !R(I)=S1(3+I);
+       ENDDO
+      
+  
+       IF(PRESENT(BASIS)) THEN
+          BASIST=BASIS
+       ELSE
+          BASIST=S2%mag%p%f%mid
+       ENDIF
+       IF(PRESENT(OMEGA)) THEN
+          OMEGAT=OMEGA
+       ELSE
+          OMEGAT=S2%mag%p%f%o
+       ENDIF
+       f%mid=0
+       f%o=0
+       t=>s2%t1%next
+k=0
+       do while (.not.(associated(t,s2%t2)) )
+        F%ent=t%ent
+        F%exi=t%exi
+        F%a=t%a
+        F%b=t%b
+        fmag=S2%mag%p%f
+!      write(6,*) ANGLE
+       CALL ROTATE_FRAME(F,OMEGAT,ANGLE,1,BASIS=BASIST)
+       CALL ROTATE_FRAME(Fmag,OMEGAT,ANGLE,1,BASIS=BASIST)
+
+       IF(PRESENT(BASIS)) THEN   ! MUST ROTATE THAT FRAME AS WELL FOR CONSISTENCY IN DEFINITION WHAT A MISALIGNMENT IS IN PTC
+              fbasis%mid=basist
+              fbasis%o=omegat
+              CALL ROTATE_FRAME(fbasis,OMEGAT,ANGLE,1,BASIS=BASIST)
+              e1=fbasis%mid
+       !    e1=basist
+        !  CALL   GEO_ROT(BASIST,e2,ANGLE,e1)   ! 2018 correction: agrees with successive rotations followed by rotations
+        !   basist=e2
+       ELSE
+          e1=Fmag%MID    ! ALREADY ROTATED
+       ENDIF
+
+       CALL CHANGE_BASIS(D,e1,T_GLOBAL,GLOBAL_FRAME)
+
+
+        F%A=F%A+T_GLOBAL
+        F%O=F%O+T_GLOBAL
+        F%B=F%B+T_GLOBAL
+ 
+        k=k+1
+        write(6,*) k, S2%mag%p%nst+4
+        t%ent=f%ent
+        t%exi=f%exi
+        t%a=f%a
+        t%b=f%b
+
+        t=>t%next
+       enddo 
+!!!!  old fibre magnet attached frames  !!!!
+call print_magnet_framet(S2%magp%p%f,6)
+call print_magnet_framet(fmag,6)
+
+pause 123
+
+        Fmag%A=Fmag%A+T_GLOBAL
+        Fmag%O=Fmag%O+T_GLOBAL
+        Fmag%B=Fmag%B+T_GLOBAL
+        f0=S2%magp%p%f
+        S2%mag%p%f=Fmag
+        f=fmag
+
+
+       CALL COMPUTE_ENTRANCE_ANGLE(F0%ENT,F%ENT,S2%CHART%ANG_IN)
+       CALL COMPUTE_ENTRANCE_ANGLE(F%EXI,F0%EXI,S2%CHART%ANG_OUT)
+write(6,*) S2%CHART%ANG_IN
+write(6,*) S2%CHART%ANG_OUT
+
+       D_IN=F%A-F0%A
+       D_OUT=F0%B-F%B
+
+ 
+
+       CALL CHANGE_BASIS(D_IN,GLOBAL_FRAME,S2%CHART%D_IN,F%ENT)
+       CALL CHANGE_BASIS(D_OUT,GLOBAL_FRAME,S2%CHART%D_OUT,F0%EXI)
+  write(6,*) S2%CHART%D_IN
+write(6,*) S2%CHART%D_OUT 
+       s2%mag%mis=.true.
+       s2%magp%mis=.true.
+
+       CALL kill(F)
+       CALL kill(F0)
+       CALL kill(fmag)
+       CALL kill(fbasis)
+
+
+    END SUBROUTINE MOVE_FRAMES
+
+
+
+
+
+
+  recursive SUBROUTINE  MISALIGN_FIBRE_new(S2,S1,OMEGA,BASIS,ADD,preserve_girder)
+    ! MISALIGNS FULL FIBRE; FILLS IN CHART AND MAGNET_CHART
+    ! changed  add=true add extra misalignments TO EXISTING ONES
+    ! O AND MID BY DEFAUTL, OTHERWISE OMEGA AND BASIS
+    IMPLICIT NONE
+    REAL(DP),INTENT(IN):: S1(6)
+    REAL(DP), OPTIONAL, INTENT(IN) :: OMEGA(3),BASIS(3,3)
+    LOGICAL(LP), OPTIONAL, INTENT(IN) :: ADD,preserve_girder
+    TYPE(FIBRE),target,INTENT(INOUT):: S2
+    REAL(DP) ANGLE(3),T_GLOBAL(3),d(3),r(3)
+    TYPE(MAGNET_FRAME), POINTER :: F,F0
+    REAL(DP) D_IN(3),D_OUT(3),OMEGAT(3),BASIST(3,3)
+    INTEGER I
+    LOGICAL(LP) ADDIN,pres
+    LOGICAL(LP) FOUNDg
+    type(element), pointer :: caf
+    real(dp) a1(3),e1(3,3),a2(3),e2(3,3),dg1(3),ag1(3),mis(6)
+
+
+
+    ADDIN=.FALSE.
+    pres=.FALSE.
+    IF(PRESENT(ADD)) ADDIN=ADD
+    if(present(preserve_girder)) pres=preserve_girder
+
+    FOUNDg=.false.
+    if(pres.and.associated(s2%mag%girderS).and.(.not.addin)) then
+       CALL FIND_AFFINE_GIRDER(S2,CAF,FOUNDg)
+       if(foundg) then
+          a1=caf%girder_frame%a
+          e1=caf%girder_frame%ent
+          a2=caf%girder_frame%b
+          e2=caf%girder_frame%exi
+          !         call INVERSE_FIND_PATCH(a1,e1,dg1,ag1,a2,e2)
+          call FIND_PATCH(a1,e1,a2,e2,dg1,ag1)
+          mis=0.0_dp
+          call MISALIGN_fibre(S2,MIS)
+          MIS(1:3)=DG1
+          MIS(4:6)=AG1
+
+          call MISALIGN_fibre(S2,MIS,OMEGA=a1,BASIS=e1)
+          call MISALIGN_fibre(S2,S1,OMEGA,BASIS,ADD=my_true,preserve_girder=my_false)
+          return
+       endif
+    endif
+
+
+
+    IF(ASSOCIATED(S2%CHART)) THEN
+       !       IF(.NOT.ASSOCIATED(S2%MAG%D) ) ALLOCATE(S2%MAG%D(3))
+       !       IF(.NOT.ASSOCIATED(S2%MAG%R) ) ALLOCATE(S2%MAG%R(3))
+       !       IF(.NOT.ASSOCIATED(S2%MAGP%D)) ALLOCATE(S2%MAGP%D(3))
+       !       IF(.NOT.ASSOCIATED(S2%MAGP%R)) ALLOCATE(S2%MAGP%R(3))
+       !       DO I=1,3
+       !          S2%MAG%D(I)=S1(I);   S2%MAGP%D(I)=S1(I);
+       !          S2%MAG%R(I)=S1(3+I); S2%MAGP%R(I)=S1(3+I);
+       !       ENDDO
+       DO I=1,3
+          D(I)=S1(I);   !D(I)=S1(I);
+          R(I)=S1(3+I); !R(I)=S1(3+I);
+       ENDDO
+       S2%CHART%D_IN=0.0_dp;S2%CHART%D_OUT=0.0_dp;
+       S2%CHART%ANG_IN=0.0_dp;S2%CHART%ANG_OUT=0.0_dp;
+       S2%MAG%MIS=.TRUE.
+       S2%MAGP%MIS=.TRUE.
+
+       ! ADD CODE HERE
+       CALL ALLOC(F)
+       CALL ALLOC(F0)
+       ! MOVE THE ORIGINAL INTERNAL CHART F
+       IF(ADDIN) THEN
+          F=S2%mag%p%f
+         if(old_survey) then
+          CALL SURVEY_NO_PATCH(S2,MAGNETFRAME=F0)
+          else
+          call survey_integration_fibre(s2,s2%chart%f%a,s2%chart%f%ent)  
+           f0=S2%mag%p%f
+         endif
+       ELSE
+
+        call MOVE_FRAMES(S2,s1,OMEGA,BASIS)
+ 
+       ENDIF
+ 
+ !call survey_integration_layout(s2%parent_layout%start)
+ 
+if(associated(s2%previous)) then
+ if(s2%previous%dir==1) then 
+  call survey_integration_fibre(s2,s2%previous%t2%b,s2%previous%t2%exi)
+ 
+ else
+  call survey_integration_fibre(s2,s2%previous%t2%a,s2%previous%t2%ent)
+ endif 
+else
+ if(s2%dir==1) then 
+  call survey_integration_fibre(s2,s2%t1%a,s2%t1%ent)
+ else
+  call survey_integration_fibre(s2,s2%t1%b,s2%t1%exi)
+ endif 
+endif
+
+ 
+
+       CALL KILL(F)
+       CALL KILL(F0)
+       IF(ASSOCIATED(F)) deallocate(f)
+       IF(ASSOCIATED(F0)) deallocate(f0)
+
+
+
+
+    ELSE
+       !w_p=0
+       !w_p%NC=1
+       !w_p%FC='((1X,A72))'
+       WRITE(6,'(1X,A39,1X,A16)') " CANNOT MISALIGN THIS FIBRE: NO CHARTS ", S2%MAG%NAME
+       ! call !write_e(100)
+    ENDIF
+
+
+  END SUBROUTINE MISALIGN_FIBRE_new
+
+
+  subroutine print_magnet_framet(m,mf)
+    implicit none
+    type(magnet_frame), target :: m
+    integer mf,i
+ 
+       write(mf,'(a72)') "MAGNET FRAME MAGNET FRAME MAGNET FRAME MAGNET FRAME MAGNET FRAME MAGNET FRAME "
+       WRITE(MF,*) m%a
+       WRITE(MF,*) m%o
+       WRITE(MF,*) m%b
+       write(mf,'(a)') " ENTRANCE "
+
+       do i=1,3
+          WRITE(MF,*) m%ent(i,1:3)
+       enddo
+       write(mf,'(a)') " MIDDLE "
+
+       do i=1,3
+          WRITE(MF,*) m%mid(i,1:3)
+       enddo
+       write(mf,'(a)') " EXIT "
+
+       do i=1,3
+          WRITE(MF,*) m%exi(i,1:3)
+       enddo
+       write(mf,'(a68)') "END MAGNET FRAME END MAGNET FRAME END MAGNET FRAME END MAGNET FRAME "
+ 
+  end subroutine print_magnet_framet
 
   SUBROUTINE  MAD_MISALIGN_FIBRE(S2,S1) ! MISALIGNS FULL FIBRE; FILLS IN CHART AND MAGNET_CHART
     IMPLICIT NONE
