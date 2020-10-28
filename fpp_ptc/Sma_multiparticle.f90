@@ -116,12 +116,12 @@ private MISALIGN_FIBRE_EQUAL
      logical(lp) u(2)   ! unstable flag for both ray and reference_ray
   END type three_d_info
 
-  INTERFACE survey_new
+  INTERFACE survey 
     MODULE PROCEDURE SURVEY_EXIST_PLANAR_L_NEW
     MODULE PROCEDURE SURVEY_FIBRE_new
     MODULE PROCEDURE SURVEY_EXIST_PLANAR_IJ_new
     MODULE PROCEDURE SURVEY_EXIST_PLANAR_I_new
-  end INTERFACE survey_new
+  end INTERFACE survey 
 !  real :: ttime0,ttime1,dt1=0.0,dt2=0.0;
 
 CONTAINS
@@ -1904,159 +1904,7 @@ doit=p%mag%kind==kind16.and.p%mag%p%b0/=0.0_dp
 
   !  Survey still worm like
 
-  SUBROUTINE FILL_SURVEY_DATA_IN_NODE_LAYOUT(R)
-    ! THIS SUBROUTINE ALLOCATES NODE FRAMES IF NEEDED
-    ! IT SURVEYS THE NODES USING THE OLD REAL WORMS
-    ! SHOULD BE CALLED AFTER MISALIGNMENTS OR MOVING PART OF LATTICE
-
-    IMPLICIT NONE
-    type(layout),target:: r
-    type(fibre), pointer ::c
-    type(INTEGRATION_NODE), pointer ::t
-    type(worm) vers
-    integer k,ic,j
-    real(dp) x(6),ent(3,3),a(3)
-    LOGICAL(LP) APER
-    aper=APERTURE_FLAG
-    APERTURE_FLAG=.FALSE.
-
-    if(.not.associated(r%t)) call MAKE_NODE_LAYOUT(r)
-
-    CALL  allocate_node_frame( R)
-
-    call survey(r)
-
-    CALL ALLOC(vers,r)
-    C=>r%START
-    CALL XFRAME(vers%E,C%chart%f%ent,C%chart%f%A,-7)  ! initializes the survey part of worm
-    vers%E%L(-1)=0.d0 !Starts beam line at z=0   fake distance along ld for cheap work
-
-    do k=1,r%n
-       x=0.0_dp
-       CALL TRACK(r,x,k,k+1,default,vers)
-       if(.not.check_stable) then
-          Write(6,*) " fake instability at ",c%mag%name, " ",k
-          check_stable=.true.
-          CALL RESET_APERTURE_FLAG
-       endif
-
-       t=>c%t1
-       j=-6
-       call gMID(vers,x,j)
-       call G_FRAME(vers%e,ENT,A,j)
-       t%ent=ent
-       t%a=a
-
-       t=>t%next
-       if(t%cas/=case1) then
-          write(6,*)" error in fill_survey_data_in_NODE_LAYOUT",j,t%cas
-          stop 665
-       endif
-       j=vers%POS(2)
-       call gMID(vers,x,j)
-       call G_FRAME(vers%e,ENT,A,j)
-       t%ent=ent
-       t%a=a
-       t%previous%exi=ent
-       t%previous%b=a
-       t=>t%next
-       ic=0
-       DO J=vers%POS(2)+1,vers%POS(3)-1     ! pos(2)+1 to pos(3)-1 inside the magnet
-
-          ic=ic+1
-
-          call gMID(vers,x,j)
-          call G_FRAME(vers%e,ENT,A,j)
-
-          if(j/=vers%POS(2)+1) then
-             t%previous%exi=ent
-             t%previous%b=a
-             if(t%previous%cas/=case0) then
-                write(6,*)" error in fill_survey_data_in_NODE_LAYOUT",j,t%previous%cas
-                stop 666
-             endif
-          else
-             t%previous%exi=ent
-             t%previous%b=a
-             if(t%previous%cas/=case1) then
-                write(6,*)" error in fill_survey_data_in_NODE_LAYOUT",j,t%previous%cas
-                stop 664
-             endif
-          endif
-
-          if(j/=vers%POS(3)-1) then
-             t%ent=ent
-             t%a=a
-             if(t%cas/=case0) then
-                write(6,*)" error in fill_survey_data_in_NODE_LAYOUT",j,t%cas
-                stop 666
-             endif
-          else
-             t%ent=ent
-             t%a=a
-             if(t%cas/=case2) then
-                write(6,*)" error in fill_survey_data_in_NODE_LAYOUT",j,t%cas
-                write(6,*)t%POS,T%PARENT_FIBRE%MAG%NAME
-                write(6,*)T%PARENT_FIBRE%T1%POS,T%PARENT_FIBRE%T2%POS
-                stop 668
-             endif
-          endif
-
-
-          !  omega(1)= a(1)+scale*(xr(1)*ent(1,1)+xr(3)*ent(2,1))
-          !  omega(2)= a(2)+scale*(xr(1)*ent(1,2)+xr(3)*ent(2,2))
-          !  omega(3)= a(3)+scale*(xr(1)*ent(1,3)+xr(3)*ent(2,3))
-          !  r1(1)=omega0(3)
-          !  r1(2)=omega0(1)
-          !  r2(1)=omega(3)
-          !  r2(2)=omega(1)
-          !  if(abs(r1(1))>1.d6) r1=r2
-          !  call gMoveTo2D(r1(1),r1(2))
-          !  call  gDrawLineTo2D(r2(1),r2(2))
-          !  omega0=omega
-          t=>t%next
-       enddo
-       j=vers%POS(3)
-       call gMID(vers,x,j)
-       call G_FRAME(vers%e,ENT,A,j)
-       t%previous%exi=ent
-       t%previous%b=a
-       t%ent=ent
-       t%a=a
-       if(t%previous%cas/=case2) then
-          write(6,*)" error in fill_survey_data_in_NODE_LAYOUT",j,t%cas
-          stop 669
-       endif
-       !      t=>t%next
-
-       j=vers%nst
-       call gMID(vers,x,j)
-       call G_FRAME(vers%e,ENT,A,j)
-
-       t%exi=ent
-       t%b=a
-
-       if(t%cas/=casep2) then
-          write(6,*)" error in fill_survey_data_in_NODE_LAYOUT",j,t%cas
-          stop 670
-       endif
-
-
-       if(ic/=c%mag%p%nst+1) then
-          write(6,*)" error in fill_survey_data_in_NODE_LAYOUT"
-          write(6,*)k, ic,c%mag%name,c%mag%p%nst
-          stop 888
-       endif
-       c=>c%next
-    enddo
-
-    CALL kill(vers)
-
-    APERTURE_FLAG=aper
-
-  end  subroutine fill_survey_data_in_NODE_LAYOUT
-
-
+ 
 
 
   subroutine alloc_three_d_info(v)
@@ -2136,10 +1984,10 @@ doit=p%mag%kind==kind16.and.p%mag%p%b0/=0.0_dp
 
     IF(.NOT.ASSOCIATED(my_ering%T)) THEN
        CALL MAKE_NODE_LAYOUT(my_ering)
-       call FILL_SURVEY_DATA_IN_NODE_LAYOUT(my_ering)
+        call SURVEY(my_ering)
     ENDIF
     IF(.NOT.ASSOCIATED(my_ering%T%start%B)) THEN
-       call FILL_SURVEY_DATA_IN_NODE_LAYOUT(my_ering)
+        call SURVEY(my_ering)
     ENDIF
 
     b_b=.false.
@@ -2433,7 +2281,6 @@ doit=p%mag%kind==kind16.and.p%mag%p%b0/=0.0_dp
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   New Survey Routines !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
 subroutine survey_integration_layout(p,f,a,ent)
 implicit none
 type(fibre), target :: p
@@ -2462,7 +2309,8 @@ else
  ent0=p%chart%f%exi !global_FRAME
 endif
 endif
-
+ 
+ 
  
 call survey_integration_fibre(p,a0,ent0)
  
@@ -2566,7 +2414,7 @@ end subroutine survey_integration_layout
     TYPE(LAYOUT),target, INTENT(INOUT):: PLAN
     REAL(DP),OPTIONAL, INTENT(INOUT) :: A(3),ENT(3,3)
 
-    CALL survey_new(PLAN,1,ENT,A)
+    CALL survey(PLAN,1,ENT,A)
  
   END SUBROUTINE SURVEY_EXIST_PLANAR_L_NEW
 
@@ -2579,7 +2427,7 @@ end subroutine survey_integration_layout
     INTEGER I2
     I2=PLAN%N+I1
 
-    CALL survey_new(PLAN,I1,I2,ENT,A)
+    CALL survey(PLAN,I1,I2,ENT,A)
 
   END SUBROUTINE SURVEY_EXIST_PLANAR_I_new
 
@@ -3361,184 +3209,6 @@ end subroutine survey_integration_special_superdrift
   END SUBROUTINE  MISALIGN_FIBRE_EQUAL
 
 
-  recursive SUBROUTINE  MISALIGN_FIBRE(S2,S1,OMEGA,BASIS,ADD,preserve_girder)
-    ! MISALIGNS FULL FIBRE; FILLS IN CHART AND MAGNET_CHART
-    ! changed  add=true add extra misalignments TO EXISTING ONES
-    ! O AND MID BY DEFAUTL, OTHERWISE OMEGA AND BASIS
-    IMPLICIT NONE
-    REAL(DP),INTENT(IN):: S1(6)
-    REAL(DP), OPTIONAL, INTENT(IN) :: OMEGA(3),BASIS(3,3)
-    LOGICAL(LP), OPTIONAL, INTENT(IN) :: ADD,preserve_girder
-    TYPE(FIBRE),target,INTENT(INOUT):: S2
-    REAL(DP) ANGLE(3),T_GLOBAL(3),d(3),r(3)
-    TYPE(MAGNET_FRAME), POINTER :: F,F0
-    REAL(DP) D_IN(3),D_OUT(3),OMEGAT(3),BASIST(3,3)
-    INTEGER I
-    LOGICAL(LP) ADDIN,pres
-    LOGICAL(LP) FOUNDg
-    type(element), pointer :: caf
-    real(dp) a1(3),e1(3,3),a2(3),e2(3,3),dg1(3),ag1(3),mis(6)
-
-
-
-    ADDIN=.FALSE.
-    pres=.FALSE.
-    IF(PRESENT(ADD)) ADDIN=ADD
-    if(present(preserve_girder)) pres=preserve_girder
-
-    FOUNDg=.false.
-    if(pres.and.associated(s2%mag%girderS).and.(.not.addin)) then
-       CALL FIND_AFFINE_GIRDER(S2,CAF,FOUNDg)
-       if(foundg) then
-          a1=caf%girder_frame%a
-          e1=caf%girder_frame%ent
-          a2=caf%girder_frame%b
-          e2=caf%girder_frame%exi
-          !         call INVERSE_FIND_PATCH(a1,e1,dg1,ag1,a2,e2)
-          call FIND_PATCH(a1,e1,a2,e2,dg1,ag1)
-          mis=0.0_dp
-          call MISALIGN_fibre(S2,MIS)
-          MIS(1:3)=DG1
-          MIS(4:6)=AG1
-
-          call MISALIGN_fibre(S2,MIS,OMEGA=a1,BASIS=e1)
-          call MISALIGN_fibre(S2,S1,OMEGA,BASIS,ADD=my_true,preserve_girder=my_false)
-          return
-       endif
-    endif
-
-
-
-    IF(ASSOCIATED(S2%CHART)) THEN
-       !       IF(.NOT.ASSOCIATED(S2%MAG%D) ) ALLOCATE(S2%MAG%D(3))
-       !       IF(.NOT.ASSOCIATED(S2%MAG%R) ) ALLOCATE(S2%MAG%R(3))
-       !       IF(.NOT.ASSOCIATED(S2%MAGP%D)) ALLOCATE(S2%MAGP%D(3))
-       !       IF(.NOT.ASSOCIATED(S2%MAGP%R)) ALLOCATE(S2%MAGP%R(3))
-       !       DO I=1,3
-       !          S2%MAG%D(I)=S1(I);   S2%MAGP%D(I)=S1(I);
-       !          S2%MAG%R(I)=S1(3+I); S2%MAGP%R(I)=S1(3+I);
-       !       ENDDO
-       DO I=1,3
-          D(I)=S1(I);   !D(I)=S1(I);
-          R(I)=S1(3+I); !R(I)=S1(3+I);
-       ENDDO
-       S2%CHART%D_IN=0.0_dp;S2%CHART%D_OUT=0.0_dp;
-       S2%CHART%ANG_IN=0.0_dp;S2%CHART%ANG_OUT=0.0_dp;
-       S2%MAG%MIS=.TRUE.
-       S2%MAGP%MIS=.TRUE.
-
-       ! ADD CODE HERE
-       CALL ALLOC(F)
-       CALL ALLOC(F0)
-       ! MOVE THE ORIGINAL INTERNAL CHART F
-       IF(ADDIN) THEN
-          F=S2%mag%p%f
-         if(old_survey) then
-          CALL SURVEY_NO_PATCH(S2,MAGNETFRAME=F0)
-          else
-          call survey_integration_fibre(s2,s2%chart%f%a,s2%chart%f%ent)  
-           f0=S2%mag%p%f
-         endif
-       ELSE
-         if(old_survey) then
-          CALL SURVEY_NO_PATCH(S2,MAGNETFRAME=F0)
-          F=F0
-          else
-          call survey_integration_fibre(s2,s2%chart%f%a,s2%chart%f%ent)  
-           f=S2%mag%p%f
-           f0=S2%mag%p%f
-         endif
-       ENDIF
-!write(6,*) " f0 ",old_survey
-!         call print_magnet_framet(f0,6)
-
-       ANGLE=r  !S2%MAG%R
-       IF(PRESENT(BASIS)) THEN
-          BASIST=BASIS
-       ELSE
-          BASIST=F%MID
-       ENDIF
-       IF(PRESENT(OMEGA)) THEN
-          OMEGAT=OMEGA
-       ELSE
-          OMEGAT=F%O
-       ENDIF
-
-       CALL ROTATE_FRAME(F,OMEGAT,ANGLE,1,BASIS=BASIST)
-
-       IF(PRESENT(BASIS)) THEN   ! MUST ROTATE THAT FRAME AS WELL FOR CONSISTENCY IN DEFINITION WHAT A MISALIGNMENT IS IN PTC
-!          CALL   GEO_ROT(BASIST,ANGLE,1)
-           e1=basist
-          CALL   GEO_ROT(BASIST,e2,ANGLE,e1)   ! 2018 correction: agrees with successive rotations followed by rotations
-           basist=e2
-       ELSE
-          BASIST=F%MID    ! ALREADY ROTATED
-       ENDIF
-
-       !       CALL CHANGE_BASIS(S2%MAG%D,BASIST,T_GLOBAL,GLOBAL_FRAME)
-       CALL CHANGE_BASIS(D,BASIST,T_GLOBAL,GLOBAL_FRAME)
-
-
-       F%A=F%A+T_GLOBAL
-       F%O=F%O+T_GLOBAL
-       F%B=F%B+T_GLOBAL
-
-
-
-       CALL COMPUTE_ENTRANCE_ANGLE(F0%ENT,F%ENT,S2%CHART%ANG_IN)
-       CALL COMPUTE_ENTRANCE_ANGLE(F%EXI,F0%EXI,S2%CHART%ANG_OUT)
-
-       D_IN=F%A-F0%A
-       D_OUT=F0%B-F%B
-
-       !        WRITE(6,*) " IN GLOBAL BASIS D_IN AND D_OUT"
-
-       !        WRITE(6,*) D_IN
-       !        WRITE(6,*) D_OUT
-
-       CALL CHANGE_BASIS(D_IN,GLOBAL_FRAME,S2%CHART%D_IN,F%ENT)
-       CALL CHANGE_BASIS(D_OUT,GLOBAL_FRAME,S2%CHART%D_OUT,F0%EXI)
-
-       !         WRITE(6,*) " IN LOCAL  BASIS D_IN AND D_OUT AS WELL AS ANGLES"
-       !        WRITE(6,*) " ***************************************"
-       !       WRITE(6,*) S2%CHART%ANG_IN
-       !       WRITE(6,*) S2%CHART%ANG_OUT
-       !       WRITE(6,*) S2%CHART%D_IN
-       !       WRITE(6,*) S2%CHART%D_OUT
-       ! 
-       !       WRITE(6,*) " ***************************************"
-
-
-
-       if(old_survey) then
-         CALL SURVEY_NO_PATCH(S2)
-        else
-            call survey_integration_fibre(s2,s2%chart%f%a,s2%chart%f%ent)     
-        endif
-
-       CALL KILL(F)
-       CALL KILL(F0)
-       IF(ASSOCIATED(F)) deallocate(f)
-       IF(ASSOCIATED(F0)) deallocate(f0)
-
-
-
-       IF(ASSOCIATED(S2%T1).and.old_survey) THEN
-          IF(ASSOCIATED(S2%T1%A)) THEN
-             CALL fill_survey_ONE_FIBRE(S2)
-          ENDIF
-       ENDIF
-
-    ELSE
-       !w_p=0
-       !w_p%NC=1
-       !w_p%FC='((1X,A72))'
-       WRITE(6,'(1X,A39,1X,A16)') " CANNOT MISALIGN THIS FIBRE: NO CHARTS ", S2%MAG%NAME
-       ! call !write_e(100)
-    ENDIF
-
-
-  END SUBROUTINE MISALIGN_FIBRE
 
 SUBROUTINE MOVE_FRAMES(S2,s1,OMEGA,BASIS)
     IMPLICIT NONE
@@ -3657,7 +3327,7 @@ write(6,*) S2%CHART%D_OUT
 
 
 
-  recursive SUBROUTINE  MISALIGN_FIBRE_new(S2,S1,OMEGA,BASIS,ADD,preserve_girder)
+  recursive SUBROUTINE  MISALIGN_FIBRE(S2,S1,OMEGA,BASIS,ADD,preserve_girder)
     ! MISALIGNS FULL FIBRE; FILLS IN CHART AND MAGNET_CHART
     ! changed  add=true add extra misalignments TO EXISTING ONES
     ! O AND MID BY DEFAUTL, OTHERWISE OMEGA AND BASIS
@@ -3729,12 +3399,10 @@ write(6,*) S2%CHART%D_OUT
        ! MOVE THE ORIGINAL INTERNAL CHART F
        IF(ADDIN) THEN
           F=S2%mag%p%f
-         if(old_survey) then
-          CALL SURVEY_NO_PATCH(S2,MAGNETFRAME=F0)
-          else
+
           call survey_integration_fibre(s2,s2%chart%f%a,s2%chart%f%ent)  
            f0=S2%mag%p%f
-         endif
+
        ELSE
 
         call MOVE_FRAMES(S2,s1,OMEGA,BASIS)
@@ -3777,7 +3445,7 @@ endif
     ENDIF
 
 
-  END SUBROUTINE MISALIGN_FIBRE_new
+  END SUBROUTINE MISALIGN_FIBRE
 
 
   subroutine print_magnet_framet(m,mf)

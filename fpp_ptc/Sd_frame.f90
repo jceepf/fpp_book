@@ -248,7 +248,6 @@ CONTAINS
 
 
 
-
   SUBROUTINE ZERO_PATCH(F,R)   !R=0 nullifies and allocates ; R=-1 deallocates
     IMPLICIT  NONE
     TYPE(PATCH), INTENT(INOUT):: F
@@ -325,9 +324,9 @@ CONTAINS
        F%Ang_out=0.0_dp
        F%d_out=0.0_dp
        IF(associated(f%f)) THEN   ! R==1.and.
-          F%f%ENT=global_frame
-          F%f%EXI=global_frame
-          F%f%MID=global_frame
+      !    F%f%ENT=global_frame
+      !    F%f%EXI=global_frame
+      !    F%f%MID=global_frame
           F%f%ENT=global_frame
           F%f%EXI=global_frame
           F%f%MID=global_frame
@@ -363,9 +362,9 @@ CONTAINS
        F%Ang_out=0.0_dp
        F%d_out=0.0_dp
        IF(associated(f%f)) THEN   ! R==1.and.
-          F%f%ENT=global_frame
-          F%f%EXI=global_frame
-          F%f%MID=global_frame
+        !  F%f%ENT=global_frame
+        !  F%f%EXI=global_frame
+        !  F%f%MID=global_frame
           F%f%ENT=global_frame
           F%f%EXI=global_frame
           F%f%MID=global_frame

@@ -816,7 +816,7 @@ endif
        case('SURVEY_THIN_LAYOUT','SURVEYLAYOUT','SURVEY_NODE_LAYOUT')
 
           IF(associated(my_ering%t)) THEN
-             CALL fill_survey_data_in_NODE_LAYOUT(my_ering)
+             CALL survey(my_ering)
           ELSE
              WRITE(6,*) " NO NODE LAYOUT PRESENT "
           ENDIF

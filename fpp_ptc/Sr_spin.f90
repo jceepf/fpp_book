@@ -3445,7 +3445,8 @@ call kill(vm,phi,z)
     if(present(ref)) ref0=ref
 
     IF(.NOT.ASSOCIATED(T%B)) THEN
-       call FILL_SURVEY_DATA_IN_NODE_LAYOUT(t%parent_fibre%parent_LAYOUT)
+    call survey(t%parent_fibre%parent_LAYOUT)
+  !     call FILL_SURVEY_DATA_IN_NODE_LAYOUT(t%parent_fibre%parent_LAYOUT)
        WRITE(6,*)  " SURVEY DONE FOR THIN LAYOUT IN TRACK_NODE_LAYOUT_FLAG_spin_v "
     ENDIF
 

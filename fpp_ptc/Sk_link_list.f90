@@ -149,6 +149,7 @@ CONTAINS
     current%magp=>el%magp
     current%CHART=>el%CHART
     current%PATCH=>el%PATCH
+
     if(use_info) current%i=>el%i
     current%dir=>el%dir
     !  OCTOBER 2007
@@ -163,10 +164,11 @@ CONTAINS
     current%PARENT_LAYOUT=>L
     if(L%N==1) current%next=> L%start
     Current % previous => L % end  ! point it to next fibre
+
+
     if(L%N>1)  THEN
        L % end % next => current      !
     ENDIF
-
     L % end => Current
     if(L%N==1) L%start=> Current
 
@@ -174,7 +176,6 @@ CONTAINS
     L%LAST=>CURRENT;
 
   END SUBROUTINE APPEND_mad_like
-
 
   SUBROUTINE kill_layout( L )  ! Destroys a layout
     implicit none
