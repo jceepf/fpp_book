@@ -17,11 +17,11 @@ module ptc_multiparticle
   private DRIFTr_BACK_TO_POSITION,DRIFTp_BACK_TO_POSITION  !,DRIFT_BACK_TO_POSITION
   private MAKE_NODE_LAYOUT_2 !,DRIFT_TO_TIME
   PRIVATE MODULATE_R,MODULATE_P
-  PRIVATE SURVEY_EXIST_PLANAR_L_NEW,SURVEY_FIBRE_new,SURVEY_EXIST_PLANAR_IJ_new,SURVEY_EXIST_PLANAR_I_new
-
+  PRIVATE SURVEY_EXIST_PLANAR_L_NEW,SURVEY_FIBRE_new,SURVEY_EXIST_PLANAR_IJ_new
+  private survey_integration_layout
   PRIVATE TRACK_MODULATION_R,TRACK_MODULATION_P
   logical :: old_survey=.true.
- 
+  
 !!!!!!!  Old Survey   !!!!!!!!
 private MISALIGN_FIBRE_EQUAL
 
@@ -118,10 +118,13 @@ private MISALIGN_FIBRE_EQUAL
 
   INTERFACE survey 
     MODULE PROCEDURE SURVEY_EXIST_PLANAR_L_NEW
-    MODULE PROCEDURE SURVEY_FIBRE_new
+!    MODULE PROCEDURE SURVEY_FIBRE_new
     MODULE PROCEDURE SURVEY_EXIST_PLANAR_IJ_new
-    MODULE PROCEDURE SURVEY_EXIST_PLANAR_I_new
+
+   MODULE PROCEDURE survey_integration_layout
   end INTERFACE survey 
+
+
 !  real :: ttime0,ttime1,dt1=0.0,dt2=0.0;
 
 CONTAINS
@@ -1703,8 +1706,9 @@ doit=p%mag%kind==kind16.and.p%mag%p%b0/=0.0_dp
     ENDIF
 
    if(lielib_print(12)==1)  call stat_NODE_LAYOUT(l)
-
-
+   call allocate_node_frame( R )
+ 
+ 
 
   END SUBROUTINE MAKE_NODE_LAYOUT_2
 
@@ -2281,7 +2285,36 @@ doit=p%mag%kind==kind16.and.p%mag%p%b0/=0.0_dp
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   New Survey Routines !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-subroutine survey_integration_layout(p,f,a,ent)
+ 
+subroutine SURVEY_EXIST_PLANAR_IJ_new(L,pi,fi,ent,a)
+implicit none
+type(layout) L
+integer :: pi,i
+integer ,target, optional:: fi
+type(fibre), pointer :: p
+type(fibre),pointer :: f
+real(dp), optional, intent(in):: a(3),ent(3,3)
+ 
+
+p=>L%start
+do i=1,pi-1
+p=>p%next
+enddo
+
+if(present(fi)) then
+ f=>p
+ do i=pi,fi-1
+  f=>f%next
+ enddo
+ call  survey_integration_layout(p,f,ent=ent,a=a)
+else
+ call  survey_integration_layout(p,ent=ent,a=a)
+endif
+
+end subroutine SURVEY_EXIST_PLANAR_IJ_new
+
+
+subroutine survey_integration_layout(p,f,ent,a)
 implicit none
 type(fibre), target :: p
 type(fibre),target, optional:: f
@@ -2311,8 +2344,8 @@ endif
 endif
  
  
- 
-call survey_integration_fibre(p,a0,ent0)
+call survey_integration_fibre(p,ent0,a0)
+
  
  
 p1=>p%next
@@ -2325,9 +2358,9 @@ endif
 do while(.not.associated(p2,p1))
  
 if(p%previous%dir==1) then 
- call survey_integration_fibre(p1,p1%previous%t2%b,p1%previous%t2%exi)
+ call survey_integration_fibre(p1,p1%previous%t2%exi,p1%previous%t2%b)
 else
- call survey_integration_fibre(p1,p1%previous%t2%a,p1%previous%t2%ent)
+ call survey_integration_fibre(p1,p1%previous%t2%ent,p1%previous%t2%a)
 endif 
 !call survey_integration_fibre(p1,p1%previous%chart%f%b,p1%previous%chart%f%exi)
  
@@ -2360,7 +2393,7 @@ end subroutine survey_integration_layout
     ENDIF
 
 
-     call survey_integration_fibre(C,a,ent)
+     call survey_integration_fibre(C,ent,a)
 
 
 !!!  PLACES INTO THE COMPUTED RELATIVE POSITION OF GIRDER
@@ -2373,74 +2406,31 @@ end subroutine survey_integration_layout
 
   END SUBROUTINE SURVEY_FIBRE_new
 
-  SUBROUTINE SURVEY_EXIST_PLANAR_IJ_new(PLAN,I1,I2,ENT,A) ! STANDARD SURVEY FROM FIBRE #I1 TO #I2
-    IMPLICIT NONE
-    TYPE(LAYOUT),target, INTENT(INOUT):: PLAN
-    TYPE (FIBRE), POINTER :: C
-    TYPE (PATCH), POINTER :: P
-    REAL(DP),OPTIONAL, INTENT(INOUT) :: A(3),ENT(3,3)
-    INTEGER , INTENT(IN)::I1,I2
-    INTEGER I,i22
-    REAL(DP) AT(3),ENTT(3,3),NORM
- 
- 
-    NULLIFY(C);
 
-    if(i2>=i1) then
-       i22=i2
-    else
-       i22=PLAN%n+i2
-    endif
-
-
-    CALL MOVE_TO(PLAN,C,MOD_N(I1,PLAN%N))
-
-
-
-    I=I1
-
-    DO  WHILE(I<I22.AND.ASSOCIATED(C))
-
-       CALL survey_FIBRE_new(C,ENTT,AT)
- 
-       C=>C%NEXT
-       I=I+1
-    ENDDO
-
-  END SUBROUTINE SURVEY_EXIST_PLANAR_IJ_new
 
   SUBROUTINE SURVEY_EXIST_PLANAR_L_NEW(PLAN,ENT,A) ! CALLS ABOVE ROUTINE FROM FIBRE #1 TO #PLAN%N : STANDARD SURVEY
     IMPLICIT NONE
     TYPE(LAYOUT),target, INTENT(INOUT):: PLAN
     REAL(DP),OPTIONAL, INTENT(INOUT) :: A(3),ENT(3,3)
 
-    CALL survey(PLAN,1,ENT,A)
+    CALL survey(PLAN,pi=1,ent=ENT,a=A)
  
   END SUBROUTINE SURVEY_EXIST_PLANAR_L_NEW
 
 
-  SUBROUTINE SURVEY_EXIST_PLANAR_I_new(PLAN,I1,ENT,A) ! STANDARD SURVEY FROM FIBRE #I1 TO #I2
-    IMPLICIT NONE
-    TYPE(LAYOUT),target, INTENT(INOUT):: PLAN
-    REAL(DP),OPTIONAL, INTENT(INOUT) :: A(3),ENT(3,3)
-    INTEGER , INTENT(IN)::I1
-    INTEGER I2
-    I2=PLAN%N+I1
+ 
 
-    CALL survey(PLAN,I1,I2,ENT,A)
-
-  END SUBROUTINE SURVEY_EXIST_PLANAR_I_new
-
-subroutine survey_integration_fibre(p,b0,exi0)
+subroutine survey_integration_fibre(p,exi,b)
 implicit none
 type(fibre), target :: p
 type(integration_node), pointer :: t
 integer i,j
 type(layout), pointer  :: r
-real(dp),intent(in):: b0(3),exi0(3,3)
+real(dp),optional, intent(in):: b(3),exi(3,3)
+!real(dp)  b0(3),exi0(3,3)
 real(dp) a0(3),ent0(3,3),ang(3) 
-a0=b0
-ent0=exi0
+!a0=b0
+!ent0=exi0
 r=>p%parent_layout
 if(.not.associated(r%t)) then
  call make_node_layout(r)
@@ -2450,31 +2440,52 @@ if(.not.associated(r%t)) then
 endif
 if(.not.associated(p%t1%a))     CALL  allocate_node_frame( R)   !call FILL_SURVEY_DATA_IN_NODE_LAYOUT(r)
  
- 
+ IF(present(b).and.present(exi)) then
+   a0=b
+   ent0=exi
+ELSE
+if(associated(p%previous)) then
+ if(p%previous%dir==1) then 
+   ent0=p%previous%t2%exi
+   a0=p%previous%t2%b
+ else
+   ent0=p%previous%t2%ent
+   a0=p%previous%t2%a 
+ endif 
+else
+ if(p%dir==1) then 
+  ent0=p%t1%ent
+  a0=p%t1%a
+ else
+    ent0=p%t1%exi
+    a0=p%t1%b
+ endif 
+endif
+ENDIF
 
 t=>p%t1
  j=1
 if(p%dir==-1) j=2
 ! write(6,*) p%mag%name
 ! write(6,*) a0
-call survey_integration_node_p(t,a0,ent0,1)
+call survey_integration_node_p(t,ent0,a0,1)
 
  
 t=>t%next
-call survey_integration_fringe(t,a0,ent0,j)
+call survey_integration_fringe(t,ent0,a0,j)
  
 do i=1,p%mag%p%nst
  t=>t%next
 
- call survey_integration_node_case0(t,a0,ent0)
+ call survey_integration_node_case0(t,ent0,a0)
  
 enddo
 t=>t%next
  j=2
 if(p%dir==-1) j=1
-call survey_integration_fringe(t,a0,ent0,j)
+call survey_integration_fringe(t,ent0,a0,j)
 t=>t%next
-call survey_integration_node_p(t,a0,ent0,2)
+call survey_integration_node_p(t,ent0,a0,2)
  
  
   
@@ -2504,7 +2515,7 @@ endif
 
 end subroutine survey_integration_fibre
 
-subroutine survey_integration_node_p(t,a0,ent0,k)
+subroutine survey_integration_node_p(t,ent0,a0,k)
 implicit none
 type(integration_node), target :: t
 type(fibre), pointer :: f
@@ -2700,7 +2711,7 @@ endif
 
 end subroutine survey_integration_node_p
 
-subroutine survey_integration_fringe(t,a0,ent0,j)
+subroutine survey_integration_fringe(t,ent0,a0,j)
 implicit none
 type(integration_node), target :: t
 type(fibre), pointer :: f
@@ -2721,7 +2732,7 @@ endif
 
 
 if(associated(t%parent_fibre%mag%sdr)) then
- call survey_integration_special_superdrift(t,a0,ent0)
+ call survey_integration_special_superdrift(t,ent0,a0)
 else
 
 
@@ -2754,7 +2765,7 @@ endif
 
 if(f%mag%kind==kindpa) then
 
-call ADJUST_PANCAKE_frame(f%mag%pa,a0,ent0,j)
+call ADJUST_PANCAKE_frame(f%mag%pa,ent0,a0,j)
 !
 !write(6,*) " I am here in  1"
 endif 
@@ -2762,14 +2773,14 @@ endif
 if(f%mag%kind==kind4) then
 
 
-call ADJUST_cav_frame(f%mag%c4,a0,ent0,j,f%dir)
+call ADJUST_cav_frame(f%mag%c4,ent0,a0,j,f%dir)
 !
 !write(6,*) " I am here in   2"
 endif
 
 if(f%mag%kind==kindabell) then
 
-call ADJUST_abell_frame(f%mag%ab,a0,ent0,j)
+call ADJUST_abell_frame(f%mag%ab,ent0,a0,j)
 !
 !write(6,*) " I am here in   3"
 endif  
@@ -2795,7 +2806,7 @@ end subroutine survey_integration_fringe
 
 
 
-subroutine survey_integration_node_case0(t,b0,ent0)
+subroutine survey_integration_node_case0(t,ent0,b0)
 implicit none
 type(integration_node), target :: t
 type(fibre), pointer :: f
@@ -2909,7 +2920,7 @@ end subroutine survey_integration_node_case0
 
 
 
-subroutine survey_integration_special_superdrift(t,a0,ent0)
+subroutine survey_integration_special_superdrift(t,ent0,a0)
 implicit none
 type(integration_node), target :: t
 type(fibre), pointer :: f
@@ -3028,7 +3039,7 @@ ent0=exi0
 end subroutine survey_integration_special_superdrift
 
 
- SUBROUTINE ADJUST_cav_frame(EL,a0,exi0,J,dir)
+ SUBROUTINE ADJUST_cav_frame(EL,exi0,a0,J,dir)
     IMPLICIT NONE
     real(dp), target :: a0(3),exi0(3,3)
     TYPE(CAV4),INTENT(INOUT):: EL
@@ -3050,7 +3061,7 @@ end subroutine survey_integration_special_superdrift
  
   END SUBROUTINE ADJUST_cav_frame
 
- SUBROUTINE ADJUST_PANCAKE_frame(EL,a0,exi0,J)
+ SUBROUTINE ADJUST_PANCAKE_frame(EL,exi0,a0,J)
     IMPLICIT NONE
     real(dp), target :: a0(3),exi0(3,3)
     TYPE(PANCAKE),INTENT(INOUT):: EL
@@ -3086,7 +3097,7 @@ end subroutine survey_integration_special_superdrift
     endif
   END SUBROUTINE ADJUST_PANCAKE_frame
 
- SUBROUTINE ADJUST_abell_frame(EL,a0,exi0,J)
+ SUBROUTINE ADJUST_abell_frame(EL,exi0,a0,J)
     IMPLICIT NONE
     real(dp), target :: a0(3),exi0(3,3)
     TYPE(abell),INTENT(INOUT):: EL
@@ -3217,7 +3228,7 @@ SUBROUTINE MOVE_FRAMES(S2,s1,OMEGA,BASIS)
     TYPE(FIBRE),target,INTENT(INOUT):: S2
     real(dp) d(3),ANGLE(3),OMEGAT(3),BASIST(3,3),e1(3,3),e2(3,3),T_GLOBAL(3),d_in(3),d_out(3)
     type(integration_node), pointer :: t,t2
-    integer i,k
+    integer i  !,k
     TYPE (MAGNET_FRAME), pointer :: F0,F,fmag,fbasis
 
        CALL ALLOC(F)
@@ -3244,7 +3255,7 @@ SUBROUTINE MOVE_FRAMES(S2,s1,OMEGA,BASIS)
        f%mid=0
        f%o=0
        t=>s2%t1%next
-k=0
+!k=0
        do while (.not.(associated(t,s2%t2)) )
         F%ent=t%ent
         F%exi=t%exi
@@ -3274,8 +3285,8 @@ k=0
         F%O=F%O+T_GLOBAL
         F%B=F%B+T_GLOBAL
  
-        k=k+1
-        write(6,*) k, S2%mag%p%nst+4
+  !      k=k+1
+ 
         t%ent=f%ent
         t%exi=f%exi
         t%a=f%a
@@ -3284,10 +3295,7 @@ k=0
         t=>t%next
        enddo 
 !!!!  old fibre magnet attached frames  !!!!
-call print_magnet_framet(S2%magp%p%f,6)
-call print_magnet_framet(fmag,6)
-
-pause 123
+ 
 
         Fmag%A=Fmag%A+T_GLOBAL
         Fmag%O=Fmag%O+T_GLOBAL
@@ -3299,8 +3307,7 @@ pause 123
 
        CALL COMPUTE_ENTRANCE_ANGLE(F0%ENT,F%ENT,S2%CHART%ANG_IN)
        CALL COMPUTE_ENTRANCE_ANGLE(F%EXI,F0%EXI,S2%CHART%ANG_OUT)
-write(6,*) S2%CHART%ANG_IN
-write(6,*) S2%CHART%ANG_OUT
+ 
 
        D_IN=F%A-F0%A
        D_OUT=F0%B-F%B
@@ -3309,8 +3316,7 @@ write(6,*) S2%CHART%ANG_OUT
 
        CALL CHANGE_BASIS(D_IN,GLOBAL_FRAME,S2%CHART%D_IN,F%ENT)
        CALL CHANGE_BASIS(D_OUT,GLOBAL_FRAME,S2%CHART%D_OUT,F0%EXI)
-  write(6,*) S2%CHART%D_IN
-write(6,*) S2%CHART%D_OUT 
+ 
        s2%mag%mis=.true.
        s2%magp%mis=.true.
 
@@ -3336,8 +3342,8 @@ write(6,*) S2%CHART%D_OUT
     REAL(DP), OPTIONAL, INTENT(IN) :: OMEGA(3),BASIS(3,3)
     LOGICAL(LP), OPTIONAL, INTENT(IN) :: ADD,preserve_girder
     TYPE(FIBRE),target,INTENT(INOUT):: S2
-    REAL(DP) ANGLE(3),T_GLOBAL(3),d(3),r(3)
-    TYPE(MAGNET_FRAME), POINTER :: F,F0
+    REAL(DP) ANGLE(3)   !,T_GLOBAL(3)  ,d(3),r(3)
+ 
     REAL(DP) D_IN(3),D_OUT(3),OMEGAT(3),BASIST(3,3)
     INTEGER I
     LOGICAL(LP) ADDIN,pres
@@ -3384,54 +3390,49 @@ write(6,*) S2%CHART%D_OUT
        !          S2%MAG%D(I)=S1(I);   S2%MAGP%D(I)=S1(I);
        !          S2%MAG%R(I)=S1(3+I); S2%MAGP%R(I)=S1(3+I);
        !       ENDDO
-       DO I=1,3
-          D(I)=S1(I);   !D(I)=S1(I);
-          R(I)=S1(3+I); !R(I)=S1(3+I);
-       ENDDO
+     !  DO I=1,3
+     !     D(I)=S1(I);   !D(I)=S1(I);
+     !     R(I)=S1(3+I); !R(I)=S1(3+I);
+     !  ENDDO
        S2%CHART%D_IN=0.0_dp;S2%CHART%D_OUT=0.0_dp;
        S2%CHART%ANG_IN=0.0_dp;S2%CHART%ANG_OUT=0.0_dp;
        S2%MAG%MIS=.TRUE.
        S2%MAGP%MIS=.TRUE.
 
        ! ADD CODE HERE
-       CALL ALLOC(F)
-       CALL ALLOC(F0)
+ 
        ! MOVE THE ORIGINAL INTERNAL CHART F
        IF(ADDIN) THEN
-          F=S2%mag%p%f
-
-          call survey_integration_fibre(s2,s2%chart%f%a,s2%chart%f%ent)  
-           f0=S2%mag%p%f
+                  call MOVE_FRAMES(S2,s1,OMEGA,BASIS)
+ 
 
        ELSE
-
-        call MOVE_FRAMES(S2,s1,OMEGA,BASIS)
+          
+          call survey_integration_fibre(s2)  
+          call MOVE_FRAMES(S2,s1,OMEGA,BASIS)
  
        ENDIF
  
- !call survey_integration_layout(s2%parent_layout%start)
- 
-if(associated(s2%previous)) then
- if(s2%previous%dir==1) then 
-  call survey_integration_fibre(s2,s2%previous%t2%b,s2%previous%t2%exi)
- 
- else
-  call survey_integration_fibre(s2,s2%previous%t2%a,s2%previous%t2%ent)
- endif 
-else
- if(s2%dir==1) then 
-  call survey_integration_fibre(s2,s2%t1%a,s2%t1%ent)
- else
-  call survey_integration_fibre(s2,s2%t1%b,s2%t1%exi)
- endif 
-endif
+  
+   call survey_integration_fibre(s2)
+
+!if(associated(s2%previous)) then
+! if(s2%previous%dir==1) then 
+!  call survey_integration_fibre(s2,s2%previous%t2%exi,s2%previous%t2%b)
+! 
+! else
+!  call survey_integration_fibre(s2,s2%previous%t2%ent,s2%previous%t2%a)
+! endif 
+!else
+! if(s2%dir==1) then 
+!  call survey_integration_fibre(s2,s2%t1%ent,s2%t1%a)
+! else
+!  call survey_integration_fibre(s2,s2%t1%exi,s2%t1%b)
+! endif 
+!endif
 
  
-
-       CALL KILL(F)
-       CALL KILL(F0)
-       IF(ASSOCIATED(F)) deallocate(f)
-       IF(ASSOCIATED(F0)) deallocate(f0)
+ 
 
 
 
