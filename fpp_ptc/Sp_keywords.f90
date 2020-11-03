@@ -2817,8 +2817,6 @@ enddo
  if(present(arpent)) surv=arpent
 
    if(surv) then
-
-
      call survey(r)
    endif
 

@@ -2295,6 +2295,10 @@ type(fibre), pointer :: p
 type(fibre),pointer :: f
 real(dp), optional, intent(in):: a(3),ent(3,3)
  
+if(.not.associated(l%t)) then
+ call MAKE_NODE_LAYOUT(l)
+endif
+
 
 p=>L%start
 do i=1,pi-1
@@ -2327,9 +2331,11 @@ if(present(a)) then
 else
  !a0=global_origin
 if(p%dir==1) then
-  a0=p%chart%f%a          !global_origin
+   a0=p%t1%a
+ ! a0=p%chart%f%a          !global_origin
 else
-  a0=p%chart%f%b          !global_origin
+!  a0=p%chart%f%b          !global_origin
+   a0=p%t2%b
 endif
 endif
 if(present(ent)) then
@@ -2337,9 +2343,13 @@ if(present(ent)) then
 else
  !ent0=global_FRAME
 if(p%dir==1) then
- ent0=p%chart%f%ent !global_FRAME
+ !ent0=p%chart%f%ent !global_FRAME
+   ent0=p%t1%ent
+
 else
- ent0=p%chart%f%exi !global_FRAME
+ !ent0=p%chart%f%exi !global_FRAME
+   ent0=p%t2%ent
+
 endif
 endif
  
@@ -2355,9 +2365,8 @@ else
  p2=>p
 endif
  
-do while(.not.associated(p2,p1))
- 
-if(p%previous%dir==1) then 
+do while(.not.associated(p2,p1).and.associated(p1))
+if(p1%previous%dir==1) then 
  call survey_integration_fibre(p1,p1%previous%t2%exi,p1%previous%t2%b)
 else
  call survey_integration_fibre(p1,p1%previous%t2%ent,p1%previous%t2%a)
@@ -2412,7 +2421,7 @@ end subroutine survey_integration_layout
     IMPLICIT NONE
     TYPE(LAYOUT),target, INTENT(INOUT):: PLAN
     REAL(DP),OPTIONAL, INTENT(INOUT) :: A(3),ENT(3,3)
-
+  
     CALL survey(PLAN,pi=1,ent=ENT,a=A)
  
   END SUBROUTINE SURVEY_EXIST_PLANAR_L_NEW
@@ -2420,7 +2429,7 @@ end subroutine survey_integration_layout
 
  
 
-subroutine survey_integration_fibre(p,exi,b)
+subroutine survey_integration_fibre(p,exi,b,previous)
 implicit none
 type(fibre), target :: p
 type(integration_node), pointer :: t
@@ -2429,6 +2438,15 @@ type(layout), pointer  :: r
 real(dp),optional, intent(in):: b(3),exi(3,3)
 !real(dp)  b0(3),exi0(3,3)
 real(dp) a0(3),ent0(3,3),ang(3) 
+ logical, optional :: previous
+logical prev
+
+prev=.true.
+
+if(present(previous)) then
+ prev=previous
+endif
+
 !a0=b0
 !ent0=exi0
 r=>p%parent_layout
@@ -2445,13 +2463,23 @@ if(.not.associated(p%t1%a))     CALL  allocate_node_frame( R)   !call FILL_SURVE
    ent0=exi
 ELSE
 if(associated(p%previous)) then
- if(p%previous%dir==1) then 
-   ent0=p%previous%t2%exi
-   a0=p%previous%t2%b
+ if(prev) then
+    if(p%previous%dir==1) then 
+      ent0=p%previous%t2%exi
+      a0=p%previous%t2%b
+    else
+      ent0=p%previous%t2%ent
+      a0=p%previous%t2%a 
+    endif
  else
-   ent0=p%previous%t2%ent
-   a0=p%previous%t2%a 
- endif 
+    if(p%previous%dir==1) then 
+      ent0=p%t1%ent
+      a0=p%t1%a
+    else
+      ent0=p%t1%exi
+      a0=p%t1%b
+    endif
+ endif
 else
  if(p%dir==1) then 
   ent0=p%t1%ent
@@ -3252,7 +3280,7 @@ SUBROUTINE MOVE_FRAMES(S2,s1,OMEGA,BASIS)
        ELSE
           OMEGAT=S2%mag%p%f%o
        ENDIF
-       f%mid=0
+       f%mid=global_frame
        f%o=0
        t=>s2%t1%next
 !k=0
@@ -3408,13 +3436,13 @@ SUBROUTINE MOVE_FRAMES(S2,s1,OMEGA,BASIS)
 
        ELSE
           
-          call survey_integration_fibre(s2)  
+          call survey_integration_fibre(s2,previous=.false.)  
           call MOVE_FRAMES(S2,s1,OMEGA,BASIS)
  
        ENDIF
  
   
-   call survey_integration_fibre(s2)
+   call survey_integration_fibre(s2,previous=.false.)
 
 !if(associated(s2%previous)) then
 ! if(s2%previous%dir==1) then 
