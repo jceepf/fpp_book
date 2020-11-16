@@ -78,7 +78,8 @@ contains
 
      doneit=my_true
      call ring_l(mylat,doneit)
-
+     call line_l(mylat,doneit)
+     mylat%closed=.false.
      call survey(mylat)
      call MAKE_NODE_LAYOUT( mylat)     
     endif
