@@ -990,6 +990,132 @@ end  SUBROUTINE print_triad
   END SUBROUTINE FIND_PATCH_B
 
 
+  SUBROUTINE FIND_PATCH_bmad_MARKER(EL1,B2,EXI2,dir2,PREC,patching) ! COMPUTES PATCHES
+    IMPLICIT NONE
+    TYPE (FIBRE), target, INTENT(INOUT) :: EL1
+    real(dp),target :: B2(3),exi2(3,3)
+    REAL(DP) ENT(3,3),EXI(3,3),ENT0(3,3),EXI0(3,3),D(3),ANG(3)
+    REAL(DP), POINTER,DIMENSION(:)::A,B
+ 
+
+    LOGICAL(LP), OPTIONAL, INTENT(out) ::  patching
+    REAL(DP), OPTIONAL, INTENT(IN) ::  PREC
+    INTEGER A_YZ,A_XZ
+    LOGICAL(LP) DISCRETE
+    INTEGER LOC,I,PATCH_NEEDED,DIR2
+    REAL(DP) NORM,pix(3)
+    PATCH_NEEDED=1
+    pix=0.0_dp
+    pix(1)=pi
+
+    DISCRETE=.FALSE.
+
+       LOC=1
+   !    EL2=>EL1%NEXT
+
+ 
+
+       IF(EL1%DIR*DIR2==1) THEN   !   1
+          IF(EL1%DIR==1) THEN
+             EXI=EL1%CHART%F%EXI
+             B=>EL1%CHART%F%B
+             ENT=EXI2
+             A=>B2
+             A_XZ=1;A_YZ=1;
+          ELSE
+             EXI=EL1%CHART%F%ENT
+             exi0=exi
+             call geo_rot(exi,pix,1,basis=exi0)
+             B=>EL1%CHART%F%A
+             ENT=EXI2
+             ent0=ent
+             call geo_rot(ent,pix,1,basis=ent0)
+             A=>B2
+             !  A_XZ=1;A_YZ=1;
+             A_XZ=-1;A_YZ=-1;
+          ENDIF
+       ELSE                          !   1
+          IF(EL1%DIR==1) THEN
+             EXI=EL1%CHART%F%EXI
+             B=>EL1%CHART%F%B
+             ENT=EXI2
+             ent0=ent
+             call geo_rot(ent,pix,1,basis=ent0)
+             A=>B2
+             A_XZ=1;A_YZ=-1;
+          ELSE
+             EXI=EL1%CHART%F%ENT
+             exi0=exi
+             call geo_rot(exi,pix,1,basis=exi0)
+             B=>EL1%CHART%F%A
+             ENT=EXI2
+             A=>B2
+             A_XZ=-1;A_YZ=1;
+          ENDIF
+       ENDIF                     !   1
+
+       CALL FIND_PATCH(B,EXI,A,ENT,D,ANG)
+
+       IF(PRESENT(PREC)) THEN
+          NORM=0.0_dp
+          DO I=1,3
+             NORM=NORM+ABS(D(I))
+          ENDDO
+          IF(NORM<=PREC) THEN
+             D=0.0_dp
+             PATCH_NEEDED=PATCH_NEEDED+1
+          ENDIF
+          NORM=0.0_dp
+          DO I=1,3
+             NORM=NORM+ABS(ANG(I))
+          ENDDO
+          IF(NORM<=PREC.and.(A_XZ==1.and.A_YZ==1)) THEN
+             ANG=0.0_dp
+             PATCH_NEEDED=PATCH_NEEDED+1
+          ELSEIF(NORM<=PREC.and.(A_XZ==-1.and.A_YZ==-1)) THEN  ! added 2008.6.18
+             ANG=0.0_dp
+             PATCH_NEEDED=PATCH_NEEDED+1
+          ENDIF
+          IF(PATCH_NEEDED==3) THEN
+             PATCH_NEEDED=0
+          ELSE
+             PATCH_NEEDED=2
+          ENDIF
+       ENDIF
+ 
+ 
+
+          EL1%PATCH%B_X2=A_YZ    !  BUG WAS EL2
+          EL1%PATCH%B_X1=A_XZ    !
+          EL1%PATCH%B_D=D
+          EL1%PATCH%B_ANG=ANG
+          EL1%PATCH%PATCH=PATCH_NEEDED
+
+
+ 
+
+if(el1%patch%track) then
+    DISCRETE=.false.
+    IF(ANG(1)/TWOPI<-0.25_dp) THEN
+       DISCRETE=.TRUE.
+    ENDIF
+    IF(ANG(1)/TWOPI>0.25_dp) THEN
+       DISCRETE=.TRUE.
+    ENDIF
+    IF(ANG(2)/TWOPI<-0.25_dp) THEN
+       DISCRETE=.TRUE.
+    ENDIF
+    IF(ANG(1)/TWOPI>0.25_dp) THEN
+       DISCRETE=.TRUE.
+    ENDIF
+endif
+    IF(DISCRETE) THEN
+       if(.not.present(patching))  write(6,*) " NO GEOMETRIC PATCHING POSSIBLE : MORE THAN 90 DEGREES BETWEEN FACES "
+    ENDIF
+
+    if(present(patching)) patching=.not.discrete
+
+  END SUBROUTINE FIND_PATCH_bmad_MARKER
 
 
   SUBROUTINE INVERSE_FIND_PATCH(A,ENT,D,ANG,B,EXI) !  used in misalignments of siamese

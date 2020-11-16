@@ -474,7 +474,7 @@ else
 
     if(.not.associated(p)) goto 101
     do i=l%lastpos+1,l%n
-       write(6,*) i, p%pos,p%mag%name
+    !   write(6,*) i, p%pos,p%mag%name
        if(p%mag%name==s1name) then
           foundit=.true.
           goto 101
