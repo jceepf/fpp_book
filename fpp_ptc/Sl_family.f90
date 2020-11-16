@@ -1341,7 +1341,7 @@ CONTAINS
                    T%A=OMEGAT+D
                    D=T%B-OMEGAT     ! ERROR BEFORE  2008.5.20
                    CALL GEO_ROT(T%EXI,D,ANG,IORDER,BASIST)
-                   D=T%B-OMEGAT
+                   T%b=OMEGAT+D
                    T=>T%NEXT
                 ENDDO
                 D=T%A-OMEGAT
@@ -1349,7 +1349,7 @@ CONTAINS
                 T%A=OMEGAT+D
                 D=T%B-OMEGAT     ! ERROR BEFORE  2008.5.20
                 CALL GEO_ROT(T%EXI,D,ANG,IORDER,BASIST)
-                D=T%B-OMEGAT
+                T%b=OMEGAT+D
              ENDIF
           ENDIF
 
@@ -1365,7 +1365,7 @@ CONTAINS
              T%A=OMEGAT+D
              D=T%B-OMEGAT     ! ERROR BEFORE  2008.5.20
              CALL GEO_ROT(T%EXI,D,ANG,IORDER,BASIST)
-             D=T%B-OMEGAT
+             T%b=OMEGAT+D
              T=>T%NEXT
           ENDDO
           D=T%A-OMEGAT
@@ -1373,7 +1373,7 @@ CONTAINS
           T%A=OMEGAT+D
           D=T%B-OMEGAT     ! ERROR BEFORE  2008.5.20
           CALL GEO_ROT(T%EXI,D,ANG,IORDER,BASIST)
-          D=T%B-OMEGAT
+          T%b=OMEGAT+D
        ENDIF
     ENDIF
 

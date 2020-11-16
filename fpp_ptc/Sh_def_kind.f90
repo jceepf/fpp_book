@@ -1764,7 +1764,7 @@ CONTAINS !----------------------------------------------------------------------
  !    real(dp)  NDDF(0:15)
 !    type(real_8) NDF(0:15),NDK(15)
 
-       CALL ALLOC(NDF,4);CALL ALLOC(NDK,4);
+       CALL ALLOC(NDF);CALL ALLOC(NDK);
 
           NDF(0)=EL%L*wyoshid(0)/EL%P%NST
           NDDF(0)=EL%P%LD*wyoshid(0)/EL%P%NST
@@ -1780,7 +1780,7 @@ CONTAINS !----------------------------------------------------------------------
           CALL KICKCAV(EL,NDK(J),X,k)
           CALL DRIFT(NDF(J),NDDF(J),EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,X)
        ENDDO
-       CALL KILL(NDF,4);CALL KILL(NDK,4);
+       CALL KILL(NDF);CALL KILL(NDK);
 
     CASE DEFAULT
 
@@ -5576,7 +5576,7 @@ integer :: kkk=0
 !    real(dp)  NDDF(0:15)
 !    type(real_8) NDF(0:15),NDK(15)
 
-       CALL ALLOC(NDF,4);CALL ALLOC(NDK,4);
+       CALL ALLOC(NDF);CALL ALLOC(NDK);
 
           NDF(0)=EL%L*wyoshid(0)/EL%P%NST
           NDDF(0)=EL%P%LD*wyoshid(0)/EL%P%NST
@@ -5593,7 +5593,7 @@ integer :: kkk=0
           CALL DRIFT(NDF(J),NDDF(J),EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,X)
        ENDDO
  
-       CALL KILL(NDF,4);CALL KILL(NDK,4);
+       CALL KILL(NDF);CALL KILL(NDK);
 
     CASE DEFAULT
        !w_p=0
@@ -6139,7 +6139,7 @@ integer :: kkk=0
 !    real(dp)  NDDF(0:15)
 !    type(real_8) NDF(0:15),NDK(15)
 
-       CALL ALLOC(NDF,4);CALL ALLOC(NDK,4);
+       CALL ALLOC(NDF);CALL ALLOC(NDK);
 
           NDF(0)=EL%L*wyoshid(0)/EL%P%NST
           NDDF(0)=EL%P%LD*wyoshid(0)/EL%P%NST
@@ -6156,7 +6156,7 @@ integer :: kkk=0
           CALL KICK_SOL(EL,NDF(J),X,k)
        ENDDO
  
-       CALL KILL(NDF,4);CALL KILL(NDK,4);
+       CALL KILL(NDF);CALL KILL(NDK);
 
     CASE DEFAULT
        !w_p=0
@@ -11903,7 +11903,7 @@ endif
 !!! newyoshida
     CASE(8)
   !  real(dp) NDF(0:15),NDK(15),NDDF(0:15)
-      CALL ALLOC(NDF,4);CALL ALLOC(NDK,4);
+      CALL ALLOC(NDF);CALL ALLOC(NDK);
           NDF(0)=EL%L*wyoshid(0)/EL%P%NST
           NDDF(0)=EL%P%LD*wyoshid(0)/EL%P%NST
        DO I =1,15
@@ -11918,7 +11918,7 @@ endif
           CALL SKICK (EL,NDK(J),X,k)
           CALL SSECH1(EL,NDF(J),NDDF(J),X,k)
        ENDDO
-      CALL KILL(NDF,4);CALL KILL(NDK,4);
+      CALL KILL(NDF);CALL KILL(NDK);
 
     CASE DEFAULT
        !w_p=0
@@ -13534,7 +13534,7 @@ endif
 !    real(dp)  NDDF(0:15)
 !    type(real_8) NDF(0:15),NDK(15)
 
-       CALL ALLOC(NDF,4);CALL ALLOC(NDK,4);
+       CALL ALLOC(NDF);CALL ALLOC(NDK);
 
           NDF(0)=EL%L*wyoshid(0)/EL%P%NST
           NDDF(0)=EL%P%LD*wyoshid(0)/EL%P%NST
@@ -13547,10 +13547,10 @@ endif
 
        DO J=1,15
              CALL KICKEX (EL,NDK(J),X,k)
-             CALL DRIFT(DF(J),NDDF(J),EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,X)
+             CALL DRIFT(NDF(J),NDDF(J),EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,X)
        ENDDO
  
-       CALL KILL(NDF,4);CALL KILL(NDK,4);
+       CALL KILL(NDF);CALL KILL(NDK);
 
 
        CASE DEFAULT
@@ -13616,7 +13616,7 @@ endif
 !    real(dp)  NDDF(0:15)
 !    type(real_8) NDF(0:15),NDK(15)
 
-       CALL ALLOC(NDF,4);CALL ALLOC(NDK,4);
+       CALL ALLOC(NDF);CALL ALLOC(NDK);
 
           NDF(0)=EL%L*wyoshid(0)/EL%P%NST
           NDDF(0)=EL%P%LD*wyoshid(0)/EL%P%NST
@@ -13632,7 +13632,7 @@ endif
              CALL SPAR(EL,NDF(J),NDDF(J),X,k)
        ENDDO
  
-       CALL KILL(NDF,4);CALL KILL(NDK,4);
+       CALL KILL(NDF);CALL KILL(NDK);
        CASE DEFAULT
           !w_p=0
           !w_p%nc=1

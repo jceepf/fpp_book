@@ -19,7 +19,7 @@ module ptc_multiparticle
   PRIVATE MODULATE_R,MODULATE_P
   PRIVATE SURVEY_EXIST_PLANAR_L_NEW,SURVEY_FIBRE_new,SURVEY_EXIST_PLANAR_IJ_new
   private survey_integration_layout
-  PRIVATE TRACK_MODULATION_R,TRACK_MODULATION_P
+  PRIVATE TRACK_MODULATION_R,TRACK_MODULATION_P,FIND_PATCH_0_survey
   logical :: old_survey=.true.
   
 !!!!!!!  Old Survey   !!!!!!!!
@@ -123,6 +123,11 @@ private MISALIGN_FIBRE_EQUAL
 
    MODULE PROCEDURE survey_integration_layout
   end INTERFACE survey 
+
+  INTERFACE FIND_PATCH_with_survey 
+    MODULE PROCEDURE FIND_PATCH_0_survey
+
+  end INTERFACE FIND_PATCH_with_survey 
 
 
 !  real :: ttime0,ttime1,dt1=0.0,dt2=0.0;
@@ -2366,11 +2371,11 @@ else
 endif
  
 do while(.not.associated(p2,p1).and.associated(p1))
-if(p1%previous%dir==1) then 
+!if(p1%previous%dir==1) then 
  call survey_integration_fibre(p1,p1%previous%t2%exi,p1%previous%t2%b)
-else
- call survey_integration_fibre(p1,p1%previous%t2%ent,p1%previous%t2%a)
-endif 
+!else
+! call survey_integration_fibre(p1,p1%previous%t2%ent,p1%previous%t2%a)
+!endif 
 !call survey_integration_fibre(p1,p1%previous%chart%f%b,p1%previous%chart%f%exi)
  
 p1=>p1%next
@@ -2464,32 +2469,33 @@ if(.not.associated(p%t1%a))     CALL  allocate_node_frame( R)   !call FILL_SURVE
 ELSE
 if(associated(p%previous)) then
  if(prev) then
-    if(p%previous%dir==1) then 
+   ! if(p%previous%dir==1) then 
       ent0=p%previous%t2%exi
       a0=p%previous%t2%b
-    else
-      ent0=p%previous%t2%ent
-      a0=p%previous%t2%a 
-    endif
+   ! else
+    !  ent0=p%previous%t2%ent
+    !  a0=p%previous%t2%a 
+   ! endif
  else
-    if(p%previous%dir==1) then 
+  !  if(p%previous%dir==1) then 
       ent0=p%t1%ent
       a0=p%t1%a
-    else
-      ent0=p%t1%exi
-      a0=p%t1%b
-    endif
+ !   else
+  !    ent0=p%t1%exi
+  !    a0=p%t1%b
+  !  endif
  endif
 else
- if(p%dir==1) then 
+ !if(p%dir==1) then 
   ent0=p%t1%ent
   a0=p%t1%a
- else
-    ent0=p%t1%exi
-    a0=p%t1%b
- endif 
+ !else
+ !   ent0=p%t1%exi
+ !   a0=p%t1%b
+ !endif 
 endif
 ENDIF
+ 
 
 t=>p%t1
  j=1
@@ -2557,15 +2563,15 @@ if(k==1) then
 f=>t%parent_fibre
 pix1=0.0_dp;pix2=0.0_dp;
 
-if(f%dir==1) then
+!if(f%dir==1) then
  t%a=a0
  t%ent=ent0
  exi0=t%ent
-else
- t%b=a0
- t%exi=ent0
- exi0=t%exi
-endif
+!else
+! t%b=a0
+! t%exi=ent0
+! exi0=t%exi
+!endif
 
 if(f%patch%A_X1==-1) pix1(1)=pi
 if(f%patch%A_X2==-1) pix2(1)=pi
@@ -2575,6 +2581,8 @@ call GEO_ROT(exi0,pix1,1, ent0)
 call GEO_ROT(exi0,f%patch%a_ang,1, exi0)
 call TRANSLATE_point(a0,f%patch%A_D,1,exi0)  
 call GEO_ROT(exi0,pix2,1, exi0)
+
+!!!  These are chart frames so depends on dir=1 or -1
 
 !!! entrance chart
 if(f%dir==1) then
@@ -2605,6 +2613,7 @@ endif
  
     ENDIF
  
+!!!  These are magnet frames so depends on dir=1 or -1
  if(f%dir==1) then
   f%mag%p%f%ent=exi0
   f%mag%p%f%a=a0
@@ -2627,15 +2636,15 @@ endif
 
 
 
-if(f%dir==1) then
+!if(f%dir==1) then
  t%b=a0
  t%exi=exi0
  ent0=exi0
-else
- t%a=a0
- t%ent=exi0
- ent0=exi0
-endif
+!else
+! t%a=a0
+! t%ent=exi0
+! ent0=exi0
+!endif
  
  
 else ! k
@@ -2644,17 +2653,18 @@ else ! k
 f=>t%parent_fibre
 
  
-if(f%dir==1) then
+!if(f%dir==1) then
  t%a=a0
  t%ent=ent0
  exi0=t%ent
-else
- t%b=a0
- t%exi=ent0
- exi0=t%exi
-endif
+!else
+! t%b=a0
+! t%exi=ent0
+! exi0=t%exi
+!endif
 
 
+!!!  These are magnet frames so depends on dir=1 or -1
 
  if(f%dir==-1) then
   f%mag%p%f%ent=ent0
@@ -2686,6 +2696,8 @@ endif
 
  call GEO_ROT(exi0,pix1,1, exi0)
 
+!!!  These are chart frames so depends on dir=1 or -1
+
 if(f%dir==1) then
  f%chart%f%exi=exi0
  f%chart%f%b=a0
@@ -2713,15 +2725,15 @@ t%exi=exi0
 ent0=exi0
  
 
-if(f%dir==1) then
+!if(f%dir==1) then
  t%b=a0
  t%exi=exi0
  ent0=exi0
-else
- t%a=a0
- t%ent=exi0
- ent0=exi0
-endif
+!else
+! t%a=a0
+! t%ent=exi0
+! ent0=exi0
+!endif
 
 
 !       X(3)=C%PATCH%B_X1*X(3);X(4)=C%PATCH%B_X1*X(4);
@@ -2748,13 +2760,13 @@ integer j
 
 f=>t%parent_fibre
 
- if(f%dir==1) then
+ !if(f%dir==1) then
  t%a=a0
  t%ent=ent0
-else
- t%b=a0
- t%exi=ent0
-endif
+!else
+! t%b=a0
+! t%exi=ent0
+!endif
 
 
 
@@ -2815,17 +2827,17 @@ endif
 
 
  
-if(f%dir==1) then
+!if(f%dir==1) then
   t%b=a0
   t%exi=ent0
   a0=t%b
   ent0=t%exi
- else
-  t%a=a0
-  t%ent=ent0
-  a0=t%a
-  ent0=t%ent
- endif
+! else
+!  t%a=a0
+!  t%ent=ent0
+!  a0=t%a
+!  ent0=t%ent
+! endif
  
 endif
 
@@ -2850,15 +2862,15 @@ p=>m%p
 
  dir=f%dir
 
- if(f%dir==1) then
+! if(f%dir==1) then
 t%a=b0
 t%ent=ent0
 exi0=t%ent
-else
- t%b=b0
-  t%exi=ent0
- exi0=t%exi
-endif
+!else
+! t%b=b0
+!  t%exi=ent0
+! exi0=t%exi
+!endif
 
 
 
@@ -2933,13 +2945,13 @@ CASE default
 end select
 
 
- if(f%dir==1) then
+! if(f%dir==1) then
 t%b=b0
 t%exi=exi0
-else
-t%a=b0
-t%ent=exi0
-endif
+!else
+!t%a=b0
+!t%ent=exi0
+!endif
 ent0=exi0
 
 end subroutine survey_integration_node_case0
@@ -3431,38 +3443,16 @@ SUBROUTINE MOVE_FRAMES(S2,s1,OMEGA,BASIS)
  
        ! MOVE THE ORIGINAL INTERNAL CHART F
        IF(ADDIN) THEN
+
                   call MOVE_FRAMES(S2,s1,OMEGA,BASIS)
- 
+                  call survey_integration_fibre(s2)
 
        ELSE
-          
-          call survey_integration_fibre(s2,previous=.false.)  
+          call survey_integration_fibre(s2)  !,previous=.false.)   
           call MOVE_FRAMES(S2,s1,OMEGA,BASIS)
- 
+          call survey_integration_fibre(s2)
        ENDIF
  
-  
-   call survey_integration_fibre(s2,previous=.false.)
-
-!if(associated(s2%previous)) then
-! if(s2%previous%dir==1) then 
-!  call survey_integration_fibre(s2,s2%previous%t2%exi,s2%previous%t2%b)
-! 
-! else
-!  call survey_integration_fibre(s2,s2%previous%t2%ent,s2%previous%t2%a)
-! endif 
-!else
-! if(s2%dir==1) then 
-!  call survey_integration_fibre(s2,s2%t1%ent,s2%t1%a)
-! else
-!  call survey_integration_fibre(s2,s2%t1%exi,s2%t1%b)
-! endif 
-!endif
-
- 
- 
-
-
 
 
     ELSE
@@ -3725,5 +3715,24 @@ SUBROUTINE MOVE_FRAMES(S2,s1,OMEGA,BASIS)
     !    CALL MOVE_SIAMESE_FRAME(S2%MAG)
     if(global_verbose) write(6,*) k, " magnet misaligned "
   END SUBROUTINE  MISALIGN_SIAMESE
+
+  SUBROUTINE FIND_PATCH_0_survey(EL1,EL2_NEXT,NEXT,ENERGY_PATCH,PREC,patching) ! COMPUTES PATCHES
+    IMPLICIT NONE
+    TYPE (FIBRE),target :: EL1
+    TYPE (FIBRE),TARGET,OPTIONAL, INTENT(INOUT) :: EL2_NEXT
+    TYPE (FIBRE),POINTER :: EL2
+    REAL(DP), OPTIONAL :: PREC
+    LOGICAL(LP), OPTIONAL, INTENT(IN) ::  NEXT,ENERGY_PATCH
+    LOGICAL(LP), OPTIONAL, INTENT(out) ::  patching
+    LOGICAL(LP) patch
+     call find_patch(EL1,EL2_NEXT,NEXT,ENERGY_PATCH,PREC,patching=patch)
+
+     if(patch) then
+       call survey_integration_fibre(el1)
+       if (.not.present(el2_next)) call survey_integration_fibre(el1%next)
+     endif
+     if(present(patching) ) patching=patch
+
+    end SUBROUTINE FIND_PATCH_0_survey
 
 end module ptc_multiparticle
