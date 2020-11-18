@@ -1084,11 +1084,12 @@ end  SUBROUTINE print_triad
        ENDIF
  
  
-
+          
           EL1%PATCH%B_X2=A_YZ    !  BUG WAS EL2
           EL1%PATCH%B_X1=A_XZ    !
           EL1%PATCH%B_D=D
           EL1%PATCH%B_ANG=ANG
+          if(patch_needed/=0) PATCH_NEEDED=2
           EL1%PATCH%PATCH=PATCH_NEEDED
 
 
