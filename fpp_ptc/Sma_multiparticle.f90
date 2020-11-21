@@ -2338,9 +2338,9 @@ else
 if(p%dir==1) then
    a0=p%t1%a
  ! a0=p%chart%f%a          !global_origin
-else
+!else
 !  a0=p%chart%f%b          !global_origin
-   a0=p%t2%b
+!   a0=p%t2%b
 endif
 endif
 if(present(ent)) then
@@ -2351,9 +2351,9 @@ if(p%dir==1) then
  !ent0=p%chart%f%ent !global_FRAME
    ent0=p%t1%ent
 
-else
+!else
  !ent0=p%chart%f%exi !global_FRAME
-   ent0=p%t2%ent
+!   ent0=p%t2%ent
 
 endif
 endif
