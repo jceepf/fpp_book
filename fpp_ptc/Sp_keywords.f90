@@ -80,7 +80,7 @@ contains
      call ring_l(mylat,doneit)
      call line_l(mylat,doneit)
      mylat%closed=.false.
-     call survey(mylat)
+   !  call survey(mylat)
      call MAKE_NODE_LAYOUT( mylat)     
     endif
   end subroutine create_fibre_append
