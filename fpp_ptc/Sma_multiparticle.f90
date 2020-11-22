@@ -2594,11 +2594,11 @@ f%chart%f%b=a0
 endif
 
 pix1=0.0_dp
-if(f%dir==1) then
+!if(f%dir==1) then
  pix1(3)=f%MAG%P%TILTD
-else
-  pix1(3)=f%MAG%P%TILTD
-endif
+!else
+!  pix1(3)=f%MAG%P%TILTD
+!endif
  call GEO_ROT(exi0,pix1,1, exi0)
 
 
@@ -2688,11 +2688,11 @@ endif
 
 
 pix1=0.0_dp
-if(f%dir==1) then
+!if(f%dir==1) then
  pix1(3)=-f%MAG%P%TILTD
-else
-  pix1(3)=f%MAG%P%TILTD    ! strange
-endif
+!else  
+!  pix1(3)=-f%MAG%P%TILTD    ! strange   
+!endif
 
  call GEO_ROT(exi0,pix1,1, exi0)
 
@@ -3226,10 +3226,10 @@ end subroutine survey_integration_special_superdrift
              call TRANSLATE_point(b0,d,-1,exi0)  
                d=ang
                ang=0
-               ang(3)=d(3)  
+               ang(3)=-d(3)    !!! strange
              call GEO_ROT(exi0,ang,1, exi0)  
              ang=0.d0
-             ang(2)=d(2)
+             ang(2)=-d(2)      !!! strange
              call GEO_ROT(exi0,ang,1, exi0)  
              ang=0.d0
              ang(1)=-d(1)
