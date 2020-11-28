@@ -2335,19 +2335,19 @@ if(present(a)) then
  a0=a
 else
  !a0=global_origin
-if(p%dir==1) then
+!if(p%dir==1) then
    a0=p%t1%a
  ! a0=p%chart%f%a          !global_origin
 !else
 !  a0=p%chart%f%b          !global_origin
 !   a0=p%t2%b
-endif
+!endif
 endif
 if(present(ent)) then
  ent0=ent
 else
  !ent0=global_FRAME
-if(p%dir==1) then
+!if(p%dir==1) then
  !ent0=p%chart%f%ent !global_FRAME
    ent0=p%t1%ent
 
@@ -2355,7 +2355,7 @@ if(p%dir==1) then
  !ent0=p%chart%f%exi !global_FRAME
 !   ent0=p%t2%ent
 
-endif
+!endif
 endif
  
  
