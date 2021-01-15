@@ -1936,14 +1936,14 @@ endif
              call get_Bfield_fringe(EL,B,E,X,pos,k)   ! fringe effect
           ELSE
 !             if(EL%TP10%electric) then
-              call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.d0;
+              call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.0_dp;
 !             else
 !              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
 !             endif
           ENDIF
        else
 !             if(EL%TP10%electric) then
-              call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.d0;
+              call GETELECTRIC(EL%TP10,E,phi,B,VM,X); E(3)=0.0_dp;
 !             else
 !              CALL GETMULB_TEAPOT(EL%TP10,B,VM,X)
 !             endif

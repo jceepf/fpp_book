@@ -20,7 +20,7 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
 
   IMPLICIT NONE
   public
- private ety2,etdiv,ety,etyt
+ private ety2,etdiv,ety,etyt,checksympn
 
   integer,private::nd2par,nd2part,nd2partt
   integer,private,target ::pos_of_delta  
@@ -130,11 +130,16 @@ type c_linear_map
 end type c_linear_map
 
 type c_lattice_function
- real(dp) E(3,6,6),K(3,6,6),B(3,6,6)
- real(dp) H(3,6,6)
- real(dp)  S(1:3,1:3,0:6)
- logical symplectic 
-end type c_lattice_function
+ real(dp) :: E(3,6,6) =0 ,K(3,6,6) =0,B(3,6,6) =0
+ real(dp) :: H(3,6,6) = 0
+ real(dp) :: S(1:3,1:3,0:6) =0
+ real(dp) ::phase(3) =0 ,damping(3) =0 , spin(2) =0,fix(6) =0
+ type(fibre), pointer :: f => null()
+ type(integration_node), pointer :: t => null()
+ logical :: symplectic = .true.
+!!!!  radiation quantity
+ real(dp) :: sigmas(6,6)
+end type c_lattice_function 
 
 type(c_linear_map) q_phasor,qi_phasor
 
@@ -475,6 +480,9 @@ type(c_linear_map) q_phasor,qi_phasor
   !end INTERFACE cgetvf
 
   ! intrisic functions overloaded
+    INTERFACE checksymp
+     MODULE PROCEDURE checksympn
+  end INTERFACE checksymp
 
   INTERFACE q_part
      MODULE PROCEDURE qua_ql
@@ -5624,6 +5632,7 @@ endif
 
  end   function  qua_ql
 
+
   SUBROUTINE  EQUAL_c_l_f(S2,S1)
     implicit none
     type(c_lattice_function), intent(out) :: s2
@@ -5633,7 +5642,14 @@ endif
     s2%h=0
     s2%b=0
     s2%s=0
-    s2%symplectic= s1
+    s2%spin=0
+    s2%phase=0
+    s2%damping=0
+    s2%f=>null()
+    s2%t=>null()
+    s2%symplectic=s1
+    S2%FIX=0
+    s2%sigmas=0
  end SUBROUTINE  EQUAL_c_l_f
 
   SUBROUTINE  compute_lattice_functions(m,f)
@@ -5655,6 +5671,7 @@ endif
     f%k=0
     f%e=0
     f%s=0
+
  !!!!    computing the de Moivre Lattice Functions  !!!!
  !!!!  equivalent to Ripken ones
 
@@ -18418,6 +18435,9 @@ endif
       call kill(qnr) 
     endif
       
+    call c_check_rad(m1%e_ij,rad_in)
+    if(rad_in) call c_normal_radiation(m1,n)
+
      ri=from_phasor()
     n%n=c_simil(ri,m1,1)
     n%Atot=n%as*n%a_t
@@ -18450,9 +18470,11 @@ endif
           qphase=qphasedef
     endif
 
-
-    call c_check_rad(m1%e_ij,rad_in)
-    if(rad_in) call c_normal_radiation(m1,n)
+! error because m1 was reutilized in present(rot)
+!   call c_check_rad(m1%e_ij,rad_in)
+ !!   if(rad_in) call c_normal_radiation(m1,n)
+ !   call c_check_rad(m1%e_ij,rad_in)
+ !!   if(rad_in) call c_normal_radiation(m1,n)
 
     call kill(m1);call kill(nonl);call kill(a1);call kill(a2);call kill(ri);
 
@@ -19261,5 +19283,19 @@ allocate(id(n,n),ik(n,n), j(n,n),ji(n,n))
       rt=matmul(r,matmul(j,transpose(r)) )
 deallocate(id,ik, j,ji)
 end   SUBROUTINE furman_step
+
+
+  subroutine checksympn(s1,norm,orthogonal)
+    implicit none
+    TYPE (c_damap) s1
+    real(dp), optional :: norm
+    logical(lp), optional :: orthogonal
+    TYPE (damap) s1o
+     call alloc(s1o)
+       s1o=s1
+     call checksymp(s1o,norm,orthogonal)
+     call kill(s1o)
+
+  end subroutine checksympn
 
   END MODULE  c_tpsa
