@@ -7438,12 +7438,13 @@ endif
         endif   
             call c_check_rad_spin(s1%damps,rad_in)
         if(rad_in) then
-         write(mfi,*) "Stochastic Spin Fluctuation"
-          do i=1,3
-          do j=1,3
-           write(mfi,*) i,j,s1%b_kin(i,j)
-          enddo
-          enddo
+          call print_e_ij(S1,mfi)
+       !  write(mfi,*) "Stochastic Spin Fluctuation"
+       !   do i=1,3
+       !   do j=1,3
+       !    write(mfi,*) i,j,s1%b_kin(i,j)
+       !   enddo
+       !   enddo
         else
          write(mfi,*) "No Stochastic Spin Fluctuation "
         endif   
@@ -7466,8 +7467,28 @@ endif
          write(mfi,*) "No Stochastic Spin Kick "
         endif   
 
-
   END SUBROUTINE c_pri_map
+
+
+  SUBROUTINE  print_e_ij(S1,MFILE)
+    implicit none
+    INTEGER,OPTIONAL,INTENT(IN)::MFILE
+    type (c_damap),INTENT(INout)::S1
+    integer i,j,mfi
+
+
+     mfi=6
+     if(present(mfile)) mfi=mfile
+
+         write(mfi,*) "Stochastic Radiation "
+          do i=1,6
+          do j=1,6
+           write(mfi,*) i,j,s1%e_ij(i,j)
+          enddo
+          enddo
+
+   end SUBROUTINE  print_e_ij
+
 
   SUBROUTINE  c_pri_quaternion(S2,mf,prec)
     implicit none
