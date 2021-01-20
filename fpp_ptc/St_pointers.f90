@@ -4633,6 +4633,101 @@ end   subroutine track_hermite_linear_inv_8
 
  
 
+subroutine symplectify_for_oleksii(M,Am,B,f,fsymp,frad )
+implicit none
+type(c_vector_field), intent(inout) :: f,fsymp,frad
+type(c_damap), intent(inout) :: M,Am,B
+type(c_vector_field)  ft
+complex(dp) v
+type(c_taylor) t,dt
+ 
+integer i,j,k,n(11),nv,nd2,al,ii,a,mul
+integer, allocatable :: je(:)
+real(dp) dm,norm,normb,norma,h(4)
+!TYPE(c_damap) mt,ids,m4,ml
+real(dp),allocatable::   S(:,:),id(:,:)
+
+! m = L_ns o N_pure_ns o L_s o N_s
+! d= = L_ns o N_pure_ns
+! ms= L_s o N_s
+ ! f=log(M)
+f=c_logf_spin(M)
+ 
+  B=0
+allocate(S(6,6),id(6,6))
+
+call c_get_indices(n,0)
+nv=n(4)
+nd2=n(3)
+
+S=0
+id=0
+do i=1,nd2/2
+ S(2*I-1,2*I)=1 ; S(2*I,2*I-1)=-1;
+ Id(2*I-1,2*I-1)=1 ; id(2*I,2*I)=1;
+enddo
+
+
+
+
+
+call alloc(t,dt); !call alloc(mt,ids,m4,ml);
+
+ 
+
+
+
+ 
+fsymp=0
+
+ ! Integrating a symplectic operator using the hypercube's diagonal
+
+allocate(je(nv))
+je=0
+do i=1,f%n
+
+       j=1
+
+        do while(.true.)
+
+          call  c_cycle(f%v(i),j,v ,je); if(j==0) exit;
+         dm=1
+         do ii=1,nd2
+          dm=dm+je(ii)
+         enddo
+        t=v.cmono.je
+        do a=1,nd2
+         dt=t.d.a
+        do al=1,nd2
+        do k=1,nd2
+          fsymp%v(al)=fsymp%v(al)+s(a,al)*s(k,i)*(id(k,a)*t+(1.0_dp.cmono.k)*dt)/dm
+        enddo ! k
+        enddo ! al
+        enddo ! a
+        enddo
+
+enddo
+ 
+!do i=1,6
+! frad%v(i)=f%v(i)-fsymp%v(i)
+!enddo
+! frad%q=f%q-fsymp%q
+
+ 
+Am=exp(fsymp)
+B= Am**(-1)*m
+!frad=log(B)
+frad=c_logf_spin(B)
+!B%e_ij=m%e_ij
+
+
+
+deallocate(je);deallocate(s,id);
+  
+call kill(t,dt);  !call kill(mt,ids,m4,ml);
+ 
+end subroutine symplectify_for_oleksii
+
 
 
 end module pointer_lattice
