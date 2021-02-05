@@ -4348,7 +4348,7 @@ cm=0
 if(c>0.or.cm>no) then
 r1=0.0_dp
 else
-    CALL c_dapek(S1%I,j,r1)
+  CALL c_dapek(S1%I,j,r1)
 endif
 
 
@@ -7427,44 +7427,9 @@ else
 endif
             call c_check_rad(s1%e_ij,rad_in)
         if(rad_in) then
-         write(mfi,*) "Stochastic Radiation "
-          do i=1,6
-          do j=1,6
-           write(mfi,*) i,j,s1%e_ij(i,j)
-          enddo
-          enddo
+          call print_e_ij(S1,mfi)
         else
          write(mfi,*) "No Stochastic Radiation "
-        endif   
-            call c_check_rad_spin(s1%damps,rad_in)
-        if(rad_in) then
-          call print_e_ij(S1,mfi)
-       !  write(mfi,*) "Stochastic Spin Fluctuation"
-       !   do i=1,3
-       !   do j=1,3
-       !    write(mfi,*) i,j,s1%b_kin(i,j)
-       !   enddo
-       !   enddo
-        else
-         write(mfi,*) "No Stochastic Spin Fluctuation "
-        endif   
-        if(rad_in) then
-         write(mfi,*) "Stochastic Spin Damping"
-          do i=1,3
-          do j=1,3
-           write(mfi,*) i,j,s1%damps(i,j)
-          enddo
-          enddo
-        else
-         write(mfi,*) "No Stochastic Spin Damping "
-        endif   
-        if(rad_in) then
-         write(mfi,*) "Stochastic Spin Kick"
-          do i=1,3
-           write(mfi,*) i,s1%d_spin(i)
-          enddo
-        else
-         write(mfi,*) "No Stochastic Spin Kick "
         endif   
 
   END SUBROUTINE c_pri_map
@@ -17013,11 +16978,11 @@ subroutine print_vector_field_fourier(s1,mf)
     INTEGER I,mf
  
      write(mf,*) 0,"th mode"
-     call print(s1%f(0),mf,dospin=.false.)
+     call print(s1%f(0),mf)  !,dospin=.false.)
     do i=1,n_fourier
      write(mf,*) i,"th mode"
-     call print(s1%f(i),mf,dospin=.false.)
-     call print(s1%f(-i),mf,dospin=.false.)
+     call print(s1%f(i),mf)  !,dospin=.false.)
+     call print(s1%f(-i),mf)  !,dospin=.false.)
     enddo
 
 end subroutine print_vector_field_fourier
@@ -17144,8 +17109,10 @@ end subroutine mulc_vector_field_fourier
     integer i
 
     S2=0
-    do i=-n_fourier,n_fourier
+    do i=lbound(s1%f,1),ubound(s1%f,1)
+
        S2=S2+(exp(i_*i*theta))*S1%f(i)
+
     enddo
 
   END SUBROUTINE c_evaluate_vector_field_fourier

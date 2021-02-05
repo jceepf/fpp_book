@@ -4632,12 +4632,12 @@ end   subroutine track_hermite_linear_inv_8
   end subroutine kill_hermite
 
  
-
-subroutine symplectify_for_oleksii(M,Am,B,f,fsymp,frad )
+subroutine symplectify_for_oleksii(M,Am,Sspin,B,fsymp,fspin,frad )
 implicit none
-type(c_vector_field), intent(inout) :: f,fsymp,frad
-type(c_damap), intent(inout) :: M,Am,B
+type(c_vector_field), intent(inout) :: fsymp,fspin,frad
+type(c_damap), intent(inout) :: M,Am,B,Sspin
 type(c_vector_field)  ft
+type(c_quaternion)  q
 complex(dp) v
 type(c_taylor) t,dt
  
@@ -4651,7 +4651,10 @@ real(dp),allocatable::   S(:,:),id(:,:)
 ! d= = L_ns o N_pure_ns
 ! ms= L_s o N_s
  ! f=log(M)
-f=c_logf_spin(M)
+
+call alloc(ft)
+call alloc(q)
+ft=c_logf_spin(M)
  
   B=0
 allocate(S(6,6),id(6,6))
@@ -4684,13 +4687,13 @@ fsymp=0
 
 allocate(je(nv))
 je=0
-do i=1,f%n
+do i=1,ft%n
 
        j=1
 
         do while(.true.)
 
-          call  c_cycle(f%v(i),j,v ,je); if(j==0) exit;
+          call  c_cycle(ft%v(i),j,v ,je); if(j==0) exit;
          dm=1
          do ii=1,nd2
           dm=dm+je(ii)
@@ -4716,17 +4719,32 @@ enddo
  
 Am=exp(fsymp)
 B= Am**(-1)*m
-!frad=log(B)
-frad=c_logf_spin(B)
-!B%e_ij=m%e_ij
 
+! here Sspin is the orbital part of B
+Sspin=B
+Sspin%q=1.0_dp
+Sspin%e_ij=0.0_dp
 
-
+q=B%q*Sspin**(-1)
+Sspin=1
+Sspin%q=q
+ 
+B =Sspin**(-1)*B
+B%q=1.0_dp
+ 
+!Am=exp(fsymp)
+!B= Am**(-1)*m
+ fspin=c_logf_spin(Sspin)
+ frad=log(B)
+ 
 deallocate(je);deallocate(s,id);
   
 call kill(t,dt);  !call kill(mt,ids,m4,ml);
- 
+call kill(q)
+call kill(ft)
+
 end subroutine symplectify_for_oleksii
+
 
 
 
