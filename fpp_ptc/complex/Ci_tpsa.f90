@@ -45,7 +45,7 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
   private alloc_c_damap,c_DPEKMAP,c_DPOKMAP,kill_c_damap,kill_c_spinmatrix,c_etcct,c_spinmatrix_mul_cray
   private EQUALspinmatrix,c_trxtaylor,powmap,POWMAPs,alloc_c_vector_field,kill_c_vector_field,kill_c_damaps
   private alloc_c_normal_form,kill_c_normal_form,c_EQUALVEC,c_spinmatrix_spinmatrix,c_IdentityEQUALVEC,qua_ql
-  private liebraquaternion,pow_tpsaMAP,c_concat_quaternion_ray,matrix_to_quaternion_in_c_damap
+  private liebraquaternion,pow_tpsaMAP,c_concat_quaternion_ray,matrix_to_quaternion_in_c_damap,iexp_ad
   private EQUALql_cmap,EQUALcmap_ql,EQUAL_complex_quaternion_c_quaternion,EQUAL_c_quaternion_complex_quaternion
   private NO,ND,ND2,NP,NDPT,NV,ndptb,rf
   integer, target :: NP,NO,ND,ND2,NDPT,NV,ndptb,rf
@@ -545,6 +545,9 @@ type(c_linear_map) q_phasor,qi_phasor
      MODULE PROCEDURE exp_ad    ! exp(<F,>)F    F is a vector field  !v5
   END INTERFACE
 
+  INTERFACE iexp 
+       MODULE PROCEDURE iexp_ad
+  END INTERFACE iexp 
 
   INTERFACE texp
      MODULE PROCEDURE c_expflo   
@@ -8366,7 +8369,7 @@ end   SUBROUTINE  c_clean_yu_w
     real(dp) prec
     INTEGER ipresent,n,I,illa,k
     complex(dp) value,v,y
-    real(dp) x,xx
+!    real(dp) x  ,xx
     INTEGER, allocatable :: j(:)
     type(c_ray),optional :: r
     type (c_taylor) t
@@ -8396,16 +8399,16 @@ end   SUBROUTINE  c_clean_yu_w
      else
       y=value
     endif
-       xx=y
-       x=value
-       if(abs(xx)>prec) v=x
-       xx=aimag(y)
-       x=aimag(value)      
-       if(abs(xx)>prec) v=v+i_*x
-!       if(abs(value)>prec) then
-          t=t+(v.cmono.j)
-!       endif
-    ENDDO
+       v=c_clean(y,prec)
+
+    !   xx=y
+    !   x=value
+    !   if(abs(xx)>prec) v=x
+    !   xx=aimag(y)
+    !   x=aimag(value)      
+    !   if(abs(xx)>prec) v=v+i_*x
+           t=t+(v.cmono.j)
+     ENDDO
     s2=t
     deallocate(j)
     call kill(t)
@@ -12826,7 +12829,7 @@ end subroutine c_stochastic_kick
     call kill(ri,r0)
   END FUNCTION map_mul_vec
 
-    function exp_ad(h,x)  !  exp(Lie bracket)
+    function exp_ad(h,x,m)  !  exp(Lie bracket)
     implicit none
     ! DOES EXP( \VEC{H} ) X = Y
 
@@ -12834,12 +12837,15 @@ end subroutine c_stochastic_kick
     type(c_vector_field) exp_ad,ft
     type(c_vector_field), intent(in):: x
     type(c_vector_field), intent(in) :: h
+    complex(dp), optional, intent(in) :: m
     real(dp) prec,xnorm,r,xnorma 
+    complex(dp) m0
     IF(.NOT.C_STABLE_DA) then
      exp_ad%v%i=0
      RETURN
      endif 
-
+     m0=0
+     if(present(m)) m0=m
 prec=1.d-8
     localmaster=c_master
 
@@ -12861,7 +12867,7 @@ prec=1.d-8
       
      do i=1,x%nrmax
 
-         ft=(1.0_dp/i)*(h.lb.ft)
+         ft=(1.0_dp/i)*((h.lb.ft)+(m0*ft))
          exp_ad=exp_ad+ ft
          
           xnorma=0.0_dp
@@ -12885,6 +12891,70 @@ prec=1.d-8
     c_master=localmaster
  
   end function exp_ad
+
+    function iexp_ad(h,x,m)  !  (exp(Lie bracket)- 1)/Lie bracket
+    implicit none
+    ! DOES EXP( \VEC{H} ) X = Y
+
+    integer i,j,localmaster
+    type(c_vector_field) iexp_ad,ft
+    type(c_vector_field), intent(in):: x
+    type(c_vector_field), intent(in) :: h
+    complex(dp), optional, intent(in) :: m
+    real(dp) prec,xnorm,r,xnorma 
+    complex(dp) m0
+    IF(.NOT.C_STABLE_DA) then
+     iexp_ad%v%i=0
+     RETURN
+     endif 
+     m0=0
+     if(present(m)) m0=m
+prec=1.d-8
+    localmaster=c_master
+
+ 
+     iexp_ad%n=x%n
+     ft%n=x%n
+     call alloc(ft)
+    call c_ass_vector_field(iexp_ad)
+
+     iexp_ad=x
+   !  c=1.0_dp
+     ft=x
+     
+         xnorm=0.0_dp
+          do j=1,ft%n
+             r=full_abs(ft%v(j))
+             xnorm=xnorm+r
+          enddo
+      
+     do i=2,x%nrmax
+
+         ft=(1.0_dp/i)*((h.lb.ft)+(m0*ft))
+         iexp_ad=iexp_ad+ ft
+         
+          xnorma=0.0_dp
+          do j=1,ft%n
+             r=full_abs(ft%v(j))
+             xnorma=xnorma+r
+          enddo        
+      
+          if(xnorma>=xnorm.and.i > 20) then
+
+             exit 
+          endif    
+          xnorm=xnorma      
+     enddo
+    
+ 
+
+
+     call kill(ft)
+     
+    c_master=localmaster
+ 
+  end function iexp_ad
+
 
 
   function c_expflo_map(h,x)   !,eps,nrmax)
