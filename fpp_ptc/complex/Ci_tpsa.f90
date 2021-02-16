@@ -122,7 +122,7 @@ character(24)  formatlf(6)
 !-----------------------------------
 logical :: inside_normal=.false.,bmad_automatic=.false.,spin_automatic=.false.
 integer i_alloc
-
+    logical :: sagan_gen =.false.
 
 type c_linear_map
  complex(dp) mat(6,6)
@@ -18598,9 +18598,9 @@ inside_normal=.false.
 
     call alloc(L_ns , N_pure_ns , N_s , L_s)
     
-    call symplectify_for_zhe(ma,L_ns , N_pure_ns, L_s , N_s )
+     if(.not.sagan_gen) call symplectify_for_zhe(ma,L_ns , N_pure_ns, L_s , N_s )
 
-
+     
 
 
 
@@ -18634,12 +18634,26 @@ inside_normal=.false.
      mg(i)=0.e0_dp
     enddo
 
+if(.not.sagan_gen) then
       L_ns = L_ns*N_pure_ns
+else
+   !  L_ns=L_ns*L_s
+       L_s=ma.sub.1
+       L_ns=L_s**(-1)*ma
+ 
+endif
+
+if(.not.sagan_gen) then
 
      do i=1,L_ns%n
       m(i)=L_ns%v(i)   ! orbital part
      enddo
+else
+     do i=1,L_ns%n
+      m(i)= 1.0_dp.mono.i
+     enddo
 
+endif
 
 
 if(use_quaternion) then
@@ -18674,7 +18688,16 @@ endif
      call alloc(ms)
 
 
+if(.not.sagan_gen) then
+      
        ms=n_s
+
+else
+
+      ms =   L_ns
+
+endif
+
 
 
 
@@ -18708,7 +18731,11 @@ endif
 
 
 !     write(6,*) " mul ",mul
-      t(3)%rad=L_s
+      if(.not.sagan_gen) then
+        t(3)%rad=L_s
+      else
+           t(3)%rad=L_s
+      endif
 
 
        mat=ma**(-1)
