@@ -1909,6 +1909,7 @@ CONTAINS !----------------------------------------------------------------------
     y=m+xcav
      call CAVEP(el,y,default0)
     m=y
+call print(m%v(5))
      call checksymp(m,norm)
     call kill(m)
     call kill(y)

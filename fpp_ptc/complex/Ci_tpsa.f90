@@ -59,7 +59,7 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
   logical(lp) :: c_mess_up_vector=.false. 
   real(dp) :: a_mess=0.d0 , b_mess=1.d0
   integer :: i_piotr(3)= (/0,0,0/)
-
+  logical :: c_skip_gofix=.false.
   PRIVATE null_it,Set_Up,de_Set_Up,LINE_L,RING_L,kill_DALEVEL,dealloc_DASCRATCH,set_up_level
   private insert_da,append_da,GETINTegrate,c_pek000,c_pok000,cDEQUALDACON
   private cdaddsc,cdscadd,cdsubsc,cdscsub,cdmulsc,cdscmul,cddivsc,cdscdiv
@@ -1753,6 +1753,7 @@ enddo
     s1%ker%dir=1
     s1%s_ij0=0
     s1%s_ijr=0
+    s1%b_ijr=0
       s1%tune=0
       s1%damping=0
       s1%spin_tune=0
@@ -1780,6 +1781,7 @@ enddo
     s1%ker%dir=1
     s1%s_ij0=0
     s1%s_ijr=0
+    s1%b_ijr=0
       s1%tune=0
       s1%damping=0
       s1%spin_tune=0
@@ -9125,7 +9127,8 @@ endif
     call c_check_rad(s2%e_ij,rad1)
  
    
-    if(rad1.and.nd2==6) then
+  !  if(rad1.and.nd2==6) then
+    if(rad1) then
    !  write(6,*) " stochastic "
       if(i==1) then
         f2i=s1   
@@ -9178,7 +9181,8 @@ endif
     call c_check_rad(s2%e_ij,rad1)
  
    
-    if(rad1.and.nd2==6) then
+  !  if(rad1.and.nd2==6) then
+    if(rad1) then
   !   write(6,*) " stochastic "
       if(i==1) then
         f2i=exp(s1)   
@@ -11990,7 +11994,7 @@ alpha=2*atan2(q0%x(2),q0%x(0))
      do i=1,3
       n%emittance(i)=abs(n%s_ijr(2*i-1,2*i))/abs(n_cai)
      enddo
-
+    n%b_ijr=m1%e_ij 
    m1%e_ij= n%s_ijr  !using m1 to transform equilibrium beam sizes
    ri=from_phasor()
    ri=c_simil(ri,m1,1)
@@ -18128,8 +18132,11 @@ inside_normal=.true.
     ! but energy is constant. (Momentum compaction, phase slip etc.. falls from there)
  ! etienne
  
+ if(c_skip_gofix) then
+  a1=1
+else
     call  c_gofix(m1,a1) 
- 
+endif 
      m1=c_simil(a1,m1,-1)
  
     ! Does the the diagonalisation into a rotation
@@ -18270,6 +18277,13 @@ inside_normal=.true.
        endif 
       enddo
 
+        if(c_skip_gofix) then
+         do k=1,xy%n
+                  if(mod(k,2)==1) then
+                     if(n%tune((k+1)/2)>0.5d0) n%tune((k+1)/2)=n%tune((k+1)/2)-1.0_dp
+                    endif
+         enddo
+        endif
         if(nd2t==6) then
            if(n%tune(3)>0.5d0) n%tune(3)=n%tune(3)-1.0_dp
         endif 
