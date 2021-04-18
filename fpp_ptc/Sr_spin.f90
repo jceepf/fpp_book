@@ -1545,7 +1545,9 @@ endif
        DLDS=root((1.0_dp+d2**2))*d1/(1.0_dp/BETA0+del)
        OM(2)=p%dir*el%pa%hc
     CASE(KIND21)     ! travelling wave cavity
-       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
+
+!       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
        IF(k%TIME) THEN
           DLDS=1.0_dp/root(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
        ELSE
@@ -1709,7 +1711,9 @@ endif
        DLDS=sqrt((1.0_dp+d2**2))*d1/(1.0_dp/BETA0+del)
        OM(2)=p%dir*el%pa%hc
     CASE(KIND21)     ! travelling wave cavity
-       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
+
+      ! CALL B_PARA_PERP(k,EL,1,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
        IF(k%TIME) THEN
           DLDS=1.0_dp/sqrt(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
        ELSE
@@ -1864,11 +1868,11 @@ endif
 
     CASE(KIND21)     ! travelling wave cavity
         call get_z_cav(EL%cav21,pos,z)
-herecav21=.true.
+!herecav21=.true.
        call A_TRANS(EL%cav21,Z,X,k,A,AD,B,E)
 !write(6,format4) z, e
 !write(6,format4) 0.d0,b
-herecav21=.false.
+!herecav21=.false.
     CASE(kindabell)     ! travelling wave cavity
 
        CALL get_z_ab(EL%ab,POS,z)

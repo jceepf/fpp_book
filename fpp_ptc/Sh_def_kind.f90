@@ -18950,7 +18950,7 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     endif
 !if(herecav21) then
 !write(6,*)
-!write(6,format3) z0,x(6)-Z0,EL%p%nst
+!write(6,format4) z0,x(6)-Z0,EL%p%nst,EL%P%P0C
 !write(6,format6) b,e
 !write(6,format6) x
 !endif
