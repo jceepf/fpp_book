@@ -2594,7 +2594,7 @@ call kill(vm,phi,z)
     TYPE(ELEMENT),  pointer :: EL
     TYPE(MAGNET_CHART),  pointer :: P
     REAL(DP),  INTENT(INOUT) ::E(3)
-    REAL(DP) N,H,DP1,A,AP,B,BP,z,ve,AV(3)
+    REAL(DP) N,H,DP1,A,AP,B,BP,z,ve,AV(3),ad(3)
     integer, optional,intent(in) :: pos
     type(internal_state) k
 
@@ -2646,6 +2646,22 @@ call kill(vm,phi,z)
           XP(1)=XPA(1)/N
           XP(2)=XPA(2)/N
 
+       ELSEif(el%kind==kind21) then
+
+        call get_z_cav(EL%cav21,pos,z)
+        call A_TRANS(EL%cav21,Z,X,k,AV,AD)
+
+
+       !   CALL compute_f4(EL%he22,X,Z,A=AV)
+          Xpa(1)=X(2)-AV(1)
+          Xpa(2)=X(4)-AV(2)
+          N=root(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+          E(1)=Xpa(1)/DP1
+          E(2)=Xpa(2)/DP1
+          E(3)=N/DP1
+          XP(1)=XPA(1)/N
+          XP(2)=XPA(2)/N
        ELSEif(el%kind==kind22) then
 
           IF(EL%HE22%P%DIR==1) THEN
@@ -2740,7 +2756,7 @@ call kill(vm,phi,z)
     TYPE(ELEMENTP),  pointer :: EL
     TYPE(MAGNET_CHART),  pointer :: P
     type(real_8), INTENT(INOUT) ::E(3)
-    type(real_8) N,H,DP1,A,AP,B,BP,z,AV(3),ve
+    type(real_8) N,H,DP1,A,AP,B,BP,z,AV(3),ve,ad(3)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     integer, optional,intent(in) :: pos
 
@@ -2748,6 +2764,7 @@ call kill(vm,phi,z)
 
     CALL ALLOC(N,H,DP1,A,AP,B,BP,z,ve )
     CALL ALLOC(AV )
+    CALL ALLOC(AD )
 
     IF(k%TIME) THEN
        DP1=SQRT(1.0_dp+2.0_dp*X(5)/P%BETA0+X(5)**2)
@@ -2786,7 +2803,22 @@ call kill(vm,phi,z)
           E(3)=N/DP1
           XP(1)=XPA(1)/N
           XP(2)=XPA(2)/N
+       ELSEif(el%kind==kind21) then
 
+        call get_z_cav(EL%cav21,pos,z)
+        call A_TRANS(EL%cav21,Z,X,k,AV,AD)
+
+
+       !   CALL compute_f4(EL%he22,X,Z,A=AV)
+          Xpa(1)=X(2)-AV(1)
+          Xpa(2)=X(4)-AV(2)
+          N=sqrt(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+          E(1)=Xpa(1)/DP1
+          E(2)=Xpa(2)/DP1
+          E(3)=N/DP1
+          XP(1)=XPA(1)/N
+          XP(2)=XPA(2)/N
        ELSEif(el%kind==kind22) then
 
           IF(EL%HE22%P%DIR==1) THEN
@@ -2875,6 +2907,7 @@ call kill(vm,phi,z)
 
      CALL kill(N,H,DP1,A,AP,B,BP,z,ve )
      CALL kill(AV )
+     CALL kill(AD )
 
   END subroutine DIRECTION_VP
 
