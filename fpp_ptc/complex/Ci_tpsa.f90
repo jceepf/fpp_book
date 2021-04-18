@@ -535,6 +535,8 @@ type(c_linear_map) q_phasor,qi_phasor
      MODULE PROCEDURE c_AIMAG
   END INTERFACE
 
+
+!exp_mat(f,m) is a subroutine to exponentiate matrices
   INTERFACE exp
      MODULE PROCEDURE c_expflo    ! flow on c_taylor     !v3
      MODULE PROCEDURE c_expflo_map                       !v4
@@ -14256,11 +14258,11 @@ function c_vector_field_quaternion(h,ds) ! spin routine
     integer i,n
     real(dp) norma,normb,x,y
     real(dp), allocatable :: t(:,:)
-
+    y=1.d-7
     
     n=size(m,1)
      allocate(t(n,n))
- t=f
+ t=0
  m=0
   do i=1,n
    m(i,i)=1
@@ -14268,15 +14270,16 @@ function c_vector_field_quaternion(h,ds) ! spin routine
  enddo
        normb=norm_matrix(f)
     x=1
-    do i=1,1000
+    do i=1,10000
       t=matmul(f,t)/x
-      norma=norm_matrix(f)
+      norma=norm_matrix(t)
       m= m+t
       x=x+1
-      if(norma>=normb.and.i>10) exit
+      
+      if(norma<y.and.norma>=normb.and.i>100) exit
       normb=norma
     enddo
-write(6,*) "exp_mat",i
+   if(i>10000-10)  write(6,*) "exp_mat",i
   deallocate(t)
   end  subroutine exp_mat
 

@@ -1860,13 +1860,15 @@ endif
           Z=EL%L-pos*el%l/el%p%nst
        ENDIF
        call  Abmad_TRANS(EL%C4,Z,X,k,A,AD,B,E)
-      endif
+       endif
 
     CASE(KIND21)     ! travelling wave cavity
         call get_z_cav(EL%cav21,pos,z)
-
+herecav21=.true.
        call A_TRANS(EL%cav21,Z,X,k,A,AD,B,E)
-
+!write(6,format4) z, e
+!write(6,format4) 0.d0,b
+herecav21=.false.
     CASE(kindabell)     ! travelling wave cavity
 
        CALL get_z_ab(EL%ab,POS,z)
@@ -3633,7 +3635,8 @@ call kill(vm,phi,z)
        fac=0.5_dp
         call PUSH_SPIN(c,ds,FAC,XS,my_true,k,C%POS_IN_FIBRE-2)   ! -3 before....
         CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
-        call PUSH_SPIN(c,ds,FAC,XS,my_false,k,C%POS_IN_FIBRE-2)
+ !       call PUSH_SPIN(c,ds,FAC,XS,my_false,k,C%POS_IN_FIBRE-2)
+        call PUSH_SPIN(c,ds,FAC,XS,my_false,k,C%POS_IN_FIBRE-1)
        elseif(doonemap) then
  
           if(C%POS_IN_FIBRE-2==1) then 
@@ -3797,7 +3800,8 @@ endif ! full_way
          if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
         CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
          if(ki==kind10)CALL MAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
-        call PUSH_SPIN(c,ds,FAC,XS,my_false,k,C%POS_IN_FIBRE-2)
+  !      call PUSH_SPIN(c,ds,FAC,XS,my_false,k,C%POS_IN_FIBRE-2)
+        call PUSH_SPIN(c,ds,FAC,XS,my_false,k,C%POS_IN_FIBRE-1)
          if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
        elseif(doonemap) then
 

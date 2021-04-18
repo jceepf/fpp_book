@@ -127,7 +127,7 @@ MODULE S_DEF_KIND
   real(dp), target :: phase0=-pi
   real(dp), target :: wedge_coeff(2)
   logical(lp), target :: MAD8_WEDGE=.TRUE.
-  logical(lp) :: bug_intentional=.false.
+  logical(lp) :: bug_intentional=.false.,herecav21=.false.
   real(dp) :: e1_cas=0
   !  logical(lp) :: old_solenoid=.true.
   INTEGER :: N_CAV4_F=1
@@ -18948,7 +18948,12 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
      E(2)=-ad(2)*x(3)/EL%P%CHARGE
      E(3)=EL%P%DIR*A(3)/EL%P%CHARGE
     endif
-
+!if(herecav21) then
+!write(6,*)
+!write(6,format3) z0,x(6)-Z0,EL%p%nst
+!write(6,format6) b,e
+!write(6,format6) x
+!endif
   END SUBROUTINE A_TRANSR
 
 
