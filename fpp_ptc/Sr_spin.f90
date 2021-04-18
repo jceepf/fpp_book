@@ -2535,20 +2535,13 @@ call kill(vm,phi,z)
 
     IF(PRESENT(EF)) THEN
 
-   !    EFB(1)=-EF(2)*E(3)+EF(3)*E(2)      ! changed sign txE of Barber
-   !    EFB(2)=-EF(3)*E(1)+EF(1)*E(3)
-   !    EFB(3)=-EF(1)*E(2)+EF(2)*E(1)
+       EFB(1)=-EF(2)*E(3)+EF(3)*E(2)      ! changed sign txE of Barber
+       EFB(2)=-EF(3)*E(1)+EF(1)*E(3)
+       EFB(3)=-EF(1)*E(2)+EF(2)*E(1)
        be=EF(1)*e(1)+EF(2)*e(2)+EF(3)*e(3)
-
-
        do i=1,3
          EFD(i)=be*e(i)
         enddo
-
-       do i=1,3
-         EFB(i)=EF(i)-EFD(i)
-        enddo
-
 
     endif
   END subroutine B_PARA_PERPr
@@ -2581,24 +2574,14 @@ call kill(vm,phi,z)
     enddo
 
     IF(PRESENT(EF)) THEN
-!       EFB(1)=-EF(2)*E(3)+EF(3)*E(2)      ! changed sign txE of Barber
-!       EFB(2)=-EF(3)*E(1)+EF(1)*E(3)
-!       EFB(3)=-EF(1)*E(2)+EF(2)*E(1)
+       EFB(1)=-EF(2)*E(3)+EF(3)*E(2)      ! changed sign txE of Barber
+       EFB(2)=-EF(3)*E(1)+EF(1)*E(3)
+       EFB(3)=-EF(1)*E(2)+EF(2)*E(1)
        be=EF(1)*e(1)+EF(2)*e(2)+EF(3)*e(3)
- !      do i=1,3
- !        EFD(i)=be*e(i)
- !       enddo
-
        do i=1,3
          EFD(i)=be*e(i)
         enddo
-
-       do i=1,3
-         EFB(i)=EF(i)-EFD(i)
-        enddo
-
     ENDIF
-
 
      call kill(be);
 
