@@ -1105,7 +1105,7 @@ endif
        case(KIND17)
           STOP 317
        case(KIND21)
-          CALL FRINGE_CAV_TRAV(EL%CAV21,X=X,k=k,J=T%CAS)
+      !    CALL FRINGE_CAV_TRAV(EL%CAV21,X=X,k=k,J=T%CAS)
           CALL ADJUST_TIME_CAV_TRAV_OUT(EL%CAV21,X,k,T%CAS)   ! ONLY DOES SOMETHING IF J==2
        case(KINDWIGGLER)
 
@@ -1349,7 +1349,7 @@ endif
        case(KIND17)
           STOP 317
        case(KIND21)
-          CALL FRINGE_CAV_TRAV(EL%CAV21,X=X,k=k,J=T%CAS)
+!          CALL FRINGE_CAV_TRAV(EL%CAV21,X=X,k=k,J=T%CAS)
           CALL ADJUST_TIME_CAV_TRAV_OUT(EL%CAV21,X,k,T%CAS)   ! ONLY DOES SOMETHING IF J==2
        case(KINDWIGGLER)
 

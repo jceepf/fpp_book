@@ -38,7 +38,7 @@ module ptc_spin
   private TRACK_LAYOUT_FLAG_spint12r_x,TRACK_LAYOUT_FLAG_spint12p_x,alloc_temporal_beam
   private alloc_temporal_probe,GET_BZ_fringe,GET_BZ_fringer,GET_BZ_fringep
   private TRACK_rotate_spin_r,TRACK_rotate_spin_p,TRACK_rotate_spin
-  private TRACK_FRINGE_multipole_r,TRACK_FRINGE_multipole_p,TRACK_FRINGE_multipole
+  private TRACK_FRINGE_spin_multipole_R,TRACK_FRINGE_spin_multipole_p,TRACK_FRINGE_spin_multipole
   private TRACK_wedge_spinR,TRACK_wedge_spinp,TRACK_wedge_spin, find_as,find_frac_r,find_n0
   !REAL(DP) :: AG=A_ELECTRON
   REAL(DP) :: bran_init=pi  
@@ -191,9 +191,9 @@ type(work) w_bks
 
 
 
-  INTERFACE TRACK_FRINGE_multipole
-     MODULE PROCEDURE TRACK_FRINGE_multipole_r
-     MODULE PROCEDURE TRACK_FRINGE_multipole_p
+  INTERFACE TRACK_FRINGE_spin_multipole
+     MODULE PROCEDURE TRACK_FRINGE_spin_multipole_R
+     MODULE PROCEDURE TRACK_FRINGE_spin_multipole_p
   END INTERFACE
 
   INTERFACE TRACK_FRINGE_spin
@@ -1867,12 +1867,17 @@ endif
        endif
 
     CASE(KIND21)     ! travelling wave cavity
-        call get_z_cav(EL%cav21,pos,z)
-!herecav21=.true.
-       call A_TRANS(EL%cav21,Z,X,k,A,AD,B,E)
-!write(6,format4) z, e
-!write(6,format4) 0.d0,b
-!herecav21=.false.
+
+    
+          IF(POS<0) THEN
+             call get_Bfield_fringe(EL,B,E,X,pos,k)   ! fringe effect
+          ELSE
+
+         call get_z_cav(EL%cav21,pos,z)
+
+         call A_TRANS(EL%cav21,Z,X,k,A,AD,B,E)
+       endif
+ 
     CASE(kindabell)     ! travelling wave cavity
 
        CALL get_z_ab(EL%ab,POS,z)
@@ -1976,6 +1981,9 @@ endif
        call kill(ad,3)
       endif
     CASE(KIND21)     ! travelling wave cavity
+          IF(POS<0) THEN
+             call get_Bfield_fringe(EL,B,E,X,pos,k)   ! fringe effect
+          ELSE
        call alloc(a,3)
        call alloc(ad,3)
         call get_z_cav(EL%cav21,pos,z)
@@ -1983,6 +1991,10 @@ endif
        call A_TRANS(EL%cav21,Z,X,k,A,AD,B,E)
        call kill(a,3)
        call kill(ad,3)
+ 
+       endif
+
+
 
     CASE(kindabell)     ! travelling wave cavity
 
@@ -2016,7 +2028,7 @@ endif
     real(dp),INTENT(INOUT):: X(6),B(3)
     TYPE(ELEMENT),INTENT(IN):: EL
     INTEGER pos
-    real(dp) e(3),z,vm,phi
+    real(dp) e(3),z,vm,phi,a(3),ad(3)
     TYPE(INTERNAL_STATE) K
 
 e=0
@@ -2040,6 +2052,33 @@ e=0
        b(2)=-TAN(EL%p%EDGE(pos+3)-EL%p%b0*EL%p%LD/2.0_dp)*EL%p%DIR*EL%p%CHARGE*el%BN(1)*X(1)+b(2)
        b(1)=-TAN(EL%p%EDGE(pos+3)-EL%p%b0*EL%p%LD/2.0_dp)*EL%p%DIR*EL%p%CHARGE*el%BN(1)*X(3)+b(1)
     case(kind16)  ! likemad=false
+    case(kind21)
+
+
+    a=0
+    ad=0
+! POS =-2,-1  (ENT, EXIT)
+            if(pos==-2) then
+              z=el%l*(1.0_dp-el%p%dir)/2.0_dp
+    call A_TRANS(EL%cav21,Z,X,k,A,AD,E=E)
+         E(1)=-x(1)*E(3)/4.0_dp
+         E(2)=-x(3)*E(3)/4.0_dp
+         E(3)=0.0_dp
+         B(1)=  E(2)   !-x(3)*E(3)/4.0_dp
+         B(2)= -E(1)   !x(1)*E(3)/4.0_dp
+         B(3)=0.0_dp
+              else
+              z=el%l*(1.0_dp+el%p%dir)/2.0_dp
+    call A_TRANS(EL%cav21,Z,X,k,A,AD,E=E)
+         E(1)= x(1)*E(3)/4.0_dp
+         E(2)= x(3)*E(3)/4.0_dp
+         E(3)=0.0_dp
+         B(1)=  E(2)   !-x(3)*E(3)/4.0_dp
+         B(2)= -E(1)   !x(1)*E(3)/4.0_dp
+         B(3)=0.0_dp
+            endif
+
+
     case(kindabell)
             if(pos==-2) then
              z=el%l*(1.0_dp-el%p%dir)/2.0_dp
@@ -2062,7 +2101,7 @@ e=0
     TYPE(ELEMENTP),INTENT(IN):: EL
     INTEGER pos
     TYPE(INTERNAL_STATE) K
-    type(REAL_8)vm,phi,z
+    type(REAL_8)vm,phi,z,a(3),ad(3)
 
 call alloc(vm,phi,z)
     IF(ASSOCIATED(EL%B_SOL)) THEN
@@ -2085,6 +2124,41 @@ call alloc(vm,phi,z)
        b(2)=-TAN(EL%p%EDGE(pos+3)-EL%p%b0*EL%p%LD/2.0_dp)*EL%p%DIR*EL%p%CHARGE*el%BN(1)*X(1)+b(2)
        b(1)=-TAN(EL%p%EDGE(pos+3)-EL%p%b0*EL%p%LD/2.0_dp)*EL%p%DIR*EL%p%CHARGE*el%BN(1)*X(3)+b(1)
     case(kind16)  ! likemad=false
+    case(kind21)
+
+
+    call alloc(a)
+    call alloc(ad)
+
+! POS =-2,-1  (ENT, EXIT)
+            if(pos==-2) then
+              z=el%l*(1.0_dp-el%p%dir)/2.0_dp
+    call A_TRANS(EL%cav21,Z,X,k,A,AD,E=E)
+         E(1)=-x(1)*E(3)/4.0_dp
+         E(2)=-x(3)*E(3)/4.0_dp
+         E(3)=0.0_dp
+         B(1)=  E(2)   !-x(3)*E(3)/4.0_dp
+         B(2)= -E(1)   !x(1)*E(3)/4.0_dp
+         B(3)=0.0_dp
+              else
+              z=el%l*(1.0_dp+el%p%dir)/2.0_dp
+    call A_TRANS(EL%cav21,Z,X,k,A,AD,E=E)
+         E(1)= x(1)*E(3)/4.0_dp
+         E(2)= x(3)*E(3)/4.0_dp
+         E(3)=0.0_dp
+         B(1)=  E(2)   !-x(3)*E(3)/4.0_dp
+         B(2)= -E(1)   !x(1)*E(3)/4.0_dp
+         B(3)=0.0_dp
+            endif
+    
+      
+ 
+    call kill(a)
+    call kill(ad)
+
+
+     
+
     case(kindabell)
             if(pos==-2) then
              z=el%l*(1.0_dp-el%p%dir)/2.0_dp
@@ -3960,12 +4034,12 @@ endif
        IF(C%CAS==CASE1) THEN
           call TRACK_rotate_spin(C,p,K)
 
-          if(.not.C%parent_fibre%mag%p%kill_ent_spin) call TRACK_FRINGE_multipole(C,p,K)
+          if(.not.C%parent_fibre%mag%p%kill_ent_spin) call TRACK_FRINGE_spin_multipole(C,p,K)
           call TRACK_wedge_spin(C,p,K)
        else
           call TRACK_wedge_spin(C,p,K)
 
-          if(.not.C%parent_fibre%mag%p%kill_exi_spin) call TRACK_FRINGE_multipole(C,p,K)
+          if(.not.C%parent_fibre%mag%p%kill_exi_spin) call TRACK_FRINGE_spin_multipole(C,p,K)
 
           call TRACK_rotate_spin(C,p,K)
 
@@ -3974,11 +4048,11 @@ endif
       ! write(6,*) " TRACK_FRINGE_spinR "
        IF(C%CAS==CASE1) THEN
           call TRACK_rotate_spin(C,p,K)
-          if(.not.C%parent_fibre%mag%p%kill_exi_spin) call TRACK_FRINGE_multipole(C,p,K)
+          if(.not.C%parent_fibre%mag%p%kill_exi_spin) call TRACK_FRINGE_spin_multipole(C,p,K)
           call TRACK_wedge_spin(C,p,K)
        else
           call TRACK_wedge_spin(C,p,K)
-          if(.not.C%parent_fibre%mag%p%kill_ent_spin) call TRACK_FRINGE_multipole(C,p,K)
+          if(.not.C%parent_fibre%mag%p%kill_ent_spin) call TRACK_FRINGE_spin_multipole(C,p,K)
           call TRACK_rotate_spin(C,p,K)
        endif
      !  stop 888
@@ -4003,12 +4077,12 @@ endif
     if(C%PARENT_FIBRE%dir==1) then
        IF(C%CAS==CASE1) THEN
           call TRACK_rotate_spin(C,p,K)
-          if(.not.C%parent_fibre%magp%p%kill_ent_spin) call TRACK_FRINGE_multipole(C,p,K)
+          if(.not.C%parent_fibre%magp%p%kill_ent_spin) call TRACK_FRINGE_spin_multipole(C,p,K)
           call TRACK_wedge_spin(C,p,K)
        else
           call TRACK_wedge_spin(C,p,K)
 
-          if(.not.C%parent_fibre%magp%p%kill_exi_spin) call TRACK_FRINGE_multipole(C,p,K)
+          if(.not.C%parent_fibre%magp%p%kill_exi_spin) call TRACK_FRINGE_spin_multipole(C,p,K)
 
           call TRACK_rotate_spin(C,p,K)
 
@@ -4016,11 +4090,11 @@ endif
     else
        IF(C%CAS==CASE1) THEN
           call TRACK_rotate_spin(C,p,K)
-          if(.not.C%parent_fibre%magp%p%kill_exi_spin) call TRACK_FRINGE_multipole(C,p,K)
+          if(.not.C%parent_fibre%magp%p%kill_exi_spin) call TRACK_FRINGE_spin_multipole(C,p,K)
           call TRACK_wedge_spin(C,p,K)
        else
           call TRACK_wedge_spin(C,p,K)
-          if(.not.C%parent_fibre%magp%p%kill_ent_spin) call TRACK_FRINGE_multipole(C,p,K)
+          if(.not.C%parent_fibre%magp%p%kill_ent_spin) call TRACK_FRINGE_spin_multipole(C,p,K)
           call TRACK_rotate_spin(C,p,K)
        endif
       ! write(6,*) " TRACK_FRINGE_spinp "
@@ -4274,7 +4348,7 @@ endif
 
 
 
-  SUBROUTINE TRACK_FRINGE_multipole_R(C,p,K)
+  SUBROUTINE TRACK_FRINGE_spin_multipole_R(C,p,K)
     IMPLICIT NONE
     !    real(dp), INTENT(INOUT):: X(6),S(3)
     type(probe), INTENT(INOUT):: p
@@ -4316,9 +4390,9 @@ endif
     END SELECT
 
 
-  END SUBROUTINE TRACK_FRINGE_multipole_R
+  END SUBROUTINE TRACK_FRINGE_spin_multipole_R
 
-  SUBROUTINE TRACK_FRINGE_multipole_p(C,p,K)
+  SUBROUTINE TRACK_FRINGE_spin_multipole_p(C,p,K)
     IMPLICIT NONE
     TYPE(probe_8), INTENT(INOUT)::p
     !    TYPE(REAL_8), INTENT(INOUT):: X(6),S(3)
@@ -4361,7 +4435,7 @@ endif
     END SELECT
 
 
-  END SUBROUTINE TRACK_FRINGE_multipole_p
+  END SUBROUTINE TRACK_FRINGE_spin_multipole_p
 
   SUBROUTINE TRACK_SPIN_FRONTR(C,P)
     implicit none
