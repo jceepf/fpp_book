@@ -14617,7 +14617,7 @@ endif
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
   
-   ! CALL FRINGE_CAV_TRAV(EL,X,k,1)
+    CALL FRINGE_CAV_TRAV(EL,X,k,1)
 
     ! IF(PRESENT(MID)) CALL XMID(MID,X,0)
 
@@ -14626,7 +14626,7 @@ endif
        ! IF(PRESENT(MID)) CALL XMID(MID,X,I)
     ENDDO
     !
-  !  CALL FRINGE_CAV_TRAV(EL,X,k,2)
+    CALL FRINGE_CAV_TRAV(EL,X,k,2)
 
 
     call ADJUST_TIME_CAV_TRAV_OUT(EL,X,k,2)
@@ -14641,14 +14641,14 @@ endif
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
     !    IF(k%FRINGE)
-   ! CALL FRINGE_CAV_TRAV(EL,X,k,1)
+    CALL FRINGE_CAV_TRAV(EL,X,k,1)
 
 
     DO I=1,EL%P%NST
        call track_slice(el,x,k,i)
     ENDDO
 
-  !  CALL FRINGE_CAV_TRAV(EL,X,k,2)
+    CALL FRINGE_CAV_TRAV(EL,X,k,2)
 
 
     call ADJUST_TIME_CAV_TRAV_OUT(EL,X,k,2)
