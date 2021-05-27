@@ -6209,7 +6209,8 @@ integer :: kkk=0
 
 
     CASE(4)
-       CALL ALLOC(D1,D2,DK1,DK2,D2H)
+! bug 2021 D missing
+       CALL ALLOC(D1,D2,DK1,DK2,D2H,D)
 
        D=EL%L/EL%P%NST
        D1=D*FD1
@@ -6230,7 +6231,7 @@ integer :: kkk=0
        CALL KICKMUL(EL,DK1,X,k)
        CALL KICK_SOL(EL,D1,X,k)
 
-       CALL KILL(D1,D2,DK1,DK2,D2H)
+       CALL KILL(D1,D2,DK1,DK2,D2H,D)
 
     CASE(6)
        CALL ALLOC(DF,4);CALL ALLOC(DK,4);
