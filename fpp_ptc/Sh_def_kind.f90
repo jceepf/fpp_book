@@ -176,10 +176,28 @@ PRIVATE get_BfieldR,get_BfieldP    !,get_Bfield
   private B_PANCAkEr,B_PANCAkEp,B_PANCAkE
 private B_PARA_PERP_qua_r,DIRECTION_qua_V
 private rk2_teapot_quar,feval_teapot_quar
- 
+PRIVATE DIRECTION_VR,DIRECTION_VP   !,DIRECTION_V
+  PRIVATE  B_PARA_PERPr,B_PARA_PERPp   !,B_PARA_PERP
+  PRIVATE push_quaternionr
+  PRIVATE get_omega_spinR,get_omega_spinP   !,get_omega_spin 
+  private radiate_2p,radiate_2r  !,radiate_2
+  private quaternion_8_to_matrix,crossp,dkd2_qua_PROBER
+  logical :: do_d_sij=.false.
+  !  INTEGER, PRIVATE :: ISPIN0P=0,ISPIN1P=3
+   ! oleksii 
+  real(dp) n_oleksii(3)
+  real(dp) :: t_ns_oleksii=0,t_nb_oleksii=0,t_bks_approx=0, i_bks=0 ,theta_oleksii=0
+  integer :: print_oleksii =0
+ ! logical :: doone = .false.
+  real(dp) :: d_Sij(3,3)
+  type(quaternion) :: q_ij,q_i
+type(work) w_bks
+ private INTE_dkd2_prober
+
+
 !!!!  tracking probe-
   INTERFACE TRACK_SLICE
-     MODULE PROCEDURE INTER_TEAPOT_QUA
+     MODULE PROCEDURE INTE_dkd2_prober
   END INTERFACE 
 
 
@@ -970,14 +988,46 @@ private rk2_teapot_quar,feval_teapot_quar
      MODULE PROCEDURE GET_BE_CAVP
   END INTERFACE
 
+ 
+
   INTERFACE B_PARA_PERP
+     MODULE PROCEDURE B_PARA_PERPr
+     MODULE PROCEDURE B_PARA_PERPp
      MODULE PROCEDURE B_PARA_PERP_qua_r
 
   END INTERFACE
 
   INTERFACE DIRECTION_V
+     MODULE PROCEDURE DIRECTION_Vr
+     MODULE PROCEDURE DIRECTION_Vp
      MODULE PROCEDURE DIRECTION_qua_V
   END INTERFACE
+
+  INTERFACE push_quaternion
+     MODULE PROCEDURE push_quaternionr
+  END INTERFACE
+
+
+  INTERFACE dkd2_qua_PROBE
+     MODULE PROCEDURE dkd2_qua_PROBER
+  END INTERFACE
+
+  INTERFACE get_omega_spin
+     MODULE PROCEDURE get_omega_spinR
+     MODULE PROCEDURE get_omega_spinP
+  END INTERFACE
+
+
+  INTERFACE radiate_2
+     MODULE PROCEDURE radiate_2r
+     MODULE PROCEDURE radiate_2p
+  END INTERFACE
+
+
+  INTERFACE makeso3
+     MODULE PROCEDURE quaternion_8_to_matrix
+  END INTERFACE
+
 
 CONTAINS !----------------------------------------------------------------------
 
@@ -11424,27 +11474,41 @@ integer :: kkk=0
 
     A=YL*EL%P%B0
     R=1.0_dp/EL%P%B0
-
+    xn=0.0_dp
     if(k%TIME) then
        B=EL%P%BETA0
        PZ=ROOT(1.0_dp+2.0_dp*x(5)/b+X(5)**2-X(2)**2-X(4)**2)
+!       XN(2)=X(2)*COS(A)+(PZ-DIR*EL%BN(1)*(R+X(1)))*SIN(A)
        XN(2)=X(2)*COS(A)+(PZ-DIR*EL%BN(1)*(R+X(1)))*SIN(A)
+
        DPX=(-X(2)*SIN(A)+(PZ-DIR*EL%BN(1)*(R+X(1)))*COS(A))/DIR/EL%BN(1)  !DPX*R/B1
        PT=ROOT(1.0_dp+2.0_dp*x(5)/b+X(5)**2-X(4)**2)
        PZS=ROOT(1.0_dp+2.0_dp*x(5)/b+X(5)**2-XN(2)**2-X(4)**2)
-       XN(1)=PZS/DIR/EL%BN(1)-DPX-R
+       XN(1)=PZS/DIR
+       xn(1)=xn(1)/EL%BN(1)
+       xn(1)=xn(1)-dpx
+       xn(1)=xn(1)-r
        XN(3)=(A+ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/DIR/EL%BN(1)
        XN(6)=X(6)+XN(3)*(1.0_dp/b+x(5))
        XN(6)=XN(6)+(k%TOTALPATH-1)*DL/EL%P%BETA0
        XN(3)=X(3)+X(4)*XN(3)
+
+      ! write(31,format4) "real"
+      ! write(31,format4) dpx,PZS,EL%BN(1),r
+
+
+     !  write(31,format5) 4,xn(1:4)
     else
        PZ=ROOT((1.0_dp+X(5))**2-X(2)**2-X(4)**2)
        XN(2)=X(2)*COS(A) + ( PZ-DIR*EL%BN(1)*(R+X(1)) ) *SIN(A)
        DPX=(-X(2)*SIN(A)+(PZ-DIR*EL%BN(1)*(R+X(1)))*COS(A))/DIR/EL%BN(1)  !DPX*R/B1
        PT=ROOT((1.0_dp+X(5))**2-X(4)**2)
        PZS=ROOT((1.0_dp+X(5))**2-XN(2)**2-X(4)**2)
-       XN(1)=PZS/DIR/EL%BN(1)-DPX-R
-
+     !  XN(1)=PZS/DIR/EL%BN(1)-DPX-R
+       XN(1)=PZS/DIR
+       xn(1)=xn(1)/EL%BN(1)
+       xn(1)=xn(1)-dpx
+       xn(1)=xn(1)-r
        XN(3)=(A+ARCSIN(X(2)/PT)-ARCSIN(XN(2)/PT))/DIR/EL%BN(1)
 
        XN(6)=X(6)+XN(3)*(1.0_dp+X(5))
@@ -11572,22 +11636,39 @@ endif
 !       call PRTP1("B1" , EL%BN(1))
 !       call PRTP1("A"  , A)
 
-       XN(1)=PZS/DIR/EL%BN(1)-DPX-R
+    !   write(31,format4) "poly"
+     !  write(31,format4) dpx%r,PZS%r,EL%BN(1)%r,r
+       XN(1)=(((PZS/DIR)/EL%BN(1))-dpx)-r
 
        XN(3)=(A+ASIN(X(2)/PT)-ASIN(XN(2)/PT))/DIR/EL%BN(1)
-
        XN(6)=X(6)+XN(3)*(1.0_dp/b+x(5))
        XN(6)=XN(6)+(k%TOTALPATH-1)*DL/EL%P%BETA0
-
        XN(3)=X(3)+X(4)*XN(3)
+
+    !   XN(1)=PZS/DIR
+     !  write(31,format2) 1,xn(1)%r
+     !  XN(1)=XN(1)/EL%BN(1)
+      ! write(31,format2) 2,xn(1)%r
+
+   !    xn(1)=xn(1)-dpx
+    !   write(31,format2) 3,xn(1)%r
+
+    !   xn(1)=xn(1)-r
+   !   write(31,format5) 4,xn(1:4)%r
+
+ 
+
     else
        PZ=SQRT((1.0_dp+X(5))**2-X(2)**2-X(4)**2)
        XN(2)=X(2)*COS(A) + ( PZ-DIR*EL%BN(1)*(R+X(1)) ) *SIN(A)
        DPX=(-X(2)*SIN(A)+(PZ-DIR*EL%BN(1)*(R+X(1)))*COS(A))/DIR/EL%BN(1)  !DPX*R/B1
        PT=SQRT((1.0_dp+X(5))**2-X(4)**2)
        PZS=SQRT((1.0_dp+X(5))**2-XN(2)**2-X(4)**2)
-       XN(1)=PZS/DIR/EL%BN(1)-DPX-R
-
+   !    XN(1)=PZS/DIR/EL%BN(1)-DPX-R
+       XN(1)=PZS/DIR
+       xn(1)=xn(1)/EL%BN(1)
+       xn(1)=xn(1)-dpx
+       xn(1)=xn(1)-r
        XN(3)=(A+ASIN(X(2)/PT)-ASIN(XN(2)/PT))/DIR/EL%BN(1)
 
        XN(6)=X(6)+XN(3)*(1.0_dp+X(5))
@@ -11906,47 +11987,6 @@ endif
 
   END SUBROUTINE INTER_TEAPOT
 
-  SUBROUTINE INTER_TEAPOT_qua(EL,p,k,pos)
-    IMPLICIT NONE
-    TYPE(probe),INTENT(INOUT) :: p
-    TYPE(TEAPOT),INTENT(IN):: EL
-    real(dp) D,DH,DD
-    real(dp) D1,D2,DK1,DK2
-    real(dp) DD1,DD2
-    real(dp) DF(4),DK(4),DDF(4)
-    real(dp) NDF(0:15),NDK(15),NDDF(0:15)
-
-    INTEGER I,J,f1
-    integer,optional :: pos
-    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
-
-    SELECT CASE(EL%P%METHOD)
- 
-    CASE(2)
-        D=EL%L/EL%P%NST
-        call rk2_teapot_qua(d,el,p,k)
-    CASE(4)
-stop 998
-     CASE(6)
- stop 999
-
-!!! newyoshida
-    CASE(8)
- stop 1000
-
-
-
-    CASE DEFAULT
-       !w_p=0
-       !w_p%nc=1
-       !w_p%fc='(1(1X,A72))'
-         write(6,'(a12,1x,i4,1x,a17)') " THE METHOD ",EL%P%METHOD," IS NOT SUPPORTED"
-       ! call !write_e(357)
-    END SELECT
-
-
-
-  END SUBROUTINE INTER_TEAPOT_qua
 
   SUBROUTINE INTEP_TEAPOT(EL,X,k,pos)
     IMPLICIT NONE
@@ -14417,7 +14457,7 @@ endif
          X(2)=X(2)-at*wyoshid(0)*b1*x(1)/2 
        do j=1,15
         call ROT_XZ(at*wyoshik(j),X,B,EXACT,time)
-         X(2)=X(2)-at*wyoshid(j)*b1*x(1)/2 
+         X(2)=X(2)-at*wyoshid(j)*b1*x(1)/2  
 
        enddo
      !   do j=7,0,-1
@@ -14443,18 +14483,31 @@ endif
     integer i,j
     logical(lp) time,EXACT
    at=a/n_wedge
-      do i=1,n_wedge
-        do j=7,0,-1
-          X(2)=X(2)-at*wyosh(j)*b1*x(1)/2 
-          call ROT_XZ(at*wyosh(j),X,B,EXACT,time)
-          X(2)=X(2)-at*wyosh(j)*b1*x(1)/2
-         enddo
 
-        do j=1,7
-          X(2)=X(2)-at*wyosh(j)*b1*x(1)/2 
-          call ROT_XZ(at*wyosh(j),X,B,EXACT,time)
-          X(2)=X(2)-at*wyosh(j)*b1*x(1)/2      
+      do i=1,n_wedge
+         X(2)=X(2)-at*wyoshid(0)*b1*x(1)/2 
+       do j=1,15
+        call ROT_XZ(at*wyoshik(j),X,B,EXACT,time)
+         X(2)=X(2)-at*wyoshid(j)*b1*x(1)/2  
+
        enddo
+
+
+!      do i=1,n_wedge
+!        do j=7,0,-1
+!          X(2)=X(2)-at*wyosh(j)*b1*x(1)/2 
+!          call ROT_XZ(at*wyosh(j),X,B,EXACT,time)
+!         enddo
+!
+!
+!
+!
+!
+!        do j=1,7
+!          X(2)=X(2)-at*wyosh(j)*b1*x(1)/2 
+!          call ROT_XZ(at*wyosh(j),X,B,EXACT,time)
+!          X(2)=X(2)-at*wyosh(j)*b1*x(1)/2      
+!       enddo
    enddo
       end subroutine wedge_intp
 
@@ -21080,7 +21133,1276 @@ call kill(vm,phi,z)
 
   END SUBROUTINE GET_BE_CAVP
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!   B_PARA_PERP  and DIRECTION_V   !!!!!!!!!!!!!!!!!!!!!!!!!!! 
 
+
+  subroutine B_PARA_PERPr(k,EL,X,B,BPA,BPE,XP,XPA,e,EF,EFB,EFD,POS)
+    IMPLICIT NONE
+    REAL(DP),  INTENT(INout) :: X(6)
+    TYPE(ELEMENT),  pointer :: EL
+    TYPE(MAGNET_CHART),  pointer :: P
+    REAL(DP),  INTENT(INout) :: B(3),BPA(3),BPE(3),XP(2),XPA(2),e(3)
+    REAL(DP),  OPTIONAL ::EF(3),EFB(3),EFD(3)
+    integer, optional,intent(in) :: pos
+    INTEGER i
+    REAL(DP) be
+    type(internal_state) k
+    P=>EL%P
+
+    !  this routines gives us  B parallel and B perpendicular
+    ! Also if EF is present, E perpendicular times beta is return
+
+    call DIRECTION_V(k,EL,X,E,XP,XPA,POS)
+
+    be=b(1)*e(1)+b(2)*e(2)+b(3)*e(3)
+
+    do i=1,3
+       BPA(i)=be*e(i)
+    enddo
+    do i=1,3
+       BPE(i)=B(i)-BPA(i)
+    enddo
+
+    IF(PRESENT(EF)) THEN
+
+       EFB(1)=-EF(2)*E(3)+EF(3)*E(2)      ! changed sign txE of Barber
+       EFB(2)=-EF(3)*E(1)+EF(1)*E(3)
+       EFB(3)=-EF(1)*E(2)+EF(2)*E(1)
+       be=EF(1)*e(1)+EF(2)*e(2)+EF(3)*e(3)
+       do i=1,3
+         EFD(i)=be*e(i)
+        enddo
+
+    endif
+  END subroutine B_PARA_PERPr
+
+  subroutine B_PARA_PERPp(k,EL,X,B,BPA,BPE,XP,XPA,e,EF,EFB,EFD,pos)
+    IMPLICIT NONE
+    type(real_8),  INTENT(INout) :: X(6)
+    TYPE(ELEMENTP),  pointer :: EL
+    TYPE(MAGNET_CHART),  pointer :: P
+    type(real_8),  INTENT(INout) :: B(3),BPA(3),BPE(3),XP(2),XPA(2),e(3)
+    type(real_8),  OPTIONAL ::EF(3),EFB(3),EFD(3)
+    INTEGER i
+    type(real_8) be
+    type(internal_state) k
+    integer, optional,intent(in) :: pos
+
+    P=>EL%P
+
+     call alloc(be);
+
+    call DIRECTION_V(k,EL,X,E,XP,XPA,POS)
+
+    be=b(1)*e(1)+b(2)*e(2)+b(3)*e(3)
+
+    do i=1,3
+       BPA(i)=be*e(i)
+    enddo
+    do i=1,3
+       BPE(i)=B(i)-BPA(i)
+    enddo
+
+    IF(PRESENT(EF)) THEN
+       EFB(1)=-EF(2)*E(3)+EF(3)*E(2)      ! changed sign txE of Barber
+       EFB(2)=-EF(3)*E(1)+EF(1)*E(3)
+       EFB(3)=-EF(1)*E(2)+EF(2)*E(1)
+       be=EF(1)*e(1)+EF(2)*e(2)+EF(3)*e(3)
+       do i=1,3
+         EFD(i)=be*e(i)
+        enddo
+    ENDIF
+
+     call kill(be);
+
+  END subroutine B_PARA_PERPp
+
+
+  subroutine DIRECTION_VR(k,EL,X,E,XP,XPA,POS)
+    IMPLICIT NONE
+    REAL(DP),  INTENT(INout) :: X(6),XP(2),XPA(2)
+    TYPE(ELEMENT),  pointer :: EL
+    TYPE(MAGNET_CHART),  pointer :: P
+    REAL(DP),  INTENT(INOUT) ::E(3)
+    REAL(DP) N,H,DP1,A,AP,B,BP,z,ve,AV(3),ad(3)
+    integer, optional,intent(in) :: pos
+    type(internal_state) k
+
+    P=>EL%P
+
+    !    CALL COMPX(EL,Z,X,A,AP)
+    !    X_MEC=zero
+    !    X_MEC(2)=X(2)-A
+    !    CALL COMPY(EL,Z,X,B,BP)
+    !    X_MEC(4)=X(4)-B
+    !    CALL B2PERP(EL%P,B_F,X_MEC,X5,B2)
+
+    IF(k%TIME) THEN
+       DP1=root(1.0_dp+2.0_dp*X(5)/P%BETA0+X(5)**2)
+    ELSE
+       DP1=1.0_dp+X(5)
+    ENDIF
+
+    IF(EL%KIND/=KINDPA) THEN
+
+       IF(ASSOCIATED(EL%B_SOL)) THEN  !SOLENOID
+
+          XPA(1)=(X(2)+EL%B_SOL*EL%P%CHARGE*X(3)/2.0_dp)
+          XPA(2)=(X(4)-EL%B_SOL*EL%P%CHARGE*X(1)/2.0_dp)
+          N=root(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+          E(1)=Xpa(1)/DP1
+          E(2)=Xpa(2)/DP1
+          E(3)=N/DP1
+          XP(1)=XPA(1)/N
+          XP(2)=XPA(2)/N
+       ELSEif(el%kind==kindwiggler) then
+          CALL get_z_wi(EL%wi,POS,z)
+
+          if(el%wi%xprime) then
+           Xpa(1)=X(2)
+           Xpa(2)=X(4)
+          else
+          CALL COMPX(EL%wi,Z,X,A,AP)
+          CALL COMPY(EL%wi,Z,X,B,BP)
+           Xpa(1)=X(2)-A
+           Xpa(2)=X(4)-B
+          endif
+          N=root(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+          E(1)=Xpa(1)/DP1
+          E(2)=Xpa(2)/DP1
+          E(3)=N/DP1
+          XP(1)=XPA(1)/N
+          XP(2)=XPA(2)/N
+
+       ELSEif(el%kind==kind21) then
+
+        call get_z_cav(EL%cav21,pos,z)
+        call A_TRANS(EL%cav21,Z,X,k,AV,AD)
+
+
+       !   CALL compute_f4(EL%he22,X,Z,A=AV)
+          Xpa(1)=X(2)-AV(1)
+          Xpa(2)=X(4)-AV(2)
+          N=root(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+          E(1)=Xpa(1)/DP1
+          E(2)=Xpa(2)/DP1
+          E(3)=N/DP1
+          XP(1)=XPA(1)/N
+          XP(2)=XPA(2)/N
+       ELSEif(el%kind==kind22) then
+
+          IF(EL%HE22%P%DIR==1) THEN
+             Z= pos*el%l/el%p%nst
+          ELSE
+             Z=EL%L-pos*el%l/el%p%nst
+          ENDIF
+
+          CALL compute_f4(EL%he22,X,Z,A=AV)
+          Xpa(1)=X(2)-EL%P%CHARGE*AV(1)
+          Xpa(2)=X(4)-EL%P%CHARGE*AV(2)
+          N=root(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+          E(1)=Xpa(1)/DP1
+          E(2)=Xpa(2)/DP1
+          E(3)=N/DP1
+          XP(1)=XPA(1)/N
+          XP(2)=XPA(2)/N
+       ELSEif(el%kind==kindabell) then
+
+
+
+          if(el%ab%xprime) then
+               H=1.0_dp+el%ab%hc*X(1)
+               N=root(H**2+X(2)**2+X(4)**2)
+               E(1)=X(2)/N
+               E(2)=X(4)/N
+               E(3)=H/N
+               XPA(1)=X(2)
+               XPA(2)=X(4)
+               XP(1)=X(2)
+               XP(2)=X(4)
+          else
+              CALL get_z_ab(EL%ab,POS,z)
+              call B_E_FIELD(EL%ab,X,Z,psie_in=ve,A_in=av)
+
+            IF(k%TIME) THEN
+               DP1=root(1.0_dp+2.0_dp*(X(5)+EL%P%CHARGE*ve)/P%BETA0+(X(5)+ve)**2)
+            ELSE
+               DP1=1.0_dp+(X(5)+EL%P%CHARGE*ve)
+            ENDIF
+
+             Xpa(1)=X(2)-EL%P%CHARGE*AV(1)
+             Xpa(2)=X(4)-EL%P%CHARGE*AV(2)
+             N=root(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+             E(1)=Xpa(1)/DP1
+             E(2)=Xpa(2)/DP1
+             E(3)=N/DP1
+             XP(1)=XPA(1)/N
+             XP(2)=XPA(2)/N
+
+             endif
+       else
+
+
+          N=root(DP1**2-X(2)**2-X(4)**2)
+
+          E(1)=X(2)/DP1
+          E(2)=X(4)/DP1
+          E(3)=N/DP1
+          XPA(1)=X(2)
+          XPA(2)=X(4)
+          XP(1)=X(2)/N
+          XP(2)=X(4)/N
+       ENDIF
+
+    ELSE    ! NON CANONICAL VARIABLES
+       H=1.0_dp+el%pa%hc*X(1)
+       N=root(H**2+X(2)**2+X(4)**2)
+       E(1)=X(2)/N
+       E(2)=X(4)/N
+       E(3)=H/N
+       XPA(1)=X(2)
+       XPA(2)=X(4)
+       XP(1)=X(2)
+       XP(2)=X(4)
+
+    ENDIF
+
+!    E(1)=EL%P%dir*E(1)
+!    E(2)=EL%P%dir*E(2)    etienne 2016_5_9
+    E(3)=EL%P%dir*E(3)
+
+
+
+  END subroutine DIRECTION_VR
+
+  subroutine DIRECTION_VP(k,EL,X,E,XP,XPA,POS)
+    IMPLICIT NONE
+    type(real_8), INTENT(INout) :: X(6),XP(2),XPA(2)
+    TYPE(ELEMENTP),  pointer :: EL
+    TYPE(MAGNET_CHART),  pointer :: P
+    type(real_8), INTENT(INOUT) ::E(3)
+    type(real_8) N,H,DP1,A,AP,B,BP,z,AV(3),ve,ad(3)
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    integer, optional,intent(in) :: pos
+
+    P=>EL%P
+
+    CALL ALLOC(N,H,DP1,A,AP,B,BP,z,ve )
+    CALL ALLOC(AV )
+    CALL ALLOC(AD )
+
+    IF(k%TIME) THEN
+       DP1=SQRT(1.0_dp+2.0_dp*X(5)/P%BETA0+X(5)**2)
+    ELSE
+       DP1=1.0_dp+X(5)
+    ENDIF
+
+    IF(EL%KIND/=KINDPA) THEN
+
+       IF(ASSOCIATED(EL%B_SOL)) THEN  !SOLENOID
+
+          XPA(1)=(X(2)+EL%B_SOL*EL%P%CHARGE*X(3)/2.0_dp)
+          XPA(2)=(X(4)-EL%B_SOL*EL%P%CHARGE*X(1)/2.0_dp)
+          N=SQRT(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+          E(1)=Xpa(1)/DP1
+          E(2)=Xpa(2)/DP1
+          E(3)=N/DP1
+          XP(1)=XPA(1)/N
+          XP(2)=XPA(2)/N
+       ELSEif(el%kind==kindwiggler) then
+          CALL get_z_wi(EL%wi,POS,z)
+          if(el%wi%xprime) then
+           Xpa(1)=X(2)
+           Xpa(2)=X(4)
+          else
+          CALL COMPX(EL%wi,Z,X,A,AP)
+          CALL COMPY(EL%wi,Z,X,B,BP)
+           Xpa(1)=X(2)-A
+           Xpa(2)=X(4)-B
+          endif
+          N=SQRT(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+          E(1)=Xpa(1)/DP1
+          E(2)=Xpa(2)/DP1
+          E(3)=N/DP1
+          XP(1)=XPA(1)/N
+          XP(2)=XPA(2)/N
+       ELSEif(el%kind==kind21) then
+
+        call get_z_cav(EL%cav21,pos,z)
+        call A_TRANS(EL%cav21,Z,X,k,AV,AD)
+
+
+       !   CALL compute_f4(EL%he22,X,Z,A=AV)
+          Xpa(1)=X(2)-AV(1)
+          Xpa(2)=X(4)-AV(2)
+          N=sqrt(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+          E(1)=Xpa(1)/DP1
+          E(2)=Xpa(2)/DP1
+          E(3)=N/DP1
+          XP(1)=XPA(1)/N
+          XP(2)=XPA(2)/N
+       ELSEif(el%kind==kind22) then
+
+          IF(EL%HE22%P%DIR==1) THEN
+             Z= pos*el%l/el%p%nst
+          ELSE
+             Z=EL%L-pos*el%l/el%p%nst
+          ENDIF
+
+          CALL compute_f4(EL%he22,X,Z,A=AV)
+          Xpa(1)=X(2)-EL%P%CHARGE*AV(1)
+          Xpa(2)=X(4)-EL%P%CHARGE*AV(2)
+          N=SQRT(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+          E(1)=Xpa(1)/DP1
+          E(2)=Xpa(2)/DP1
+          E(3)=N/DP1
+          XP(1)=XPA(1)/N
+          XP(2)=XPA(2)/N
+       ELSEif(el%kind==kindabell) then
+
+
+
+          if(el%ab%xprime) then
+               H=1.0_dp+el%ab%hc*X(1)
+               N=SQRT(H**2+X(2)**2+X(4)**2)
+               E(1)=X(2)/N
+               E(2)=X(4)/N
+               E(3)=H/N
+               XPA(1)=X(2)
+               XPA(2)=X(4)
+               XP(1)=X(2)
+               XP(2)=X(4)
+          else
+              CALL get_z_ab(EL%ab,POS,z)
+              call B_E_FIELD(EL%ab,X,Z,psie_in=ve,A_in=av)
+
+            IF(k%TIME) THEN
+               DP1=SQRT(1.0_dp+2.0_dp*(X(5)+EL%P%CHARGE*ve)/P%BETA0+(X(5)+ve)**2)
+            ELSE
+               DP1=1.0_dp+(X(5)+EL%P%CHARGE*ve)
+            ENDIF
+
+             Xpa(1)=X(2)-EL%P%CHARGE*AV(1)
+             Xpa(2)=X(4)-EL%P%CHARGE*AV(2)
+             N=SQRT(DP1**2-Xpa(1)**2-Xpa(2)**2)
+
+             E(1)=Xpa(1)/DP1
+             E(2)=Xpa(2)/DP1
+             E(3)=N/DP1
+             XP(1)=XPA(1)/N
+             XP(2)=XPA(2)/N
+
+             endif
+       else
+
+
+          N=sqrt(DP1**2-X(2)**2-X(4)**2)
+
+          E(1)=X(2)/DP1
+          E(2)=X(4)/DP1
+          E(3)=N/DP1
+          XPA(1)=X(2)
+          XPA(2)=X(4)
+          XP(1)=X(2)/N
+          XP(2)=X(4)/N
+       ENDIF
+
+    ELSE    ! NON CANONICAL VARIABLES
+       H=1.0_dp+el%pa%hc*X(1)
+       N=SQRT(H**2+X(2)**2+X(4)**2)
+       E(1)=X(2)/N
+       E(2)=X(4)/N
+       E(3)=H/N
+       XPA(1)=X(2)
+       XPA(2)=X(4)
+       XP(1)=X(2)
+       XP(2)=X(4)
+
+    ENDIF
+
+
+!    E(1)=EL%P%dir*E(1)
+!    E(2)=EL%P%dir*E(2)    etienne 2016_5_9
+    E(3)=EL%P%dir*E(3)
+
+
+     CALL kill(N,H,DP1,A,AP,B,BP,z,ve )
+     CALL kill(AV )
+     CALL kill(AD )
+
+  END subroutine DIRECTION_VP
+
+  subroutine get_omega_spinr(c,OM,B2,dlds,XP,X,POS,k,ED,B)
+    implicit none
+    TYPE(integration_node), POINTER::c
+    TYPE(ELEMENT), POINTER::EL
+    TYPE(MAGNET_CHART), POINTER::P
+    INTEGER,OPTIONAL,INTENT(IN) ::POS
+    REAL(DP),INTENT(INOUT) :: X(6),OM(3),B2,XP(2),DLDS,B(3),ED(3)
+    REAL(DP)  BPA(3),BPE(3),D1,D2,GAMMA,EB(3),EFD(3),beta,e(3)
+    REAL(DP) BETA0,GAMMA0I,XPA(2),phi,del,z
+    INTEGER I
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+
+    IF(.NOT.CHECK_STABLE) return
+    el=>c%parent_fibre%mag
+    P=>EL%P
+    P%DIR    => C%PARENT_FIBRE%DIR
+    P%beta0  => C%PARENT_FIBRE%beta0
+    P%GAMMA0I=> C%PARENT_FIBRE%GAMMA0I
+    P%GAMBET => C%PARENT_FIBRE%GAMBET
+    P%MASS => C%PARENT_FIBRE%MASS
+    P%ag => C%PARENT_FIBRE%ag
+    P%CHARGE=>C%PARENT_FIBRE%CHARGE
+    ! DLDS IS  REALLY D(CT)/DS * (1/(ONE/BETA0+X(5)))
+    OM(2)=0.0_dp
+    EB=0.0_dp
+    BPA=0.0_dp
+    BPE=0.0_dp
+    B=0.0_dp
+    E=0.0_dp
+    ED=0.0_dp
+    EFD=0.0_dp
+    phi=0.0_dp
+
+    xp(1)=x(2)
+    xp(2)=x(4)   !  to prevent a crash in monitors, etc... CERN june 2010
+    dlds=0.0_dp
+    del=x(5)
+    CALL get_field(EL,B,E,phi,X,k,POS)
+
+    SELECT CASE(EL%KIND) 
+    case(KIND2,kind3,kind5:kind7,kindwiggler) ! Straight for all practical purposes
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/root(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/root((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
+       if(pos>=0) OM(2)=p%dir*P%b0   ! not fake fringe
+    case(KIND4) ! CAVITY
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/root(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/root((1.0_dp+del)**2-X(2)**2-X(4)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
+    case(KIND16:kind17,KIND20)
+       CALL B_PARA_PERP(k,el,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/root(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)
+       ELSE
+          DLDS=1.0_dp/root((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)
+       ENDIF
+    case(kind10)     ! TEAPOT real curvilinear
+       x(5)=x(5)-phi*EL%P%CHARGE
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
+       x(5)=x(5)+phi*EL%P%CHARGE
+
+           DEL=x(5)-phi*EL%P%CHARGE
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/root(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/root((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
+       if(pos>=0) OM(2)=p%dir*P%b0   ! not fake fringe
+    case(kindabell)     ! TEAPOT real curvilinear
+
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
+       CALL get_z_ab(EL%ab,POS,z)
+       call B_E_FIELD(EL%ab,x,Z,psie_in=phi)
+           DEL=x(5)+phi*EL%P%CHARGE
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/root(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/root((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
+       if(pos>=0) OM(2)=p%dir*P%b0   ! not fake fringe
+    case(KINDPA)     ! fitted field for real magnet
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       if(k%time) then
+          beta0=p%beta0;GAMMA0I=p%GAMMA0I;
+       else
+          beta0=1.0_dp;GAMMA0I=0.0_dp;
+       endif
+       d1=root(x(2)**2+x(4)**2+(1.0_dp+el%pa%hc*x(1))**2)
+       d2=1.0_dp+2.0_dp*del/beta0+del**2
+       d2=gamma0I/beta0/d2
+       DLDS=root((1.0_dp+d2**2))*d1/(1.0_dp/BETA0+del)
+       OM(2)=p%dir*el%pa%hc
+    CASE(KIND21)     ! travelling wave cavity
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
+
+!       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/root(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/root((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
+
+    case(KIND22)
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/root(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)
+       ELSE
+          DLDS=1.0_dp/root((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)
+       ENDIF
+    case default
+       OM(1)=0.0_dp
+       OM(2)=0.0_dp
+       OM(3)=0.0_dp
+    END SELECT
+
+    IF(.not.k%TIME) THEN
+      del=(2*del+del**2)/(root(1.0_dp/p%beta0**2+2.0_dp*del+del**2)+1.0_dp/p%beta0)
+    endif
+
+    !  MUST ALWAYS COMPUTER GAMMA EVEN IF TIME=FALSE.
+    GAMMA=P%BETA0/P%GAMMA0I*( 1.0_dp/P%BETA0 + del )
+
+    OM(1)=-DLDS*a_spin_scale*( (1.0_dp+p%AG*GAMMA)*BPE(1) + (1.0_dp+p%AG)*BPA(1) )
+    OM(2)=-DLDS*a_spin_scale*( (1.0_dp+p%AG*GAMMA)*BPE(2) + (1.0_dp+p%AG)*BPA(2) )+OM(2)
+    OM(3)=-DLDS*a_spin_scale*( (1.0_dp+p%AG*GAMMA)*BPE(3) + (1.0_dp+p%AG)*BPA(3) )
+
+
+    beta=root(1.0_dp+2.0_dp*del/p%beta0+del**2)/(1.0_dp/P%BETA0 + del)  ! replaced
+
+
+    DO I=1,3
+       OM(I)=OM(I)+a_spin_scale*DLDS*beta*gamma*(p%AG+1.0_dp/(1.0_dp+GAMMA))*EB(I)
+    ENDDO
+
+   beta=root(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)*P%BETA0/P%GAMMA0I  ! replace  this
+
+    om(1)=-DLDS*0.5_dp*e_muon*beta*(ed(2)*BPE(3)-ed(3)*BPE(2)) +  om(1)
+    om(2)=-DLDS*0.5_dp*e_muon*beta*(ed(3)*BPE(1)-ed(1)*BPE(3)) +  om(2)
+    om(3)=-DLDS*0.5_dp*e_muon*beta*(ed(1)*BPE(2)-ed(2)*BPE(1)) +  om(3)
+
+    DO I=1,3
+       OM(I)=OM(I)-DLDS*0.5_dp*e_muon*(GAMMA*E(I)+(1-GAMMA)*EFD(I))
+    ENDDO
+
+    !IF(.not.k%TIME) THEN
+    !   del=(2.0_dp*del/p%beta0+del**2)/(sqrt(1.0_dp+2.0_dp*del/p%beta0+del**2)+1.0_dp)
+    !endif
+
+    if((k%radiation.or.k%envelope)) then
+       !      if(P%RADIATION) then
+       B2=BPE(1)**2+BPE(2)**2+BPE(3)**2
+       !        B2=-CRADF(EL%P)*(one+X(5))**3*B2*DLDS
+    ENDIF
+
+  end subroutine get_omega_spinr
+
+  subroutine get_omega_spinp(c,OM,B2,dlds,XP,X,POS,k,ED,B)
+    implicit none
+    TYPE(integration_node), POINTER::c
+    TYPE(ELEMENTp), POINTER::EL
+    TYPE(MAGNET_CHART), POINTER::P
+    INTEGER,OPTIONAL,INTENT(IN) ::POS
+    TYPE(REAL_8), INTENT(INOUT) :: X(6),OM(3),B2,XP(2),B(3),ED(3)
+    TYPE(REAL_8)  BPA(3),BPE(3),DLDS,D1,D2,GAMMA,EB(3),efd(3),XPA(2),e(3),beta,phi,del,z
+    REAL(DP) BETA0,GAMMA0I
+    INTEGER I
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+
+    !  TESTBUG SATEESH
+    !       TYPE(REAL_8) XS(6)
+    !       TYPE(DAMAP) ID
+    !       REAL(DP) CLO(6)
+
+    !     CALL ALLOC(XS)
+    !     CALL ALLOC(ID)
+    !     CLO=X
+    !     XS=X
+    !     ID=1
+    !     X=CLO+ID
+
+    IF(.NOT.CHECK_STABLE) return
+
+  !  CALL ALLOC(B,3)
+    !CALL ALLOC(ED,3)
+    CALL ALLOC(E,3)
+    CALL ALLOC(efd,3)
+    CALL ALLOC(beta,del,z)
+    CALL ALLOC(EB,3)
+    CALL ALLOC(BPA,3)
+    CALL ALLOC(BPE,3)
+    CALL ALLOC(XPA,2)
+    CALL ALLOC(D1,D2,GAMMA,phi)
+
+    el=>c%parent_fibre%magp
+    P=>EL%P
+    P%DIR    => C%PARENT_FIBRE%DIR
+    P%beta0  => C%PARENT_FIBRE%beta0
+    P%GAMMA0I=> C%PARENT_FIBRE%GAMMA0I
+    P%GAMBET => C%PARENT_FIBRE%GAMBET
+    P%MASS => C%PARENT_FIBRE%MASS
+    P%ag => C%PARENT_FIBRE%ag
+    P%CHARGE=>C%PARENT_FIBRE%CHARGE
+    ! DLDS IS  REALLY D(CT)/DS * (1/(ONE/BETA0+X(5)))
+    OM(2)=0.0_dp
+    xp(1)=x(2)
+    xp(2)=x(4)   !  to prevent a crash in monitors, etc... CERN june 2010
+    dlds=0.0_dp
+    del=x(5)
+
+    CALL get_field(EL,B,E,phi,X,k,POS)
+
+    SELECT CASE(EL%KIND) 
+    case(KIND2,kind3,kind5:kind7,kindwiggler) ! Straight for all practical purposes
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/SQRT(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/SQRT((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
+       if(pos>=0) OM(2)=p%dir*P%b0   ! not fake fringe
+    case(KIND4) ! CAVITY
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/SQRT(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/SQRT((1.0_dp+del)**2-X(2)**2-X(4)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
+    case(KIND16:kind17,KIND20)
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/SQRT(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)
+       ELSE
+          DLDS=1.0_dp/SQRT((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)
+       ENDIF
+    case(kind10)     ! TEAPOT real curvilinear
+       x(5)=x(5)-phi*EL%P%CHARGE
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
+       x(5)=x(5)+phi*EL%P%CHARGE
+
+           DEL=x(5)-phi*EL%P%CHARGE
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/SQRT(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/SQRT((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
+       if(pos>=0) OM(2)=p%dir*P%b0   ! not fake fringe
+    case(KINDPA)     ! fitted field for real magnet
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       if(k%time) then
+          beta0=p%beta0;GAMMA0I=p%GAMMA0I;
+       else
+          beta0=1.0_dp;GAMMA0I=0.0_dp;
+       endif
+       d1=sqrt(x(2)**2+x(4)**2+(1.0_dp+el%pa%hc*x(1))**2)
+       d2=1.0_dp+2.0_dp*del/beta0+del**2
+       d2=gamma0I/beta0/d2
+       DLDS=sqrt((1.0_dp+d2**2))*d1/(1.0_dp/BETA0+del)
+       OM(2)=p%dir*el%pa%hc
+    CASE(KIND21)     ! travelling wave cavity
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
+
+      ! CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/sqrt(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/sqrt((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
+    case(KIND22)
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/SQRT(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)
+       ELSE
+          DLDS=1.0_dp/SQRT((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)
+       ENDIF
+    case(kindabell)     ! TEAPOT real curvilinear
+
+       CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,E,EB,EFD,pos=POS)
+       CALL get_z_ab(EL%ab,POS,z)
+       call B_E_FIELD(EL%ab,x,Z,psie_in=phi)
+           DEL=x(5)+phi*EL%P%CHARGE
+       IF(k%TIME) THEN
+          DLDS=1.0_dp/sqrt(1.0_dp+2.0_dp*del/P%BETA0+del**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ELSE
+          DLDS=1.0_dp/sqrt((1.0_dp+del)**2-XPA(2)**2-XPA(1)**2)*(1.0_dp+P%b0*X(1))
+       ENDIF
+       if(pos>=0) OM(2)=p%dir*P%b0   ! not fake fringe
+    case default
+       OM(1)=0.0_dp
+       OM(2)=0.0_dp
+       OM(3)=0.0_dp
+    END SELECT
+
+    IF(.not.k%TIME) THEN
+      del=(2*del+del**2)/(sqrt(1.0_dp/p%beta0**2+2.0_dp*del+del**2)+1.0_dp/p%beta0)
+    endif
+
+    !  MUST ALWAYS COMPUTER GAMMA EVEN IF TIME=FALSE.
+    GAMMA=P%BETA0/P%GAMMA0I*( 1.0_dp/P%BETA0 + del )
+
+    OM(1)=-DLDS*a_spin_scale*( (1.0_dp+p%AG*GAMMA)*BPE(1) + (1.0_dp+p%AG)*BPA(1) )
+    OM(2)=-DLDS*a_spin_scale*( (1.0_dp+p%AG*GAMMA)*BPE(2) + (1.0_dp+p%AG)*BPA(2) )+OM(2)
+    OM(3)=-DLDS*a_spin_scale*( (1.0_dp+p%AG*GAMMA)*BPE(3) + (1.0_dp+p%AG)*BPA(3) )
+
+
+    beta=sqrt(1.0_dp+2.0_dp*del/p%beta0+del**2)/(1.0_dp/P%BETA0 + del)  ! replaced
+
+
+    DO I=1,3
+       OM(I)=OM(I)+a_spin_scale*DLDS*beta*gamma*(p%AG+1.0_dp/(1.0_dp+GAMMA))*EB(I)
+    ENDDO
+
+    e_muon_scale%r=e_muon
+    beta=sqrt(1.0_dp+2.0_dp*del/p%beta0+del**2)*P%BETA0/P%GAMMA0I
+
+    om(1)=-DLDS*0.5_dp*e_muon_scale*beta*(ed(2)*BPE(3)-ed(3)*BPE(2)) +  om(1)
+    om(2)=-DLDS*0.5_dp*e_muon_scale*beta*(ed(3)*BPE(1)-ed(1)*BPE(3)) +  om(2)
+    om(3)=-DLDS*0.5_dp*e_muon_scale*beta*(ed(1)*BPE(2)-ed(2)*BPE(1)) +  om(3)
+
+    DO I=1,3
+       OM(I)=OM(I)-DLDS*0.5_dp*e_muon_scale*(GAMMA*E(I)+(1-GAMMA)*EFD(I))
+    ENDDO
+
+    !IF(.not.k%TIME) THEN
+    !   del=(2.0_dp*del/p%beta0+del**2)/(sqrt(1.0_dp+2.0_dp*del/p%beta0+del**2)+1.0_dp)
+    !endif
+
+    if((k%radiation.or.k%envelope)) then
+       !      if(P%RADIATION) then
+       B2=BPE(1)**2+BPE(2)**2+BPE(3)**2
+       !        B2=-CRADF(EL%P)*(one+X(5))**3*B2*DLDS
+    ENDIF
+
+
+ !   CALL KILL(B,3)
+  !  CALL KILL(ED,3)
+ 
+
+    CALL KILL(E,3)
+    CALL KILL(efd,3)
+    CALL KILL(beta,del,z)
+    CALL KILL(EB,3)
+    CALL KILL(BPA,3)
+    CALL KILL(BPE,3)
+    CALL KILL(XPA,2)
+    CALL KILL(D1,D2,GAMMA,phi)
+    !  TESTBUG SATEESH
+    !    CALL KILL(XS)
+    !     CALL KILL(ID)
+
+  end subroutine get_omega_spinp
+
+  subroutine radiate_2r(c,DS,FAC,p,b2,dlds,before,k,POS)
+    use gauss_dis
+    implicit none
+    TYPE(integration_node), POINTER::c
+    TYPE(ELEMENT), POINTER::EL
+    INTEGER,OPTIONAL,INTENT(IN) ::POS
+    type(probe),INTENT(INOUT) :: p !,XP(2)
+    real(dp), INTENT(IN) :: DS
+    REAL(DP), INTENT(IN) :: FAC
+    real(dp), intent(in):: B2,dlds
+    LOGICAL(LP),intent(in) :: BEFORE
+    real(dp)  st,z,av(3),t,x(6)
+    type(internal_state) k
+
+    IF(.NOT.CHECK_STABLE) return
+    x=p%x
+    el=>c%parent_fibre%mag
+
+    if(k%TIME) then
+       ST=root(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)-1.0_dp
+    else
+       ST=X(5)
+    endif
+
+    ! X(5)=X(5)+B2*FAC*DS
+    !        B2=-CRADF(EL%P)*(one+X(5))**3*B2*DLDS
+    ! X(5)=one/(one/(one+X(5))+CRADF(EL%P)*(one+X(5))*B2*DLDS*FAC*DS)-one
+    !        X(5)=X(5)-CRADF(EL%P)*(one+X(5))**3*B2*FAC*DS/SQRT((one+X(5))**2-X(2)**2-X(4)**2)
+    if(K%radiation) X(5)=X(5)-CRADF(EL%P)*(1.0_dp+X(5))**3*B2*FAC*DS*DLDS
+    if(k%stochastic) then
+       !         t=sqrt(12.e0_dp)*(bran(bran_init)-half)
+       t=RANF()
+       !         t=sqrt(12.d0)*(RANF()-half)
+       if(t>0.5_dp) then
+          t=1.0_dp
+       else
+          t=-1.0_dp
+       endif
+       if(before) then
+          x(5)=x(5)+t*c%delta_rad_in
+       else
+          x(5)=x(5)+t*c%delta_rad_out
+       endif
+    endif
+
+    if(el%kind/=kindpa) then
+       IF(ASSOCIATED(EL%B_SOL)) THEN
+          if(k%TIME) then
+             X(2)=(X(2)+EL%B_SOL*EL%P%CHARGE*X(3)/2.0_dp)*root(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)/(1.0_dp+ST)
+             X(2)=X(2)-EL%B_SOL*EL%P%CHARGE*X(3)/2.0_dp
+             X(4)=(X(4)-EL%B_SOL*EL%P%CHARGE*X(1)/2.0_dp)*root(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)/(1.0_dp+ST)
+             X(4)=X(4)+EL%B_SOL*EL%P%CHARGE*X(1)/2.0_dp
+          else
+             X(2)=(X(2)+EL%B_SOL*EL%P%CHARGE*X(3)/2.0_dp)*(1.0_dp+X(5))/(1.0_dp+ST)
+             X(2)=X(2)-EL%B_SOL*EL%P%CHARGE*X(3)/2.0_dp
+             X(4)=(X(4)-EL%B_SOL*EL%P%CHARGE*X(1)/2.0_dp)*(1.0_dp+X(5))/(1.0_dp+ST)
+             X(4)=X(4)+EL%B_SOL*EL%P%CHARGE*X(1)/2.0_dp
+          endif
+       ELSEif(el%kind==kind22) then
+
+          IF(EL%HE22%P%DIR==1) THEN
+             Z= pos*el%l/el%p%nst
+          ELSE
+             Z=EL%L-pos*el%l/el%p%nst
+          ENDIF
+          CALL compute_f4(EL%he22,X,Z,A=AV)
+          if(k%TIME) then
+             X(2)=(X(2)+EL%P%CHARGE*AV(1)) *root(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)/(1.0_dp+ST)
+             X(2)=X(2)-EL%P%CHARGE*AV(1)
+             X(4)=(X(4)-EL%P%CHARGE*AV(2)) *root(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)/(1.0_dp+ST)
+             X(4)=X(4)+EL%P%CHARGE*AV(2)
+          else
+             X(2)=(X(2)+EL%P%CHARGE*AV(1))*(1.0_dp+X(5))/(1.0_dp+ST)
+             X(2)=X(2)-EL%P%CHARGE*AV(1)
+             X(4)=(X(4)-EL%P%CHARGE*AV(2))*(1.0_dp+X(5))/(1.0_dp+ST)
+             X(4)=X(4)+EL%P%CHARGE*AV(2)
+          endif
+
+
+       ELSE
+          if(k%TIME) then
+             X(2)=X(2)*root(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)/(1.0_dp+ST)
+             X(4)=X(4)*root(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)/(1.0_dp+ST)
+          else
+             X(2)=X(2)*(1.0_dp+X(5))/(1.0_dp+ST)
+             X(4)=X(4)*(1.0_dp+X(5))/(1.0_dp+ST)
+          endif
+       ENDIF
+    endif
+
+    !       X(2)=X_MEC(2)*(one+X(5))/(one+X5)-EL%B_SOL*EL%P%CHARGE*X(3)/two
+    !       X(4)=X_MEC(4)*(one+X(5))/(one+X5)+EL%B_SOL*EL%P%CHARGE*X(1)/two
+
+   p%x=x
+  end subroutine radiate_2r
+
+
+  subroutine radiate_2p(c,DS,FAC,p,b2,dlds,XP,before,k,POS,E,B)
+    implicit none
+    TYPE(integration_node), POINTER::c
+    TYPE(ELEMENTP), POINTER::EL
+    INTEGER,OPTIONAL,INTENT(IN) ::POS
+    TYPE(REAL_8),INTENT(INOUT) ::XP(2),E(3),B(3)
+    TYPE(probe_8),INTENT(INOUT) :: p
+    TYPE(REAL_8), INTENT(IN) :: DS
+    REAL(DP), INTENT(IN) :: FAC
+    TYPE(REAL_8), intent(in):: B2,dlds
+    LOGICAL(LP),intent(in) :: BEFORE
+    TYPE(REAL_8) st,av(3),z,x(6)
+    type(quaternion) q
+    real(dp) b30,x1,x3,denf,a(3),dspin(3),bs(3),ee(3),bb(3),lambda,s(3,3),denf0
+    type(damap) xpmap
+    type(c_damap) smap
+    integer i,j,ja,ia
+    type(internal_state) k
+    real(dp) Sm(3,3),sdelta(3,3)
+    type(quaternion) qdelta
+    IF(.NOT.CHECK_STABLE) return
+!!!  ee =  ray direction
+!!!  bb =  b field
+        do i=1,3
+         ee(i)=e(i)
+         bb(i)=b(i)
+        enddo
+ 
+    call alloc(x)
+    x=p%x
+
+    el=>c%parent_fibre%magp
+    if(.not.before.and.k%envelope) then
+
+       denf=(1.0_dp+x(5))**5/SQRT((1.0_dp+X(5))**2-Xp(1)**2-Xp(2)**2)
+  !     b30=b2
+  !    b30=b30**1.5e0_dp
+  !     b30=cflucf(el%p)*b30
+  !     denf=denf*b30*FAC*DS
+
+
+       b30=b2
+       b30=b30**1.5e0_dp
+       denf0=cflucf(el%p)
+       denf=denf0*b30 *FAC*DS*denf
+!       if(doone.and.c%parent_fibre%magp%name(1:5)/="BENDT") denf=0
+!       if(c%pos_in_fibre/=3.and.c%parent_fibre%magp%name(1:5)=="BENDT") denf=0
+!denf=denf*4
+!if(doone.and.c%parent_fibre%magp%name(1:5)=="BENDT") write(6,*) before,c%pos_in_fibre,denf
+
+       call alloc(xpmap)
+
+       xpmap%v(1)=x(1)
+       xpmap%v(3)=x(3)
+       xpmap%v(5)=x(5)
+       xpmap%v(6)=x(6)
+     !  xpmap%v(2)=xp(1)
+     !  xpmap%v(4)=xp(2)
+       xpmap%v(2)=x(2)
+       xpmap%v(4)=x(4)
+
+       xpmap=xpmap**(-1)
+
+       do i=1,6
+          do j=1,6
+             X1=(xpmap%v(i)).sub.'000010'   ! Still works if BMAD units are used because xpmax**(-1) is needed!!!
+             X3=(xpmap%v(j)).sub.'000010'
+             P%E_IJ(i,j)=p%E_IJ(i,j)+denf*x1*x3 ! In a code internally using BMAD units '000001' is needed!!!
+          enddo
+       enddo    
+       call kill(xpmap)
+! new eq 15
+       if(k%spin.and.k%envelope) then
+       if(p%use_q) then
+         q=p%q 
+    
+         call makeso3(q,s)
+         if(c_%no>=2.and.do_d_sij) then
+          call alloc(smap)
+          smap=p
+         call makeso3(smap)
+           do i=1,3
+           do j=1,3
+            sm(j,i)=smap%s%s(i,j)
+            sdelta(i,j)=(smap%s%s(i,j).sub.'000020')*denf
+           enddo
+           enddo
+           do i=0,3
+             qdelta%x(i)=(p%q%x(i).sub.'000020')*denf
+           enddo
+           q_ij=q_ij + q**(-1)*qdelta
+
+           do i=0,3
+             qdelta%x(i)=(p%q%x(i).sub.'000010')*sqrt(denf)
+           enddo
+           q_i=q_i + q**(-1)*qdelta
+
+           d_Sij=d_Sij + matmul(sm,sdelta)
+
+
+          call kill(smap)
+         endif
+       else
+        DO I=1,3
+           DO J=1,3
+              s(i,j)=p%S(J)%X(I)
+           ENDDO
+        ENDDO         
+       endif
+ !!  lambda
+        lambda=denf*24.0_dp*sqrt(3.0_dp)/(1.0_dp+x(5))**2/55.0_dp
+
+        x1=5.0_dp*sqrt(3.0_dp)/8.0_dp*lambda
+ 
+        do i=1,3
+         p%damps(i,i)=p%damps(i,i)-x1
+        enddo
+        do i=1,3
+         do j=1,3
+             p%damps(i,j)= x1*2.0_dp/9.0_dp*ee(i)*ee(j)   + p%damps(i,j)
+         enddo
+        enddo
+
+!! equation 15 of Barber in Chao's handbook
+
+        theta_oleksii=(denf0/2.0_dp/11.0_dp)*18.0_dp !  comparing to tau_dep
+ 
+ if(c%parent_fibre%mag%p%b0/=0)         then
+! yao etienne
+!w_bks=c%parent_fibre
+i_bks=i_bks+1
+!t_bks_approx=t_bks_approx+ (twopi/99.d0)*c%parent_fibre%mag%p%b0**2*w_bks%energy**5/clight
+endif
+
+
+!write(6,*) c%parent_fibre%mag%p%b0**2,b30t,denf
+!endif 
+dspin=matmul(s,n_oleksii)
+    t_ns_oleksii=t_ns_oleksii+(1.d0- 2.0_dp*  (ee(1)*dspin(1)+ee(2)*dspin(2)+ee(3)*dspin(3))**2/9.d0)*b30*FAC*DS
+            x3= bb(1)**2+bb(2)**2+bb(3)**2
+            if(x3==0) then  
+                 x3=1
+               else
+                 x3=1.d0/sqrt(x3)
+            endif   
+  
+    t_nb_oleksii=t_nb_oleksii+ (bb(1)*dspin(1)+bb(2)*dspin(2)+bb(3)*dspin(3)) *b30*FAC*DS*x3
+
+ 
+
+        call crossp(ee,bb,a)
+        call crossp(ee,a,dspin)
+        x3=sqrt(a(1)**2+a(2)**2+a(3)**2)
+        
+       if(x3>1.d-38) then
+          x1=24.0_dp*sqrt(3.0_dp)/55.0_dp*lambda
+          do i=1,3
+          do j=1,3
+           p%b_kin(i,j)=x1*dspin(i)*dspin(j)/x3**2 + p%b_kin(i,j)
+          enddo
+          enddo
+            do i=1,3
+               dspin(i)=dspin(i)*lambda/x3
+            enddo
+           do i=1,3
+            p%d_spin(i)=p%d_spin(i)+dspin(i)
+           enddo
+
+
+        endif
+ 
+       endif
+
+       if(compute_stoch_kick) c%delta_rad_out=root(denf)
+    endif
+
+
+    call alloc(st)
+
+    if(k%TIME) then
+       ST=SQRT(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)-1.0_dp
+    else
+       ST=X(5)
+    endif
+
+    ! X(5)=X(5)+B2*FAC*DS
+    !   X(5)=one/(one/(one+X(5))-B2*FAC*DS)-one
+    !   X(5)=one/(one/(one+X(5))+CRADF(EL%P)*(one+X(5))*B2*DLDS*FAC*DS)-one
+    !          X(5)=X(5)-CRADF(EL%P)*(one+X(5))**3*B2*FAC*DS/SQRT((one+X(5))**2-X(2)**2-X(4)**2)
+  if(K%radiation)  X(5)=X(5)-CRADF(EL%P)*(1.0_dp+X(5))**3*B2*FAC*DS*DLDS
+
+
+    if(el%kind/=kindpa) then
+       IF(ASSOCIATED(EL%B_SOL)) THEN
+          if(k%TIME) then
+             X(2)=(X(2)+EL%B_SOL*EL%P%CHARGE*X(3)/2.0_dp)*SQRT(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)/(1.0_dp+ST)
+             X(2)=X(2)-EL%B_SOL*EL%P%CHARGE*X(3)/2.0_dp
+             X(4)=(X(4)-EL%B_SOL*EL%P%CHARGE*X(1)/2.0_dp)*SQRT(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)/(1.0_dp+ST)
+             X(4)=X(4)+EL%B_SOL*EL%P%CHARGE*X(1)/2.0_dp
+          else
+             X(2)=(X(2)+EL%B_SOL*EL%P%CHARGE*X(3)/2.0_dp)*(1.0_dp+X(5))/(1.0_dp+ST)
+             X(2)=X(2)-EL%B_SOL*EL%P%CHARGE*X(3)/2.0_dp
+             X(4)=(X(4)-EL%B_SOL*EL%P%CHARGE*X(1)/2.0_dp)*(1.0_dp+X(5))/(1.0_dp+ST)
+             X(4)=X(4)+EL%B_SOL*EL%P%CHARGE*X(1)/2.0_dp
+          endif
+       ELSEif(el%kind==kind22) then
+          call alloc(av,3)
+          call alloc(z)
+
+          IF(EL%HE22%P%DIR==1) THEN
+             Z= pos*el%l/el%p%nst
+          ELSE
+             Z=EL%L-pos*el%l/el%p%nst
+          ENDIF
+          CALL compute_f4(EL%he22,X,Z,A=AV)
+          if(k%TIME) then
+             X(2)=(X(2)+EL%P%CHARGE*AV(1)) *sqrt(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)/(1.0_dp+ST)
+             X(2)=X(2)-EL%P%CHARGE*AV(1)
+             X(4)=(X(4)-EL%P%CHARGE*AV(2)) *sqrt(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)/(1.0_dp+ST)
+             X(4)=X(4)+EL%P%CHARGE*AV(2)
+          else
+             X(2)=(X(2)+EL%P%CHARGE*AV(1))*(1.0_dp+X(5))/(1.0_dp+ST)
+             X(2)=X(2)-EL%P%CHARGE*AV(1)
+             X(4)=(X(4)-EL%P%CHARGE*AV(2))*(1.0_dp+X(5))/(1.0_dp+ST)
+             X(4)=X(4)+EL%P%CHARGE*AV(2)
+          endif
+          call kill(av,3)
+          call kill(z)
+       ELSE
+          if(k%TIME) then
+             X(2)=X(2)*SQRT(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)/(1.0_dp+ST)
+             X(4)=X(4)*SQRT(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)/(1.0_dp+ST)
+          else
+             X(2)=X(2)*(1.0_dp+X(5))/(1.0_dp+ST)
+             X(4)=X(4)*(1.0_dp+X(5))/(1.0_dp+ST)
+          endif
+       ENDIF
+    endif
+
+    call kill(st)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    if(before.and.k%envelope) then
+       denf=(1.0_dp+x(5))**5/SQRT((1.0_dp+X(5))**2-Xp(1)**2-Xp(2)**2)
+       b30=b2
+       b30=b30**1.5e0_dp
+       denf0=cflucf(el%p)
+       denf=denf0*b30 *FAC*DS*denf
+  !     if(doone) denf=0
+ 
+       call alloc(xpmap)
+       xpmap%v(1)=x(1)
+       xpmap%v(3)=x(3)
+       xpmap%v(5)=x(5)
+       xpmap%v(6)=x(6)
+     !  xpmap%v(2)=xp(1)
+     !  xpmap%v(4)=xp(2)
+       xpmap%v(2)=x(2)
+       xpmap%v(4)=x(4)
+       xpmap=xpmap**(-1)
+       do i=1,6
+          do j=1,6
+             X1=(xpmap%v(i)).sub.'000010'
+             X3=(xpmap%v(j)).sub.'000010'
+             p%E_IJ(i,j)=p%E_IJ(i,j)+denf*x1*x3
+          enddo
+       enddo
+       call kill(xpmap)
+       if(k%spin.and.k%envelope) then
+        if(p%use_q) then
+  
+         q=p%q 
+
+  
+         call makeso3(q,s)
+
+         if(c_%no>=2.and.do_d_sij) then
+          call alloc(smap)
+          smap=p
+         call makeso3(smap)
+           do i=1,3
+           do j=1,3
+            sm(j,i)=smap%s%s(i,j)
+            sdelta(i,j)=(smap%s%s(i,j).sub.'000020')*denf
+           enddo
+           enddo
+           do i=0,3
+             qdelta%x(i)=(p%q%x(i).sub.'000020')*denf
+           enddo
+           q_ij=q_ij + q**(-1)*qdelta
+
+           do i=0,3
+             qdelta%x(i)=(p%q%x(i).sub.'000010')*sqrt(denf)
+           enddo
+           q_i=q_i + q**(-1)*qdelta
+
+           d_Sij=d_Sij + matmul(sm,sdelta)
+          call kill(smap)
+         endif
+
+       else
+        DO I=1,3
+           DO J=1,3
+              s(i,j)=p%S(J)%X(I)
+           ENDDO
+        ENDDO         
+       endif
+
+        x1=denf*9.0_dp/((1.0_dp+x(5))**2 *11.0_dp)
+        do i=1,3
+         p%damps(i,i)=p%damps(i,i)-x1
+        enddo
+        do i=1,3
+         do j=1,3
+             p%damps(i,j)= x1*2.0_dp/9.0_dp*ee(i)*ee(j)   + p%damps(i,j)
+         enddo
+        enddo
+!!  lambda
+        lambda=denf*24.0_dp*sqrt(3.0_dp)/(1.0_dp+x(5))**2/55.0_dp
+!! equation 15 of Barber in Chao's handbook
+ 
+        theta_oleksii=(denf0/2.0_dp/11.0_dp)*18.0_dp !  comparing to tau_dep
+        
+! if(c%parent_fibre%mag%p%b0/=0)         then
+  
+!write(6,*) c%parent_fibre%mag%p%b0**2,b30t,denf
+!endif 
+dspin=matmul(s,n_oleksii)
+    t_ns_oleksii=t_ns_oleksii+(1.d0- 2.0_dp*  (ee(1)*dspin(1)+ee(2)*dspin(2)+ee(3)*dspin(3))**2/9.d0)*b30*FAC*DS
+            x3= bb(1)**2+bb(2)**2+bb(3)**2
+            if(x3==0) then  
+                 x3=1
+               else
+                 x3=1.d0/sqrt(x3)
+            endif            
+    t_nb_oleksii=t_nb_oleksii+ (bb(1)*dspin(1)+bb(2)*dspin(2)+bb(3)*dspin(3)) *b30*FAC*DS*x3
+
+
+
+        call crossp(ee,bb,a)
+        call crossp(ee,a,dspin)
+        x3=sqrt(a(1)**2+a(2)**2+a(3)**2)
+        
+       if(x3>1.d-38) then
+          x1=24.0_dp*sqrt(3.0_dp)/55.0_dp*lambda
+          do i=1,3
+          do j=1,3
+           p%b_kin(i,j)=x1*dspin(i)*dspin(j)/x3**2 + p%b_kin(i,j)
+          enddo
+          enddo
+            do i=1,3
+               dspin(i)=dspin(i)*lambda/x3
+            enddo
+           do i=1,3
+            p%d_spin(i)=p%d_spin(i)+dspin(i)
+           enddo
+
+        endif
+ 
+       endif
+       if(compute_stoch_kick) c%delta_rad_in=root(denf)
+    endif
+    p%x=x
+    call kill(x)
+ 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  end subroutine radiate_2p
+
+
+  subroutine crossp(a,b,c)
+  implicit none
+    real(dp),INTENT(INOUT) ::a(3),b(3),c(3)
+    real(dp) t(3)
+
+ 
+
+     t(1)=a(2)*b(3)-a(3)*b(2)
+     t(2)=a(3)*b(1)-a(1)*b(3)
+     t(3)=a(1)*b(2)-a(2)*b(1)
+     c(1)=t(1)
+     c(2)=t(2)
+     c(3)=t(3)
+  
+
+  end subroutine crossp 
+
+  subroutine  quaternion_8_to_matrix(q,s)
+    implicit none
+    TYPE(quaternion), INTENT(INOUT) :: q
+    real(dp) s(3,3)
+    integer i,j
+    type(quaternion) sq,sf
+    
+
+    s=0.0_dp
+    do i=1,3
+     sq=0.0_dp
+     sq%x(i)=1.0_dp
+     sf=q*sq*q**(-1)
+     do j=1,3
+       s(j,i)=sf%x(j)
+     enddo
+    enddo
+
+
+    end subroutine  quaternion_8_to_matrix
 !!!!!!!!!!!!!!! new teapot  with quaternion !!!!!!!!!!!!!!
 
  subroutine feval_teapot_quar(x,qi,k,f,q,EL)   !electric teapot s
@@ -21213,14 +22535,14 @@ q=1.0_dp
     do  j=1,ne
        a(j)=h*f(j)
     enddo
-    do  j=0,4
+    do  j=0,3
        qa%x(j)=h*q%x(j)
     enddo
 
     do  j=1,ne
        yt(j)=y(j)+a(j)/2.0_dp
     enddo
-    do  j=0,4
+    do  j=0,3
        qyt%x(j)=qy%x(j)+qa%x(j)/2.0_dp
     enddo
 
@@ -21229,14 +22551,15 @@ q=1.0_dp
     do  j=1,ne
        b(j)=h*f(j)
     enddo
-    do  j=0,4
+    do  j=0,3
        qb%x(j)=h*q%x(j)
     enddo
 
     do  j=1,ne
-       q%x(j) = y(j)+b(j)
+       p%x(j) = y(j)+b(j)
     enddo
-    do  j=0,4
+
+    do  j=0,3
        p%q%x(j)=qy%x(j)+qb%x(j) 
     enddo
 
@@ -21345,4 +22668,280 @@ q=1.0_dp
 
   END subroutine DIRECTION_qua_V
  
+
+  SUBROUTINE INTE_TEAPOT_quaR(EL,p,k,pos)
+    IMPLICIT NONE
+    TYPE(probe),INTENT(INOUT) :: p
+    TYPE(TEAPOT),INTENT(IN):: EL
+    real(dp) D,DH,DD
+    real(dp) D1,D2,DK1,DK2
+    real(dp) DD1,DD2
+    real(dp) DF(4),DK(4),DDF(4)
+    real(dp) NDF(0:15),NDK(15),NDDF(0:15)
+
+    INTEGER I,J,f1
+    integer,optional :: pos
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+
+    SELECT CASE(EL%P%METHOD)
+ 
+    CASE(2)
+        D=EL%L/EL%P%NST
+        call rk2_teapot_qua(d,el,p,k)
+    CASE(4)
+stop 998
+     CASE(6)
+ stop 999
+
+!!! newyoshida
+    CASE(8)
+ stop 1000
+
+
+
+    CASE DEFAULT
+       !w_p=0
+       !w_p%nc=1
+       !w_p%fc='(1(1X,A72))'
+         write(6,'(a12,1x,i4,1x,a17)') " THE METHOD ",EL%P%METHOD," IS NOT SUPPORTED"
+       ! call !write_e(357)
+    END SELECT
+
+
+
+  END SUBROUTINE INTE_TEAPOT_quaR
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!    DKD2 PROBE     !!!!!!!!!!!!!!!!!!!!!!!!!!! 
+
+  SUBROUTINE INTE_dkd2_prober(p,k,c)
+    IMPLICIT NONE
+    type(probe), INTENT(INOUT) :: p
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    type(fibre), pointer :: f
+    TYPE(DKD2),pointer:: EL
+    real(dp) D,DH,DD
+    real(dp) D1,D2,DK1,DK2,dk2h,dk1h
+    real(dp) DD1,DD2
+    real(dp) DF(4),DK(4),DKH(4),DDF(4)
+    real(dp) NDF(0:15),NDK(15),NDKH(15),NDDF(0:15)
+    INTEGER I,J,f1
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    integer pos
+
+    f=>c%parent_fibre
+    el=> f%mag%k2
+
+    SELECT CASE(EL%P%METHOD)
+    CASE(1)
+       pos=c%pos_in_fibre-1
+       if(EL%F==1) then
+          f1=0
+       else
+          f1=EL%F+1
+       endif
+       DH=EL%L/EL%P%NST
+       D=EL%L/(EL%P%NST/EL%F/2)
+       DD=EL%P%LD/EL%P%NST
+
+       IF(MOD(POS,2*EL%F)==f1) THEN
+          CALL KICK (EL,D,p%X,k)
+       if(k%spin.or.k%radiation) then
+        call dkd2_qua_PROBE(c,p,k,d)
+        endif
+       ENDIF
+       CALL DRIFT(DH,DD,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,p%X)
+
+    CASE(2)
+       DH=EL%L/2.0_dp/EL%P%NST
+       D=EL%L/EL%P%NST
+       DD=EL%P%LD/2.0_dp/EL%P%NST
+       CALL DRIFT(DH,DD,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,p%X)
+       if(k%spin.or.k%radiation) then
+        CALL KICK (EL,DH,p%X,k)
+        call dkd2_qua_PROBE(c,p,k,d)
+        CALL KICK (EL,Dh,p%X,k)
+        else
+        CALL KICK (EL,D,p%X,k)
+        endif
+       CALL DRIFT(DH,DD,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,p%X)
+
+    CASE(4)
+       D1=EL%L*FD1/EL%P%NST
+       D2=EL%L*FD2/EL%P%NST
+       DD1=EL%P%LD*FD1/EL%P%NST
+       DD2=EL%P%LD*FD2/EL%P%NST
+          DK1=EL%L*FK1/EL%P%NST
+          DK2=EL%L*FK2/EL%P%NST
+       if(k%spin.or.k%radiation) then
+           DK1h=EL%L*FK1/EL%P%NST/2.0_DP
+           DK2h=EL%L*FK2/EL%P%NST/2.0_DP
+       endif
+
+ 
+
+
+
+       CALL DRIFT(D1,DD1,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,p%X)
+!       CALL KICK (EL,DK1,p%X,k)
+       if(k%spin.or.k%radiation) then
+        CALL KICK (EL,DK1h,p%X,k)
+        call dkd2_qua_PROBE(c,p,k,dk1)
+        CALL KICK (EL,DK1h,p%X,k)
+        else
+        CALL KICK (EL,DK1,p%X,k)
+        endif
+       CALL DRIFT(D2,DD2,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,p%X)
+       if(k%spin.or.k%radiation) then
+        CALL KICK (EL,DK2h,p%X,k)
+        call dkd2_qua_PROBE(c,p,k,dk2)
+        CALL KICK (EL,DK2h,p%X,k)
+        else
+        CALL KICK (EL,DK2,p%X,k)
+        endif
+       CALL DRIFT(D2,DD2,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,p%X)
+       if(k%spin.or.k%radiation) then
+        CALL KICK (EL,DK1h,p%X,k)
+        call dkd2_qua_PROBE(c,p,k,dk1)
+        CALL KICK (EL,DK1h,p%X,k)
+        else
+        CALL KICK (EL,DK1,p%X,k)
+        endif
+       CALL DRIFT(D1,DD1,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,p%X)
+
+
+
+    CASE(6)
+       DO I =1,4
+          DF(I)=EL%L*YOSD(I)/EL%P%NST
+          DDF(I)=EL%P%LD*YOSD(I)/EL%P%NST
+           DK(I)=EL%L*YOSK(I)/EL%P%NST
+       ENDDO
+       if(k%spin.or.k%radiation) then
+        do I =1,4
+           DKH(I)=EL%L*YOSK(I)/EL%P%NST/2.d0
+        enddo
+       endif
+       !       DO I=1,B%N
+
+       !        X=BEAM_IN_X(B,I)
+
+       DO J=4,2,-1
+          CALL DRIFT(DF(J),DDF(J),EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,p%X)
+       if(k%spin.or.k%radiation) then
+        CALL KICK (EL,DKH(J),p%X,k)
+        call dkd2_qua_PROBE(c,p,k,DK(J))
+        CALL KICK (EL,DKH(J),p%X,k)
+        else
+          CALL KICK (EL,DK(J),p%X,k)
+        endif
+
+       ENDDO
+       CALL DRIFT(DF(1),DDF(1),EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,p%X)
+       if(k%spin.or.k%radiation) then
+        CALL KICK (EL,DKH(1),p%X,k)
+        call dkd2_qua_PROBE(c,p,k,DK(1))
+        CALL KICK (EL,DKH(1),p%X,k)
+        else
+          CALL KICK (EL,DK(1),p%X,k)
+        endif
+        
+
+       CALL DRIFT(DF(1),DDF(1),EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,p%X)
+       DO J=2,4
+       if(k%spin.or.k%radiation) then
+        CALL KICK (EL,DKH(J),p%X,k)
+        call dkd2_qua_PROBE(c,p,k,DK(J))
+        CALL KICK (EL,DKH(J),p%X,k)
+        else
+          CALL KICK (EL,DK(J),p%X,k)
+        endif
+          CALL DRIFT(DF(J),DDF(J),EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,p%X)
+       ENDDO
+
+!!! newyoshida
+    CASE(8)
+  !  real(dp) NDF(0:15),NDK(15),NDDF(0:15)
+          NDF(0)=EL%L*wyoshid(0)/EL%P%NST
+          NDDF(0)=EL%P%LD*wyoshid(0)/EL%P%NST
+       DO I =1,15
+          NDF(I)=EL%L*wyoshid(I)/EL%P%NST
+          NDDF(I)=EL%P%LD*wyoshid(I)/EL%P%NST
+          NDKH(I)=EL%L*wyoshik(I)/EL%P%NST/2.0_dp
+          NDK(I)=EL%L*wyoshik(I)/EL%P%NST 
+       ENDDO
+ 
+          CALL DRIFT(NDF(0),NDDF(0),EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,p%X)
+
+       DO J=1,15
+       if(k%spin.or.k%radiation) then
+        CALL KICK (EL,NDKH(J),p%X,k)
+        call dkd2_qua_PROBE(c,p,k,NDK(J))
+        CALL KICK (EL,NDKH(J),p%X,k)
+        else
+          CALL KICK (EL,NDK(J),p%X,k)
+        endif
+          CALL DRIFT(NDF(J),NDDF(J),EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,p%X)
+       ENDDO
+ 
+
+
+
+    CASE DEFAULT
+
+       WRITE(6,'(a12,1x,i4,1x,a17)') " THE METHOD ",EL%P%METHOD," IS NOT SUPPORTED"
+       ! call !write_e(357)
+    END SELECT
+
+  END SUBROUTINE INTE_dkd2_prober
+
+SUBROUTINE dkd2_qua_PROBER(c,p,k,ds)
+    type(probe), INTENT(INOUT) :: p
+    TYPE(fibre),pointer ::  f
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    real(dp), intent(in) ::ds
+    REAL(DP)  B(3),XP(2),XPA(2),ed(3)
+    REAL(DP) om(3),h,b2,dlds,FAC
+     TYPE(INTERNAL_STATE) k 
+      logical before
+     integer i
+     FAC=0.5_dp
+     f=> c%parent_fibre
+
+    CALL get_omega_spin(c,OM,B2,dlds,XP,P%X,0,k,Ed,B)
+    if((k%radiation.or.k%envelope)) then
+       call radiate_2(c,DS,FAC,P,b2,dlds,.true.,k,0)
+    endif
+
+   do i=1,3
+     om(i)=om(i)*ds/2.0_dp
+    enddo
+   
+    
+   call push_quaternion(p,om)
+
+    if((k%radiation.or.k%envelope)) then
+       call radiate_2(c,DS,FAC,P,b2,dlds,.true.,k,0)
+    endif
+
+ end SUBROUTINE dkd2_qua_PROBER
+
+SUBROUTINE push_quaternionr(p,om)
+implicit none
+real(dp), intent(inout):: om(3)
+type(probe) , intent(inout) :: p
+type(quaternion) dq
+real(dp) norm,stheta
+        norm=sqrt(om(1)**2+om(2)**2+om(3)**2)
+        if(norm>0) then
+         stheta=sin(norm)
+          dq%x(0)=cos(norm)
+          dq%x(1)=stheta*om(1)/norm
+          dq%x(2)=stheta*om(2)/norm
+          dq%x(3)=stheta*om(3)/norm
+        p%q=dq*p%q
+        endif
+
+end SUBROUTINE push_quaternionr
+
+
 END MODULE S_DEF_KIND

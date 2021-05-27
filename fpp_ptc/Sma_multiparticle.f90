@@ -49,8 +49,6 @@ private MISALIGN_FIBRE_EQUAL
 
   INTERFACE TRACK_NODE_SINGLE
      MODULE PROCEDURE TRACK_NODE_SINGLE_quar    !@1  t,x,state,charge
-
-
   END INTERFACE TRACK_NODE_SINGLE
 
 
@@ -1171,7 +1169,8 @@ endif
           CALL TRACK_SLICE(EL%D0,X,K)
          global_e= x(5)*el%p%p0c
        case(KIND2)
-          CALL TRACK_SLICE(EL%K2,X,K,t%POS_IN_FIBRE-2)
+!          CALL TRACK_SLICE(EL%K2,X,K,t%POS_IN_FIBRE-2)
+            CALL TRACK_SLICE(p,k,T)
          global_e= x(5)*el%p%p0c
        case(KIND3)
           CALL TRACK(EL%K3,X,K)
@@ -1195,7 +1194,7 @@ endif
           CALL TRACK(EL%S9,X,K)
           global_e= x(5)*el%p%p0c
        case(KIND10)
-          CALL TRACK_SLICE(EL%TP10,p,K,t%POS_IN_FIBRE-2)
+          CALL TRACK_SLICE(EL%TP10,X,K,t%POS_IN_FIBRE-2)
           if(.not.el%electric)  global_e= x(5)*el%p%p0c
        case(KIND11:KIND14)
           CALL MONTI(EL%MON14,X,k,t%POS_IN_FIBRE-2)
