@@ -1020,7 +1020,7 @@ endif
     ! it is supposed to reproduce plain PTC
     implicit none
     type(probe), intent(inout) :: p
-    TYPE(INTEGRATION_NODE), TARGET, INTENT(INOUT):: T
+    TYPE(INTEGRATION_NODE), pointer, INTENT(INOUT):: T
     REAL(DP) X(6)
     TYPE(INTERNAL_STATE)  K
     !    TYPE(INTERNAL_STATE), INTENT(IN) :: K

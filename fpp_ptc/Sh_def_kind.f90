@@ -14452,28 +14452,37 @@ endif
     real(dp) ,INTENT(INOUT):: b1
     integer i,j
     logical(lp) time,EXACT
-   at=a/n_wedge
 
-      do i=1,n_wedge
-         X(2)=X(2)-at*wyoshid(0)*b1*x(1)/2 
+
+   at=a/iabs(n_wedge)
+
+      if(n_wedge<0) then
+
+      do i=1,iabs(n_wedge)
+         X(2)=X(2)-at*wyoshid(0)*b1*x(1) !/2 
        do j=1,15
         call ROT_XZ(at*wyoshik(j),X,B,EXACT,time)
-         X(2)=X(2)-at*wyoshid(j)*b1*x(1)/2  
+         X(2)=X(2)-at*wyoshid(j)*b1*x(1) !/2  
 
        enddo
-     !   do j=7,0,-1
-     !     X(2)=X(2)-at*wyosh(j)*b1*x(1)/2 
-     !     call ROT_XZ(at*wyosh(j),X,B,EXACT,time)
-     !     X(2)=X(2)-at*wyosh(j)*b1*x(1)/2
-      !   enddo
+      enddo
+    else
+   do i=1,iabs(n_wedge)
+    do j=7,0,-1
+      X(2)=X(2)-at*wyosh(j)*b1*x(1)/2 
+      call ROT_XZ(at*wyosh(j),X,B,EXACT,time)
+      X(2)=X(2)-at*wyosh(j)*b1*x(1)/2
+     enddo
 
-     !   do j=1,7
-      !    X(2)=X(2)-at*wyosh(j)*b1*x(1)/2 
-      !    call ROT_XZ(at*wyosh(j),X,B,EXACT,time)
-     !     X(2)=X(2)-at*wyosh(j)*b1*x(1)/2      
-      ! enddo
-      
+    do j=1,7
+      X(2)=X(2)-at*wyosh(j)*b1*x(1)/2 
+      call ROT_XZ(at*wyosh(j),X,B,EXACT,time)
+      X(2)=X(2)-at*wyosh(j)*b1*x(1)/2      
    enddo
+      
+  enddo
+
+endif
       end subroutine wedge_intr
 
     subroutine wedge_intp(x,a,b1,b,exact,time)
@@ -14483,33 +14492,36 @@ endif
     type(real_8),INTENT(INOUT):: b1
     integer i,j
     logical(lp) time,EXACT
-   at=a/n_wedge
 
-      do i=1,n_wedge
-         X(2)=X(2)-at*wyoshid(0)*b1*x(1)/2 
+   at=a/iabs(n_wedge)
+
+      if(n_wedge<0) then
+
+      do i=1,iabs(n_wedge)
+         X(2)=X(2)-at*wyoshid(0)*b1*x(1) !/2 
        do j=1,15
         call ROT_XZ(at*wyoshik(j),X,B,EXACT,time)
-         X(2)=X(2)-at*wyoshid(j)*b1*x(1)/2  
+         X(2)=X(2)-at*wyoshid(j)*b1*x(1) !/2  
 
        enddo
+      enddo
+    else
+   do i=1,iabs(n_wedge)
+    do j=7,0,-1
+      X(2)=X(2)-at*wyosh(j)*b1*x(1)/2 
+      call ROT_XZ(at*wyosh(j),X,B,EXACT,time)
+      X(2)=X(2)-at*wyosh(j)*b1*x(1)/2
+     enddo
 
-
-!      do i=1,n_wedge
-!        do j=7,0,-1
-!          X(2)=X(2)-at*wyosh(j)*b1*x(1)/2 
-!          call ROT_XZ(at*wyosh(j),X,B,EXACT,time)
-!         enddo
-!
-!
-!
-!
-!
-!        do j=1,7
-!          X(2)=X(2)-at*wyosh(j)*b1*x(1)/2 
-!          call ROT_XZ(at*wyosh(j),X,B,EXACT,time)
-!          X(2)=X(2)-at*wyosh(j)*b1*x(1)/2      
-!       enddo
+    do j=1,7
+      X(2)=X(2)-at*wyosh(j)*b1*x(1)/2 
+      call ROT_XZ(at*wyosh(j),X,B,EXACT,time)
+      X(2)=X(2)-at*wyosh(j)*b1*x(1)/2      
    enddo
+      
+  enddo
+
+endif
       end subroutine wedge_intp
 
   SUBROUTINE wedgeP(A,X,k,EL1,EL2)
