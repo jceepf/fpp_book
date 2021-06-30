@@ -176,7 +176,7 @@ PRIVATE get_BfieldR,get_BfieldP    !,get_Bfield
   private B_PANCAkEr,B_PANCAkEp,B_PANCAkE
 !private B_PARA_PERP_qua_r,DIRECTION_qua_V
 private rk2_teapot_prober,rk2_teapot_probep,feval_teapot_quar,feval_teapot_quap
-private rk4_teapot_prober,rk4_teapot_probeb,rk6_teapot_prober,rk6_teapot_probep
+private rk4_teapot_prober,rk4_teapot_probep,rk6_teapot_prober,rk6_teapot_probep
 PRIVATE DIRECTION_VR,DIRECTION_VP   !,DIRECTION_V
   PRIVATE  B_PARA_PERPr,B_PARA_PERPp   !,B_PARA_PERP
   PRIVATE push_quaternionr,push_quaternionP

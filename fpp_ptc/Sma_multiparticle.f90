@@ -1283,7 +1283,7 @@ endif
     ! This routines tracks a single thin lens
     ! it is supposed to reproduce plain PTC
     implicit none
-    TYPE(INTEGRATION_NODE), TARGET, INTENT(INOUT):: T
+    TYPE(INTEGRATION_NODE), pointer, INTENT(INOUT):: T
     TYPE(PROBE_8),INTENT(INOUT):: P
     TYPE(REAL_8)  X(6)
     TYPE(INTERNAL_STATE)  K
