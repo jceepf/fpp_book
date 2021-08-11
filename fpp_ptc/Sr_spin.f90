@@ -1865,7 +1865,7 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     type(INTEGRATION_NODE), pointer :: C
     type(probe), INTENT(INOUT) :: xs
     TYPE(INTERNAL_STATE) K
-    REAL(DP) FAC,DS,beta
+    REAL(DP) FAC,DS,beta,x(6)
     logical useptc,dofix0,dofix,doonemap
     type(tree_element), pointer :: arbre(:)
 !    logical(lp) bmad
@@ -1963,7 +1963,9 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
    if(xs%use_q.and.assume_c_quaternion_normalised) xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
 
            endif
-          CALL TRACK_NODE_SINGLE(C,XS%X,K)  !,CHARGE
+!x=XS%X
+          CALL TRACK_NODE_SINGLE(C,XS%X,K) 
+!XS%X=x
      ENDIF
 
     endif

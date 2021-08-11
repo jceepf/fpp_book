@@ -28140,6 +28140,7 @@ SUBROUTINE RAD_SPIN_qua_PROBEP(c,p,k,ds)
  end SUBROUTINE RAD_SPIN_qua_PROBEP
 
 SUBROUTINE kick_stochastic_before(c,p)
+    use gauss_dis
     type(probe), INTENT(INOUT) :: p
      TYPE(integration_node),pointer :: c
      real(dp) t
@@ -28157,6 +28158,7 @@ SUBROUTINE kick_stochastic_before(c,p)
 end SUBROUTINE kick_stochastic_before
 
 SUBROUTINE kick_stochastic_after(c,p)
+use gauss_dis
     type(probe), INTENT(INOUT) :: p
      TYPE(integration_node),pointer :: c
      real(dp) t

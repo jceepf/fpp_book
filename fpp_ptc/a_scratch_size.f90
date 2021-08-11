@@ -182,7 +182,8 @@ module precision_constants
   real(dp),target ::  da_absolute_aperture=1e6_dp
   real(dp),pointer :: crash => null()
   INTEGER,  TARGET :: NPARA_original
-  logical  :: default_tpsa=.false.,drawframeblack=.false.    ! drawframeblack for gino
+  logical  :: default_tpsa=.false.
+   real :: drawframeblack=0  ! drawframeblack for gino
   logical, target :: lingyun_yang=.false.
   integer, target :: last_tpsa=0
   integer, target :: c_last_tpsa=0
