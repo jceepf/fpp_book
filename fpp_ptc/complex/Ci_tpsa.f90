@@ -121,6 +121,8 @@ real(dp) ip_mat(3,6,6),jp_mat(3,6,6),jt_mat(6,6)
 character(24)  formatlf(6)
 !-----------------------------------
 logical :: inside_normal=.false.,bmad_automatic=.false.,spin_automatic=.false.
+logical :: Eigenvalues_off_unit_circle = .true.
+real(dp) :: eps_Eigenvalues_off_unit_circle =1.d-10
 integer i_alloc
     logical :: sagan_gen =.false.
 
@@ -11502,27 +11504,27 @@ implicit none
     type(c_damap) , intent(inout) :: m,l
     type(c_vector_field), intent(inout) :: f
     integer dir
-    type(c_damap) t
+    type(c_damap) t,lin   ! added lin 2021.8.11
     real(dp) epso
  
-    call alloc(t)
+    call alloc(t,lin)
 
     t=m
 
  
-     l=t.sub.(-1)
+     lin=t.sub.(-1)
  
 
     if(dir==1) then  ! Dragt-Finn direction 
-     t=t*l**(-1)
+     t=t*lin**(-1)
     else
-     t=l**(-1)*t
+     t=lin**(-1)*t
     endif
      !epso=-no
      f=c_logf_spin(t)  !,epso=epso)
      !call c_flofacg(t,f,epso)
-     
-    call kill(t)
+     l=lin
+    call kill(t,lin)
     
 end subroutine c_factor_map
 !!  no spin here
@@ -14358,7 +14360,7 @@ function c_vector_field_quaternion(h,ds) ! spin routine
 
     if(.not.c_%stable_da) return
 
-
+    Eigenvalues_off_unit_circle=.true.
     !  copy matrix to temporary storage (the matrix aa is destroyed)
     do i=1,nd2harm  !nd2t !-ndc2t
        do i1=1,nd2harm  !,nd2t !-ndc2t
@@ -14391,13 +14393,19 @@ function c_vector_field_quaternion(h,ds) ! spin routine
        enddo
     enddo
     do i=1,nd2harm    !nd2t !-ndc2t
-       if(abs(reval(i)**2+aieval(i)**2 -1.0_dp).gt.1e-10_dp) then
+       if(abs(reval(i)**2+aieval(i)**2 -1.0_dp).gt.eps_Eigenvalues_off_unit_circle) then
            if(lielib_print(4)==1) then
              write(6,*) ' EIG6: Eigenvalues off the unit circle!'
              write(6,*) sqrt(reval(i)**2+aieval(i)**2)
           endif
+                      Eigenvalues_off_unit_circle=.false.
        endif
     enddo
+
+!logical :: eigen_symplectic :: true.
+!real(dp) :: eps_eigen_symplectic =1.d-10
+
+
     return
   end subroutine c_eig6
 

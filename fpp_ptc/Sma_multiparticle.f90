@@ -2269,13 +2269,13 @@ doit=p%mag%kind==kind16.and.p%mag%p%b0/=0.0_dp
     implicit none
     TYPE (NODE_LAYOUT), pointer :: L
 
-  if(lielib_print(4)==1) then
+
     WRITE(6,*)  " PARENT LAYOUT NAME :", L%PARENT_LAYOUT%NAME(1:len_trim(L%PARENT_LAYOUT%NAME))
     WRITE(6,*) " NUMBER OF ORIGINAL LAYOUT ELEMENTS :", L%PARENT_LAYOUT%N
     WRITE(6,*) " NUMBER OF THIN OBJECTS :", L%N
     WRITE(6,*) " TOTAL IDEAL LENGTH OF STRUCTURE :", L%END%S(1)
     WRITE(6,*) " TOTAL INTEGRATION LENGTH OF STRUCTURE (mad8 style survey) :", L%END%S(3)
-  endif
+
   end SUBROUTINE stat_NODE_LAYOUT
 
 
