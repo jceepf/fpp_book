@@ -513,15 +513,15 @@ nmark=0
     P=>L%START
     DO I=1,L%N
        if(i==1) then
-          print_temp=print_frame
-          print_frame=my_true
+          print_temp=printframe
+          printframe=my_true
        endif
        
        if(print_marker.or.p%mag%kind/=kind0.or.i==1) then  
         CALL print_FIBRE(P,mf)
        endif
         if(i==1) then
-          print_frame=print_temp
+          printframe=print_temp
        endif
        P=>P%NEXT
     ENDDO
@@ -811,7 +811,7 @@ M%B_L=M%B_T
        norm=abs(M%ANG_OUT(i))+norm
        norm=abs(M%D_OUT(i))+norm
     enddo
-    if(norm>0.0_dp.OR.print_frame) then
+    if(norm>0.0_dp.OR.printframe) then
        write(mf,*) " THIS IS A CHART THIS IS A CHART THIS IS A CHART THIS IS A CHART "
        CALL print_magnet_frame(m%F,mf)
        WRITE(LINE,*) M%D_IN,M%ANG_IN
@@ -1691,7 +1691,7 @@ M%H2=0
     implicit none
     type(magnet_frame), pointer :: m
     integer mf,i
-    if(print_frame) then
+    if(printframe) then
        write(mf,'(a72)') "MAGNET FRAME MAGNET FRAME MAGNET FRAME MAGNET FRAME MAGNET FRAME MAGNET FRAME "
        WRITE(MF,*) m%a
        do i=1,3

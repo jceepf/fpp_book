@@ -663,7 +663,7 @@ endif
     !    if(EL%kind>=kind18.and.EL%kind<=kind19) return    ! should I prevent monitor here??? instead of xp=Px,y in get_omega_spin
 
     CALL get_omega_spin(c,OM,B2,dlds,XP,P%X,POS,k,E,B)
-    if((k%radiation.or.k%envelope).AND.BEFORE) then
+    if((k%radiation.or.k%envelope.or.k%stochastic).AND.BEFORE) then
        !if(el%p%radiation.AND.BEFORE) then
        !       call radiate_2(c,DS,FAC,P%X,b2,dlds,XP,before,k,POS)
        call radiate_2(c,DS,FAC,P,b2,dlds,before,k,POS)
@@ -732,7 +732,7 @@ endif
     endif
    endif
     !if(el%p%radiation.AND.(.NOT.BEFORE)) then
-    if((k%radiation.or.k%envelope).AND.(.NOT.BEFORE)) then
+    if((k%radiation.or.k%envelope.or.k%stochastic).AND.(.NOT.BEFORE)) then
        !       call radiate_2(c,DS,FAC,P%X,b2,dlds,XP,before,k,POS)
        call radiate_2(c,DS,FAC,P,b2,dlds,before,k,POS)
     endif

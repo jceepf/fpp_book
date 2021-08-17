@@ -176,7 +176,7 @@ module precision_constants
   integer,TARGET :: wherelost=0
   logical(lp),TARGET :: stable_da =.true.
   logical(lp),TARGET :: check_da =.true.
-  logical(lp),TARGET :: print_frame =.true.
+  logical(lp),TARGET :: printframe =.true.
   logical(lp),TARGET :: sixtrack_compatible =.false.
   integer ,target ::  spin_normal_position=2
   real(dp),target ::  da_absolute_aperture=1e6_dp
