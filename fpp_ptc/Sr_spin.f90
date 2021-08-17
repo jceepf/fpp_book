@@ -655,7 +655,7 @@ endif
     INTEGER I
 
     !if(.not.(el%p%radiation.or.EL%P%SPIN)) return
-    if(.not.(k%radiation.or.k%SPIN.or.k%envelope)) return
+    if(.not.(k%radiation.or.k%SPIN.or.k%envelope.or.k%stochastic)) return
     IF(.NOT.CHECK_STABLE) return
     el=>c%parent_fibre%mag
     if(EL%kind<=kind1) return    ! should I prevent monitor here??? instead of xp=Px,y in get_omega_spin
