@@ -1820,10 +1820,15 @@ CONTAINS
     if(present(list)) then
        RECTTILT=list
        l1=list%L
+    IF(MADLENGTH.or.ang1==0.0_dp) THEN
+       L1=LM
+    ELSE
+       L1=2.0_dp*LM*SIN(ANG1/2.0_dp)/ANG1
+    ENDIF
        E11=LIST%T1
        E22=LIST%T2
        ANG1=LIST%B0
-       RECTTILT%B0=ANG1/l1
+       RECTTILT%B0=ANG1/list%L
     else
        RECTTILT=0
        RECTTILT%B0=2.0_dp*SIN(ANG1/2.0_dp)/L1
