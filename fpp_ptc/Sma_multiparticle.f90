@@ -2847,7 +2847,8 @@ subroutine SURVEY_EXIST_PLANAR_IJ_new(L,pi,fi,ent,a)
 implicit none
 type(layout) L
 integer :: pi,i,dfi
-integer ,target, optional:: fi
+!integer ,target, optional:: fi
+integer, optional::  fi
 type(fibre), pointer :: p
 !type(fibre),pointer :: f
 real(dp), optional, intent(in):: a(3),ent(3,3)
@@ -2916,7 +2917,7 @@ endif
  
 call survey_integration_fibre(p,ent0,a0)
 
- ! if(OKDOK) write(6,*) p%pos,p%mag%name
+  if(OKDOK) write(6,*) p%pos,p%mag%name
  
 p1=>p%next
  p2=>p
