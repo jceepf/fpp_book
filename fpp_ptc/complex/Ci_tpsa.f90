@@ -19542,26 +19542,30 @@ end   SUBROUTINE furman_step
 ! Comment:   This Cholesky decomposition is used in src/elastic.F and
 !            src/optimize-inho-strain.F of feram http://loto.sourceforge.net/feram/ .
 !!
-! modified by Etienne Forest
+! modified by Etienne Forest and David Sagan
 subroutine cholesky_dt(A, G)
   implicit none
-   real(dp),     intent(in)    :: A(:,:)
+  real(dp),     intent(in)    :: A(:,:)
   real(dp),     intent(out)   :: G(:,:)
+  real(dp) gg
   integer    :: i,j
-  
+ 
  
   G(:,:)=0.0d0
   do j = 1, size(A,1)
-     G(j,j) = sqrt( A(j,j) - dot_product(G(j,1:j-1),G(j,1:j-1)) )
- 
-     if(G(j,j)/=0) then   !!! Modified by Etienne
-     do i = j+1, size(A,1)
-        G(i,j)  = ( A(i,j) - dot_product(G(i,1:j-1),G(j,1:j-1)) ) / G(j,j)
-     end do
+     gg = A(j,j) - dot_product(G(j,1:j-1),G(j,1:j-1))
+     if (gg <= 0) then
+       G(j,j) = 0
+    else
+       G(j,j) = sqrt(gg)
+       do i = j+1, size(A,1)
+          G(i,j)  = ( A(i,j) - dot_product(G(i,1:j-1),G(j,1:j-1)) ) / G(j,j)
+       end do
      endif
   end do
-  
+
 end subroutine cholesky_dt
+
 
 
 
