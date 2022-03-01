@@ -11854,7 +11854,7 @@ subroutine c_full_factorise(at,as,a0,a1,a2,dir)
  
 end subroutine c_full_factorise
 
- 
+
  subroutine c_normal_spin_linear_quaternion(m_in,m_out,as,alpha) 
 !#restricted: normal
 !# This routine normalises the constant part of the spin matrix. 
@@ -11865,20 +11865,26 @@ end subroutine c_full_factorise
   real(dp) alpha,cosalpha,sinalpha,tone
 
 q0=m_in%q.sub.0
-
+!call print(q0)
+!pause 3
          as=1
 
 q1=q0
 q1%x(0)=0.0_dp
 qs=1.0_dp/sqrt(q1%x(1)**2+q1%x(2)**2+q1%x(3)**2)
 q1=q1*qs   ! q1=n
-
+!call print(q1)
+!pause 4
 e_y=0.0_dp
 e_y%x(2)=1.0_dp
- 
+!call print(e_y)
+!pause 5 
 
 q3=q1*e_y
+!call print(q3)
 
+q3%x(0:3)=q3%x(0:3)/sqrt(q3%x(0)**2+q3%x(1)**2+q3%x(2)**2+q3%x(3)**2)
+!pause 6 
  ! q3 =-n.j + n x j . l
 
 cosalpha=-q3%x(0)
@@ -11897,7 +11903,8 @@ if(alpha==0.and.cosalpha/=-1.0_dp) then
 ! pause 123 
  q3=1.0_dp
 
-
+!call print(q3)
+!pause 71 
 else
 
 if(abs(cosalpha+1.0_dp)<=1.e-16_dp)  then
@@ -11907,7 +11914,9 @@ else
  q3%x(1:3)=-sin(alpha/2)*q3%x(1:3)/sinalpha 
 
 endif
-
+ 
+!call print(q3)
+!pause 72 
 
 endif
 
@@ -11928,7 +11937,6 @@ alpha=2*atan2(q0%x(2),q0%x(0))
  end  subroutine c_normal_spin_linear_quaternion
 
  
-
 
 
  
