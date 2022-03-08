@@ -19,9 +19,10 @@ DELTA0_zhe=>DELTA0,SPIN0_zhe=>SPIN0,MODULATION0_zhe=>MODULATION0,only_2d0_zhe=>o
 INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
 
   IMPLICIT NONE
+
   public
  private ety2,etdiv,ety,etyt,checksympn
-
+!integer,private,parameter::nmaxn=1000
   integer,private::nd2par,nd2part,nd2partt
   integer,private,target ::pos_of_delta  
 
@@ -123,7 +124,14 @@ character(24)  formatlf(6)
 logical :: inside_normal=.false.,bmad_automatic=.false.,spin_automatic=.false.
 real(dp) :: Eigenvalues_off_unit_circle = 1.0_dp
 real(dp) :: eps_Eigenvalues_off_unit_circle =1.d-10
+private in1,in2,in3,in4,in5,in6,posin,sigdis,sigdis0,dfac ,hash,pascal,mono_order
+integer, pointer :: in1(:)=>null(),in2(:)=>null(),in3(:)=>null(),in4(:)=>null(),in5(:)=>null(),in6(:)=>null()
+integer, pointer ::   posin(:) => null()
+integer(2), pointer :: hash(:,:,:,:,:,:) => null(),pascal(:,:) => null(),mono_order(:)=>null()
+real(dpn), pointer :: sigdis(:)=> null(),sigdis0(:)=> null(),dfac(:)=> null()
 integer i_alloc
+integer, private :: nmono
+real(dp), private  :: tiny =1e-20_dp
     logical :: sagan_gen =.false.
 
 type c_linear_map
@@ -1640,6 +1648,7 @@ enddo
     enddo
     s1%x0=0.0_dp
     s1%tpsa=use_tpsa
+    if(associated(s1%db)) deallocate(s1%db,s1%M)
   END SUBROUTINE alloc_c_damap
 
   SUBROUTINE  alloc_c_damaps(S1)
@@ -1838,6 +1847,8 @@ enddo
     do i=1,3
       s1%sm(i,i)=1.0_dp
     enddo
+    if(associated(s1%db)) deallocate(s1%db)
+    if(associated(s1%m)) deallocate(s1%m)
   END SUBROUTINE kill_c_damap
 
   SUBROUTINE  kill_c_damaps(S1)
@@ -7408,15 +7419,16 @@ endif
 
      if(present(dospin)) dos=dospin
 
-    write(mfi,*) "  "
+    write(mfi,*) " tpsa staus ",s1%tpsa
     if(s1%tpsa) then
      write(mfi,*) s1%n, " Dimensional TPSA map around z=0 "
     else
      write(mfi,*) s1%n, " Dimensional DA map (around chosen orbit in map%x0) "
     endif
     do i=1,s1%n
+     if(s1%tpsa) write(6,*) s1%x0(i)
      call c_pri(s1%v(i),mfile,prec)
-    enddo
+     enddo
     
 if(dos) then
         call c_full_norm_spin(s1%s,k,norm)
@@ -8560,7 +8572,7 @@ end subroutine c_bmad_reinit
     integer, intent(in) :: NO1,NV1
     integer, optional :: np1,ndpt1,AC_RF
     logical(lp), optional :: ptc  !spin,
-    integer ndpt_ptc,i 
+    integer ndpt_ptc,i,i1,i2,i3,i4,i5,i6,noo,j
     if(use_quaternion) spin_def_tune=-1
  
    ip_mat=0; jp_mat=0; jt_mat=0;
@@ -8722,7 +8734,135 @@ endif
     k1_spin(7)=3;k2_spin(7)=1;
     k1_spin(8)=3;k2_spin(8)=2;
     k1_spin(9)=3;k2_spin(9)=3;
+
+
+ 
+ 
   end subroutine c_init
+
+
+
+  subroutine init_moment_map(NO1)  !,spin
+    implicit none
+    integer, intent(in) :: NO1 
+    integer  i,i1,i2,i3,i4,i5,i6,noo,j
+ 
+ 
+if(associated(in1)) then
+  deallocate(in1,in2,in3,in4,in5,in6,posin,sigdis,sigdis0,dfac,pascal,hash,mono_order)
+endif
+
+  nmono=0
+ do noo=0,NO1   
+
+  do i1=0,noo
+  do i2=0,noo
+   if(i1+i2>noo)cycle
+  do i3=0,noo
+   if(i1+i2+i3>noo)cycle
+  do i4=0,noo
+   if(i1+i2+i3+i4>noo)cycle
+  do i5=0,noo
+   if(i1+i2+i3+i4+i5>noo)cycle
+  do i6=0,noo
+   if(i1+i2+i3+i4+i5+i6/=noo)cycle
+      nmono=nmono+1
+  enddo
+  enddo
+  enddo
+  enddo
+  enddo
+  enddo
+
+      write(6,*) "nmono original",nmono
+  enddo
+ allocate(in1(nmono),in2(nmono),in3(nmono),in4(nmono),in5(nmono),in6(nmono),posin(0:no1),mono_order(nmono))
+ allocate(sigdis(nmono),sigdis0(nmono),dfac(0:no1),pascal(0:no1,0:no1),hash(0:no1,0:no1,0:no1,0:no1,0:no1,0:no1))
+pascal=0
+
+
+pascal(0,0)=1
+pascal(1,0)=1
+pascal(1,1)=1
+
+if(no1>=2) then
+ pascal(2,0)=1
+ pascal(2,1)=2
+ pascal(2,2)=1
+
+ do i=3,no1
+ do j=1,i-1
+  pascal(i,j)=pascal(i-1,j-1)+pascal(i-1,j)
+ enddo
+ pascal(i,0)=1
+ pascal(i,i)=1
+ enddo
+endif
+!do i=1,no1
+!write(6,"(7(i2,1x))") pascal(i,0:i)
+!enddo
+
+hash=0
+ dfac=0
+ dfac(0)=1
+if(use_gaussian_zhe) then
+ if(no1>=2) dfac(2)=1
+ do i=4,no1,2
+ dfac(i)=(i-1)*dfac(i-2)
+ enddo
+else
+ do i=2,no1,2
+ dfac(i)=1
+ enddo
+endif
+ write(6,*) "dfac "
+ write(6,*) dfac
+  sigdis0=0
+  sigdis=0
+  nmono=0
+ do noo=0,no1
+  posin(noo)=nmono
+  do i6=0,noo
+  do i5=0,noo
+   if(i6+i5>noo)cycle
+  do i4=0,noo
+   if(i6+i5+i4>noo)cycle
+  do i3=0,noo
+   if(i6+i5+i4+i3>noo)cycle
+  do i2=0,noo
+   if(i6+i5+i4+i3+i2>noo)cycle
+  do i1=0,noo
+   if(i6+i5+i4+i3+i2+i1/=noo)cycle
+      nmono=nmono+1
+    in1(nmono)=i1
+    in2(nmono)=i2
+    in3(nmono)=i3
+    in4(nmono)=i4
+    in5(nmono)=i5
+    in6(nmono)=i6
+   mono_order(nmono)=noo
+ 
+   hash(i1,i2,i3,i4,i5,i6)=nmono
+
+  enddo
+  enddo
+  enddo
+  enddo
+  enddo
+  enddo
+ enddo
+ 
+!do i=1,nmono
+! sigdis0(i)=dfac(in1(i))*dfac(in2(i))*dfac(in3(i))*dfac(in4(i))*dfac(in5(i))*dfac(in6(i))
+!enddo
+!do i=1,nmono
+!write(6,"(6(1x,i4))") in1(i),in2(i),in3(i),in4(i),in5(i),in6(i)
+!enddo
+!write(6,*) posin
+ 
+ 
+  end subroutine init_moment_map
+
 
   subroutine c_init_all(NO1,NV1,np1,ndpt1,AC_rf,ptc)  !,spin
     implicit none
@@ -19005,12 +19145,15 @@ subroutine fill_tree_element_line_zhe_outside_map(minput ,filef,fix0,as_is,stoch
 implicit none
 logical, optional :: as_is
 real(dp), optional :: fix0(6),stochprec
+complex(dp)v
 logical  as_is0
+integer no1
  
-real(dp)  fix(6),mat(6,6) ,f0(6),stoch
- 
+real(dp)  fix(6),mat(6,6) ,f0(6),stoch,r2,coe
+!real(dp), allocatable :: mm(:,:),vm(:)
 type(c_damap) m,minput
-integer  i,inf
+type(c_taylor) t
+integer  i,inf,j
 type(tree_element_zhe), optional :: tree_zhe(:)
 
 
@@ -19082,6 +19225,9 @@ if(present(tree_zhe))  then
    tree_zhe(i)=forward(i)
  enddo
 endif
+
+ 
+
  if(present(filef)) then
   call kanalnummer(inf,filef)
     call print_tree_elements(forward,inf)
@@ -19090,10 +19236,433 @@ endif
   deallocate(forward)
 endif
 
+!call print(minput)
  call kill(m) 
 
 end subroutine fill_tree_element_line_zhe_outside_map
 
+
+
+subroutine create_moment_map(minput,sig)   ! fix0 is the initial condition for the maps
+implicit none
+ 
+ 
+complex(dp)v
+logical  as_is0
+integer i1,i2,i3,i4,i5,i6,no1,je(6),noo,k,mi,ouch,nz
+ 
+real(dp)   coe,radkick(6,6),a(6,6),sig(6,6)
+real(dpn) r2
+real(dpn), allocatable :: mm(:,:),vm(:)
+type(c_damap) m,minput
+type(c_taylor) t
+integer  i,inf,j
+ 
+ 
+ 
+ call alloc(m); 
+ sig=0
+    a=real(minput%e_ij)
+    call cholesky_dt(A, radkick)
+ 
+m=minput  
+ 
+ 
+ 
+ 
+ 
+m=0
+m=radkick
+ 
+call alloc(t)
+ 
+nmono=size(in1)
+ do i = 1,nmono
+
+
+   t=dz_c(1)**in1(i)*dz_c(2)**in2(i)*dz_c(3)**in3(i)*dz_c(4)**in4(i)*dz_c(5)**in5(i)*dz_c(6)**in6(i)
+!call print(t)
+   t=t.o.m
+!call print(t)
+       j=1
+
+        do while(.true.)
+
+          call  c_cycle(t,j,v ,je); if(j==0) exit;
+!          k=hash(j(1),j(2),j(3),j(4),j(5),j(6))
+            sigdis0(i)=sigdis0(i)+dfac(je(1))*dfac(je(2))*dfac(je(3))*dfac(je(4))*dfac(je(5))*dfac(je(6))*v
+
+        enddo
+ enddo
+
+   allocate(minput%db(nmono,nmono),minput%m(nmono,nmono))
+   minput%db=0
+  minput%m=0
+ 
+   do i=1,nmono
+   noo=mono_order(i)
+ 
+  do i6=0,in6(i)
+  
+  do i5=0,in5(i)
+ !  if(i6+i5>noo)cycle
+  do i4=0,in4(i)
+ !  if(i6+i5+i4>noo)cycle
+  do i3=0,in3(i)
+!   if(i6+i5+i4+i3>noo)cycle
+  do i2=0,in2(i)
+!   if(i6+i5+i4+i3+i2>noo)cycle
+  do i1=0,in1(i)
+  ouch=i6+i5+i4+i3+i2+i1
+ 
+ !  if(ouch>noo)cycle
+   if(mod(ouch,2)==1)cycle
+!write(6,*) "mod(k,2) ", mod(k,2)
+    coe=pascal(in1(i),i1)*pascal(in2(i),i2)*pascal(in3(i),i3)*pascal(in4(i),i4)*pascal(in5(i),i5)*pascal(in6(i),i6)
+    mi=hash(in1(i)-i1,in2(i)-i2,in3(i)-i3,in4(i)-i4,in5(i)-i5,in6(i)-i6)
+
+          k=hash(i1,i2,i3,i4,i5,i6)
+!write(6,*) i,k,mi,noo
+!write(6,*) i1,i2,i3,i4,i5,i6
+!write(6,*)in1(i)-i1,in2(i)-i2,in3(i)-i3,in4(i)-i4,in5(i)-i5,in6(i)-i6
+        coe=coe*sigdis0(k)
+        minput%db(i,mi)=minput%db(i,mi)+coe
+!write(6,*) sigdis0(k)
+!if(mod(ouch,2)==1.and.sigdis0(k)/=0) stop 888
+!pause 866
+  enddo
+  enddo
+  enddo
+  enddo
+  enddo
+  enddo    
+
+   enddo
+
+! do i1=1,nmono !,-1
+! do i2=1,nmono !,-1
+!if(minput%db(i1,i2)/=0) then
+!  write(6,*) i1,i2,mono_order(i1),mono_order(i2)
+!  write(6,*) minput%db(i1,i2)
+!endif
+!  enddo
+!enddo
+ 
+m=minput 
+do i=1,6
+m%v(i)=m%v(i)-(m%v(i).sub.0)
+enddo
+   do i=1,nmono
+ 
+     t=  m%v(1)**in1(i)
+     t=t*m%v(2)**in2(i)
+     t=t*m%v(3)**in3(i)
+     t=t*m%v(4)**in4(i)
+     t=t*m%v(5)**in5(i)
+     t=t*m%v(6)**in6(i)
+   
+       j=1
+
+        do while(.true.)
+
+          call  c_cycle(t,j,v ,je); if(j==0) exit;
+            k=hash(je(1),je(2),je(3),je(4),je(5),je(6))
+            minput%m(i,k)=v
+        enddo
+   enddo
+
+!mat=minput
+!do i=1,6
+!do j=i,6
+!write(6,*) i,j,real(minput%e_ij(i,j))
+!enddo
+!enddo
+!do i=1,6
+! write(6,format6) mat(i,1:6)
+!enddo
+!write(6,*) "nmono , x^2 ",nmono,hash(2,0,0,0,0,0)
+!do i=1,nmono
+! write(6,"(6(1x,i2))") in1(i),in2(i),in3(i),in4(i),in5(i),in6(i)
+
+ !write(6,*) minput%db(i,1:nmono)
+
+ 
+minput%m=matmul(minput%m,minput%db)
+deallocate(minput%db)
+nz=nmono-1
+pause 1
+allocate(mm(nz,nz),vm(nz))
+pause 2
+mm=0
+
+
+do i=1,nz
+ vm(i)=minput%m(i+1,1)
+ mm(i,i)=1
+enddo
+
+do i=1,nz
+do j=1,nz
+ mm(i,j)=mm(i,j)-minput%m(1+i,1+j)
+enddo
+enddo
+
+do i=1,100
+minput%m=matmul(minput%m,minput%m)
+ call norm_moment_matrix(minput%m,r2)
+write(6,*) r2
+enddo
+deallocate(minput%m)
+call matinvn(mm,mm,nz,nz,i)
+pause 230
+write(6,*) " success = ",i
+
+vm=matmul(mm,vm)
+
+do i=nmono,1,-1
+
+write(6,*) i
+write(6,"(6(1x,i2))") in1(i),in2(i),in3(i),in4(i),in5(i),in6(i)
+write(6,*) vm(i-1)
+
+enddo
+
+write(6,*) "Quadratic moments to order ", no
+do i=1,6
+je=0
+je(i)=je(i)+1
+do j=1,6
+je(j)=je(j)+1
+sig(i,j)=vm(hash(je(1),je(2),je(3),je(4),je(5),je(6))-1)
+je(j)=je(j)-1
+
+if(i<=j) write(6,*) i,j,sig(i,j)
+enddo 
+enddo
+return
+!enddo
+!pause 123
+sigdis=0
+sigdis(1)=1
+
+
+do i=1,nmono
+
+write(6,*) i
+write(6,"(6(1x,i2))") in1(i),in2(i),in3(i),in4(i),in5(i),in6(i)
+write(6,*) minput%m(i,1:nmono)
+ 
+
+enddo
+
+ 
+
+ 
+call kill(t)
+ call kill(m) 
+
+end subroutine create_moment_map
+
+subroutine norm_moment_matrix(m,norm)
+implicit none
+real(dpn) norm,m(:,:)
+integer i,j
+
+norm=0
+
+do i=1,size(m,1)
+do j=2,size(m,1)
+
+norm=norm+abs(m(i,j) )
+
+enddo
+enddo
+
+end subroutine norm_moment_matrix
+!$$$$$$$$$$$$$$
+  subroutine matinvn(a,ai,n,nmx,ier)
+
+    implicit none
+
+    integer i,ier,j,n,nmx
+    integer,allocatable ::indx(:)
+    real(dpn) d
+    real(dpn),dimension(nmx,nmx)::a,ai
+    real(dpn),allocatable :: aw(:,:)
+    !
+    !    if((.not.C_%STABLE_DA)) then
+    !       if(c_%watch_user) then
+    !          write(6,*) "big problem in dabnew ", sqrt(crash)
+    !       endif
+    !       return
+    !    endif
+     allocate(aw(n,n),indx(n))
+    aw(1:n,1:n) = a(1:n,1:n)
+
+  !  call ludcmp_nr0n(aw,n,nmaxn,indx,d,ier)
+    call ludcmp_nr0n(aw,n,n,indx,d,ier)
+    if (ier .eq. 132) return
+
+    ai(1:n,1:n) = 0.0_dp
+    !    forall (i = 1:n) ai(i,i) = one
+    do i=1,n
+       ai(i,i) = 1.0_dp
+    enddo
+
+    do j=1,n
+       call lubksb_nr0n(aw,n,n,indx,ai(1,j),nmx)
+!       call lubksb_nr0n(aw,n,nmaxn,indx,ai(1,j),nmx)
+    enddo
+   deallocate(aw,indx)
+  end subroutine matinvn
+
+
+  !
+  subroutine ludcmp_nr0n(a,n,np,indx,d,ier)
+    implicit none
+    !     ************************************
+    !
+    !     THIS SUBROUTINE DECOMPOSES A MATRIX INTO LU FORMAT
+    !     INPUT A: NXN MATRIX - WILL BE OVERWRITTEN BY THE LU DECOMP.
+    !           NP: PHYSICAL DIMENSION OF A
+    !           INDX: ROW PERMUTATION VECTOR
+    !           D: EVEN OR ODD ROW INTERCHANGES
+    !
+    !     REFERENCE: NUMERICAL RECIPIES BY PRESS ET AL (CAMBRIDGE) PG. 35
+    !
+    !-----------------------------------------------------------------------------
+    !
+    integer i,ier,imax,j,k,n,np
+    integer,dimension(np)::indx
+    real(dpn) aamax,d,dum,sum
+    real(dpn),dimension(np,np)::a
+    real(dpn),allocatable ::vv(:)
+    !
+    !    if((.not.C_%STABLE_DA)) then
+    !       if(c_%watch_user) then
+    !          write(6,*) "big problem in dabnew ", sqrt(crash)
+    !       endif
+    !       return
+    !    endif
+    allocate(vv(n))
+    ier=0
+    d=1.0_dp
+    do i=1,n
+       aamax=0.0_dp
+       do j=1,n
+          if(abs(a(i,j)).gt.aamax) aamax=abs(a(i,j))
+       enddo
+       if(aamax.eq.0.0_dp) then
+          ier=132
+          return
+       endif
+       vv(i)=1.0_dp/aamax
+    enddo
+    do j=1,n
+       if(j.gt.1) then
+          do i=1,j-1
+             sum=a(i,j)
+             if(i.gt.1) then
+                do k=1,i-1
+                   sum=sum-a(i,k)*a(k,j)
+                enddo
+                a(i,j)=sum
+             endif
+          enddo
+       endif
+       aamax=0.0_dp
+       do i=j,n
+          sum=a(i,j)
+          if (j.gt.1) then
+             do k=1,j-1
+                sum=sum-a(i,k)*a(k,j)
+             enddo
+             a(i,j)=sum
+          endif
+          dum=vv(i)*abs(sum)
+          if(dum.ge.aamax) then
+             imax=i
+             aamax=dum
+          endif
+       enddo
+       if (j.ne.imax) then
+          do k=1,n
+             dum=a(imax,k)
+             a(imax,k)=a(j,k)
+             a(j,k)=dum
+          enddo
+          d=-d
+          vv(imax)=vv(j)
+       endif
+       indx(j)=imax
+       if(j.ne.n) then
+          if(a(j,j).eq.0.0_dp) a(j,j)=tiny
+          dum=1.0_dp/a(j,j)
+          do i=j+1,n
+             a(i,j)=a(i,j)*dum
+          enddo
+       endif
+    enddo
+    if(a(n,n).eq.0.0_dp) a(n,n)=tiny
+    deallocate(vv)
+    return
+  end subroutine ludcmp_nr0n
+  !
+  subroutine lubksb_nr0n(a,n,np,indx,b,nmx)
+    implicit none
+    !     ************************************
+    !
+    !     THIS SUBROUTINE SOLVES SET OF LINEAR EQUATIONS AX=B,
+    !     INPUT A: NXN MATRIX IN lu FORM GIVEN BY ludcmp_nr
+    !           NP: PHYSICAL DIMENSION OF A
+    !           INDX: ROW PERMUTATION VECTOR
+    !           D: EVEN OR ODD ROW INTERCHANGES
+    !           B: RHS OF LINEAR EQUATION - WILL BE OVERWRITTEN BY X
+    !
+    !     REFERENCE: NUMERICAL RECIPIES BY PRESS ET AL (CAMBRIDGE) PG. 36
+    !
+    !-----------------------------------------------------------------------------
+    !
+    integer i,ii,j,ll,n,nmx,np
+    integer,dimension(np)::indx
+    real(dpn) sum
+    real(dpn),dimension(np,np)::a
+    real(dpn),dimension(nmx)::b
+    !
+    !    if((.not.C_%STABLE_DA)) then
+    !       if(c_%watch_user) then
+    !          write(6,*) "big problem in dabnew ", sqrt(crash)
+    !       endif
+    !       return
+    !    endif
+    ii = 0
+    do i=1,n
+       ll = indx(i)
+       sum = b(ll)
+       b(ll) = b(i)
+       if(ii.ne.0) then
+          do j=ii,i-1
+             sum = sum-a(i,j)*b(j)
+          enddo
+       else if (sum.ne.0.0_dp) then
+          ii = i
+       endif
+       b(i)=sum
+    enddo
+    do i=n,1,-1
+       sum=b(i)
+       if(i.lt.n) then
+          do j=i+1,n
+             sum = sum-a(i,j)*b(j)
+          enddo
+       endif
+
+       b(i)=sum/a(i,i)
+
+    enddo
+    return
+  end subroutine lubksb_nr0n
+!$$$$$$$$$$$$$$$$$$$$
 subroutine copy_tree_into_tree_zhe(tree_zhe,t)
 implicit none
 type(tree_element), intent(in) :: t

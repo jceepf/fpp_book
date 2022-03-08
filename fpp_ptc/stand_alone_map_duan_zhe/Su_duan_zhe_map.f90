@@ -8,6 +8,8 @@ implicit none
   PUBLIC track_TREE_probe_complex_ji,track_TREE_probe_complex_ji_symp,TRACK_TREE_PROBE_COMPLEX_JI_VEC
  public file_zhe,number_zhe_maps,get_seed,set_seed,ALLOC_TREE,track_TREE_probe_complex_zhe_no_orbital
 public track_TREE_probe_complex_zhe_no_orbital_quaternion,GRNF_zhe
+ logical :: use_gaussian_zhe =.false.
+ public use_gaussian_zhe 
  character(255) ::    file_zhe="zhe"
   integer ::  number_zhe_maps = 1
   public use_ji
@@ -1113,9 +1115,15 @@ endif ! jumpnot
     enddo
 
     xr=0.0_dp
-  do i=1,6
-    xr(i)=GRNF_zhe()*t(2)%fix0(i)  
-  enddo
+  if(use_gaussian_zhe) then
+   do i=1,6
+     xr(i)=GRNF_zhe_gaussian()*t(2)%fix0(i)  
+   enddo
+  else
+   do i=1,6
+     xr(i)=GRNF_zhe()*t(2)%fix0(i)  
+   enddo
+  endif
     xr =matmul(t(2)%rad,xr)
 
     x(1:6)=x(1:6)+xr 
