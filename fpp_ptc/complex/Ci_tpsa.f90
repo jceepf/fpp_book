@@ -134,7 +134,7 @@ integer, private :: nmono
 real(dp), private  :: tiny =1e-20_dp
     logical :: sagan_gen =.false.
 integer mf_,n1_,n2_
-logical :: do_damping=.false.
+logical :: do_damping=.false.,do_spin=.false.,use_radiation_inverse = .true.
 !
 
 type(c_linear_map) q_phasor,qi_phasor
@@ -5724,6 +5724,76 @@ endif
 
   end SUBROUTINE  compute_lattice_functions
 
+  SUBROUTINE  d_compute_lattice_functions(a,f)
+    implicit none
+    type(d_lattice_function) f
+    type(c_linear_map) m
+    type(c_linear_map) mi
+    type(c_linear_map) q
+    type(c_damap),intent(in) :: a
+    integer i,j
+ 
+    m=a
+
+     if(do_damping.and.use_radiation_inverse) then
+       mi=m**(-1)
+     else
+       mi=inv_c_linear_map_symplectic(m)     
+     endif
+ 
+ 
+ 
+ 
+    f%e=0
+    f%h=0
+    f%spin_lat=0
+
+ !!!!    computing the de Moivre Lattice Functions  !!!!
+ !!!!  equivalent to Ripken ones
+
+!!!!  Coefficient of vector field matrices  B**2=-H
+  !   do i = 1,3
+  !    f%B(i,:,:)=matmul(matmul(m%mat,jp_mat(i,:,:)),mi%mat)
+  !   enddo
+
+!!!! coefficient of invariants
+   !   do i = 1,3
+   !   f%K(i,:,:)= -matmul(jt_mat,f%B(i,:,:))
+   !  enddo
+!!!! coefficient of moments
+     do i = 1,3
+      f%E(i,:,:)=matmul(matmul(m%mat,jp_mat(i,:,:)),mi%mat)
+     enddo
+     do i = 1,3
+      f%E(i,:,:)= -matmul(f%E(i,:,:),jt_mat)
+     enddo
+
+!!!!  Dispersive quantities containing zeta and eta for example
+     do i = 1,3
+      f%H(i,:,:)=matmul(matmul(m%mat,ip_mat(i,:,:)),mi%mat)
+      enddo
+
+!!!!    computing the n vector using quaternion
+  if(do_spin) then
+     do i = 1,3
+       q=i
+       q=m*q*mi
+       do j=1,3
+        f%Spin_lat(i,j,0:6)=q%q(j,0:6)
+       enddo
+     enddo
+  else
+  f%Spin_lat=0
+  f%spin=0
+  endif
+ ! if(.not.do_damping) d_damping=0
+ !     f%phase=d_phase
+ !     f%damping=d_damping
+ !     f%spin=d_spin_tune
+ !     f%fixa=d_probe_a%x
+ !     f%fixb=d_probe_b%x
+
+  end SUBROUTINE  d_compute_lattice_functions
 !type c_lattice_function
 ! real(dp) E(3,6,6),K(3,6,6),B(3,6,6)
 ! real(dp) H(3,6,6)
