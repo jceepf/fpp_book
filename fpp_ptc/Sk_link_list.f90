@@ -707,11 +707,10 @@ endif
   a%emittance=0
   end subroutine zero_d_lattice_function
 
- subroutine alloc_array_of_fibres(a,n,middle)
+ subroutine alloc_array_of_fibres(a,n)
  implicit none
  type(array_of_fibres), pointer :: a(:)
  integer i,n,m
- integer(1)   middle
  allocate(a(n))
 
  do i=1,n
@@ -719,7 +718,7 @@ endif
    a(i)%m=0
    allocate(a(i)%lf)
    allocate(a(i)%centre)
-   a(i)%centre=middle
+   a(i)%centre=0
    call zero_d_lattice_function(a(i)%lf)
    !allocate(a(i)%state)
 !   a(i)%state=default
