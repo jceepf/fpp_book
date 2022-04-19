@@ -135,7 +135,7 @@ real(dp), private  :: tiny =1e-20_dp
     logical :: sagan_gen =.false.
 integer mf_,n1_,n2_
 logical :: do_damping=.false.,do_spin=.false.,use_radiation_inverse = .true.
-!
+logical :: force_spin_input_normal=.false.
 
 type(c_linear_map) q_phasor,qi_phasor
 
@@ -5761,13 +5761,14 @@ endif
    !   f%K(i,:,:)= -matmul(jt_mat,f%B(i,:,:))
    !  enddo
 !!!! coefficient of moments
+ 
      do i = 1,3
       f%E(i,:,:)=matmul(matmul(m%mat,jp_mat(i,:,:)),mi%mat)
      enddo
      do i = 1,3
       f%E(i,:,:)= -matmul(f%E(i,:,:),jt_mat)
      enddo
-
+ 
 !!!!  Dispersive quantities containing zeta and eta for example
      do i = 1,3
       f%H(i,:,:)=matmul(matmul(m%mat,ip_mat(i,:,:)),mi%mat)
@@ -8636,11 +8637,12 @@ end subroutine c_bmad_reinit
    do i=1,3
     ip_mat(i,2*i-1,2*i-1)=1
     ip_mat(i,2*i,2*i)=1
-    jp_mat(i,2*i-1,2*i)=-1
-    jp_mat(i,2*i,2*i-1)=1
-    jt_mat(2*i-1,2*i)=-1
-    jt_mat(2*i,2*i-1)=1
+    jp_mat(i,2*i-1,2*i)=1
+    jp_mat(i,2*i,2*i-1)=-1
+    jt_mat(2*i-1,2*i)=1
+    jt_mat(2*i,2*i-1)=-1
    enddo
+  
 formatlf(1)="(6(1x,g23.16,1x))       "
 formatlf(2)="(1(25x),5(1x,g23.16,1x))"
 formatlf(3)="(2(25x),4(1x,g23.16,1x))"
@@ -8791,7 +8793,14 @@ endif
     k1_spin(8)=3;k2_spin(8)=2;
     k1_spin(9)=3;k2_spin(9)=3;
 
-
+   if(ndpt==6) then
+      jp_mat(3,6,5)=0
+      jp_mat(3,5,6)=1
+    endif
+   if(ndpt==5) then
+      jp_mat(3,6,5)=1
+      jp_mat(3,5,6)=0
+    endif 
  
  
   end subroutine c_init
@@ -14398,25 +14407,27 @@ function c_vector_field_quaternion(h,ds) ! spin routine
 
  subroutine exp_mat(f,m)
     implicit none
-    real(dp), intent(in) :: f(:,:) 
-    real(dp), intent(out) ::  m(:,:)
+    real(dp), intent(inout) :: f(:,:) 
+    real(dp), intent(inout) ::  m(:,:)
     integer i,n
     real(dp) norma,normb,x,y
-    real(dp), allocatable :: t(:,:)
+    real(dp), allocatable :: t(:,:),ft(:,:)
     y=1.d-7
     
     n=size(m,1)
      allocate(t(n,n))
+     allocate(ft(n,n))
+ft=f
  t=0
  m=0
   do i=1,n
    m(i,i)=1
    t(i,i)=1
  enddo
-       normb=norm_matrix(f)
+       normb=norm_matrix(ft)
     x=1
     do i=1,10000
-      t=matmul(f,t)/x
+      t=matmul(ft,t)/x
       norma=norm_matrix(t)
       m= m+t
       x=x+1
@@ -14426,6 +14437,7 @@ function c_vector_field_quaternion(h,ds) ! spin routine
     enddo
    if(i>10000-10)  write(6,*) "exp_mat",i
   deallocate(t)
+  deallocate(ft)
   end  subroutine exp_mat
 
     function norm_matrix(f)
@@ -18000,7 +18012,14 @@ logical dos
 logical, optional :: dospin
 
 dos=.false.
-if(present(dospin)) dos=dospin
+if(present(dospin)) then
+  dos=dospin
+else
+      if(force_spin_input_normal) then
+        write(6,*) " your default forces you to include dospin in the input of c_fast_canonise"
+        stop
+      endif
+endif
 s=0
 b0=0
 do i=1,nd
@@ -18120,7 +18139,7 @@ q=1
  endif
  qc=q*qr
  
- if(present(spin_tune)) then
+ if(present(spin_tune).and.dos) then
   spin_tune(1)=spin_tune(1)+aq/pi   ! changed 2018.11.01
  endif
 cri=ri
@@ -18141,7 +18160,7 @@ endif
 
 endif
  
- if(present(spin_tune)) then
+ if(present(spin_tune).and.dos) then
   spin_tune(2)=spin_tune(2)+daq/pi   ! changed 2018.11.01
  endif
 
@@ -18274,7 +18293,16 @@ END FUNCTION FindDet
     endif
 
     dospinr=.false.
-    if(present(dospin)) dospinr=dospin
+    if(present(dospin)) then
+     dospinr=dospin
+     else
+      if(force_spin_input_normal) then
+        write(6,*) " your default forces you to include dospin in the input of c_normal"
+        stop
+      endif
+    endif
+
+
 
 if(bmad_automatic) then
   if(nd2t+ndc2t/=6) then
