@@ -19470,6 +19470,7 @@ nd1=iabs(nd11)
   enddo
   enddo
   enddo
+
  elseif(nd1==2) then
   do i1=0,noo
   do i2=0,noo
@@ -19565,15 +19566,17 @@ endif
   do i6=0,noo
    if(i1+i2+i3+i4+i5+i6/=noo)cycle
       nmono=nmono+1
-    in1(nmono)=i1
-    in2(nmono)=i2
-    in3(nmono)=i3
-    in4(nmono)=i4
-    in5(nmono)=i5
-    in6(nmono)=i6
+    in1(nmono)=i6
+    in2(nmono)=i5
+    in3(nmono)=i4
+    in4(nmono)=i3
+    in5(nmono)=i2
+    in6(nmono)=i1
    mono_order(nmono)=noo
  
-   hash(i1,i2,i3,i4,i5,i6)=nmono
+ !  hash(i1,i2,i3,i4,i5,i6)=nmono
+   hash(i6,i5,i4,i3,i2,i1)=nmono
+ 
 
   enddo
   enddo
@@ -19590,16 +19593,17 @@ endif
   do i4=0,noo
    if(i1+i2+i3+i4/=noo)cycle
       nmono=nmono+1
-    in1(nmono)=i1
-    in2(nmono)=i2
-    in3(nmono)=i3
-    in4(nmono)=i4
+    in1(nmono)=i4
+    in2(nmono)=i3
+    in3(nmono)=i2
+    in4(nmono)=i1
     in5(nmono)=0
     in6(nmono)=0
    mono_order(nmono)=noo
  
-   hash(i1,i2,i3,i4,0,0)=nmono
-
+   hash(i4,i3,i2,i1,0,0)=nmono
+!   hash(i1,i2,i3,i4,0,0)=nmono
+ 
   enddo
   enddo
   enddo
@@ -19609,28 +19613,286 @@ endif
   do i2=0,noo
    if(i1+i2/=noo)cycle
       nmono=nmono+1
-    in1(nmono)=i1
-    in2(nmono)=i2
+    in1(nmono)=i2
+    in2(nmono)=i1
     in3(nmono)=0
     in4(nmono)=0
     in5(nmono)=0
     in6(nmono)=0
    mono_order(nmono)=noo
  
-   hash(i1,i2,0,0,0,0)=nmono
+!   hash(i1,i2,0,0,0,0)=nmono
+   hash(i2,i1,0,0,0,0)=nmono
+ 
   enddo
   enddo
 else 
 
 stop 888
 endif
+
+
+
 enddo
 
  
- 
- 
- 
   end subroutine init_moment_map
+
+
+
+subroutine create_moment_map_one(mtotal,minput,sig,nd11,fin)   ! fix0 is the initial condition for the maps
+implicit none
+ 
+ 
+complex(dp)v
+integer i1,i2,i3,i4,i5,i6,no1,je(6),noo,k,mi,ouch,nz
+ 
+real(dp)   coe,radkick(6,6),a(6,6),sig(6,6),ki(6),eps
+real(dpn) r2
+real(dpn), allocatable :: mm(:,:),vm(:)
+type(c_damap) m,minput,mtotal
+type(c_taylor) t
+integer  i,inf,j,nd1,nd11
+ logical,optional :: fin
+logical ende
+
+ende=.false.
+if(present(fin)) ende=fin
+ nd1=iabs(nd11)
+ 
+ call alloc(m); 
+ sig=0
+    a=real(minput%e_ij)
+    call cholesky_dt(A, radkick)  ! in back
+ 
+
+ 
+ 
+m=minput  
+ 
+
+sigdis0=0
+
+ 
+m=0
+m=radkick
+ 
+call alloc(t)
+ 
+nmono=size(in1)
+ do i = 1,nmono
+ 
+  if(nd1==3) then
+   t=dz_c(1)**in1(i)*dz_c(2)**in2(i)*dz_c(3)**in3(i)*dz_c(4)**in4(i)*dz_c(5)**in5(i)*dz_c(6)**in6(i)
+  elseif(nd1==2)  then
+   t=dz_c(1)**in1(i)*dz_c(2)**in2(i)*dz_c(3)**in3(i)*dz_c(4)**in4(i) 
+
+elseif(nd1==1) then
+   t=dz_c(1)**in1(i)*dz_c(2)**in2(i)
+ 
+ else
+  stop 889
+endif
+
+   t=t*m
+ 
+       j=1
+
+        do while(.true.)
+je=0
+          call  c_cycle(t,j,v ,je); if(j==0) exit;
+ 
+            sigdis0(i)=sigdis0(i)+dfac(je(1))*dfac(je(2))*dfac(je(3))*dfac(je(4))*dfac(je(5))*dfac(je(6))*v
+
+        enddo
+ 
+ enddo
+
+ 
+
+   allocate(minput%db(nmono,nmono),minput%m(nmono,nmono))
+   minput%db=0
+  minput%m=0
+ 
+ if(nd1==3) then
+   do i=1,nmono
+   noo=mono_order(i)
+ 
+  do i6=0,in6(i)
+  
+  do i5=0,in5(i)
+ 
+  do i4=0,in4(i)
+ 
+  do i3=0,in3(i)
+ 
+  do i2=0,in2(i)
+   do i1=0,in1(i)
+  ouch=i6+i5+i4+i3+i2+i1
+ 
+    if(mod(ouch,2)==1)cycle
+ 
+    coe=pascal(in1(i),i1)*pascal(in2(i),i2)*pascal(in3(i),i3)*pascal(in4(i),i4)*pascal(in5(i),i5)*pascal(in6(i),i6)
+    mi=hash(in1(i)-i1,in2(i)-i2,in3(i)-i3,in4(i)-i4,in5(i)-i5,in6(i)-i6)
+
+          k=hash(i1,i2,i3,i4,i5,i6)
+ 
+        coe=coe*sigdis0(k)
+        minput%db(i,mi)=minput%db(i,mi)+coe
+ 
+  enddo
+  enddo
+  enddo
+  enddo
+  enddo
+  enddo    
+
+   enddo
+ 
+ elseif(nd1==2) then
+   do i=1,nmono
+   noo=mono_order(i)
+ 
+  do i4=0,in4(i)
+ 
+  do i3=0,in3(i)
+   do i2=0,in2(i)
+   do i1=0,in1(i)
+  ouch=i4+i3+i2+i1
+ 
+    if(mod(ouch,2)==1)cycle
+     coe=pascal(in1(i),i1)*pascal(in2(i),i2)*pascal(in3(i),i3)*pascal(in4(i),i4) 
+    mi=hash(in1(i)-i1,in2(i)-i2,in3(i)-i3,in4(i)-i4,0,0)
+
+          k=hash(i1,i2,i3,i4,0,0)
+         coe=coe*sigdis0(k)
+        minput%db(i,mi)=minput%db(i,mi)+coe
+   enddo
+  enddo
+  enddo
+  enddo
+    
+
+   enddo
+
+ elseif(nd1==1) then
+   do i=1,nmono
+   noo=mono_order(i)
+ 
+  do i2=0,in2(i)
+ 
+  do i1=0,in1(i)
+  ouch=i2+i1
+ 
+ 
+    coe=pascal(in1(i),i1)*pascal(in2(i),i2) 
+  
+    mi=hash(in1(i)-i1,in2(i)-i2,0,0,0,0)
+
+          k=hash(i1,i2,0,0,0,0)
+         coe=coe*sigdis0(k)
+        minput%db(i,mi)=minput%db(i,mi)+coe
+   enddo
+  enddo
+   
+
+   enddo
+
+endif ! nd1==3
+ 
+m=minput 
+do i=1,nd2
+m%v(i)=m%v(i)-(m%v(i).sub.0)
+enddo
+   do i=1,nmono
+    
+     t=  m%v(1)**in1(i)
+     t=t*m%v(2)**in2(i)
+   if(nd1>1) then
+     t=t*m%v(3)**in3(i)
+     t=t*m%v(4)**in4(i)
+   endif
+   if(nd1>2) then
+
+     t=t*m%v(5)**in5(i)
+     t=t*m%v(6)**in6(i)
+   endif
+       j=1
+
+        do while(.true.)
+
+          call  c_cycle(t,j,v ,je); if(j==0) exit;
+            k=hash(je(1),je(2),je(3),je(4),je(5),je(6))
+            minput%m(i,k)=v
+        enddo
+   enddo
+
+
+  
+minput%m=matmul(minput%db,minput%m)
+ 
+mtotal%m=matmul(minput%m,mtotal%m)
+ 
+
+deallocate(minput%db)
+ 
+deallocate(minput%m)
+
+
+if(ende) then
+nz=nmono-1
+ 
+
+allocate(mm(nz,nz),vm(nz))
+ 
+
+
+mm=0
+
+
+do i=1,nz
+ vm(i)=mtotal%m(i+1,1)
+ mm(i,i)=1
+enddo
+
+do i=1,nz
+do j=1,nz
+ mm(i,j)=mm(i,j)-mtotal%m(1+i,1+j)
+enddo
+enddo
+
+ 
+
+
+call matinvn(mm,mm,nz,nz,i)
+ 
+write(6,*) " success = ",i
+
+vm=matmul(mm,vm)
+vsol(2:nmono)=vm
+
+
+write(6,*) "Quadratic moments to order ", no
+do i=1,2*nd1
+je=0
+je(i)=je(i)+1
+do j=1,2*nd1
+je(j)=je(j)+1
+sig(i,j)=vm(hash(je(1),je(2),je(3),je(4),je(5),je(6))-1)
+je(j)=je(j)-1
+
+if(i<=j) write(6,*) i,j,sig(i,j)
+enddo 
+enddo
+
+ deallocate(mm,vm)
+
+endif ! final 
+
+call kill(t)
+ call kill(m) 
+
+end subroutine create_moment_map_one
 
 
 subroutine create_moment_map(minput,sig,nd11,radk)   ! fix0 is the initial condition for the maps
@@ -19922,260 +20184,6 @@ call kill(t)
 
 end subroutine create_moment_map
 
-
-subroutine create_moment_map_one(mtotal,minput,sig,nd11,fin)   ! fix0 is the initial condition for the maps
-implicit none
- 
- 
-complex(dp)v
-integer i1,i2,i3,i4,i5,i6,no1,je(6),noo,k,mi,ouch,nz
- 
-real(dp)   coe,radkick(6,6),a(6,6),sig(6,6),ki(6),eps
-real(dpn) r2
-real(dpn), allocatable :: mm(:,:),vm(:)
-type(c_damap) m,minput,mtotal
-type(c_taylor) t
-integer  i,inf,j,nd1,nd11
- logical,optional :: fin
-logical ende
-
-ende=.false.
-if(present(fin)) ende=fin
- nd1=iabs(nd11)
- 
- call alloc(m); 
- sig=0
-    a=real(minput%e_ij)
-    call cholesky_dt(A, radkick)  ! in back
- 
-
- 
- 
-m=minput  
- 
-
-sigdis0=0
-
- 
-m=0
-m=radkick
- 
-call alloc(t)
- 
-nmono=size(in1)
- do i = 1,nmono
- 
-  if(nd1==3) then
-   t=dz_c(1)**in1(i)*dz_c(2)**in2(i)*dz_c(3)**in3(i)*dz_c(4)**in4(i)*dz_c(5)**in5(i)*dz_c(6)**in6(i)
-  elseif(nd1==2)  then
-   t=dz_c(1)**in1(i)*dz_c(2)**in2(i)*dz_c(3)**in3(i)*dz_c(4)**in4(i) 
-
-elseif(nd1==1) then
-   t=dz_c(1)**in1(i)*dz_c(2)**in2(i)
- 
- else
-  stop 889
-endif
-
-   t=t*m
- 
-       j=1
-
-        do while(.true.)
-je=0
-          call  c_cycle(t,j,v ,je); if(j==0) exit;
- 
-            sigdis0(i)=sigdis0(i)+dfac(je(1))*dfac(je(2))*dfac(je(3))*dfac(je(4))*dfac(je(5))*dfac(je(6))*v
-
-        enddo
- 
- enddo
-
- 
-
-   allocate(minput%db(nmono,nmono),minput%m(nmono,nmono))
-   minput%db=0
-  minput%m=0
- 
- if(nd1==3) then
-   do i=1,nmono
-   noo=mono_order(i)
- 
-  do i6=0,in6(i)
-  
-  do i5=0,in5(i)
- 
-  do i4=0,in4(i)
- 
-  do i3=0,in3(i)
- 
-  do i2=0,in2(i)
-   do i1=0,in1(i)
-  ouch=i6+i5+i4+i3+i2+i1
- 
-    if(mod(ouch,2)==1)cycle
- 
-    coe=pascal(in1(i),i1)*pascal(in2(i),i2)*pascal(in3(i),i3)*pascal(in4(i),i4)*pascal(in5(i),i5)*pascal(in6(i),i6)
-    mi=hash(in1(i)-i1,in2(i)-i2,in3(i)-i3,in4(i)-i4,in5(i)-i5,in6(i)-i6)
-
-          k=hash(i1,i2,i3,i4,i5,i6)
- 
-        coe=coe*sigdis0(k)
-        minput%db(i,mi)=minput%db(i,mi)+coe
- 
-  enddo
-  enddo
-  enddo
-  enddo
-  enddo
-  enddo    
-
-   enddo
- 
- elseif(nd1==2) then
-   do i=1,nmono
-   noo=mono_order(i)
- 
-  do i4=0,in4(i)
- 
-  do i3=0,in3(i)
-   do i2=0,in2(i)
-   do i1=0,in1(i)
-  ouch=i4+i3+i2+i1
- 
-    if(mod(ouch,2)==1)cycle
-     coe=pascal(in1(i),i1)*pascal(in2(i),i2)*pascal(in3(i),i3)*pascal(in4(i),i4) 
-    mi=hash(in1(i)-i1,in2(i)-i2,in3(i)-i3,in4(i)-i4,0,0)
-
-          k=hash(i1,i2,i3,i4,0,0)
-         coe=coe*sigdis0(k)
-        minput%db(i,mi)=minput%db(i,mi)+coe
-   enddo
-  enddo
-  enddo
-  enddo
-    
-
-   enddo
-
- elseif(nd1==1) then
-   do i=1,nmono
-   noo=mono_order(i)
- 
-  do i2=0,in2(i)
- 
-  do i1=0,in1(i)
-  ouch=i2+i1
- 
- 
-    coe=pascal(in1(i),i1)*pascal(in2(i),i2) 
-  
-    mi=hash(in1(i)-i1,in2(i)-i2,0,0,0,0)
-
-          k=hash(i1,i2,0,0,0,0)
-         coe=coe*sigdis0(k)
-        minput%db(i,mi)=minput%db(i,mi)+coe
-   enddo
-  enddo
-   
-
-   enddo
-
-endif ! nd1==3
- 
-m=minput 
-do i=1,nd2
-m%v(i)=m%v(i)-(m%v(i).sub.0)
-enddo
-   do i=1,nmono
-    
-     t=  m%v(1)**in1(i)
-     t=t*m%v(2)**in2(i)
-   if(nd1>1) then
-     t=t*m%v(3)**in3(i)
-     t=t*m%v(4)**in4(i)
-   endif
-   if(nd1>2) then
-
-     t=t*m%v(5)**in5(i)
-     t=t*m%v(6)**in6(i)
-   endif
-       j=1
-
-        do while(.true.)
-
-          call  c_cycle(t,j,v ,je); if(j==0) exit;
-            k=hash(je(1),je(2),je(3),je(4),je(5),je(6))
-            minput%m(i,k)=v
-        enddo
-   enddo
-
-
-  
-minput%m=matmul(minput%db,minput%m)
- 
-mtotal%m=matmul(minput%m,mtotal%m)
- 
-
-deallocate(minput%db)
- 
-deallocate(minput%m)
-
-
-if(ende) then
-nz=nmono-1
- 
-
-allocate(mm(nz,nz),vm(nz))
- 
-
-
-mm=0
-
-
-do i=1,nz
- vm(i)=mtotal%m(i+1,1)
- mm(i,i)=1
-enddo
-
-do i=1,nz
-do j=1,nz
- mm(i,j)=mm(i,j)-mtotal%m(1+i,1+j)
-enddo
-enddo
-
- 
-
-
-call matinvn(mm,mm,nz,nz,i)
- 
-write(6,*) " success = ",i
-
-vm=matmul(mm,vm)
-vsol(2:nmono)=vm
-
-
-write(6,*) "Quadratic moments to order ", no
-do i=1,2*nd1
-je=0
-je(i)=je(i)+1
-do j=1,2*nd1
-je(j)=je(j)+1
-sig(i,j)=vm(hash(je(1),je(2),je(3),je(4),je(5),je(6))-1)
-je(j)=je(j)-1
-
-if(i<=j) write(6,*) i,j,sig(i,j)
-enddo 
-enddo
-
- deallocate(mm,vm)
-
-endif ! final 
-
-call kill(t)
- call kill(m) 
-
-end subroutine create_moment_map_one
 
 subroutine norm_moment_matrix(m,norm)
 implicit none
