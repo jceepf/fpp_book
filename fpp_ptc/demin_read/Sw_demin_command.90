@@ -2684,7 +2684,7 @@ do i=1,fs%n
  enddo
 
 
-f=fs
+!f=fs
 
 call kill(fs)
 call kill(t)
