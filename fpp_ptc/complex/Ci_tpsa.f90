@@ -21142,6 +21142,7 @@ end subroutine cholesky_dt
     logical, optional :: abs
     logical abst
     integer inuit0
+    real(dp) xr
     inuit0=6
     abst=.false.
     if(present(abs)) abst=abs
@@ -21162,7 +21163,9 @@ end subroutine cholesky_dt
 
     do i = 1,ut%n
      if(abst) then
-       write(iunit,'(I6,2X,(G21.14,1x,G21.14,3x,G21.14),I5,4X,18(2I2,1X))') i,ut%c(i),abs(ut%c(i)),sum(ut%j(i,:)),(ut%j(i,ii),ii=1,ut%nv)
+       xr=sqrt(real(ut%c(i))**2+aimag(ut%c(i))**2)
+write(iunit,'(I6,2X,(G21.14,1x,G21.14,3x,G21.14),I5,4X,18(2I2,1X))') i,ut%c(i),xr,   &
+sum(ut%j(i,:)),(ut%j(i,ii),ii=1,ut%nv)
      else
        write(iunit,'(I6,2X,(G21.14,1x,G21.14),I5,4X,18(2I2,1X))') i,ut%c(i),sum(ut%j(i,:)),(ut%j(i,ii),ii=1,ut%nv)
      endif
