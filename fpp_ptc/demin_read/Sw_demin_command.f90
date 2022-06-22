@@ -113,7 +113,7 @@ logical ex,old
  old=.true.
 lprogram=" "
 iprog=0
-call print_for_tex
+!call print_for_tex
 warning=.false.
 
 sj=0
@@ -735,7 +735,8 @@ write(6,*) c_lda_used," complex Taylors used in Berz Package"
     integer c,n,i
     integer i1,i2
     call kanalnummer(mf)
-     open(unit=mf,file="C:\document\basic\demin_read\Sw_demin_command.f90",status='OLD',READONLY)
+   !  open(unit=mf,file="C:\document\basic\demin_read\Sw_demin_command.f90",status='OLD',READONLY)
+     open(unit=mf,file="C:\document\basic\demin_read\Sw_demin_command.f90")   
 c=0
 n=0
 store=.false.
