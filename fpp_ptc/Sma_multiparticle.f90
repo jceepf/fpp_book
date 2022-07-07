@@ -1845,6 +1845,7 @@ endif
 
     SELECT CASE(T%CAS)
     CASE(CASEP1)
+
        CALL TRACK_FIBRE_FRONT(T%PARENT_FIBRE,X,K)
        if(associated(T%PARENT_FIBRE%MAGP%p%aperture)) then
           TA=T%PARENT_FIBRE%MAGP%p%dir*T%PARENT_FIBRE%MAGP%p%aperture%pos==-1 .OR.  &

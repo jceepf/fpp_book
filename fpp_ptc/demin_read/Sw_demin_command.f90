@@ -30,6 +30,7 @@ integer d_ndt,d_ndpt,d_nd2
 public d_field_for_demin
 logical :: warning
 integer d_mf
+ 
 public d_mf
 !#   2    First block saved for TeX
 !  Routine to read and run the script
@@ -164,8 +165,8 @@ character(*) comti
  CHARACTER*(120) comt,com
  CHARACTER*(255) filename
  logical skip,old,ex
- integer i,mf,i_layout_temp,posr
-
+ integer i,mf,i_layout_temp,posr,j,perm
+  type(fibre), pointer :: p
 integer, optional :: ij
 
 i=0
@@ -375,8 +376,23 @@ compute_fix=.true. ;
         endif
         write(6,*) "Tracking at position",d_pos,"of array "
 compute_fix=.true. ; 
+!$ Makes permfringe =0,3 
+!
+!+  The code will skip if  different from 0 or 3
 
-
+       case('PERMFRINGE')
+    read(mf,*) perm
+     if(perm==0.or.perm==3) then
+      p=>d_line%start
+      do j=1,d_line%n
+       p%mag%p%permfringe=perm
+       p%magp%p%permfringe=perm
+       p=>p%next
+      enddo
+     else
+      write(6,*) "permfringe = ",perm
+      write(6,*) " command skipped "
+     endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       case('CENTRE','FORCEMIDDLETRACKING')
 !$ This tracks from the centre of the first fibre of a slice to the middle of the first fibre of the 
@@ -1474,6 +1490,8 @@ endif
 
 end subroutine twiss_1
 
+ 
+
 subroutine twiss_no(prec)
 implicit none
 integer k,j1
@@ -1521,9 +1539,11 @@ do k=d_pos,d_pos+d_ntot-1
  
     d_probe_a=d_probe_8
  
-
+ 
     call d_track_array_8(d_probe_8,j1,1)
 
+
+ 
  
     c_map=d_probe_8
 
@@ -1535,7 +1555,6 @@ do k=d_pos,d_pos+d_ntot-1
  
 call clean(c_map,c_map,prec)
  
-
     d_line%a(j1)%lf%m=c_map
     d_line%lf0%m= c_map*d_line%lf0%m
     d_probe_b=d_probe_8
@@ -1600,7 +1619,10 @@ do k=d_pos,d_pos+d_ntot-1
     d_probe_a=d_probe_8
  
 
+ 
     call d_track_array_8(d_probe_8,j1,1)
+ 
+ 
 
  
     c_map=d_probe_8
@@ -1612,11 +1634,12 @@ do k=d_pos,d_pos+d_ntot-1
     c_map=ci_phasor()*c_map*c_phasor()
 
 call clean(c_map,c_map,prec)
- 
- 
- call c_factor_map(c_map,L,vf,1)  
 
  
+ call c_factor_map(c_map,L,vf,1)  
+ 
+ 
+
  if(associated(d_line%a(j1)%lf%ut)) then
    call kill(d_line%a(j1)%lf%ut)
  endif
