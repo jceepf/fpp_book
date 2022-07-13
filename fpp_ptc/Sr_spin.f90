@@ -1906,9 +1906,16 @@ CASE(KIND0,KIND1,KIND3,kind6,KIND8,KIND9,KIND11:KIND14,KIND15,kind17,KIND18,KIND
       KIND21,KIND22,KINDPA,KINDabell,kindsuperdrift)
         call TRACK_NODE_FLAG_probe_p(C,XS,K)
        case(KIND2,KIND4,KIND5,KIND7,KIND10,KIND16,KIND20,KINDWIGGLER)
-         start_stochastic_computation=0
-         call TRACK_NODE_FLAG_probe_quap(C,XS,K)
-         start_stochastic_computation=-1
+
+          if(compute_stoch_kick) then
+           start_stochastic_computation=0
+            call TRACK_NODE_FLAG_probe_quap(C,XS,K)
+           start_stochastic_computation=-1
+            c%delta_rad_in = sqrt(c%delta_rad_in)
+            c%delta_rad_out= sqrt(c%delta_rad_out) 
+          else
+            call TRACK_NODE_FLAG_probe_quap(C,XS,K)
+          endif
        CASE DEFAULT
           WRITE(6,*) "NOT IMPLEMENTED in old_integrator bifurcation",C%parent_fibre%magp%KIND
           stop 999
