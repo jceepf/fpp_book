@@ -1211,7 +1211,7 @@ CONTAINS !----------------------------------------------------------------------
     real(dp) DH,DD
 
     SELECT CASE(EL%P%METHOD)
-    CASE(2,4,6)
+    CASE(2,4,6,8)
        DH=EL%L/EL%P%NST
        DD=EL%P%LD/EL%P%NST
 
@@ -1238,7 +1238,7 @@ CONTAINS !----------------------------------------------------------------------
 
     CALL ALLOC(DH)
     SELECT CASE(EL%P%METHOD)
-    CASE(2,4,6)
+    CASE(2,4,6,8)
        DH=EL%L/EL%P%NST
        DD=EL%P%LD/EL%P%NST
 
@@ -1267,7 +1267,7 @@ CONTAINS !----------------------------------------------------------------------
     real(dp) DH,DD
 
     SELECT CASE(EL%P%METHOD)
-    CASE(2,4,6)
+    CASE(2,4,6,8)
        DH=EL%L/EL%P%NST
        DD=EL%P%LD/EL%P%NST
 
@@ -1292,7 +1292,7 @@ CONTAINS !----------------------------------------------------------------------
 
     CALL ALLOC(DH)
     SELECT CASE(EL%P%METHOD)
-    CASE(2,4,6)
+    CASE(2,4,6,8)
        DH=EL%L/EL%P%NST
        DD=EL%P%LD/EL%P%NST
 
@@ -14264,7 +14264,7 @@ endif
              CALL ROT_XZ(EL%P%EDGE(2),X,EL%P%BETA0,DONEITT,k%TIME)
   !        ELSE
   !              IF(el%p%permfringe==2.or.el%p%permfringe==3) CALL FRINGE2QUAD(EL%P,EL%bn(2),EL%an(2),EL%VA,EL%VS,2,X,k)
-                IF(k%FRINGE.or.el%p%permfringe==1.or.el%p%permfringe==3)CALL MULTIPOLE_FRINGE(EL%P,EL%AN,EL%BN,2,X,k)
+  !              IF(k%FRINGE.or.el%p%permfringe==1.or.el%p%permfringe==3)CALL MULTIPOLE_FRINGE(EL%P,EL%AN,EL%BN,2,X,k)
   !           CALL EDGE_TRUE_PARALLEL(EL%P,EL%BN,EL%H1,EL%H2,EL%FINT(2),EL%HGAP(2),2,X,k)
   !        ENDIF
 
@@ -22590,7 +22590,7 @@ call kill(vm,phi,z)
        !         t=sqrt(12.e0_dp)*(bran(bran_init)-half)
 
  if(gaussian_stoch) then
-     call grnf(t,9.d0)
+     call grnf(t,9.0_dp)
  else
        t=RANF()
        !         t=sqrt(12.d0)*(RANF()-half)
@@ -28141,7 +28141,8 @@ SUBROUTINE RAD_SPIN_force_PROBER(c,x,om,k,fo,zw)
     TYPE(REAL_8),INTENT(INOUT) :: xx(6)
     real(dp),INTENT(INOUT) :: e_ij(6,6)
     TYPE(REAL_8), intent(in):: B2,dlds
-    TYPE(REAL_8) st,av(3),z,x(6)
+    TYPE(REAL_8)  x(6)
+!    TYPE(REAL_8) st,av(3),z,x(6)
     real(dp),intent(in) ::fac,ds
     type(quaternion) q
     real(dp) b30,x1,x3,denf,denf0,denv 
@@ -28152,7 +28153,7 @@ SUBROUTINE RAD_SPIN_force_PROBER(c,x,om,k,fo,zw)
  
     e_ij=0
 
- 
+     call alloc(x)
      x=xx
 
     el=>c%parent_fibre%magp
@@ -28205,7 +28206,8 @@ SUBROUTINE RAD_SPIN_force_PROBER(c,x,om,k,fo,zw)
           enddo
        enddo    
        call kill(xpmap)
- 
+      call kill(x)
+
    denf=denf*FAC*DS*0.5e0_dp
    !    if(compute_stoch_kick) then 
    !     c%delta_rad_in=(denf)+c%delta_rad_in
