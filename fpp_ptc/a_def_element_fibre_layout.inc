@@ -208,7 +208,7 @@ END TYPE tilting
 !   Element
 TYPE ELEMENT
    INTEGER, POINTER :: KIND => null()
-   INTEGER(2), POINTER :: old_integrator=>null()
+   INTEGER , POINTER :: old_integrator=>null()
    logical(lp), POINTER :: recut,even => null(),probe=>null()
    LOGICAL(LP), POINTER :: PLOT => null()
    LOGICAL(LP), POINTER :: electric => null()  !  type teapot can be electric
@@ -284,7 +284,7 @@ END TYPE  ELEMENT
 
 TYPE ELEMENTP
    INTEGER, POINTER :: KIND  => null()! WHAT IT IS
-   INTEGER(2), POINTER :: old_integrator=>null()
+   INTEGER, POINTER :: old_integrator=>null()
    logical(lp), POINTER :: KNOB  => null(),probe=>null()! FALSE IF NO KNOB
    CHARACTER(nlp), POINTER ::  NAME  => null()   ! Identification
    CHARACTER(vp), POINTER ::  VORNAME  => null()   ! Identification

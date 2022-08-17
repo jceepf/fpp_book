@@ -2653,7 +2653,7 @@ type(element),pointer :: s2
 type(elementp), pointer :: s2p
 integer se2,se1
 logical :: excess,switch
-integer mf,n,met,nst
+integer mf,n,met,nst,met0,nst0
 
 excess=.true.
 switch=.true.
@@ -2782,6 +2782,18 @@ if(excess) write(6,*) "At least one magnet had its method changed due to excessi
       switch=.false.
       if(lielib_print(17)==1)write(6,*)  3,s2%p%method,s2%p%nst
      endif
+else
+met0 =s2%p%method
+nst0=s2%p%nst
+ call against_the_method(met0,nst0,met,nst,ELE0%kind,change)
+  if(change) then
+   if(excess.or.(lielib_print(17)==1)) then
+     write(6,*) " Looks like excessive cutting might take place "
+     write(6,*) " met0,nst0,met,nst ", met0,nst0,met,nst
+     excess=.false.
+   endif
+  endif
+
  endif
 
     call el_el0(s2,dir=my_false,ch=change)
