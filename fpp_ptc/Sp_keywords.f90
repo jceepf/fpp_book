@@ -2773,15 +2773,15 @@ if(excess) write(6,*) "At least one magnet had its method changed due to excessi
       switch=.false.
       if(lielib_print(17)==1)write(6,*)  2,s2%p%method,s2%p%nst
      endif
- else
-     if(switch_to_drift_kick) then
+! else
+ elseif(switch_to_drift_kick) then
        if(switch) write(6,*) "all  magnets are switched to drift-kick-drift"
      if(lielib_print(17)==1) write(6,*)s2%p%method,s2%p%nst, ELE0%name_vorname(1)
      s2%p%nst=s2%p%nst*faclim
      change=.true.
       switch=.false.
       if(lielib_print(17)==1)write(6,*)  3,s2%p%method,s2%p%nst
-     endif
+    ! endif
 else
 met0 =s2%p%method
 nst0=s2%p%nst
