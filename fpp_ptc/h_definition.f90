@@ -66,7 +66,7 @@ logical :: use_quaternion_in_so3=.false.
 logical :: check_excessive_cutting =.true.
 logical :: switch_to_drift_kick =.true.
 integer :: m6lim =10
-integer :: faclim =1
+!integer :: faclim =1
 integer  :: old_integrator_init =1
 
 TYPE sub_taylor

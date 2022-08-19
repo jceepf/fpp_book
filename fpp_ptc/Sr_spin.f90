@@ -5713,8 +5713,51 @@ end subroutine symplectify_for_zhe0
     call kill(m)
   end subroutine extract_moments
 
+!!!!  checking symplectic global 
+subroutine checksympglobal(r,aperture,n)
+implicit none
+type(layout), intent(inout)  :: r
+type(probe) xs0
+type(probe_8) xs
+type(c_damap) idc
+type(damap) id
+real(dp) x(6),dx,norm,aperture
+integer n,i
+type(internal_state) state
 
+state=only_4d0
 
+call init(state,1,0)
+call alloc(idc)
+call alloc(id)
+call alloc(xs)
+
+dx=aperture/n
+x=0
+ 
+do i=1,n
+
+ x=0
+ x(1)=i*dx
+ x(3)=i*dx
+ idc=1
+  xs0=x
+ xs=xs0+idc
+ call propagate(r,xs,state,fibre1=1)
+ if(.not.xs%u) then
+  idc=xs
+  id=idc
+  call checksymp(id,norm)
+  write(6,*) i,i*dx,norm
+
+ endif
+enddo
+ 
+
+call kill(idc)
+call kill(id)
+call kill(xs)
+end subroutine checksympglobal
 
 end module ptc_spin
 
