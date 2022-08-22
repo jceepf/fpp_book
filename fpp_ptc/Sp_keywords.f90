@@ -86,7 +86,7 @@ contains
     endif
   end subroutine create_fibre_append
    
-  subroutine change_method_in_create_fibre(ptc_key,nterm)
+  subroutine change_method_in_create_fibre(ptc_key,nterm,change)
    implicit none
    type(keywords) ptc_key
    integer kind00,met,nst,nterm
@@ -97,12 +97,15 @@ contains
    if(ptc_key%magnet=='INTERNALPANCAKE') kind00=kindpa
 
     call against_the_method(ptc_key%method,ptc_key%nstep,met,nst,kind00,change)
-
+    if(lielib_print(17)==1.and.change) then
+     write(6,*) ptc_key%LIST%NAME, "recut ",met,nst," to ",ptc_key%method,ptc_key%nstep
+    endif
     if(switch_to_drift_kick.and.change) then
       ptc_key%model = 'DRIFT_KICK'
+      if(lielib_print(17)==1)write(6,*) "also changed to drift-kick-drift "
     endif 
 
-   if(ptc_key%magnet=='wiggler') then
+   if(ptc_key%magnet=='wiggler') then 
     ptc_key%method=met
     ptc_key%nstep=nst
     limit_int0_new=limit_int0_new*nterm
@@ -2784,6 +2787,7 @@ ENDIF
  change=.false.
 metwig=s2%p%method
 nstwig=s2%p%nst
+ 
 if(check_excessive_cutting) then
  call against_the_method(s2%p%method,s2%p%nst,met,nst,ELE0%kind,change)
   if(change) then
@@ -2831,6 +2835,7 @@ else
   if(change) then
    if(excess.or.(lielib_print(17)==1)) then
      write(6,*) " Looks like excessive cutting might take place "
+     write(6,*) ELE0%name_vorname(1)
      write(6,*) " met0,nst0,met,nst ", metwig,nstwig,met,nst
      excess=.false.
    endif
@@ -2839,8 +2844,9 @@ s2%p%method=metwig
 s2%p%nst=nstwig
 
 endif
- if(change) write(6,*) " $$$$$$$$$$$$$$$$$$$$$$$$$$ "
-  
+
+ if(change.and.lielib_print(17)==1) write(6,*) " $$$$$$$$$$$$$$$$$$$$$$$$$$ "
+ 
 
     if(s2%kind/=kindpa) then
        CALL SETFAMILY(S2) 
@@ -2933,21 +2939,26 @@ met=m  !s2%p%method
 nst=n  !s2%p%nst
 
  if(kind00==kindpa.or.kind00==kind0) return
-
-if(n>limit_int0_new(1).and.n<=limit_int0_new(2)) then
+if(m<=2) then
+ if(n>limit_int0_new(1).and.n<=limit_int0_new(2)) then
  n=n/3
  m=4
  change=.true.
  return
+ endif
 endif
 
-if(n>limit_int0_new(2).and.n<=limit_int0_new(3)) then
+ 
+if(m<=4) then
+ if(n>limit_int0_new(2).and.n<=limit_int0_new(3)) then
  n=n/7
  m=6
  change=.true.
 return
+ endif
 endif
 
+if(m<=6) then
 if(n>limit_int0_new(3)) then
  change=.true.
  if(kind0==kindwiggler) then
@@ -2958,6 +2969,7 @@ else
  m=8
  endif
 return
+endif
 endif
 
 end subroutine against_the_method

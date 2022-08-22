@@ -5721,8 +5721,8 @@ type(probe) xs0
 type(probe_8) xs
 type(c_damap) idc
 type(damap) id
-real(dp) x(6),dx,norm,aperture
-integer n,i
+real(dp) x(6),dx,norm,aperture,normt,normp
+integer n,i,nt
 type(internal_state) state
 
 state=only_4d0
@@ -5734,7 +5734,9 @@ call alloc(xs)
 
 dx=aperture/n
 x=0
- 
+ normt=0
+normp=1
+nt=0
 do i=1,n
 
  x=0
@@ -5745,14 +5747,18 @@ do i=1,n
  xs=xs0+idc
  call propagate(r,xs,state,fibre1=1)
  if(.not.xs%u) then
+   nt=nt+1
   idc=xs
   id=idc
   call checksymp(id,norm)
   write(6,*) i,i*dx,norm
-
+  normt=normt+norm
+  normp=log(norm)/log(10.0_dp)+normp
  endif
 enddo
- 
+ normt=normt/nt
+ normp=normp/nt
+write(6,*) normp,normt
 
 call kill(idc)
 call kill(id)

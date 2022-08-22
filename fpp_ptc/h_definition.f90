@@ -63,8 +63,8 @@ module definition
    integer(1),allocatable :: vo_berz(:)
    integer(1) ,allocatable ::  mo_gtpsa(:)
 logical :: use_quaternion_in_so3=.false.
-logical :: check_excessive_cutting =.true.
-logical :: switch_to_drift_kick =.true.
+logical :: check_excessive_cutting =.false.
+logical :: switch_to_drift_kick =.false.
 integer :: m6lim =10
 !integer :: faclim =1
 integer  :: old_integrator_init =1
