@@ -95,7 +95,11 @@ contains
    kind00=0
    if(ptc_key%magnet=='wiggler') kind00=kindwiggler
    if(ptc_key%magnet=='INTERNALPANCAKE') kind00=kindpa
-
+   if(ptc_key%magnet=='wiggler') then 
+     limit_int0_new=limit_int0_new*nterm
+       call against_the_method(ptc_key%method,ptc_key%nstep,met,nst,kind00,change)
+     limit_int0_new=limit_int0_new/nterm
+   else
     call against_the_method(ptc_key%method,ptc_key%nstep,met,nst,kind00,change)
     if(lielib_print(17)==1.and.change) then
      write(6,*) ptc_key%LIST%NAME, "recut ",met,nst," to ",ptc_key%method,ptc_key%nstep
@@ -105,12 +109,6 @@ contains
       if(lielib_print(17)==1)write(6,*) "also changed to drift-kick-drift "
     endif 
 
-   if(ptc_key%magnet=='wiggler') then 
-    ptc_key%method=met
-    ptc_key%nstep=nst
-    limit_int0_new=limit_int0_new*nterm
-     call against_the_method(ptc_key%method,ptc_key%nstep,met,nst,kind00,change)
-    limit_int0_new=limit_int0_new/nterm
   endif
   end subroutine change_method_in_create_fibre
 
@@ -2931,10 +2929,12 @@ subroutine against_the_method(m,n,met,nst,kind00,change)
 implicit none
 !type(element), target :: s2
 integer, intent(inout) :: met,nst
-integer  m,n
+integer  m,n,m0,n0
 integer kind00
 logical change
 change=.false.
+m0=m  !s2%p%method
+n0=n  !s2%p%nst
 met=m  !s2%p%method
 nst=n  !s2%p%nst
 
@@ -2944,6 +2944,12 @@ if(m<=2) then
  n=n/3
  m=4
  change=.true.
+if(.not.check_excessive_cutting) then
+ met=m
+ nst=n
+ m=m0  !s2%p%method
+ n=n0  !s2%p%nst
+endif
  return
  endif
 endif
@@ -2954,6 +2960,12 @@ if(m<=4) then
  n=n/7
  m=6
  change=.true.
+if(.not.check_excessive_cutting) then
+ met=m
+ nst=n
+ m=m0  !s2%p%method
+ n=n0  !s2%p%nst
+endif
 return
  endif
 endif
@@ -2968,6 +2980,12 @@ else
  n=n/15
  m=8
  endif
+if(.not.check_excessive_cutting) then
+ met=m
+ nst=n
+ m=m0  !s2%p%method
+ n=n0  !s2%p%nst
+endif
 return
 endif
 endif
