@@ -2438,6 +2438,7 @@ else
      AN(I)=0.0_dp
      BN(I)=0.0_dp
     enddo
+if(associated(EL%d0_AN)) then
     DO I=1,n_old
      AN(I)= EL%d0_AN(I) 
      BN(I)= EL%d0_BN(I)
@@ -2449,7 +2450,7 @@ else
        EL%d0_AN(I) = AN(i)
        EL%d0_BN(I) = BN(I)
     ENDDO
-
+endif
 if(associated(EL%d_BN))  then
     DO I=1,EL%P%NMUL
      AN(I)=0.0_dp
@@ -2631,6 +2632,8 @@ else
      AN(I)=0.0_dp
      BN(I)=0.0_dp
     enddo
+if(associated(EL%d0_AN)) then
+
     DO I=1,n_old
      AN(I)= EL%d0_AN(I) 
      BN(I)= EL%d0_BN(I)
@@ -2645,7 +2648,7 @@ else
        EL%d0_AN(I) = AN(i)
        EL%d0_BN(I) = BN(I)
     ENDDO
-
+endif
 if(associated(EL%d_BN))  then
     DO I=1,EL%P%NMUL
      AN(I)=0.0_dp
