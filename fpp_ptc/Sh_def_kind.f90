@@ -21159,10 +21159,16 @@ call kill(vm,phi,z)
     ELSE
        bsol=0.0_dp
     ENDIF
-
-   ! call GETNEWB(el%an,el%bn,el%b_sol,EL%P%NMUL,B,X)
+ 
+   if(associated(el%s5)) then
+    x(1)=x(1)-el%s5%dx
+    x(3)=x(3)-el%s5%dy
     call GETNEWB(el%an,el%bn,bsol,EL%P%NMUL,B,X)
-
+    x(1)=x(1)+el%s5%dx
+    x(3)=x(3)+el%s5%dy
+   else
+    call GETNEWB(el%an,el%bn,bsol,EL%P%NMUL,B,X)
+   endif
   END SUBROUTINE get_BfieldR
 
   SUBROUTINE get_BfieldP(EL,B,X)
@@ -21181,8 +21187,16 @@ call kill(vm,phi,z)
     ENDIF
 
 !    call GETNEWB(el%an,el%bn,el%b_sol,EL%P%NMUL,B,X)
+ 
+   if(associated(el%s5)) then
+    x(1)=x(1)-el%s5%dx
+    x(3)=x(3)-el%s5%dy
     call GETNEWB(el%an,el%bn,bsol,EL%P%NMUL,B,X)
-
+    x(1)=x(1)+el%s5%dx
+    x(3)=x(3)+el%s5%dy
+   else
+    call GETNEWB(el%an,el%bn,bsol,EL%P%NMUL,B,X)
+   endif
        call kill(bsol)
 
   END SUBROUTINE get_BfieldP
