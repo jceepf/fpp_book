@@ -21548,6 +21548,8 @@ write(6,*)ord
 write(6,*)pos
 write(6,*)
  ord=0
+call print(ut0,6)
+pause 777
  do i=1,ut0%n
     max=0
    do kmax=1,nv
