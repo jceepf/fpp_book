@@ -2173,6 +2173,12 @@ write(6,*) x_ref
           read(mf,*) epsf
           read(mf,*) targ_RES
           call lattice_fit_tune_CHROM_gmap(my_ering,my_estate,EPSF,pol_,NPOL,targ_RES,NP)
+       case('FITTUNECHROMATICITYNEW')
+          read(mf,*) epsf
+          read(mf,*) targ_RES
+          call lattice_fit_tune_CHROM_gmap_new(my_ering,my_estate,EPSF,pol_,NPOL,targ_RES,NP)
+
+
        case('GETCHROMATICITY')
           call lattice_GET_CHROM(my_ering,my_estate,CHROM)
        case('OPENTUNEFILE')
