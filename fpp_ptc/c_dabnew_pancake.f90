@@ -9,7 +9,7 @@
     private
   public alloc_pancake,init_pancake,kill_pancake,ppushGETN_pancake,mtree_pancake
   public ppushstore_pancake,dacon_pancake,dacop_pancake,dacdi_pancake
-  public daall0_pancake,dapok_pancake,daadd_pancake
+  public daall0_pancake,dapok_pancake,daadd_pancake,dapri_pancake
  !   public ldamax, lstmax,leamax,liamax
   private daallno1,daall,damult,dasqrt,dacmut,dacma,DALINt,dafunt,dacctt
   private dainvt,dapint,dadert,dacfuRt,dacfuIt,dacfut
@@ -30,6 +30,13 @@
   ! real(dp),private,parameter::tiny=c_1d_20
   character(120),private :: line
 contains
+
+subroutine dapri_pancake(ina,iunit)
+implicit none
+integer ina,iunit
+     call dapri(ina,iunit)
+end subroutine dapri_pancake
+
 
     subroutine daadd_pancake(ina,inb,inc)
     implicit none
