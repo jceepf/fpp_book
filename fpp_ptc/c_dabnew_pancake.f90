@@ -9,6 +9,7 @@
     private
   public alloc_pancake,init_pancake,kill_pancake,ppushGETN_pancake,mtree_pancake
   public ppushstore_pancake,dacon_pancake,dacop_pancake,dacdi_pancake
+  public daall0_pancake,dapok_pancake,daadd_pancake
  !   public ldamax, lstmax,leamax,liamax
   private daallno1,daall,damult,dasqrt,dacmut,dacma,DALINt,dafunt,dacctt
   private dainvt,dapint,dadert,dacfuRt,dacfuIt,dacfut
@@ -30,6 +31,18 @@
   character(120),private :: line
 contains
 
+    subroutine daadd_pancake(ina,inb,inc)
+    implicit none
+    integer ina,inb,inc 
+     call daadd(ina,inb,inc)
+    end subroutine daadd_pancake
+
+  subroutine dapok_pancake(ina,jv,cjj) 
+    integer ina
+    integer,dimension(:)::jv     ! 2002.12.4
+    real(dp) cjj
+    call dapok(ina,jv,cjj)
+  end subroutine dapok_pancake
 
   subroutine alloc_pancake(ic) 
   integer ic(:),i
@@ -37,6 +50,13 @@ contains
      call daall0(ic(i)) 
     enddo
   end subroutine alloc_pancake
+
+  subroutine daall0_pancake(ic) 
+  integer ic 
+ 
+     call daall0(ic ) 
+     
+  end subroutine daall0_pancake
 
   subroutine kill_pancake(ic) 
   integer ic(:),i
