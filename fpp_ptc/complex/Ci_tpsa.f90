@@ -9500,7 +9500,9 @@ endif
      if(c_similarity) then   
     call c_check_rad(s2%e_ij,rad1)
  
-   
+   f2i=0
+   f2it=0  !  2022.11.13
+
   !  if(rad1.and.nd2==6) then
     if(rad1) then
    !  write(6,*) " stochastic "
@@ -9554,7 +9556,9 @@ endif
      if(c_similarity) then   
     call c_check_rad(s2%e_ij,rad1)
  
-   
+   f2i=0
+   f2it=0
+
   !  if(rad1.and.nd2==6) then
     if(rad1) then
   !   write(6,*) " stochastic "

@@ -1432,7 +1432,7 @@ do k=d_pos,d_pos+d_ntot-1
 
 if(d_state%envelope) then
 d_line%lf0%sigmas=normal_form%s_ij0
-d_line%lf0%emittance=normal_form%emittance
+d_line%lf0%emittance=normal_form%emittance(1:3)
  
 id=1
 d_probe_a=d_closed_orbit

@@ -63,7 +63,7 @@ contains
     TYPE(c_TAYLOR), allocatable:: EQ(:)
     TYPE(c_NORMAL_FORM) NORM
     integer :: neq=4, no=3,nt,j,it
-    type(c_damap) id
+    type(c_damap) id,id0
     type(gmap) g
     TYPE(c_TAYLOR)phase(2)
     TYPE(c_TAYLOR)t
@@ -102,7 +102,7 @@ call find_orbit_x(r,closed(1:6),state,1.e-8_dp,fibre1=1)   ! find closed orbit_x
     CALL INIT(STATE,no,NP)   !,BERZ)
     CALL ALLOC(NORM)
     CALL ALLOC(EQ)
-    call alloc(id)
+    call alloc(id,id0)
     call alloc(xs)
     call alloc(phase)
 
@@ -112,19 +112,15 @@ call find_orbit_x(r,closed(1:6),state,1.e-8_dp,fibre1=1)   ! find closed orbit_x
     call propagate(r,xs,+state, fibre1=1)  
     id=xs
     call c_normal(id,norm,phase=phase)
- !   NORM=Y
+
+
     gam(1)=(norm%a_t%v(2).sub.'1')**2+(norm%a_t%v(2).sub.'01')**2
     gam(2)=(norm%a_t%v(4).sub.'001')**2+(norm%a_t%v(4).sub.'0001')**2
     write(6,*) "  Gamma= ",GAM
-    !      CALL KANALNUMMER(MF)
-  !  OPEN(UNIT=1111,FILE='GAMMA.TXT')
-  !  WRITE(1111,*) "  Gamma= ",GAM
+ 
 
     write(6,*) " tunes ",NORM%TUNE(1), NORM%TUNE(2), CHECK_STABLE
-!    tune(1)=(NORM%dhdj%v(1)).SUB.'0000'
-!    tune(2)=(NORM%dhdj%v(2)).SUB.'0000'
-!    CHROM(1)=(NORM%dhdj%v(1)).SUB.'00001'
-!    CHROM(2)=(NORM%dhdj%v(2)).SUB.'00001'
+ 
     tune(1)=(phase(1)).SUB.'0000'
     tune(2)=(phase(2)).SUB.'0000'
     CHROM(1)=(phase(1)).SUB.'00001'
@@ -140,13 +136,15 @@ call find_orbit_x(r,closed(1:6),state,1.e-8_dp,fibre1=1)   ! find closed orbit_x
     eq(3)=       ((phase(1)).par.'00001')-targ(3)
     eq(4)=       ((phase(2)).par.'00001')-targ(4)
     epsnow=abs(eq(1))+abs(eq(2))+abs(eq(3))+abs(eq(4))
-     
+     write(6,*) " epsnow ",c_%nv,epsnow
     do i=1,neq
        eqc(i)=(eq(i)<=c_%npara)
     enddo
- 
+! call print(eq)
+!call print(eqc)
+!pause 123
 
- 
+
      CALL kill(NORM)
     CALL kill(EQ)
     call kill(id)
@@ -162,8 +160,9 @@ call find_orbit_x(r,closed(1:6),state,1.e-8_dp,fibre1=1)   ! find closed orbit_x
 
  
 id%n=nt
+id0%n=nt
 !    nt=neq+np
- call alloc(id)
+ call alloc(id,id0)
     do i=np+1,nt
        id%v(i)=eqc(i-np)
     enddo
@@ -175,25 +174,47 @@ id%n=nt
           id%v(i)=id%v(i)+(1.0_dp.cmono.j)*t
        enddo
     enddo
-
 !do i=1,nt
 !write(6,*) i,neq
 !call print(id%v(i))
 !enddo
 
+do i=1,nt
+ tpsafit(i)=-id%v(i)
+ id%v(i)=(id%v(i).cut.2)+tpsafit(i)
+!write(6,*) tpsafit(i)
+id0%V(i)=tpsafit(i)
+enddo
+
+!call print(id)
+
+!pause 77
+
 
     CALL KILL(t)
 
-  id=id.oo.(-1)
+  id=id**(-1)
+   
+!call print(id)
+
+id=id.o.id0
+ 
+!pause 444
+
+ 
+
 call kill(eqc)
+
 
 
 
 
     do i=1,nt
      tpsafit(i)=id%v(i)
+!write(6,*) i, tpsafit(i)
      enddo
-call kill(id)
+call kill(id,id0)
+!pause 124
 
     SET_TPSAFIT=.true.
 
