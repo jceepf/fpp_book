@@ -115,7 +115,7 @@ MODULE S_DEF_KIND
   !  private DRIFT_pancaker,DRIFT_pancakep,KICKPATH_pancaker,KICKPATH_pancakep
   ! using x and x'
   private fxr,fxp,fx,fxr_canonical,fxp_canonical,fxc,step_symp_p_PANCAkEr,step_symp_p_PANCAkEp,step_symp_p_PANCAkE
-  PRIVATE feval       !,rk4_m
+!  PRIVATE feval       !,rk4_m
   !  FOR CAV_TRAV
   PRIVATE A_TRANSR,A_TRANSP,A_TRANSL
   PRIVATE feval_CAVr,feval_CAVP,feval_CAV
