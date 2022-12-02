@@ -18219,7 +18219,7 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     INTEGER IS
     real(dp) h
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
-
+    if(.not.check_stable) return
     H=el%L/el%p%NST
 
     SELECT CASE(EL%P%METHOD)
@@ -18261,6 +18261,7 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     INTEGER IS
     TYPE(REAL_8) ti,h
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    if(.not.check_stable) return
 
     CALL ALLOC(TI,H)
 

@@ -439,7 +439,7 @@ contains
   logical, intent(in) ::  exact,time
   real(dp), intent(in) :: beta0
   real(dp) d(3),lh
-  real(dp) kick(3) 
+  real(dp) kicks(3) 
   type(internal_state) k
   integer i
   Beam=> c%bb
@@ -449,21 +449,21 @@ contains
    lh=(Beam%s(Beam%n)-Beam%s(1))/2
    d(3)=-lh
        CALL TRANS(d,p%X,BETA0,exact,TIME)
-       call BBKICKn(Beam,P,1,kick)
-       call RAD_SPIN_bb_PROBE(c,p,k,kick)
+       call BBKICKn(Beam,P,1,kicks)
+       call RAD_SPIN_bb_PROBE(c,p,k,kicks)
      do i=2,Beam%n
        d(3)=(Beam%s(i)-Beam%s(i-1))    !/2
 
        CALL TRANS(d,p%X,BETA0,exact,TIME)
-       call BBKICKn(Beam,P,i,kick)
-       call RAD_SPIN_bb_PROBE(c,p,k,kick)
+       call BBKICKn(Beam,P,i,kicks)
+       call RAD_SPIN_bb_PROBE(c,p,k,kicks)
 
      enddo
    d(3)=-lh
        CALL TRANS(d,p%X,BETA0,exact,TIME)
   else
-       call BBKICKn(Beam,P,1,kick)
-       call RAD_SPIN_bb_PROBE(c,p,k,kick)
+       call BBKICKn(Beam,P,1,kicks)
+       call RAD_SPIN_bb_PROBE(c,p,k,kicks)
 
   endif
   end subroutine BBKICKR
@@ -475,35 +475,35 @@ contains
   logical, intent(in) ::  exact,time
   real(dp), intent(in) :: beta0
   real(dp) d(3),lh,dh
-  type(real_8)  kick(3)
+  type(real_8)  kicks(3)
   type(internal_state) k
   integer i
   Beam=> c%bb
-  call alloc(kick)
+  call alloc(kicks)
   if(Beam%n>1) then
   d=0
    lh=(Beam%s(Beam%n)-Beam%s(1))/2
    d(3)=-lh
        CALL TRANS(d,p%X,BETA0,exact,TIME)
-       call BBKICKn(Beam,P,1,kick)
-       call RAD_SPIN_bb_PROBE(c,p,k,kick)
+       call BBKICKn(Beam,P,1,kicks)
+       call RAD_SPIN_bb_PROBE(c,p,k,kicks)
 
      do i=2,Beam%n
        d(3)=(Beam%s(i)-Beam%s(i-1))  !/2
 
        CALL TRANS(d,p%X,BETA0,exact,TIME)
-       call BBKICKn(Beam,P,i,kick)
-       call RAD_SPIN_bb_PROBE(c,p,k,kick)
+       call BBKICKn(Beam,P,i,kicks)
+       call RAD_SPIN_bb_PROBE(c,p,k,kicks)
 
      enddo
    d(3)=-lh
        CALL TRANS(d,p%X,BETA0,exact,TIME)
   else
-       call BBKICKn(Beam,P,1,kick)
-       call RAD_SPIN_bb_PROBE(c,p,k,kick)
+       call BBKICKn(Beam,P,1,kicks)
+       call RAD_SPIN_bb_PROBE(c,p,k,kicks)
 
   endif
-  call kill(kick)
+  call kill(kicks)
   end subroutine BBKICKP
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -515,26 +515,26 @@ contains
     REAL(DP),INTENT(INOUT) :: B(3),E(3),KICK(3)
     REAL(DP),INTENT(INOUT) :: X(6)
 
-    REAL(DP) beta0,beta,ff,p0c
+    REAL(DP) beta0,beta,ff !,p0c
     INTEGER I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
  
     beta0=el%PARENT_FIBRE%beta0
-    p0c=el%parent_fibre%mag%p%p0c
+  !  p0c=el%parent_fibre%mag%p%p0c
  
 
     beta=root(1.0_dp+2.0_dp*x(5)/beta0+x(5)**2)/(1.0_dp/BETA0 + x(5))  ! replaced
     ff=1.0_dp+beta**2
 
  !!!  
-       E(1)=kick(1)*p0c/ff/EL%P%CHARGE 
-       E(2)=kick(2)*p0c/ff/EL%P%CHARGE  
+       E(1)=kick(1)/ff/EL%P%CHARGE 
+       E(2)=kick(2)/ff/EL%P%CHARGE  
        E(3)=0.0_dp
 
 
-       B(1)= E(2)*beta*1.e9_dp/clight
-       B(2)=-E(1)*beta*1.e9_dp/clight
+       B(1)= E(2)*beta
+       B(2)=-E(1)*beta
        B(3)=0.0_dp
 
 
@@ -547,7 +547,7 @@ contains
     type(real_8),INTENT(INOUT) :: B(3),E(3),KICK(3)
     type(real_8),INTENT(INOUT) :: X(6)
 
-    REAL(DP) beta0,p0c
+    REAL(DP) beta0 !,p0c
     type(real_8) beta,ff
     INTEGER I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
@@ -555,20 +555,20 @@ contains
      call alloc(beta,ff)
  
     beta0=el%PARENT_FIBRE%beta0
-    p0c=el%parent_fibre%mag%p%p0c
+ !   p0c=el%parent_fibre%mag%p%p0c
  
 
       beta=sqrt(1.0_dp+2.0_dp*x(5)/beta0+x(5)**2)/(1.0_dp/BETA0 + x(5))  ! replaced
     ff=1.0_dp+beta**2
 
  !!!  
-       E(1)=kick(1)*p0c/ff/EL%P%CHARGE 
-       E(2)=kick(2)*p0c/ff/EL%P%CHARGE  
+       E(1)=kick(1)/ff/EL%P%CHARGE 
+       E(2)=kick(2)/ff/EL%P%CHARGE  
        E(3)=0.0_dp
 
 
-       B(1)= E(2)*beta*1.e9_dp/clight
-       B(2)=-E(1)*beta*1.e9_dp/clight
+       B(1)= E(2)*beta
+       B(2)=-E(1)*beta
        B(3)=0.0_dp
 
      call kill(beta,ff)

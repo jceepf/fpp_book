@@ -4081,6 +4081,7 @@ enddo
     NP=SIZE(MA)
 
     ALLOCATE(M(NP))
+    m=0
   !  CALL ALLOC(M,NP)
     call alloc_pancake(M)
 
