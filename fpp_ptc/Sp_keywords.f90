@@ -12,7 +12,7 @@ module madx_keywords
   type(tree_element), private, allocatable :: t_e(:),t_ax(:),t_ay(:)
   real(dp), private :: a_(3),ent_(3,3), b_(3),exi_(3,3),angcsp,xcsp,dcsp,hcsp,vcsp
   integer, private :: metwig,nstwig 
-  logical :: tpsa_pancake=.false.
+  logical :: tpsa_pancake=.true.
   logical :: old_name_vorname = .false.
   logical :: readingmaps = .true.
   type keywords
@@ -853,7 +853,7 @@ brhoi=1.0_dp/brho
           CALL SET_TREE_G_pancake(t_em(1),Bn)
          elseif(i==nstc) then
      do k=1,3
-     call dacmu_pancake(B(k),brhoi,bn(k))
+     call dacop_pancake(B(k),bn(k))
     enddo
       !    Bn(1)=B(1)
       !    Bn(2)=B(2)
