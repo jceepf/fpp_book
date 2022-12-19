@@ -17283,7 +17283,7 @@ call  kill(del,pz,h)
       n=7*el%p%NST+1
     endif
 
-write(6,*)"POINTERS_PANCAKER", el%p%NST,el%p%method,n
+!write(6,*)"POINTERS_PANCAKER", el%p%NST,el%p%method,n
 
      ALLOCATE(EL%B(n))
 
