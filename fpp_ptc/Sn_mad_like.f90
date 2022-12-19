@@ -3637,7 +3637,7 @@ CONTAINS
     MC2=XMC2
   END SUBROUTINE Set_mad_v
 
-   subroutine set_pancake_constants(nst0,met0,angc0,xc0,dc0,vc0,hc0,LC0,hd0,ld0,xprime0,filec0)
+   subroutine set_pancake_constants(nst0,angc0,xc0,dc0,vc0,hc0,LC0,hd0,ld0,xprime0,filec0)
    implicit none
    real(dp) angc0,xc0,dc0,hc0,LC0,hd0,ld0,vc0
    integer nst0,met0
@@ -3672,6 +3672,11 @@ CONTAINS
    end subroutine set_abell_constants 
   
   ! linked
+  subroutine set_metc_for_pancake(m)
+    implicit none
+    integer m
+    metc=m
+  end subroutine set_metc_for_pancake   
 
  FUNCTION  pancake_tilt(NAME,file,T,br)
     implicit none

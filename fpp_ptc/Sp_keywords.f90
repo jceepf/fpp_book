@@ -58,7 +58,7 @@ contains
     type(fibre), pointer :: current
     type (taylor),optional, INTENT(INout):: br(:,:)
     integer,optional, INTENT(INout):: bri(:,:)
-
+    call set_metc_for_pancake(key%method)
     if(append) then
      call append_empty(mylat)
     else
