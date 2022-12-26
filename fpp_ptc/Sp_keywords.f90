@@ -337,6 +337,9 @@ contains
     CASE("PANCAKEBMAD")
        if(sixtrack_compatible) stop 13
        BLANK=pancake_bmad(KEY%LIST%NAME,br=bri)
+    CASE("PANCAKEBMADEMPTY")
+       if(sixtrack_compatible) stop 13
+       BLANK=pancake_bmad_empty(KEY%LIST%NAME)
     CASE DEFAULT
        WRITE(6,*) " "
        WRITE(6,*) " THE MAGNET"
