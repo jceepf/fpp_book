@@ -4112,7 +4112,7 @@ endif
 !    if(present(no)) order=no
  
 
-
+   call init_pancake(1,2)
  
 
     CALL alloc_pancake(B)
