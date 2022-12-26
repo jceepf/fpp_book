@@ -4209,7 +4209,7 @@ enddo
 !          Bn(2)=Ba(2)
 !          Bn(3)=Ba(3)
   
-          CALL SET_TREE_G_pancake(t_em(i-1),Bn)
+          CALL SET_TREE_G_pancake(t_em(is-1),Bn)
  
 do k=1,3
  call dacop_pancake(ba(k),bf(k))
