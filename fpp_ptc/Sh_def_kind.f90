@@ -1033,7 +1033,7 @@ type(work) w_bks
 
   INTERFACE rk6_pancake    
      MODULE PROCEDURE rk6_pancaker
-     MODULE PROCEDURE rk4_pancakeP
+     MODULE PROCEDURE rk6_pancakeP
   END INTERFACE
 
 
@@ -18008,6 +18008,7 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     call alloc(o,ne)
     call alloc(p,ne)
 
+
 !write(6,*) "pancake  in",ti
     call feval_pancake(tI,y,k,f,gr)
     do  j=1,ne
@@ -18070,8 +18071,6 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
        g(j)=h*f(j)
     enddo
 
-
-
     do  j=1,ne
        yt(j) = y(j)+(butcher(6,1)*a(j)+butcher(6,2)*b(j)+butcher(6,3)*c(j)+butcher(6,4)*d(j)+butcher(6,5)*e(j) + butcher(6,6)*g(j)) 
     enddo
@@ -18103,6 +18102,8 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     else
        Y(6)=Y(6)-(1-k%TOTALPATH)*GR%P%LD/GR%P%nst
     endif
+
+
     call kill(yt,ne)
     call kill(f,ne)
     call kill(a,ne)
@@ -18195,8 +18196,6 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     do   j=1,ne
        g(j)=h*f(j)
     enddo
-
-
 
     do  j=1,ne
        yt(j) = y(j)+(butcher(6,1)*a(j)+butcher(6,2)*b(j)+butcher(6,3)*c(j)+butcher(6,4)*d(j)+butcher(6,5)*e(j) + butcher(6,6)*g(j)) 
@@ -18574,6 +18573,17 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
           IS=2*el%p%NST+3-2*pos
           call rk4_pancake(IS,h,el,X,k)
        ENDIF
+
+    CASE(6)
+       IF(EL%P%DIR==1) THEN
+          IS=-6+7*POS    ! POS=3 BEGINNING
+!write(6,*) "sss",size(el%b)
+          call rk6_pancake(IS,h,el,X,k)
+       else
+          IS=7*el%p%NST+8-7*pos
+          call rk6_pancake(IS,h,el,X,k)
+       ENDIF
+
 
     CASE DEFAULT
        !w_p=0
