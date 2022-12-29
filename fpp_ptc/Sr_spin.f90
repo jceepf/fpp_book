@@ -1678,10 +1678,10 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     else
       SELECT CASE(C%parent_fibre%mag%KIND)
 CASE(KIND0,KIND1,KIND3,kind6,KIND8,KIND9,KIND11:KIND14,KIND15,kind17,KIND18,KIND19, &
-      KIND21,KIND22,KINDPA,KINDabell,kindsuperdrift)
-        call TRACK_NODE_FLAG_probe_R(C,XS,K)
-       case(KIND2,KIND4,KIND5,KIND7,KIND10,KIND16,KIND20,KINDWIGGLER)
-         call TRACK_NODE_FLAG_probe_quaR(C,XS,K)
+      KIND21,KIND22,KINDabell,kindsuperdrift)
+         call TRACK_NODE_FLAG_probe_R(C,XS,K)
+       case(KIND2,KIND4,KIND5,KIND7,KIND10,KIND16,KIND20,KINDWIGGLER,KINDPA)
+          call TRACK_NODE_FLAG_probe_quaR(C,XS,K)
        CASE DEFAULT
           WRITE(6,*) "NOT IMPLEMENTED in old_integrator bifurcation",C%parent_fibre%mag%KIND
           stop 999
@@ -1704,9 +1704,9 @@ CASE(KIND0,KIND1,KIND3,kind6,KIND8,KIND9,KIND11:KIND14,KIND15,kind17,KIND18,KIND
     else
       SELECT CASE(C%parent_fibre%magp%KIND)
 CASE(KIND0,KIND1,KIND3,kind6,KIND8,KIND9,KIND11:KIND14,KIND15,kind17,KIND18,KIND19, &
-      KIND21,KIND22,KINDPA,KINDabell,kindsuperdrift)
+      KIND21,KIND22,KINDabell,kindsuperdrift)
         call TRACK_NODE_FLAG_probe_p(C,XS,K)
-       case(KIND2,KIND4,KIND5,KIND7,KIND10,KIND16,KIND20,KINDWIGGLER)
+       case(KIND2,KIND4,KIND5,KIND7,KIND10,KIND16,KIND20,KINDWIGGLER,KINDPA)
 
           if(compute_stoch_kick) then
            start_stochastic_computation=0
