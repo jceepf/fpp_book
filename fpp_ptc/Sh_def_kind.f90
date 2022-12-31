@@ -98,6 +98,7 @@ MODULE S_DEF_KIND
   PRIVATE rk4_pancaker,rk4_pancakeP,rk6_pancaker,rk6_pancakep
   PRIVATE FEVAL_pancaker,FEVAL_pancakeP,rks_pancaker,rks_pancakep,rks_pancake
   private feval_PANCAkE_prober,feval_PANCAkE_probep,rk4_pancake_prober,rk4_pancake_probep
+  private rk6_pancake_prober
   PRIVATE INTPANCAKER,INTPANCAKEP,INTE_PANCAKE_prober,INTE_PANCAKE_probep
 
   private ADJUST_TIME_CAV4R,ADJUST_TIME_CAV4p,INTE_CAV4R,INTE_CAV4p
@@ -1030,6 +1031,10 @@ type(work) w_bks
      MODULE PROCEDURE rk4_pancake_probep
   end INTERFACE rk4_pancake_probe
 
+  INTERFACE rk6_pancake_probe
+     MODULE PROCEDURE rk6_pancake_prober
+!     MODULE PROCEDURE rk6_pancake_probep
+  end INTERFACE rk6_pancake_probe
 
   INTERFACE rk4_pancake   !RK4_M
      MODULE PROCEDURE rk4_pancaker
@@ -20954,17 +20959,19 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
 !!!!! field routine 
 
-  subroutine get_fieldr(EL,B,E,phi,X,k,POS,zw)
+  subroutine get_fieldr(c,B,E,phi,X,k,POS,zw,before)
     implicit none
+    TYPE(integration_node), POINTER::c
     TYPE(ELEMENT), POINTER::EL
     INTEGER,OPTIONAL,INTENT(IN) ::POS
+    logical,OPTIONAL,INTENT(IN) ::before
     REAL(DP),INTENT(INOUT) :: B(3),E(3),phi
     REAL(DP),INTENT(INOUT) :: X(6)
     REAL(DP),optional,INTENT(IN) :: zw
     REAL(DP) Z,VM,a(3),ad(3)
-    INTEGER I
+    INTEGER I,pospan
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
-
+    el=>c%parent_fibre%mag
     B=0.0_dp
     E=0.0_dp
     a=0
@@ -21001,7 +21008,20 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 !             endif
        endif
     case(KINDPA)     ! fitted field for real magnet
-       CALL B_PANCAkE(EL%PA,B,X,POS)
+      if(2*old_integrator+c%parent_fibre%mag%old_integrator>0) then
+        if(c%parent_fibre%mag%p%method<6) then
+         pospan=c%pos_in_fibre-2
+         pospan=(pospan-1)*2+3
+         if(before) pospan=pospan-2
+        else
+         pospan=c%pos_in_fibre-2
+         pospan=(pospan-1)*7+8
+         if(before) pospan=pospan-7
+        endif
+      else
+        pospan=pos
+      endif
+       CALL B_PANCAkE(EL%PA,B,X,pospan)
     case(KINDWIGGLER)
        if(present(zw)) then
           z=zw
@@ -21069,16 +21089,18 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
   end subroutine get_fieldr
 
-  subroutine get_fieldp(EL,B,E,phi,X,k,POS)
+  subroutine get_fieldp(c,B,E,phi,X,k,POS,before)
     implicit none
+    TYPE(integration_node), POINTER::c
+    logical,OPTIONAL,INTENT(IN) ::before
     TYPE(ELEMENTP), POINTER::EL
     INTEGER,OPTIONAL,INTENT(IN) ::POS
     TYPE(REAL_8),INTENT(INOUT) :: B(3),E(3),phi
     TYPE(REAL_8), INTENT(INOUT) :: X(6)
-    INTEGER I
+    INTEGER I,pospan
     TYPE(REAL_8) z,VM,ad(3),a(3)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
-
+    el=>c%parent_fibre%magp
     CALL alloc(VM,Z)
 
     DO I=1,3
@@ -21117,7 +21139,20 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
        endif
 
     case(KINDPA)     ! fitted field for real magnet
-       CALL B_PANCAkE(EL%PA,B,X,POS)
+      if(2*old_integrator+c%parent_fibre%magp%old_integrator>0) then
+        if(c%parent_fibre%magp%p%method<6) then
+         pospan=c%pos_in_fibre-2
+         pospan=(pospan-1)*2+3
+         if(before) pospan=pospan-2
+        else
+         pospan=c%pos_in_fibre-2
+         pospan=(pospan-1)*7+8
+         if(before) pospan=pospan-7
+        endif
+      else
+        pospan=pos
+      endif
+       CALL B_PANCAkE(EL%PA,B,X,pospan)
     case(KINDWIGGLER)
        CALL get_z_wi(EL%wi,POS,z)
        CALL B_FIELD(EL%wi,Z,X,B)
@@ -22158,11 +22193,12 @@ call kill(vm,phi,z)
 
   END subroutine DIRECTION_VP
 
-  subroutine get_omega_spinr(c,OM,B2,dlds,XP,X,POS,k,ED,B,zw)
+  subroutine get_omega_spinr(c,OM,B2,dlds,XP,X,POS,k,ED,B,zw,before)
     implicit none
     TYPE(integration_node), POINTER::c
     TYPE(ELEMENT), POINTER::EL
     TYPE(MAGNET_CHART), POINTER::P
+    logical,OPTIONAL,INTENT(IN) ::before
     INTEGER,OPTIONAL,INTENT(IN) ::POS
     real(dp),OPTIONAL,INTENT(IN) ::zw
     REAL(DP),INTENT(INOUT) :: X(6),OM(3),B2,XP(2),DLDS,B(3),ED(3)
@@ -22196,8 +22232,11 @@ call kill(vm,phi,z)
     xp(2)=x(4)   !  to prevent a crash in monitors, etc... CERN june 2010
     dlds=0.0_dp
     del=x(5)
-    CALL get_field(EL,B,E,phi,X,k,POS,zw)
-
+    CALL get_field(c,B,E,phi,X,k,POS,zw,before)
+!eeeeeeeeeeeeeeeee
+!write(6,*) " pos",pos
+!write(6,*)  b(1:3)
+!pause 123
     SELECT CASE(EL%KIND) 
     case(KIND2,kind3,kind5:kind7,kindwiggler) ! Straight for all practical purposes
        CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
@@ -22247,6 +22286,7 @@ call kill(vm,phi,z)
        if(pos>=0) OM(2)=p%dir*P%b0   ! not fake fringe
     case(KINDPA)     ! fitted field for real magnet
        CALL B_PARA_PERP(k,EL,X,B,BPA,BPE,XP,XPA,ed,pos=POS)
+
        if(k%time) then
           beta0=p%beta0;GAMMA0I=p%GAMMA0I;
        else
@@ -22321,9 +22361,10 @@ call kill(vm,phi,z)
 
   end subroutine get_omega_spinr
 
-  subroutine get_omega_spinp(c,OM,B2,dlds,XP,X,POS,k,ED,B)
+  subroutine get_omega_spinp(c,OM,B2,dlds,XP,X,POS,k,ED,B,before)
     implicit none
     TYPE(integration_node), POINTER::c
+    logical,OPTIONAL,INTENT(IN) ::before
     TYPE(ELEMENTp), POINTER::EL
     TYPE(MAGNET_CHART), POINTER::P
     INTEGER,OPTIONAL,INTENT(IN) ::POS
@@ -22374,7 +22415,7 @@ call kill(vm,phi,z)
     dlds=0.0_dp
     del=x(5)
 
-    CALL get_field(EL,B,E,phi,X,k,POS)
+    CALL get_field(c,B,E,phi,X,k,POS,before)
 
     SELECT CASE(EL%KIND) 
     case(KIND2,kind3,kind5:kind7,kindwiggler) ! Straight for all practical purposes
@@ -23459,7 +23500,7 @@ dspin=matmul(s,n_oleksii)
     TYPE(CAV4) ,pointer  :: D
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     REAL(DP) A(3),AD(3),PZ
-
+    integer pos
     d=>c%parent_fibre%mag%c4
 
     a=0
@@ -23510,8 +23551,9 @@ dspin=matmul(s,n_oleksii)
     X(2)=X(2)+A(1)
     X(4)=X(4)+A(2)
 !  
-!    
-if(k%radiation.or.k%spin) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f)
+!
+    pos=0
+if(k%radiation.or.k%spin) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos)
  
 if(k%spin) then
  q%x(0)=0.0_dp
@@ -23532,7 +23574,7 @@ endif
     type(real_8) A(3),AD(3),PZ
     REAL(DP),intent(inout):: e_ij(6,6),denf
     real(dp),intent(in) ::fac,ds   !
-
+    integer pos
     d=>c%parent_fibre%magp%c4
     
     call alloc(a) 
@@ -23588,7 +23630,8 @@ endif
 !  
 
 !    
-if(k%radiation.or.k%spin.or.k%envelope) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,e_ij,denf,fac,ds)
+pos=0
+if(k%radiation.or.k%spin.or.k%envelope) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos,e_ij,denf,fac,ds)
 
  
 if(k%spin) then
@@ -24481,7 +24524,7 @@ subroutine rk6bmad_cav_probep(ti,p,k,ct,h)   ! (ti,h,GR,y,k)
     REAL(DP) PZ,DEL,H,B(3),Ef(3),dir,VM,Bf(3),phi
     TYPE(teapot),  pointer ::  EL
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
-    integer i
+    integer i,pos
     type(fibre), pointer :: fi
 
     fi=>c%parent_fibre
@@ -24548,7 +24591,8 @@ subroutine rk6bmad_cav_probep(ti,p,k,ct,h)   ! (ti,h,GR,y,k)
 
 ! patrice 
 !    
-if(k%radiation.or.k%spin) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f)
+pos=0
+if(k%radiation.or.k%spin) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos)
  
 if(k%spin) then
  q%x(0)=0.0_dp
@@ -24569,7 +24613,7 @@ endif
     type(real_8) PZ,DEL,H,B(3),Ef(3),VM,Bf(3),phi
     TYPE(teapotp),  pointer ::  EL
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
-    integer i
+    integer i,pos
     type(fibre), pointer :: fi
     real(dp), intent(in)  :: cr,hr
     fi=>c%parent_fibre
@@ -24642,8 +24686,9 @@ endif
     ENDDO
 
 ! patrice 
-!        
-if(k%radiation.or.k%spin.or.k%envelope) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,e_ij,denf,cr,hr)
+!     
+pos=0   
+if(k%radiation.or.k%spin.or.k%envelope) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos,e_ij,denf,cr,hr)
  
 if(k%spin) then
  q%x(0)=0.0_dp
@@ -25460,10 +25505,10 @@ enddo
        IF(EL%P%DIR==1) THEN
           IS=-6+7*POS    ! POS=3 BEGINNING
 !write(6,*) "sss",size(el%b)
-     !     call rk6_pancake_probe(IS,p,k,ct,h)
+          call rk6_pancake_probe(IS,p,k,ct,h)
        else
           IS=7*el%p%NST+8-7*pos
-      !   call rk6_pancake_probe(IS,p,k,ct,h)
+         call rk6_pancake_probe(IS,p,k,ct,h)
        ENDIF
 
     CASE DEFAULT
@@ -25841,6 +25886,192 @@ enddo
   end  subroutine rk4_pancake_probep
 
 
+  subroutine rk6_pancake_prober(ti,p,k,ct,h)
+    IMPLICIT none
+
+    integer ne
+    parameter (ne=6)
+    type(probe), intent(inout) :: p
+    real(dp)  y(ne)
+    real(dp)  yt(ne),f(ne),a(ne),b(ne),c(ne),d(ne),e(ne),g(ne),o(ne),pt(ne)
+    type(pancake),pointer::  GR
+    TYPE(integration_node),pointer, INTENT(IN):: ct
+    integer j
+    real(dp), intent(inout) :: h
+    integer, intent(inout) :: ti
+    INTEGER TT
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    type(quaternion) qa,qb,qyt,qy,qc,qd,qe,qg,qo,qp,q
+
+     gr=>ct%parent_fibre%mag%pa
+    qy=p%q
+    y=p%x
+    
+!write(6,*) "pancake  in",ti
+    call feval_pancake_probe(tI,y,qy,k,f,q,ct)
+    do  j=1,ne
+       a(j)=h*f(j)
+    enddo
+  if(k%spin) then
+     do  j=0,3
+       qa%x(j)=h*q%x(j)
+     enddo
+     do  j=0,3
+       qyt%x(j)=qy%x(j)+qa%x(j)/9.0_dp
+     enddo
+    endif
+
+    do  j=1,ne
+       yt(j)=y(j)+a(j)*butcher(1,1)
+    enddo
+
+    tt=ti+GR%p%dir
+
+    call feval_pancake_probe(tt,yt,qyt,k,f,q,ct)
+  do  j=1,ne
+       b(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qb%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(qa%x(j) + 3.0_dp*qb%x(j))/24.0_dp
+     enddo
+    endif
+
+
+
+    do   j=1,ne
+       yt(j)=y(j) + (butcher(2,1)*a(j) + butcher(2,2)*b(j)) 
+    enddo
+
+
+
+    tt=tt+GR%p%dir
+    call feval_pancake_probe(tt,yt,qyt,k,f,q,ct)
+    do  j=1,ne
+       c(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qc%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(qa%x(j)-3.0_dp*qb%x(j)+4.0_dp*qc%x(j))/6.0_dp
+     enddo
+    endif
+    do  j=1,ne
+       yt(j)=y(j)+c(j)
+    enddo
+ 
+    do  j=1,ne
+       yt(j)=y(j)+(butcher(3,1)*a(j)+butcher(3,2)*b(j)+butcher(3,3)*c(j)) 
+    enddo
+
+
+    tt=tt+GR%p%dir
+    call feval_pancake_probe(tt,yt,qyt,k,f,q,ct)
+    do  j=1,ne
+       d(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qd%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(-5.0_dp*qa%x(j) + 27.0_dp*qb%x(j) - 24.0_dp*qc%x(j) + 6.0_dp*qd%x(j))/8.0_dp
+     enddo
+    endif
+
+    do  j=1,ne
+       yt(j)=y(j) + (butcher(4,1)*a(j) + butcher(4,2)*b(j) +butcher(4,3)*c(j) + butcher(4,4)*d(j)) 
+    enddo
+
+    tt=tt+GR%p%dir
+    call feval_pancake_probe(tt,yt,qyt,k,f,q,ct)
+    do  j=1,ne
+       e(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qe%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(221.0_dp*qa%x(j)-981.0_dp*qb%x(j) + 867.0_dp*qc%x(j)- 102.0_dp*qd%x(j) + qe%x(j))/9.0_dp
+     enddo
+    endif
+
+    do  j=1,ne
+       yt(j)=y(j) + (butcher(5,1)*a(j) +butcher(5,2)*b(j) + butcher(5,3)*c(j)+butcher(5,4)*d(j) + butcher(5,5)*e(j)) 
+    enddo
+
+    tt=tt+GR%p%dir
+    call feval_pancake_probe(tt,yt,qyt,k,f,q,ct)
+    do   j=1,ne
+       g(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qg%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(-183.0_dp*qa%x(j)+678.0_dp*qb%x(j)-472.0_dp*qc%x(j) &
+              -66.0_dp*qd%x(j)+80.0_dp*qe%x(j)+3.0_dp*qg%x(j))/48.0_dp
+     enddo
+    endif
+    do  j=1,ne
+       yt(j) = y(j)+(butcher(6,1)*a(j)+butcher(6,2)*b(j)+butcher(6,3)*c(j)+butcher(6,4)*d(j)+butcher(6,5)*e(j) + butcher(6,6)*g(j)) 
+    enddo
+    tt=tt+GR%p%dir
+
+    call feval_pancake_probe(tt,yt,qyt,k,f,q,ct)
+    do  j=1,ne
+       o(j)=h*f(j)
+    enddo
+
+   if(k%spin) then
+     do  j=0,3
+       qo%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(716.0_dp*qa%x(j)-2079.0_dp*qb%x(j)+1002.0_dp*qc%x(j)+834.0_dp*qd%x(j) &
+        -454.0_dp*qe%x(j)-9.0_dp*qg%x(j)+72.0_dp*qo%x(j))/82.0_dp
+     enddo
+     endif
+
+    do  j=1,ne
+       yt(j) = y(j)+(butcher(7,1)*a(j)+butcher(7,2)*b(j)+butcher(7,3)*c(j)+butcher(7,4)*d(j)+butcher(7,5)*e(j)+butcher(7,6)*g(j)+butcher(7,7)*o(j)) 
+    enddo
+    tt=tI+7*GR%p%dir
+!write(6,*) "pancake out",tt,size(gr%b)
+    call feval_pancake_probe(tt,yt,qyt,k,f,q,ct)
+    do  j=1,ne
+       pt(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qp%x(j)=h*q%x(j)
+     enddo
+    endif
+
+ 
+    if(k%spin) then
+     do  j=0,3
+       p%q%x(j) = p%q%x(j)+(41.0_dp*qa%x(j)+216.0_dp*qc%x(j)+27.0_dp*qd%x(j) &
+                   +272.0_dp*qe%x(j)+27.0_dp*qg%x(j)+216.0_dp*qo%x(j)+41.0_dp*qp%x(j))/840.0_dp
+    enddo
+    endif
+
+    do  j=1,ne
+       p%x(j)  = p%x(j) +(butcher(8,1)*a(j)+butcher(8,2)*c(j)+butcher(8,3)*d(j)+butcher(8,4)*e(j)+butcher(8,5)*g(j)+butcher(8,6)*o(j)+butcher(8,7)*pt(j)) 
+    enddo
+
+
+
+
+    tI=tt
+
+ 
+    if(k%TIME) then
+       p%x(6) =p%x(6)-(1-k%TOTALPATH)*GR%P%LD/GR%P%beta0/GR%P%nst
+    else
+       p%x(6)=p%x(6)-(1-k%TOTALPATH)*GR%P%LD/GR%P%nst
+    endif
+
+    return
+  end  subroutine rk6_pancake_prober
+
+
+
 
  
   subroutine feval_PANCAkE_prober(POS,X,qi,k,f,q,c)
@@ -25853,7 +26084,7 @@ enddo
     TYPE(PANCAKE),  pointer :: EL
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     real(dp) B(3),be(nbe)
- 
+   
     el=>c%parent_fibre%mag%pa
 
     Be(1)=X(1);
@@ -25879,8 +26110,9 @@ enddo
        CALL fxc(f,x,k,be,EL%p,el%hc)
     endif
  
-!    
-    if(k%radiation.or.k%spin) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f)
+!   
+    
+    if(k%radiation.or.k%spin) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos)
  
     if(k%spin) then
      q%x(0)=0.0_dp
@@ -25933,7 +26165,7 @@ enddo
  
 !    
  
- if(k%radiation.or.k%spin.or.k%envelope) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,e_ij,denf,fac,ds)
+ if(k%radiation.or.k%spin.or.k%envelope) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos,e_ij,denf,fac,ds)
 
     if(k%spin) then
      q%x(0)=0.0_dp
@@ -28926,7 +29158,7 @@ endif
   END SUBROUTINE INTE_dkd2_prober
 
 
-SUBROUTINE RAD_SPIN_force_PROBER(c,x,om,k,fo,zw)
+SUBROUTINE RAD_SPIN_force_PROBER(c,x,om,k,fo,pos,zw)
     real(dp), INTENT(INOUT) :: x(6),om(3)
     real(dp),INTENT(INOUT) :: fo(6)    
     TYPE(fibre),pointer ::  f
@@ -28937,7 +29169,7 @@ SUBROUTINE RAD_SPIN_force_PROBER(c,x,om,k,fo,zw)
     TYPE(INTERNAL_STATE) k 
      integer i,pos
 
-     pos=C%POS_IN_FIBRE-2     !  unknown.... to be checked later
+  !   pos=C%POS_IN_FIBRE-2     !  unknown.... to be checked later
      CALL get_omega_spin(c,OM,B2,dlds,XP,X,pos,k,Ed,B,zw)
 
 
@@ -28952,7 +29184,7 @@ SUBROUTINE RAD_SPIN_force_PROBER(c,x,om,k,fo,zw)
 
  end SUBROUTINE RAD_SPIN_force_PROBER
 
- SUBROUTINE RAD_SPIN_force_PROBEp(c,x,om,k,fo,e_ij,denf,cr,hr)
+ SUBROUTINE RAD_SPIN_force_PROBEp(c,x,om,k,fo,pos,e_ij,denf,cr,hr)
     type(real_8), INTENT(INOUT) :: x(6),om(3)
     type(real_8),INTENT(INOUT) :: fo(6)    
     TYPE(fibre),pointer ::  f
@@ -28972,7 +29204,7 @@ SUBROUTINE RAD_SPIN_force_PROBER(c,x,om,k,fo,zw)
      call alloc(ed)
 
  
-     pos=C%POS_IN_FIBRE-2     !  unknown.... to be checked later
+    ! pos=C%POS_IN_FIBRE-2     !  unknown.... to be checked later
      CALL get_omega_spin(c,OM,B2,dlds,XP,X,pos,k,Ed,B)
 
  
