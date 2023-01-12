@@ -206,6 +206,8 @@ type(work) w_bks
  private INTE_sol5_prober,INTE_SOL5_probep
  private INT_SAGAN_prober,INT_SAGAN_probep
  logical :: gaussian_stoch=.false.
+
+real(dp) scalee,scaleb,hhh
 !type(real_8) radcoe
   INTERFACE radiate_2_force
      MODULE PROCEDURE radiate_2_forcer
@@ -1725,13 +1727,21 @@ CONTAINS !----------------------------------------------------------------------
     REAL(DP), INTENT(INOUT)::  X(6)
     TYPE(CAV4),INTENT(INOUT):: EL
     integer,INTENT(IN):: J
+    real(dp) z,A(3),AD(3),ve,hcurv
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
     IF(J==1) THEN
        EL%DELTA_E=X(5)
        CALL DRIFT(EL%h1,EL%h1,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,X)
        IF(k%NOCAVITY.and.(.not.EL%always_on)) RETURN
-
+       if(el%xprime) then  
+        z=0.0_dp
+        hcurv=0.0_dp
+         if(el%p%dir==-1) z=el%p%lc
+         ve=0
+         call Abmad_TRANS(EL,Z,X,k,A,AD)
+         call gen_conv_to_xp(X,a,ve,EL%P%EXACT,EL%P%beta0,hcurv)
+       endif
        IF(EL%THIN) THEN
           CALL CAVITY(EL,X,k)
           EL%DELTA_E=(X(5)-EL%DELTA_E)*EL%P%P0C
@@ -1746,6 +1756,16 @@ CONTAINS !----------------------------------------------------------------------
        else
           X(6)=X(6)-(el%CAVITY_TOTALPATH-k%TOTALPATH)*EL%P%LD
        endif
+
+       if(el%xprime) then  
+        z=el%p%lc
+        hcurv=0.0_dp
+         if(el%p%dir==-1) z=0.0_dp
+         ve=0
+         call Abmad_TRANS(EL,Z,X,k,A,AD)
+         call gen_conv_to_px(X,a,ve,EL%P%EXACT,EL%P%beta0,hcurv)
+       endif
+
        CALL DRIFT(EL%h2,EL%h2,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,X)
 
        EL%DELTA_E=(X(5)-EL%DELTA_E)*EL%P%P0C
@@ -2399,7 +2419,7 @@ CALL FRINGECAV(EL,X,k,2)
     call PRTP("CAVITY:1", X)
 
   END SUBROUTINE CAVITYP
-!!!!! Saga stuff !!!!!
+!!!!! Sagan stuff !!!!!
   SUBROUTINE Abmad_TRANSR(EL,Z,X,k,A,AD,B,E)    ! EXP(-I:(X^2+Y^2)/2*A_TRANS:)
     IMPLICIT NONE
     real(dp),INTENT(INOUT):: X(6)
@@ -2437,10 +2457,10 @@ CALL FRINGECAV(EL,X,k,2)
     AD(2)=S1+AD(2)
     ad(3)=ad(3)-(ko*O)*el%f(ko)*V*cos(ko*O*z)*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%phase0+EL%PH(KO))*0.5_dp
 
-!!!   DA_3/DT FOR KICK IN X(5)
+!!!   -DA_3/DT FOR KICK IN X(5)
     A(3)=A(3)-EL%P%DIR*el%f(ko)*V*COS(ko*O*z)*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)
    enddo
-
+!vvvv
     A(1)=AD(1)*X(1)  ! A_x
     A(2)=AD(1)*X(3)  ! A_y
 
@@ -2454,6 +2474,9 @@ CALL FRINGECAV(EL,X,k,2)
      E(1)=-ad(2)*x(1)/EL%P%CHARGE
      E(2)=-ad(2)*x(3)/EL%P%CHARGE
      E(3)=A(3)/EL%P%CHARGE
+!write(n_wedge,format7) z+hhh,e,scalee*e
+!write(6,format7) z+hhh,e,scalee*e
+!write(n_wedge,"(7(1x,g12.5,1x))") z+hhh, b,scaleb*b 
     endif
 
   END SUBROUTINE Abmad_TRANSR
@@ -2533,14 +2556,15 @@ CALL FRINGECAV(EL,X,k,2)
     real(dp), INTENT(INout) :: X(6)
     real(dp),INTENT(INOUT):: Z0
     real(dp), INTENT(INOUT) :: F(6)
-    REAL(DP) A(3),AD(3),PZ
+    REAL(DP) A(3),AD(3),PZ,hcurv,ve,B(3),E(3)
     TYPE(CAV4),  INTENT(INOUT) :: D
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
     a=0
     ad=0
+    if(.not.D%xprime) then
+write(6,*) " canonical "
     CALL Abmad_TRANS(D,Z0,X,k,A,AD)
-
     X(2)=X(2)-A(1)
     X(4)=X(4)-A(2)
 
@@ -2584,7 +2608,14 @@ CALL FRINGECAV(EL,X,k,2)
 
     X(2)=X(2)+A(1)
     X(4)=X(4)+A(2)
+   else   
 
+    hcurv=0.0_dp;ve=0.0_dp
+    CALL Abmad_TRANS(D,Z0,X,k,A,AD,B,E)
+write(6,*) " xprime ";!b=-b;e=-e;
+
+    call fx_new(f,x,k,D%P%EXACT,hcurv,D%P%BETA0,b,e,ve) 
+   endif
   END subroutine feval_CAV_bmadr
 
 
@@ -2602,7 +2633,7 @@ CALL FRINGECAV(EL,X,k,2)
     call alloc(PZ)
 
     CALL Abmad_TRANS(D,Z0,X,k,A,AD)
-
+    if(.not.D%xprime) then
     X(2)=X(2)-A(1)
     X(4)=X(4)-A(2)
 
@@ -2646,7 +2677,7 @@ CALL FRINGECAV(EL,X,k,2)
 
     X(2)=X(2)+A(1)
     X(4)=X(4)+A(2)
-
+    endif
     call KILL(A)
     call KILL(AD)
     call KILL(PZ)
@@ -15934,7 +15965,9 @@ SUBROUTINE ZEROr_teapot(EL,I)
        if(ASSOCIATED(EL%always_on)) then
           deallocate(EL%always_on)
        endif
-
+       if(ASSOCIATED(el%xprime)) then
+          deallocate(el%xprime)
+       endif
        if(ASSOCIATED(EL%CAVITY_TOTALPATH)) then
           deallocate(EL%CAVITY_TOTALPATH)
        endif
@@ -15958,10 +15991,9 @@ SUBROUTINE ZEROr_teapot(EL,I)
        NULLIFY(EL%F)
        NULLIFY(EL%A)
        NULLIFY(EL%R)
-       NULLIFY(EL%always_on)
+       NULLIFY(EL%always_on,el%xprime)
        NULLIFY(EL%PH)
     endif
-
   END SUBROUTINE ZERO_CAV4R
 
   SUBROUTINE ZERO_CAV4P(EL,I)
@@ -16005,6 +16037,10 @@ SUBROUTINE ZEROr_teapot(EL,I)
        if(ASSOCIATED(EL%always_on)) then
           deallocate(EL%always_on)
        endif
+       if(ASSOCIATED(el%xprime)) then
+          deallocate(el%xprime)
+       endif
+
        if(ASSOCIATED(EL%A)) then
           CALL KILL(EL%A)
           deallocate(EL%A)
@@ -16029,7 +16065,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
        NULLIFY(EL%F)
        NULLIFY(EL%A)
        NULLIFY(EL%R)
-       NULLIFY(EL%always_on)
+       NULLIFY(EL%always_on,el%xprime)
        NULLIFY(EL%PH)
     endif
 
@@ -21034,11 +21070,14 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
       if(EL%C4%n_bessel/=-1) then
         CALL GET_BE_CAV(EL%C4,B,E,X,k)
       else
-       IF(EL%c4%P%DIR==1) THEN
-          Z= pos*el%l/el%p%nst
-       ELSE
-          Z=EL%L-pos*el%l/el%p%nst
-       ENDIF
+!       IF(EL%c4%P%DIR==1) THEN
+ !         Z= pos*el%l/el%p%nst
+ !      ELSE
+ !         Z=EL%L-pos*el%l/el%p%nst
+ !      ENDIF
+!write(6,*) "shit ",present(zw)
+
+z=zw
        call  Abmad_TRANS(EL%C4,Z,X,k,A,AD,B,E)
        endif
 
@@ -21089,7 +21128,7 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
   end subroutine get_fieldr
 
-  subroutine get_fieldp(c,B,E,phi,X,k,POS,before)
+  subroutine get_fieldp(c,B,E,phi,X,k,POS,zw,before)
     implicit none
     TYPE(integration_node), POINTER::c
     logical,OPTIONAL,INTENT(IN) ::before
@@ -21100,6 +21139,7 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
     INTEGER I,pospan
     TYPE(REAL_8) z,VM,ad(3),a(3)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    REAL(DP),optional,INTENT(IN) :: zw
     el=>c%parent_fibre%magp
     CALL alloc(VM,Z)
 
@@ -21171,6 +21211,20 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
        call kill(a,3)
        call kill(ad,3)
       endif
+
+      if(EL%C4%n_bessel/=-1) then
+        CALL GET_BE_CAV(EL%C4,B,E,X,k)
+      else
+       call alloc(a,3)
+       call alloc(ad,3)
+
+        z=zw
+       call  Abmad_TRANS(EL%C4,Z,X,k,A,AD,B,E)
+       call kill(a,3)
+       call kill(ad,3)
+       endif
+
+
     CASE(KIND21)     ! travelling wave cavity
           IF(POS<0) THEN
              call get_Bfield_fringe(EL,B,E,X,pos,k)   ! fringe effect
@@ -22336,7 +22390,7 @@ call kill(vm,phi,z)
 
 
     DO I=1,3
-       OM(I)=OM(I)+a_spin_scale*DLDS*beta*gamma*(p%AG+1.0_dp/(1.0_dp+GAMMA))*EB(I)
+       OM(I)=OM(I)+ theta_oleksii*a_spin_scale*DLDS*beta*gamma*(p%AG+1.0_dp/(1.0_dp+GAMMA))*EB(I)
     ENDDO
 
    beta=root(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)*P%BETA0/P%GAMMA0I  ! replace  this
@@ -22361,7 +22415,7 @@ call kill(vm,phi,z)
 
   end subroutine get_omega_spinr
 
-  subroutine get_omega_spinp(c,OM,B2,dlds,XP,X,POS,k,ED,B,before)
+  subroutine get_omega_spinp(c,OM,B2,dlds,XP,X,POS,k,ED,B,zw,before)
     implicit none
     TYPE(integration_node), POINTER::c
     logical,OPTIONAL,INTENT(IN) ::before
@@ -22371,6 +22425,7 @@ call kill(vm,phi,z)
     TYPE(REAL_8), INTENT(INOUT) :: X(6),OM(3),B2,XP(2),B(3),ED(3)
     TYPE(REAL_8)  BPA(3),BPE(3),DLDS,D1,D2,GAMMA,EB(3),efd(3),XPA(2),e(3),beta,phi,del,z
     REAL(DP) BETA0,GAMMA0I
+    real(dp),OPTIONAL,INTENT(IN) ::zw
     INTEGER I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
@@ -22415,7 +22470,7 @@ call kill(vm,phi,z)
     dlds=0.0_dp
     del=x(5)
 
-    CALL get_field(c,B,E,phi,X,k,POS,before)
+    CALL get_field(c,B,E,phi,X,k,POS,zw,before)
 
     SELECT CASE(EL%KIND) 
     case(KIND2,kind3,kind5:kind7,kindwiggler) ! Straight for all practical purposes
@@ -22514,7 +22569,7 @@ call kill(vm,phi,z)
 
 
     DO I=1,3
-       OM(I)=OM(I)+a_spin_scale*DLDS*beta*gamma*(p%AG+1.0_dp/(1.0_dp+GAMMA))*EB(I)
+       OM(I)=OM(I)+theta_oleksii*a_spin_scale*DLDS*beta*gamma*(p%AG+1.0_dp/(1.0_dp+GAMMA))*EB(I)
     ENDDO
 
     e_muon_scale%r=e_muon
@@ -23499,13 +23554,17 @@ dspin=matmul(s,n_oleksii)
     real(dp),INTENT(INOUT):: Z0
     TYPE(CAV4) ,pointer  :: D
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
-    REAL(DP) A(3),AD(3),PZ
+    REAL(DP) A(3),AD(3),PZ,hcurv,ve,B(3),E(3)
     integer pos
     d=>c%parent_fibre%mag%c4
 
     a=0
     ad=0
-    CALL Abmad_TRANS(D,Z0,X,k,A,AD)
+    if(.not.D%xprime) then
+!write(6,*) " canonical probe"
+
+    CALL Abmad_TRANS(D,Z0,X,k,A,AD,b,e)
+!write(n_wedge,"(11(1x,g16.9,1x))") z0+hhh, b,scaleb*b,qi%x(0:3)
 
     X(2)=X(2)-A(1)
     X(4)=X(4)-A(2)
@@ -23550,10 +23609,19 @@ dspin=matmul(s,n_oleksii)
 
     X(2)=X(2)+A(1)
     X(4)=X(4)+A(2)
+
+   else   
+
+    hcurv=0.0_dp;ve=0.0_dp
+    CALL Abmad_TRANS(D,Z0,X,k,A,AD,B,E)
+write(6,*) " xprime probe ";!b=-b;e=-e;
+
+    call fx_new(f,x,k,D%P%EXACT,hcurv,D%P%BETA0,b,e,ve) 
+   endif
 !  
 !
     pos=0
-if(k%radiation.or.k%spin) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos)
+if(k%radiation.or.k%spin) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos,z0)
  
 if(k%spin) then
  q%x(0)=0.0_dp
@@ -23573,7 +23641,8 @@ endif
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     type(real_8) A(3),AD(3),PZ
     REAL(DP),intent(inout):: e_ij(6,6),denf
-    real(dp),intent(in) ::fac,ds   !
+    real(dp),intent(in) ::fac,ds 
+    real(dp) zw
     integer pos
     d=>c%parent_fibre%magp%c4
     
@@ -23630,10 +23699,11 @@ endif
 !  
 
 !    
+zw=z0
 pos=0
-if(k%radiation.or.k%spin.or.k%envelope) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos,e_ij,denf,fac,ds)
+if(k%radiation.or.k%spin.or.k%envelope) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos,zw,e_ij,denf,fac,ds)
 
- 
+
 if(k%spin) then
  q%x(0)=0.0_dp
  q=q*qi
@@ -24688,8 +24758,8 @@ endif
 ! patrice 
 !     
 pos=0   
-if(k%radiation.or.k%spin.or.k%envelope) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos,e_ij,denf,cr,hr)
- 
+if(k%radiation.or.k%spin.or.k%envelope) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos,0.0_dp,e_ij,denf,cr,hr)
+
 if(k%spin) then
  q%x(0)=0.0_dp
  q=q*qi
@@ -26431,7 +26501,7 @@ enddo
  
 !    
  
- if(k%radiation.or.k%spin.or.k%envelope) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos,e_ij,denf,fac,ds)
+ if(k%radiation.or.k%spin.or.k%envelope) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos,0.0_dp,e_ij,denf,fac,ds)
 
     if(k%spin) then
      q%x(0)=0.0_dp
@@ -29450,7 +29520,7 @@ SUBROUTINE RAD_SPIN_force_PROBER(c,x,om,k,fo,pos,zw)
 
  end SUBROUTINE RAD_SPIN_force_PROBER
 
- SUBROUTINE RAD_SPIN_force_PROBEp(c,x,om,k,fo,pos,e_ij,denf,cr,hr)
+ SUBROUTINE RAD_SPIN_force_PROBEp(c,x,om,k,fo,pos,zw,e_ij,denf,cr,hr)
     type(real_8), INTENT(INOUT) :: x(6),om(3)
     type(real_8),INTENT(INOUT) :: fo(6)    
     TYPE(fibre),pointer ::  f
@@ -29461,7 +29531,7 @@ SUBROUTINE RAD_SPIN_force_PROBER(c,x,om,k,fo,pos,zw)
     real(dp),intent(inout) :: e_ij(6,6),denf
     real(dp),intent(in) ::cr,hr
      integer i,pos
-
+      real(dp), optional, intent(in) :: zw
      call alloc(b2,dlds)
      call alloc(ff)
      call alloc(b)
@@ -29471,7 +29541,7 @@ SUBROUTINE RAD_SPIN_force_PROBER(c,x,om,k,fo,pos,zw)
 
  
     ! pos=C%POS_IN_FIBRE-2     !  unknown.... to be checked later
-     CALL get_omega_spin(c,OM,B2,dlds,XP,X,pos,k,Ed,B)
+     CALL get_omega_spin(c,OM,B2,dlds,XP,X,pos,k,Ed,B,zw)
 
  
    do i=1,3
@@ -29623,7 +29693,7 @@ SUBROUTINE RAD_SPIN_qua_PROBER(c,p,k,ds,zw)
 
  end SUBROUTINE RAD_SPIN_qua_PROBER
 
-SUBROUTINE RAD_SPIN_qua_PROBEP(c,p,k,ds)
+SUBROUTINE RAD_SPIN_qua_PROBEP(c,p,k,ds,zw)
     type(probe_8), INTENT(INOUT) :: p
     TYPE(fibre),pointer ::  f
     TYPE(integration_node),pointer :: c
@@ -29633,6 +29703,7 @@ SUBROUTINE RAD_SPIN_qua_PROBEP(c,p,k,ds)
      TYPE(INTERNAL_STATE) k 
    !   logical before
      integer i,pos
+    real(dp), optional , intent(in) ::zw
      pos=C%POS_IN_FIBRE-2     !  unknown.... to be checked later
 
      FAC=0.5_dp
@@ -29641,7 +29712,7 @@ SUBROUTINE RAD_SPIN_qua_PROBEP(c,p,k,ds)
      CALL alloc(B);CALL alloc(XP);CALL alloc(XPA);CALL alloc(ed);
      CALL alloc(OM);CALL alloc(B2);CALL alloc(DLDS); 
 
-    CALL get_omega_spin(c,OM,B2,dlds,XP,P%X,pos,k,Ed,B)
+    CALL get_omega_spin(c,OM,B2,dlds,XP,P%X,pos,k,Ed,B,zw)
     if((k%radiation.or.k%envelope)) then
      !  call radiate_2(c,DS,FAC,P,b2,dlds,XP,before,k,pos,Ed,B)
        call radiate_2_probe(c,DS,FAC,P,b2,dlds,XP,k,pos,Ed,B)
