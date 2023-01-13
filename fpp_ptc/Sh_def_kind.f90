@@ -2563,7 +2563,7 @@ CALL FRINGECAV(EL,X,k,2)
     a=0
     ad=0
     if(.not.D%xprime) then
-write(6,*) " canonical "
+!write(6,*) " canonical "
     CALL Abmad_TRANS(D,Z0,X,k,A,AD)
     X(2)=X(2)-A(1)
     X(4)=X(4)-A(2)
@@ -2613,6 +2613,7 @@ write(6,*) " canonical "
     hcurv=0.0_dp;ve=0.0_dp
     CALL Abmad_TRANS(D,Z0,X,k,A,AD,B,E)
 write(6,*) " xprime ";!b=-b;e=-e;
+stop
 
     call fx_new(f,x,k,D%P%EXACT,hcurv,D%P%BETA0,b,e,ve) 
    endif
@@ -21076,8 +21077,22 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
  !         Z=EL%L-pos*el%l/el%p%nst
  !      ENDIF
 !write(6,*) "shit ",present(zw)
+      if(2*old_integrator+c%parent_fibre%mag%old_integrator>0) then
+        IF(EL%c4%P%DIR==1) THEN
+           i=0
+           if(before) i=-1
+           Z= (pos+i)*el%l/el%p%nst
 
-z=zw
+        ELSE
+           i=0
+           if(before) i=-1
+          Z=EL%L-(pos+i)*el%l/el%p%nst
+        ENDIF
+
+      else
+        z=zw
+      endif
+
        call  Abmad_TRANS(EL%C4,Z,X,k,A,AD,B,E)
        endif
 
@@ -21197,28 +21212,30 @@ z=zw
        CALL get_z_wi(EL%wi,POS,z)
        CALL B_FIELD(EL%wi,Z,X,B)
     CASE(KIND4)      ! Pill box cavity
+ 
+
       if(EL%C4%n_bessel/=-1) then
         CALL GET_BE_CAV(EL%C4,B,E,X,k)
       else
        call alloc(a,3)
        call alloc(ad,3)
-       IF(EL%c4%P%DIR==1) THEN
-          Z= pos*el%l/el%p%nst
-       ELSE
-          Z=EL%L-pos*el%l/el%p%nst
-       ENDIF
-       call  Abmad_TRANS(EL%C4,Z,X,k,A,AD,B,E)
-       call kill(a,3)
-       call kill(ad,3)
+      if(2*old_integrator+c%parent_fibre%mag%old_integrator>0) then
+        IF(EL%c4%P%DIR==1) THEN
+           i=0
+           if(before) i=-1
+           Z= (pos+i)*el%l/el%p%nst
+
+        ELSE
+           i=0
+           if(before) i=-1
+          Z=EL%L-(pos+i)*el%l/el%p%nst
+        ENDIF
+
+      else
+        z=zw
       endif
 
-      if(EL%C4%n_bessel/=-1) then
-        CALL GET_BE_CAV(EL%C4,B,E,X,k)
-      else
-       call alloc(a,3)
-       call alloc(ad,3)
 
-        z=zw
        call  Abmad_TRANS(EL%C4,Z,X,k,A,AD,B,E)
        call kill(a,3)
        call kill(ad,3)
@@ -22390,7 +22407,7 @@ call kill(vm,phi,z)
 
 
     DO I=1,3
-       OM(I)=OM(I)+ theta_oleksii*a_spin_scale*DLDS*beta*gamma*(p%AG+1.0_dp/(1.0_dp+GAMMA))*EB(I)
+       OM(I)=OM(I)+ a_spin_scale*DLDS*beta*gamma*(p%AG+1.0_dp/(1.0_dp+GAMMA))*EB(I)
     ENDDO
 
    beta=root(1.0_dp+2.0_dp*x(5)/p%beta0+x(5)**2)*P%BETA0/P%GAMMA0I  ! replace  this
@@ -22569,7 +22586,7 @@ call kill(vm,phi,z)
 
 
     DO I=1,3
-       OM(I)=OM(I)+theta_oleksii*a_spin_scale*DLDS*beta*gamma*(p%AG+1.0_dp/(1.0_dp+GAMMA))*EB(I)
+       OM(I)=OM(I)+a_spin_scale*DLDS*beta*gamma*(p%AG+1.0_dp/(1.0_dp+GAMMA))*EB(I)
     ENDDO
 
     e_muon_scale%r=e_muon
