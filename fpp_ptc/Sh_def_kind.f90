@@ -206,6 +206,9 @@ type(work) w_bks
  private INTE_sol5_prober,INTE_SOL5_probep
  private INT_SAGAN_prober,INT_SAGAN_probep
  logical :: gaussian_stoch=.false.
+ private  feval_sagan_prober,feval_sagan_probep
+private rk2_sagan_prober,rk2_sagan_probep,rk4_sagan_prober,rk4_sagan_probep, rk6_sagan_prober,rk6_sagan_probep
+
 
 real(dp) scalee,scaleb,hhh
 !type(real_8) radcoe
@@ -262,6 +265,28 @@ real(dp) scalee,scaleb,hhh
   INTERFACE feval_CAV_bmad_probe
      MODULE PROCEDURE feval_CAV_bmad_prober
      MODULE PROCEDURE feval_CAV_bmad_probep
+  END INTERFACE 
+
+  INTERFACE feval_sagan_probe
+     MODULE PROCEDURE feval_sagan_prober
+     MODULE PROCEDURE feval_sagan_probep
+  END INTERFACE 
+ 
+  INTERFACE rk2_sagan_probe
+     MODULE PROCEDURE rk2_sagan_prober
+     MODULE PROCEDURE rk2_sagan_probep
+  END INTERFACE 
+
+
+  INTERFACE rk4_sagan_probe
+     MODULE PROCEDURE rk4_sagan_prober
+     MODULE PROCEDURE rk4_sagan_probep
+  END INTERFACE 
+
+
+  INTERFACE rk6_sagan_probe
+     MODULE PROCEDURE rk6_sagan_prober
+     MODULE PROCEDURE rk6_sagan_probep
   END INTERFACE 
 
   INTERFACE rk2bmad_cav_probe
@@ -21209,7 +21234,12 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
       endif
        CALL B_PANCAkE(EL%PA,B,X,pospan)
     case(KINDWIGGLER)
-       CALL get_z_wi(EL%wi,POS,z)
+       if(present(zw)) then
+          z=zw
+       else
+          CALL get_z_wi(EL%wi,POS,z)
+        endif
+       CALL B_FIELD(EL%wi,Z,X,B)
        CALL B_FIELD(EL%wi,Z,X,B)
     CASE(KIND4)      ! Pill box cavity
  
@@ -21867,6 +21897,7 @@ call kill(vm,phi,z)
     REAL(DP),  INTENT(INout) :: B(3),BPA(3),BPE(3),XP(2),XPA(2),e(3)
     REAL(DP),  OPTIONAL ::EF(3),EFB(3),EFD(3)
     integer, optional,intent(in) :: pos
+ 
     INTEGER i
     REAL(DP) be
     type(internal_state) k
@@ -21980,12 +22011,12 @@ call kill(vm,phi,z)
           XP(1)=XPA(1)/N
           XP(2)=XPA(2)/N
        ELSEif(el%kind==kindwiggler) then
-          CALL get_z_wi(EL%wi,POS,z)
 
           if(el%wi%xprime) then
            Xpa(1)=X(2)
            Xpa(2)=X(4)
           else
+          CALL get_z_wi(EL%wi,POS,z)
           CALL COMPX(EL%wi,Z,X,A,AP)
           CALL COMPY(EL%wi,Z,X,B,BP)
            Xpa(1)=X(2)-A
@@ -22139,11 +22170,11 @@ call kill(vm,phi,z)
           XP(1)=XPA(1)/N
           XP(2)=XPA(2)/N
        ELSEif(el%kind==kindwiggler) then
-          CALL get_z_wi(EL%wi,POS,z)
           if(el%wi%xprime) then
            Xpa(1)=X(2)
            Xpa(2)=X(4)
           else
+          CALL get_z_wi(EL%wi,POS,z)
           CALL COMPX(EL%wi,Z,X,A,AP)
           CALL COMPY(EL%wi,Z,X,B,BP)
            Xpa(1)=X(2)-A
@@ -22303,6 +22334,7 @@ call kill(vm,phi,z)
     xp(2)=x(4)   !  to prevent a crash in monitors, etc... CERN june 2010
     dlds=0.0_dp
     del=x(5)
+
     CALL get_field(c,B,E,phi,X,k,POS,zw,before)
 !eeeeeeeeeeeeeeeee
 !write(6,*) " pos",pos
@@ -23560,6 +23592,979 @@ dspin=matmul(s,n_oleksii)
     call kill(sf)
 
     end subroutine  quaternion_8_to_matrix
+
+!!!!!!!   new probe wiggler feval   !!!!!!!!!!!!!!!!
+                              
+ subroutine feval_sagan_prober(z,x,qi,k,f,q,c)   !electric teapot s
+    IMPLICIT NONE
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    real(dp), INTENT(INout) :: x(6)
+    real(dp), INTENT(INOUT) :: F(6)
+    type(quaternion) , INTENT(INOUT) :: q,qi
+    real(dp),INTENT(INOUT):: Z
+    TYPE(sagan) ,pointer  :: EL
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    REAL(DP) A(3),AD(3),PZ,hcurv,ve,B(3),E(3),beta0,DEL
+    integer pos
+
+    el=>c%parent_fibre%mag%wi
+     
+    if(k%time) then
+       beta0=el%p%beta0; 
+    else
+       beta0=1.0_dp; 
+    endif
+
+
+      e=0.0_dp
+      ve=0.0_dp
+
+      call B_field(EL,Z,X,B)
+      call E_field(EL,Z,X,E)
+      call E_potential(EL,Z,X,VE)
+
+           DEL=x(5)+VE
+      call fx_new(f,x,k,EL%P%EXACT,EL%P%b0,beta0,b,e,ve) 
+
+     global_e= DEL*el%p%p0c
+
+!  
+!
+    pos=0
+if(k%radiation.or.k%spin) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos,z)
+ 
+if(k%spin) then
+ q%x(0)=0.0_dp
+ q=q*qi
+endif
+
+
+   END subroutine feval_sagan_prober
+ 
+
+
+                             
+ subroutine feval_sagan_probep(z,x,qi,k,f,q,e_ij,denf,c,fac,ds)    !electric teapot s
+    IMPLICIT NONE
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    type(real_8), INTENT(INout) :: x(6)
+    type(real_8), INTENT(INOUT) :: F(6)
+    type(quaternion_8) , INTENT(INOUT) :: q,qi
+    type(real_8),INTENT(INOUT):: Z
+    TYPE(saganp) ,pointer  :: EL
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    type(real_8) B(3),E(3),ve
+    REAL(DP),intent(inout):: e_ij(6,6),denf
+    real(dp),intent(in) ::fac,ds 
+    REAL(DP)  hcurv,beta0,DEL
+    real(dp) zw
+    integer pos
+
+
+    el=>c%parent_fibre%magp%wi
+     
+    if(k%time) then
+       beta0=el%p%beta0; 
+    else
+       beta0=1.0_dp; 
+    endif
+
+    call alloc(B)
+    call alloc(E)
+    call alloc(VE)
+
+      e=0.0_dp
+      ve=0.0_dp
+
+      call B_field(EL,Z,X,B)
+      call E_field(EL,Z,X,E)
+      call E_potential(EL,Z,X,VE)
+
+           DEL=x(5)+VE
+      call fx_new(f,x,k,EL%P%EXACT,EL%P%b0,beta0,b,e,ve) 
+
+     global_e= DEL*el%p%p0c
+
+!  
+!
+   zw=z
+    pos=0                                         
+if(k%radiation.or.k%spin) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos,zw,e_ij,denf,fac,ds)  !                    (c,x,q%x(1:3),k,f,pos,zw,e_ij,denf,fac,ds))
+ 
+if(k%spin) then
+ q%x(0)=0.0_dp
+ q=q*qi
+endif
+    call kill(B)
+    call kill(E)
+    call kill(VE)
+
+   END subroutine feval_sagan_probep
+ 
+!eeeeeeeeeeee
+
+ subroutine rk2_sagan_prober(ti,p,k,c,h)
+    IMPLICIT none
+    integer ne
+    parameter (ne=6)
+    type(probe), INTENT(INOUT) ::  p
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    real(dp)   y(ne)
+    real(dp)  yt(ne),f(ne),a(ne),b(ne),tt
+    type(quaternion) qa,qb,qyt,qy
+    integer j
+    real(dp), intent(inout) :: ti,h
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    type(quaternion) q
+
+  
+    qy=p%q
+    y=p%x
+
+    call feval_sagan_probe(tI,y,qy,k,f,q,c) 
+
+    do  j=1,ne
+       a(j)=h*f(j)
+    enddo
+   if(k%spin) then
+     do  j=0,3
+       qa%x(j)=h*q%x(j)
+     enddo
+    endif
+    if(k%spin) then
+     do  j=0,3
+       qyt%x(j)=qy%x(j)+qa%x(j)/2.0_dp
+     enddo
+    endif
+    do  j=1,ne
+       yt(j)=y(j)+a(j)/2.0_dp
+    enddo
+
+
+    tt=tI+h/2.0_dp
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,c)
+
+    do  j=1,ne
+       b(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qb%x(j)=h*q%x(j)
+     enddo
+    endif
+
+    do  j=1,ne
+       p%x(j) = p%x(j)+b(j)
+    enddo
+
+    if(k%spin) then
+     do  j=0,3
+       p%q%x(j)=p%q%x(j)+qb%x(j) 
+     enddo
+    endif
+
+    tI=ti+h
+
+    return
+  end  subroutine rk2_sagan_prober
+
+subroutine rk2_sagan_probep(ti,p,k,c,h)   ! (ti,h,GR,y,k)
+    IMPLICIT none
+
+    integer ne
+    parameter (ne=6)
+    type(probe_8), INTENT(INOUT) ::  p
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    type(real_8)   y(ne)
+    type(real_8)   yt(ne),f(ne),a(ne),b(ne),tt
+    type(quaternion_8) qa,qb,qyt,qy,q
+    integer j
+        type(real_8) , intent(inout) :: ti,h
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    real(dp) e_ija(6,6),e_ijb(6,6)
+    real(dp) de_ij(6,6),hr,denf,cr
+
+    do j=1,ne
+     call alloc(y(j),yt(j),f(j),a(j),b(j))
+    enddo
+     call alloc(tt)
+     call alloc(qa,qb,qyt,qy,q)
+
+    qy=p%q
+    y=p%x
+    hr=h
+   cr=0.5_dp
+               
+    call feval_sagan_probe(tI,y,qy,k,f,q,de_ij,denf,c,cr,hr)   
+
+  if(compute_stoch_kick) then 
+  c%delta_rad_in=denf+c%delta_rad_in 
+  c%delta_rad_out=denf+c%delta_rad_out 
+  endif
+
+
+    do  j=1,ne
+       a(j)=h*f(j)
+    enddo
+   if(k%spin) then
+     do  j=0,3
+       qa%x(j)=h*q%x(j)
+     enddo
+     do  j=0,3
+       qyt%x(j)=qy%x(j)+qa%x(j)/2.0_dp
+     enddo
+    endif
+    do  j=1,ne
+       yt(j)=y(j)+a(j)/2.0_dp
+    enddo
+     if(k%envelope)  then
+      e_ija =hr*de_ij  
+    endif
+
+    tt=tI+h/2.0_dp
+
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,de_ij,denf,c,cr,hr)
+  if(compute_stoch_kick) then 
+  c%delta_rad_in=denf+c%delta_rad_in 
+  c%delta_rad_out=denf+c%delta_rad_out 
+  endif
+    do  j=1,ne
+       b(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qb%x(j)=h*q%x(j)
+     enddo
+    endif
+    if(k%envelope)  then
+      e_ijb =hr*de_ij  
+      p%e_ij=p%e_ij+e_ijb
+    endif
+    do  j=1,ne
+       p%x(j) = p%x(j)+b(j)
+    enddo
+
+    if(k%spin) then
+     do  j=0,3
+       p%q%x(j)=p%q%x(j)+qb%x(j) 
+     enddo
+    endif
+     
+
+
+    tI=ti+h
+
+
+    do j=1,ne
+     call kill(y(j),yt(j),f(j),a(j),b(j))
+    enddo
+     call kill(tt)
+     call kill(qa,qb,qyt,qy,q)
+
+    return
+  end  subroutine rk2_sagan_probep
+
+
+ subroutine rk4_sagan_prober(ti,p,k,ct,h)   ! (ti,h,GR,y,k)
+    IMPLICIT none
+
+    integer ne
+    parameter (ne=6)
+    type(probe), INTENT(INOUT) ::  p
+    TYPE(integration_node),pointer, INTENT(IN):: ct
+    real(dp)   y(ne)
+    real(dp)  yt(ne),f(ne),a(ne),b(ne),c(ne),d(ne),tt
+    type(quaternion)qa,qb,qyt,qy,qc,qd,q
+    integer j
+    real(dp), intent(inout) :: ti,h
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+ 
+
+    qy=p%q
+    y=p%x
+               
+    call feval_sagan_probe(tI,y,qy,k,f,q,ct)   
+ 
+    do  j=1,ne
+       a(j)=h*f(j)
+    enddo
+   if(k%spin) then
+     do  j=0,3
+       qa%x(j)=h*q%x(j)
+     enddo
+     do  j=0,3
+       qyt%x(j)=qy%x(j)+qa%x(j)/2.0_dp
+     enddo
+    endif
+    do  j=1,ne
+       yt(j)=y(j)+a(j)/2.0_dp
+    enddo
+ 
+
+    tt=tI+h/2.0_dp
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,ct)
+ 
+
+    do  j=1,ne
+       b(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qb%x(j)=h*q%x(j)
+     enddo
+     do  j=0,3
+       qyt%x(j)=qy%x(j)+qb%x(j)/2.0_dp
+     enddo
+    endif
+    do   j=1,ne
+       yt(j)=y(j) + b(j)/2.0_dp
+    enddo
+
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,ct)
+ 
+
+    do  j=1,ne
+       c(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qc%x(j)=h*q%x(j)
+     enddo
+      do  j=0,3
+       qyt%x(j)=qy%x(j)+qc%x(j) 
+     enddo
+    endif
+    do  j=1,ne
+       yt(j)=y(j)+c(j)
+    enddo
+
+
+    tt=tI+h
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,ct)
+ 
+
+    do  j=1,ne
+       d(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qd%x(j)=h*q%x(j)
+     enddo
+    endif
+
+ 
+    do  j=1,ne
+       p%x(j) = p%x(j)+(a(j)+2.0_dp*b(j)+2.0_dp*c(j)+d(j))/6.0_dp
+    enddo
+ 
+
+ 
+    if(k%spin) then
+     do  j=0,3
+       p%q%x(j)=p%q%x(j)+(qa%x(j)+2.0_dp*qb%x(j)+2.0_dp*qc%x(j)+qd%x(j))/6.0_dp
+     enddo
+    endif
+ 
+
+
+    return
+  end  subroutine rk4_sagan_prober
+ 
+subroutine rk4_sagan_probep(ti,p,k,ct,h)   ! (ti,h,GR,y,k)
+    IMPLICIT none
+
+    integer ne
+    parameter (ne=6)
+    type(probe_8), INTENT(INOUT) ::  p
+    TYPE(integration_node),pointer, INTENT(IN):: ct
+    type(real_8)    y(ne)
+    type(real_8)   yt(ne),f(ne),a(ne),b(ne),c(ne),d(ne),tt
+    type(quaternion_8) qa,qb,qyt,qy,qc,qd,q
+    integer j
+    type(real_8) , intent(inout) :: ti,h
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    real(dp) e_ija(6,6),e_ijb(6,6),e_ijc(6,6),e_ijd(6,6)
+    real(dp) de_ij(6,6),hr,denf,cr
+
+
+          
+    do j=1,ne
+     call alloc(y(j),yt(j),f(j),a(j),b(j),c(j),d(j))
+    enddo
+     call alloc(tt)
+     call alloc(qa,qb,qyt,qy,qc,qd,q)
+
+    qy=p%q
+    y=p%x
+    hr=h
+   cr=0.25_dp
+
+    call feval_sagan_probe(tI,y,qy,k,f,q,de_ij,denf,ct,cr,hr)   
+if(compute_stoch_kick) then 
+  ct%delta_rad_in=denf+ct%delta_rad_in 
+  ct%delta_rad_out=denf+ct%delta_rad_out 
+  endif
+
+
+   do  j=1,ne
+       a(j)=h*f(j)
+    enddo
+  if(k%spin) then
+     do  j=0,3
+       qa%x(j)=h*q%x(j)
+     enddo
+     do  j=0,3
+       qyt%x(j)=qy%x(j)+qa%x(j)/2.0_dp
+     enddo
+    endif
+    do  j=1,ne
+       yt(j)=y(j)+a(j)/2.0_dp
+    enddo
+     if(k%envelope)  then
+      e_ija =hr*de_ij  
+    endif
+ 
+
+    tt=tI+h/2.0_dp
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,de_ij,denf,ct,cr,hr)
+ if(compute_stoch_kick) then 
+  ct%delta_rad_in=denf+ct%delta_rad_in 
+  ct%delta_rad_out=denf+ct%delta_rad_out 
+  endif
+
+
+  do  j=1,ne
+       b(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qb%x(j)=h*q%x(j)
+     enddo
+     do  j=0,3
+       qyt%x(j)=qy%x(j)+qb%x(j)/2.0_dp
+     enddo
+    endif
+    if(k%envelope)  then
+      e_ijb =hr*de_ij  
+    endif
+
+    do  j=1,ne
+       yt(j)=y(j)+b(j)/2.0_dp
+    enddo
+
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,de_ij,denf,ct,cr,hr)
+   if(compute_stoch_kick) then 
+  ct%delta_rad_in=denf+ct%delta_rad_in 
+  ct%delta_rad_out=denf+ct%delta_rad_out 
+  endif
+
+
+    do  j=1,ne
+       c(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qc%x(j)=h*q%x(j)
+     enddo
+      do  j=0,3
+       qyt%x(j)=qy%x(j)+qc%x(j) 
+     enddo
+    endif
+    do  j=1,ne
+       yt(j)=y(j)+c(j)
+    enddo
+    if(k%envelope)  then
+      e_ijc =hr*de_ij  
+    endif
+
+    tt=tI+h
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,de_ij,denf,ct,cr,hr)
+ if(compute_stoch_kick) then 
+  ct%delta_rad_in=denf+ct%delta_rad_in 
+  ct%delta_rad_out=denf+ct%delta_rad_out 
+  endif
+
+
+    do  j=1,ne
+       d(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qd%x(j)=h*q%x(j)
+     enddo
+    endif
+    if(k%envelope)  then
+      e_ijd =hr*de_ij  
+    endif
+ 
+    do  j=1,ne
+       p%x(j) = p%x(j)+(a(j)+2.0_dp*b(j)+2.0_dp*c(j)+d(j))/6.0_dp
+    enddo
+ 
+ 
+    if(k%spin) then
+     do  j=0,3
+       p%q%x(j)=p%q%x(j)+(qa%x(j)+2.0_dp*qb%x(j)+2.0_dp*qc%x(j)+qd%x(j))/6.0_dp
+     enddo
+    endif
+ 
+
+    if(k%envelope)  then
+      p%e_ij=p%e_ij+(e_ija+2.0_dp*e_ijb+2.0_dp*e_ijc+e_ijd)/6.0_dp
+    endif
+
+    do j=1,ne
+     call kill(y(j),yt(j),f(j),a(j),b(j),c(j),d(j))
+    enddo
+     call kill(tt)
+     call kill(qa,qb,qyt,qy,qc,qd,q)
+
+
+    return
+  end  subroutine rk4_sagan_probep
+
+
+subroutine rk6_sagan_prober(ti,p,k,ct,h)   ! (ti,h,GR,y,k)
+    IMPLICIT none
+
+    integer ne
+    parameter (ne=6)
+    type(probe), INTENT(INOUT) ::  p
+    TYPE(integration_node),pointer, INTENT(IN):: ct
+    real(dp)     y(ne)
+    real(dp)    yt(ne),f(ne),a(ne),b(ne),c(ne),d(ne),e(ne),g(ne),o(ne),pt(ne),tt
+    type(quaternion) qa,qb,qyt,qy,qc,qd,qe,qg,qo,qp,q
+    integer j
+    real(dp)  , intent(inout) :: ti,h
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+ 
+
+    qy=p%q
+    y=p%x
+    
+    call feval_sagan_probe(tI,y,qy,k,f,q,ct)   
+
+    do  j=1,ne
+       a(j)=h*f(j)
+    enddo
+  if(k%spin) then
+     do  j=0,3
+       qa%x(j)=h*q%x(j)
+     enddo
+     do  j=0,3
+       qyt%x(j)=qy%x(j)+qa%x(j)/9.0_dp
+     enddo
+    endif
+    do  j=1,ne
+       yt(j)=y(j)+a(j)/9.0_dp
+    enddo
+ 
+ 
+
+    tt=tI+h/9.0_dp
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,ct)
+
+  do  j=1,ne
+       b(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qb%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(qa%x(j) + 3.0_dp*qb%x(j))/24.0_dp
+     enddo
+    endif
+ 
+    do   j=1,ne
+       yt(j)=y(j) + (a(j) + 3.0_dp*b(j))/24.0_dp
+    enddo
+
+
+
+     
+    tt=tI+h/6.0_dp
+
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,ct)
+
+    do  j=1,ne
+       c(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qc%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(qa%x(j)-3.0_dp*qb%x(j)+4.0_dp*qc%x(j))/6.0_dp
+     enddo
+    endif
+    do  j=1,ne
+       yt(j)=y(j)+c(j)
+    enddo
+ 
+
+    do  j=1,ne
+       yt(j)=y(j)+(a(j)-3.0_dp*b(j)+4.0_dp*c(j))/6.0_dp
+    enddo
+ 
+
+   tt=tI+h/3.0_dp
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,ct)
+
+    do  j=1,ne
+       d(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qd%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(-5.0_dp*qa%x(j) + 27.0_dp*qb%x(j) - 24.0_dp*qc%x(j) + 6.0_dp*qd%x(j))/8.0_dp
+     enddo
+    endif
+ 
+ 
+    do  j=1,ne
+       yt(j)=y(j) + (-5.0_dp*a(j) + 27.0_dp*b(j) - 24.0_dp*c(j) + 6.0_dp*d(j))/8.0_dp
+    enddo
+
+   tt=tI+0.5_dp*h
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,ct)
+
+    do  j=1,ne
+       e(j)=h*f(j)
+    enddo
+
+    if(k%spin) then
+     do  j=0,3
+       qe%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(221.0_dp*qa%x(j)-981.0_dp*qb%x(j) + 867.0_dp*qc%x(j)- 102.0_dp*qd%x(j) + qe%x(j))/9.0_dp
+     enddo
+    endif
+
+    do  j=1,ne
+       yt(j)=y(j) + (221.0_dp*a(j) - 981.0_dp*b(j) + 867.0_dp*c(j)- 102.0_dp*d(j) + e(j))/9.0_dp
+    enddo
+ 
+
+     tt = tI+2.0_dp*h/3.0_dp
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,ct)
+
+    do   j=1,ne
+       g(j)=h*f(j)
+    enddo
+    do  j=1,ne
+       yt(j) = y(j)+(-183.0_dp*a(j)+678.0_dp*b(j)-472.0_dp*c(j)-66.0_dp*d(j)+80.0_dp*e(j) + 3.0_dp*g(j))/48.0_dp
+    enddo
+
+    if(k%spin) then
+     do  j=0,3
+       qg%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(-183.0_dp*qa%x(j)+678.0_dp*qb%x(j)-472.0_dp*qc%x(j) &
+              -66.0_dp*qd%x(j)+80.0_dp*qe%x(j)+3.0_dp*qg%x(j))/48.0_dp
+     enddo
+    endif
+ 
+
+    tt = tI + 5.0_dp*h/6.0_dp
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,ct)
+
+    do  j=1,ne
+       o(j)=h*f(j)
+    enddo
+    do  j=1,ne
+       yt(j) = y(j)+(716.0_dp*a(j)-2079.0_dp*b(j)+1002.0_dp*c(j)+834.0_dp*d(j)-454.0_dp*e(j)-9.0_dp*g(j)+72.0_dp*o(j))/82.0_dp
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qo%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(716.0_dp*qa%x(j)-2079.0_dp*qb%x(j)+1002.0_dp*qc%x(j)+834.0_dp*qd%x(j) &
+        -454.0_dp*qe%x(j)-9.0_dp*qg%x(j)+72.0_dp*qo%x(j))/82.0_dp
+     enddo
+     endif
+ 
+
+    tt = tI + h
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,ct)
+
+    do  j=1,ne
+       pt(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qp%x(j)=h*q%x(j)
+     enddo
+    endif
+ 
+
+    do  j=1,ne
+       p%x(j) = p%x(j)+(41.0_dp*a(j)+216.0_dp*c(j)+27.0_dp*d(j)+272.0_dp*e(j)+27.0_dp*g(j)+216.0_dp*o(j)+41.0_dp*pt(j))/840.0_dp
+    enddo
+
+ 
+    if(k%spin) then
+     do  j=0,3
+       p%q%x(j) = p%q%x(j)+(41.0_dp*qa%x(j)+216.0_dp*qc%x(j)+27.0_dp*qd%x(j) &
+                   +272.0_dp*qe%x(j)+27.0_dp*qg%x(j)+216.0_dp*qo%x(j)+41.0_dp*qp%x(j))/840.0_dp
+    enddo
+    endif
+
+
+ 
+
+
+    return
+  end  subroutine rk6_sagan_prober
+
+
+subroutine rk6_sagan_probep(ti,p,k,ct,h)   ! (ti,h,GR,y,k)
+    IMPLICIT none
+
+    integer ne
+    parameter (ne=6)
+    type(probe_8), INTENT(INOUT) ::  p
+    TYPE(integration_node),pointer, INTENT(IN):: ct
+    type(real_8)    y(ne)
+    type(real_8)   yt(ne),f(ne),a(ne),b(ne),c(ne),d(ne),e(ne),g(ne),o(ne),pt(ne),tt
+    type(quaternion_8) qa,qb,qyt,qy,qc,qd,qe,qg,qo,qp,q
+    integer j
+    type(real_8) , intent(inout) :: ti,h
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    real(dp) e_ija(6,6),e_ijb(6,6),e_ijc(6,6),e_ijd(6,6),e_ije(6,6),e_ijg(6,6),e_ijo(6,6),e_ijp(6,6)
+    real(dp) de_ij(6,6),hr,denf,cr
+
+
+          
+    do j=1,ne
+     call alloc(y(j),yt(j),f(j),a(j),b(j),c(j),d(j),e(j),g(j),o(j))
+     call alloc(pt(j))
+    enddo
+     call alloc(tt)
+     call alloc(qa,qb,qyt,qy,qc,qd,qe,qg,qo,qp)
+     call alloc(q)
+
+    qy=p%q
+    y=p%x
+    hr=h
+   cr=0.125_dp
+    call feval_sagan_probe(tI,y,qy,k,f,q,de_ij,denf,ct,cr,hr)   
+ if(compute_stoch_kick) then 
+  ct%delta_rad_in=denf+ct%delta_rad_in 
+  ct%delta_rad_out=denf+ct%delta_rad_out 
+  endif
+
+    do  j=1,ne
+       a(j)=h*f(j)
+    enddo
+  if(k%spin) then
+     do  j=0,3
+       qa%x(j)=h*q%x(j)
+     enddo
+     do  j=0,3
+       qyt%x(j)=qy%x(j)+qa%x(j)/9.0_dp
+     enddo
+    endif
+    do  j=1,ne
+       yt(j)=y(j)+a(j)/9.0_dp
+    enddo
+     if(k%envelope)  then
+      e_ija =hr*de_ij  
+    endif
+ 
+
+    tt=tI+h/9.0_dp
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,de_ij,denf,ct,cr,hr)
+  if(compute_stoch_kick) then 
+  ct%delta_rad_in=denf+ct%delta_rad_in 
+  ct%delta_rad_out=denf+ct%delta_rad_out 
+  endif
+  do  j=1,ne
+       b(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qb%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(qa%x(j) + 3.0_dp*qb%x(j))/24.0_dp
+     enddo
+    endif
+    if(k%envelope)  then
+      e_ijb =hr*de_ij  
+      p%e_ij=p%e_ij+e_ijb
+    endif
+    do   j=1,ne
+       yt(j)=y(j) + (a(j) + 3.0_dp*b(j))/24.0_dp
+    enddo
+
+
+
+     
+    tt=tI+h/6.0_dp
+
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,de_ij,denf,ct,cr,hr)
+ if(compute_stoch_kick) then 
+  ct%delta_rad_in=denf+ct%delta_rad_in 
+  ct%delta_rad_out=denf+ct%delta_rad_out 
+  endif
+
+    do  j=1,ne
+       c(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qc%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(qa%x(j)-3.0_dp*qb%x(j)+4.0_dp*qc%x(j))/6.0_dp
+     enddo
+    endif
+    do  j=1,ne
+       yt(j)=y(j)+c(j)
+    enddo
+    if(k%envelope)  then
+      e_ijc =hr*de_ij  
+    endif
+
+    do  j=1,ne
+       yt(j)=y(j)+(a(j)-3.0_dp*b(j)+4.0_dp*c(j))/6.0_dp
+    enddo
+ 
+
+   tt=tI+h/3.0_dp
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,de_ij,denf,ct,cr,hr)
+ if(compute_stoch_kick) then 
+  ct%delta_rad_in=denf+ct%delta_rad_in 
+  ct%delta_rad_out=denf+ct%delta_rad_out 
+  endif
+
+
+    do  j=1,ne
+       d(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qd%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(-5.0_dp*qa%x(j) + 27.0_dp*qb%x(j) - 24.0_dp*qc%x(j) + 6.0_dp*qd%x(j))/8.0_dp
+     enddo
+    endif
+    if(k%envelope)  then
+      e_ijd =hr*de_ij  
+    endif
+ 
+    do  j=1,ne
+       yt(j)=y(j) + (-5.0_dp*a(j) + 27.0_dp*b(j) - 24.0_dp*c(j) + 6.0_dp*d(j))/8.0_dp
+    enddo
+
+   tt=tI+0.5_dp*h
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,de_ij,denf,ct,cr,hr)
+ if(compute_stoch_kick) then 
+  ct%delta_rad_in=denf+ct%delta_rad_in 
+  ct%delta_rad_out=denf+ct%delta_rad_out 
+  endif
+    do  j=1,ne
+       e(j)=h*f(j)
+    enddo
+
+    if(k%spin) then
+     do  j=0,3
+       qe%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(221.0_dp*qa%x(j)-981.0_dp*qb%x(j) + 867.0_dp*qc%x(j)- 102.0_dp*qd%x(j) + qe%x(j))/9.0_dp
+     enddo
+    endif
+
+    do  j=1,ne
+       yt(j)=y(j) + (221.0_dp*a(j) - 981.0_dp*b(j) + 867.0_dp*c(j)- 102.0_dp*d(j) + e(j))/9.0_dp
+    enddo
+     if(k%envelope)  then
+      e_ije =hr*de_ij  
+    endif
+
+     tt = tI+2.0_dp*h/3.0_dp
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,de_ij,denf,ct,cr,hr)
+ if(compute_stoch_kick) then 
+  ct%delta_rad_in=denf+ct%delta_rad_in 
+  ct%delta_rad_out=denf+ct%delta_rad_out 
+  endif
+
+    do   j=1,ne
+       g(j)=h*f(j)
+    enddo
+    do  j=1,ne
+       yt(j) = y(j)+(-183.0_dp*a(j)+678.0_dp*b(j)-472.0_dp*c(j)-66.0_dp*d(j)+80.0_dp*e(j) + 3.0_dp*g(j))/48.0_dp
+    enddo
+
+    if(k%spin) then
+     do  j=0,3
+       qg%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(-183.0_dp*qa%x(j)+678.0_dp*qb%x(j)-472.0_dp*qc%x(j) &
+              -66.0_dp*qd%x(j)+80.0_dp*qe%x(j)+3.0_dp*qg%x(j))/48.0_dp
+     enddo
+    endif
+     if(k%envelope)  then
+      e_ijg =hr*de_ij  
+    endif
+
+    tt = tI + 5.0_dp*h/6.0_dp
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,de_ij,denf,ct,cr,hr)
+ if(compute_stoch_kick) then 
+  ct%delta_rad_in=denf+ct%delta_rad_in 
+  ct%delta_rad_out=denf+ct%delta_rad_out 
+  endif
+
+    do  j=1,ne
+       o(j)=h*f(j)
+    enddo
+    do  j=1,ne
+       yt(j) = y(j)+(716.0_dp*a(j)-2079.0_dp*b(j)+1002.0_dp*c(j)+834.0_dp*d(j)-454.0_dp*e(j)-9.0_dp*g(j)+72.0_dp*o(j))/82.0_dp
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qo%x(j)=h*q%x(j)
+       qyt%x(j)=qy%x(j)+(716.0_dp*qa%x(j)-2079.0_dp*qb%x(j)+1002.0_dp*qc%x(j)+834.0_dp*qd%x(j) &
+        -454.0_dp*qe%x(j)-9.0_dp*qg%x(j)+72.0_dp*qo%x(j))/82.0_dp
+     enddo
+     endif
+     if(k%envelope)  then
+      e_ijo =hr*de_ij  
+    endif
+
+    tt = tI + h
+    call feval_sagan_probe(tt,yt,qyt,k,f,q,de_ij,denf,ct,cr,hr)
+ if(compute_stoch_kick) then 
+  ct%delta_rad_in=denf+ct%delta_rad_in 
+  ct%delta_rad_out=denf+ct%delta_rad_out 
+  endif
+
+    do  j=1,ne
+       pt(j)=h*f(j)
+    enddo
+    if(k%spin) then
+     do  j=0,3
+       qp%x(j)=h*q%x(j)
+     enddo
+    endif
+     if(k%envelope)  then
+      e_ijp =hr*de_ij  
+    endif
+
+    do  j=1,ne
+       p%x(j) = p%x(j)+(41.0_dp*a(j)+216.0_dp*c(j)+27.0_dp*d(j)+272.0_dp*e(j)+27.0_dp*g(j)+216.0_dp*o(j)+41.0_dp*pt(j))/840.0_dp
+    enddo
+
+    if(k%spin) then
+     do  j=0,3
+       p%q%x(j) = p%q%x(j)+(41.0_dp*qa%x(j)+216.0_dp*qc%x(j)+27.0_dp*qd%x(j) &
+                   +272.0_dp*qe%x(j)+27.0_dp*qg%x(j)+216.0_dp*qo%x(j)+41.0_dp*qp%x(j))/840.0_dp
+    enddo
+    endif
+    if(k%envelope)  then
+      p%e_ij=p%e_ij+(41.0_dp*e_ija+216.0_dp*e_ijc+27.0_dp*e_ijd+272.0_dp*e_ije & 
+             +27.0_dp*e_ijg+216.0_dp*e_ijo+41.0_dp*e_ijp)/840.0_dp
+    endif
+
+    do j=1,ne
+     call kill(y(j),yt(j),f(j),a(j),b(j),c(j),d(j),e(j),g(j),o(j))
+     call kill(pt(j))
+    enddo
+     call kill(tt)
+     call kill(qa,qb,qyt,qy,qc,qd,qe,qg,qo,qp)
+     call kill(q)
+
+
+    return
+  end  subroutine rk6_sagan_probep
+
 !!!!!!!!!!!!!!! new bmad CAV4 !!!!!!!!!!!!!!
 !                                 (tI,y,q,k,f,q,c)    
   subroutine feval_CAV_bmad_prober(z0,x,qi,k,f,q,c)    !(Z0,X,k,f,D)   ! MODELLED BASED ON DRIFT
@@ -23733,6 +24738,7 @@ endif
 
 
 
+
  subroutine rk2bmad_cav_prober(ti,p,k,c,h)   ! (ti,h,GR,y,k)
     IMPLICIT none
 
@@ -23747,7 +24753,6 @@ endif
     real(dp), intent(inout) :: ti,h
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     type(quaternion) q
-
 
 
     qy=p%q
@@ -29689,6 +30694,7 @@ SUBROUTINE RAD_SPIN_qua_PROBER(c,p,k,ds,zw)
      pos=C%POS_IN_FIBRE-2     !  unknown.... to be checked later
      before=.true.
     CALL get_omega_spin(c,OM,B2,dlds,XP,P%X,pos,k,Ed,B,zw)
+
     if((k%radiation.or.k%envelope)) then
        call radiate_2_probe(c,DS,FAC,P,b2,dlds,k,pos)
 !       call radiate_2(c,DS,FAC,P,b2,dlds,before,k,pos)
@@ -30085,7 +31091,7 @@ end SUBROUTINE push_quaternionP
        ENDIF
 
        if(el%xprime) then
-        call rk2_sagan(z,d,el,p%x,k)
+        call rk2_sagan_probe(z,p,k,c,d)  !(z,d,el,p%x,k)
        else
 
           Z=Z+EL%P%DIR*DH
@@ -30120,7 +31126,7 @@ end SUBROUTINE push_quaternionP
        ENDIF
 
        if(el%xprime) then
-        call rk4_sagan(z,d,el,P%x,k)
+        call rk4_sagan_probe(z,p,k,c,d)
        else
 
        Z=Z+EL%P%DIR*D1
@@ -30169,7 +31175,7 @@ end SUBROUTINE push_quaternionP
       endif
 
 
-    CASE(6)
+    CASE(6,8)
        DO j =1,4
           DK(j)=EL%L*YOSK(J)/EL%P%NST
           DF(j)=DK(j)/2.0_dp
@@ -30182,7 +31188,7 @@ end SUBROUTINE push_quaternionP
        ENDIF
 
        if(el%xprime) then
-        call rk6_sagan(z,d,el,P%x,k)
+        call rk6_sagan_probe(z,p,k,c,d)
        else
 
 
@@ -30249,6 +31255,7 @@ end SUBROUTINE push_quaternionP
     TYPE(REAL_8)   D1,D2,DK1,DK2
     TYPE(REAL_8) DF(4),DK(4)
     INTEGER J
+    real(dp) z0
     TYPE(INTERNAL_STATE),OPTIONAL :: K
 
 
@@ -30270,7 +31277,7 @@ end SUBROUTINE push_quaternionP
        ENDIF
 
        if(el%xprime) then
-        call rk2_sagan(z,d,el,p%x,k)
+        call rk2_sagan_probe(z,p,k,c,d)   !(z,d,el,p%x,k)
        else
 
           Z=Z+EL%P%DIR*DH
@@ -30280,7 +31287,8 @@ end SUBROUTINE push_quaternionP
 
        if(k%spin.or.k%radiation) then
           CALL KICK(EL,DH,Z,P%x,k)
-          call RAD_SPIN_qua_PROBE(c,p,k,d)  !,zw=z)
+          z0=z
+          call RAD_SPIN_qua_PROBE(c,p,k,d,zw=z0)
           CALL KICK(EL,DH,Z,P%x,k)
          else
            CALL KICK(EL,D,Z,P%x,k)
@@ -30309,7 +31317,7 @@ end SUBROUTINE push_quaternionP
        ENDIF
 
        if(el%xprime) then
-        call rk4_sagan(z,d,el,P%x,k)
+        call rk4_sagan_probe(z,p,k,c,d)
        else
 
        Z=Z+EL%P%DIR*D1
@@ -30318,7 +31326,8 @@ end SUBROUTINE push_quaternionP
        CALL KICKPATH(EL,D1,P%x,k)
        if(k%spin.or.k%radiation) then
           CALL KICK(EL,D1,Z,P%x,k)
-          call RAD_SPIN_qua_PROBE(c,p,k,DK1)  !,zw=z)
+          z0=z
+          call RAD_SPIN_qua_PROBE(c,p,k,DK1,zw=z0)
           CALL KICK(EL,D1,Z,P%x,k)
          else
           CALL KICK(EL,DK1,Z,P%x,k)
@@ -30333,7 +31342,8 @@ end SUBROUTINE push_quaternionP
 
        if(k%spin.or.k%radiation) then
          CALL KICK(EL,D2,Z,P%x,k)
-          call RAD_SPIN_qua_PROBE(c,p,k,DK2)  !,zw=z)
+         z0=z
+          call RAD_SPIN_qua_PROBE(c,p,k,DK2,zw=z0)
          CALL KICK(EL,D2,Z,P%x,k)
          else
          CALL KICK(EL,DK2,Z,P%x,k)
@@ -30347,7 +31357,8 @@ end SUBROUTINE push_quaternionP
        CALL KICKPATH(EL,D1,P%x,k)
        if(k%spin.or.k%radiation) then
           CALL KICK(EL,D1,Z,P%x,k)
-          call RAD_SPIN_qua_PROBE(c,p,k,DK1) !,zw=z)
+          z0=z
+          call RAD_SPIN_qua_PROBE(c,p,k,DK1,zw=z0)
           CALL KICK(EL,D1,Z,P%x,k)
          else
           CALL KICK(EL,DK1,Z,P%x,k)
@@ -30359,7 +31370,7 @@ end SUBROUTINE push_quaternionP
      call kill(d,d1,d2,dk1,dk2,z)
 
 
-    CASE(6)
+    CASE(6,8)
      call alloc(d,z)
      call alloc(dk)
      call alloc(df)
@@ -30375,7 +31386,7 @@ end SUBROUTINE push_quaternionP
        ENDIF
 
        if(el%xprime) then
-        call rk6_sagan(z,d,el,P%x,k)
+            call rk6_sagan_probe(z,p,k,c,d)
        else
 
 
@@ -30386,7 +31397,8 @@ end SUBROUTINE push_quaternionP
           CALL KICKPATH(EL,DF(J),P%x,k)
             if(k%spin.or.k%radiation) then
                CALL KICK(EL,DF(J),Z,P%x,k)
-               call RAD_SPIN_qua_PROBE(c,p,k,DK(J))  !,zw=z)
+               z0=z
+               call RAD_SPIN_qua_PROBE(c,p,k,DK(J),zw=z0)
                CALL KICK(EL,DF(J),Z,P%x,k)
               else
                CALL KICK(EL,DK(J),Z,P%x,k)
@@ -30403,7 +31415,8 @@ end SUBROUTINE push_quaternionP
           CALL KICKPATH(EL,DF(J),P%x,k)
             if(k%spin.or.k%radiation) then
                CALL KICK(EL,DF(J),Z,P%x,k)
-               call RAD_SPIN_qua_PROBE(c,p,k,DK(J))  !,zw=z)
+                z0=z
+               call RAD_SPIN_qua_PROBE(c,p,k,DK(J),zw=z0)
                CALL KICK(EL,DF(J),Z,P%x,k)
               else
                CALL KICK(EL,DK(J),Z,P%x,k)

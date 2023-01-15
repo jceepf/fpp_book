@@ -1795,7 +1795,7 @@ ENDIF
           DPZ=(X(2)**2+X(4)**2)/PZ/PZ0/(PZ+PZ0)   ! = (one/PZ-one/PZ0)
           X(1)=X(1)+L*X(2)*DPZ
           X(3)=X(3)+L*X(4)*DPZ
-          X(6)=X(6)+L*(1.0_dp/EL%P%BETA0+X(5))/PZ +k%TOTALPATH*L/EL%P%BETA0
+          X(6)=X(6)+L*(1.0_dp/EL%P%BETA0+X(5))/PZ -(1.0_dp-k%TOTALPATH)*L/EL%P%BETA0
           PZ=ROOT(1.0_dp+2.0_dp*X(5)/EL%P%BETA0+x(5)**2)   ! WRONG NOT SYMPLECTIC 2015.8.11
           X(6)=X(6)-((X(2)*X(2)+X(4)*X(4))/2.0_dp/pz**2+1.0_dp)*(1.0_dp/EL%P%BETA0+x(5))*L/pz
        else
@@ -1804,7 +1804,7 @@ ENDIF
           DPZ=(X(2)**2+X(4)**2)/PZ/PZ0/(PZ+PZ0)   ! = (one/PZ-one/PZ0)
           X(1)=X(1)+L*X(2)*DPZ
           X(3)=X(3)+L*X(4)*DPZ
-          X(6)=X(6)+L*(1.0_dp+X(5))/PZ +k%TOTALPATH*L 
+          X(6)=X(6)+L*(1.0_dp+X(5))/PZ -(1.0_dp-k%TOTALPATH)*L 
           PZ=ROOT((1.0_dp+X(5))**2-X(2)**2-X(4)**2)
           X(6)=X(6)-(L/(1.0_dp+X(5)))*(X(2)*X(2)+X(4)*X(4))/2.0_dp/(1.0_dp+X(5))
        endif
@@ -1834,7 +1834,7 @@ ENDIF
           DPZ=(X(2)**2+X(4)**2)/PZ/PZ0/(PZ+PZ0)   ! = (one/PZ-one/PZ0)
           X(1)=X(1)+L*X(2)*DPZ
           X(3)=X(3)+L*X(4)*DPZ
-          X(6)=X(6)+L*(1.0_dp/EL%P%BETA0+X(5))/PZ +k%TOTALPATH*L/EL%P%BETA0
+          X(6)=X(6)+L*(1.0_dp/EL%P%BETA0+X(5))/PZ -(1.0_dp-k%TOTALPATH)*L/EL%P%BETA0
           PZ=SQRT(1.0_dp+2.0_dp*X(5)/EL%P%BETA0+x(5)**2)   ! WRONG NOT SYMPLECTIC 2015.8.11
           X(6)=X(6)-((X(2)*X(2)+X(4)*X(4))/2.0_dp/pz**2+1.0_dp)*(1.0_dp/EL%P%BETA0+x(5))*L/pz
        else
@@ -1843,7 +1843,7 @@ ENDIF
           DPZ=(X(2)**2+X(4)**2)/PZ/PZ0/(PZ+PZ0)   ! = (one/PZ-one/PZ0)
           X(1)=X(1)+L*X(2)*DPZ
           X(3)=X(3)+L*X(4)*DPZ
-          X(6)=X(6)+L*(1.0_dp+X(5))/PZ +k%TOTALPATH*L 
+          X(6)=X(6)+L*(1.0_dp+X(5))/PZ -(1.0_dp-k%TOTALPATH)*L 
           PZ=SQRT((1.0_dp+X(5))**2-X(2)**2-X(4)**2)
           X(6)=X(6)-(L/(1.0_dp+X(5)))*(X(2)*X(2)+X(4)*X(4))/2.0_dp/(1.0_dp+X(5))
        endif
