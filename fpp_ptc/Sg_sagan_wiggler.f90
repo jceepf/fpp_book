@@ -36,7 +36,7 @@ private conv_to_pxp, conv_to_pxpabell ,conv_to_xprabell,conv_to_xppabell,conv_to
 private B_E_FIELDR,B_E_FIELDP,adjust_px_exir,adjust_px_exip,adjust_px_entr,adjust_px_entp
 private fx_newr,fx_newp
 integer :: put_a_abell = 1
-logical :: Lu_adjust=.false.
+logical :: Lu_wiggler_px_continous=.false.
 
   integer :: limit_sag(2) =(/4,18/) 
  
@@ -3764,8 +3764,8 @@ subroutine feval_saganp(Z,X,k,f,EL)   !electric teapot s
           call conv_to_xp(el,x,k,z)
       ENDIF
     endif
-   else
-    if(Lu_adjust) then
+   endif
+    if(Lu_wiggler_px_continous) then
      IF(J==1) then
         z=0
       IF(EL%P%DIR==1) THEN
@@ -3782,7 +3782,6 @@ subroutine feval_saganp(Z,X,k,f,EL)   !electric teapot s
       ENDIF
     endif
     endif
-   endif
   END SUBROUTINE ADJUST_like_abellr
 
   SUBROUTINE ADJUST_like_abellp(EL,X,k,J)
@@ -3811,8 +3810,8 @@ subroutine feval_saganp(Z,X,k,f,EL)   !electric teapot s
           call conv_to_xp(el,x,k,z)
       ENDIF
     endif
-   else
-    if(Lu_adjust) then
+   endif
+    if(Lu_wiggler_px_continous) then
      IF(J==1) then
         z=0
       IF(EL%P%DIR==1) THEN
@@ -3829,7 +3828,7 @@ subroutine feval_saganp(Z,X,k,f,EL)   !electric teapot s
       ENDIF
     endif
     endif
-   endif
+   
     call kill(z)
   END SUBROUTINE ADJUST_like_abellp
 
