@@ -143,11 +143,17 @@ private c_clean_linear_map
 private c_fill_uni_r,c_null_uni,c_fill_uni,c_refill_uni,c_equal_UNI
 integer :: no_uni = 10000
 type(c_linear_map) q_phasor,qi_phasor
+private compute_lattice_functions_1,compute_lattice_functions_2
+
+
+  INTERFACE compute_lattice_functions
+     MODULE PROCEDURE compute_lattice_functions_1
+     MODULE PROCEDURE compute_lattice_functions_2
+  END INTERFACE
 
   INTERFACE abs_square
      MODULE PROCEDURE absq2
   END INTERFACE
-
   INTERFACE abs
      MODULE PROCEDURE absq
   END INTERFACE
@@ -1010,9 +1016,9 @@ enddo
     ENDDO
 
 !endif
-    scdadd%damps=s1%damps
-    scdadd%d_spin=s1%d_spin
-    scdadd%b_kin=s1%b_kin
+!    scdadd%damps=s1%damps
+!    scdadd%d_spin=s1%d_spin
+!    scdadd%b_kin=s1%b_kin
    
     scdadd%e_ij=s1%e_ij
     scdadd%x0(1:6)=s2%x
@@ -1130,9 +1136,9 @@ enddo
           master=localmaster
        ENDDO
 
-    daddsc%damps=s1%damps
-    daddsc%d_spin=s1%d_spin
-    daddsc%b_kin=s1%b_kin
+!    daddsc%damps=s1%damps
+!    daddsc%d_spin=s1%d_spin
+!    daddsc%b_kin=s1%b_kin
     daddsc%e_ij=s1%e_ij
     daddsc%x0(1:6)=s2%x
     call kill(d)
@@ -1661,16 +1667,16 @@ enddo
      s1%v(i)%i=0
     enddo
     s1%e_ij=0.0_dp
-    s1%damps=0.0_dp
-    s1%sm=0.0_dp
-    s1%b_kin=0.0_dp
-    s1%d_spin=0.0_dp
-    do i=1,3
-      s1%sm(i,i)=1.0_dp
-    enddo
+!    s1%damps=0.0_dp
+!    s1%sm=0.0_dp
+!    s1%b_kin=0.0_dp
+!    s1%d_spin=0.0_dp
+!    do i=1,3
+!      s1%sm(i,i)=1.0_dp
+!    enddo
     s1%x0=0.0_dp
     s1%tpsa=use_tpsa
-    if(associated(s1%m))  deallocate(s1%M)
+!    if(associated(s1%m))  deallocate(s1%M)
 !    if(associated(s1%db)) deallocate(s1%db)
     if(associated(s1%cm)) deallocate(s1%cM)
   END SUBROUTINE alloc_c_damap
@@ -1863,14 +1869,14 @@ enddo
     CALL kill(s1%q)
     s1%n=0
     s1%e_ij=0.0_dp
-    s1%damps=0.0_dp
-    s1%sm=0.0_dp
-    s1%d_spin=0.0_dp
-    s1%b_kin=0.0_dp
+!    s1%damps=0.0_dp
+!    s1%sm=0.0_dp
+!    s1%d_spin=0.0_dp
+!    s1%b_kin=0.0_dp
     s1%e_ij=0.0_dp
-    do i=1,3
-      s1%sm(i,i)=1.0_dp
-    enddo
+!    do i=1,3
+!      s1%sm(i,i)=1.0_dp
+!    enddo
 !    if(associated(s1%db)) deallocate(s1%db)
     if(associated(s1%m)) deallocate(s1%m)
     if(associated(s1%cm)) deallocate(s1%cm)
@@ -2505,16 +2511,16 @@ endif
        ds%e_ij=matmul(matmul(m,r%e_ij),transpose(m))
     endif
 
-ds%damps=r%damps
+!ds%damps=r%damps
 
-ds%d_spin=r%d_spin
-ds%b_kin=r%b_kin
+!ds%d_spin=r%d_spin
+!ds%b_kin=r%b_kin
 
 DS%x0=0
 ds%x0(1:6)=r%x0
-if(use_quaternion) then
- call makeso3(DS%q,ds%sm)
-endif
+!if(use_quaternion) then
+! call makeso3(DS%q,ds%sm)
+!endif
     call kill(t)
 
   END subroutine EQUAL_c_map_RAY8
@@ -5879,14 +5885,26 @@ endif
     s2%sigmas=0
  end SUBROUTINE  EQUAL_c_l_f
 
-  SUBROUTINE  compute_lattice_functions(m,f)
+
+  SUBROUTINE  compute_lattice_functions_2(m,f)
+    implicit none
+    type(c_lattice_function) f
+    type(c_linear_map) ml
+    type(c_damap) m
+     ml=m
+    call   compute_lattice_functions_1(ml,f)
+
+    end SUBROUTINE  compute_lattice_functions_2
+
+  SUBROUTINE  compute_lattice_functions_1(m,f)
     implicit none
     type(c_lattice_function) f
     type(c_linear_map) m
     type(c_linear_map) mi
     type(c_linear_map) q
     integer i,j
-
+ 
+   
     if(f%symplectic) then
       mi=inv_c_linear_map_symplectic(m)
     else
@@ -5929,7 +5947,7 @@ endif
        enddo
      enddo
 
-  end SUBROUTINE  compute_lattice_functions
+  end SUBROUTINE  compute_lattice_functions_1
 
   SUBROUTINE  d_compute_lattice_functions(a,f,a_l,a_li)
     implicit none
@@ -9312,12 +9330,12 @@ endif
       tempnew%e_ij=t1%e_ij + matmul(matmul(f2i,t2%e_ij),f2it)
     endif
 endif
-    if(use_quaternion) then
-      tempnew%sm=matmul(t1%sm,t2%sm)
-      tempnew%d_spin=matmul(t1%sm,t2%d_spin) + t1%d_spin
-      tempnew%damps=matmul(matmul(t1%sm,t2%damps),transpose(t1%sm)) + t1%damps
-      tempnew%b_kin=matmul(matmul(t1%sm,t2%b_kin),transpose(t1%sm)) + t1%b_kin
-    endif
+  !  if(use_quaternion) then
+!      tempnew%sm=matmul(t1%sm,t2%sm)
+ !     tempnew%d_spin=matmul(t1%sm,t2%d_spin) + t1%d_spin
+ !     tempnew%damps=matmul(matmul(t1%sm,t2%damps),transpose(t1%sm)) + t1%damps
+ !     tempnew%b_kin=matmul(matmul(t1%sm,t2%b_kin),transpose(t1%sm)) + t1%b_kin
+  !  endif
     c_concat=tempnew
     c_concat%x0=s2%x0
     c_concat%tpsa=s2%tpsa
@@ -9492,7 +9510,9 @@ endif
     call c_assmap(c_adjoint)
  
     if(i==1) then
+!1BMAD$c_adjoint.tex
      c_adjoint=s1*s2*s1**(-1)    
+!2BMAD
     else
      c_adjoint=s1**(-1)*s2*s1
     endif
@@ -10761,12 +10781,12 @@ endif
      s2%e_ij=s1%e_ij
      s2%x0=s1%x0
      s2%tpsa=s1%tpsa
-     if(use_quaternion) then
-       s2%sm=s1%sm
-       s2%damps=s1%damps
-       s2%d_spin=s1%d_spin
-       s2%b_kin=s1%b_kin
-     endif
+   !  if(use_quaternion) then
+!       s2%sm=s1%sm
+    !   s2%damps=s1%damps
+  !     s2%d_spin=s1%d_spin
+  !     s2%b_kin=s1%b_kin
+  !   endif
   END SUBROUTINE c_EQUALMAP
 
  SUBROUTINE  c_MAP_VEC(S2,S1)
@@ -10858,13 +10878,13 @@ SUBROUTINE  c_EQUALcray(S2,S1)
    endif
 
      s2%e_ij=0.0_dp
-     s2%damps=0.0_dp
-     s2%d_spin=0.0_dp
-     s2%b_kin=0.0_dp
-     s2%sm=0.0_dp
-    do i=1,3
-     s2%sm(i,i)=1.0_dp
-    enddo
+!     s2%damps=0.0_dp
+!     s2%d_spin=0.0_dp
+!     s2%b_kin=0.0_dp
+!     s2%sm=0.0_dp
+!    do i=1,3
+!     s2%sm(i,i)=1.0_dp
+!    enddo
   END SUBROUTINE c_IdentityEQUALMAP
 
 
@@ -12426,31 +12446,30 @@ alpha=2*atan2(q0%x(2),q0%x(0))
    
    n%s_ij0=m1%e_ij
 
-   if(use_quaternion.and.(.false.)) then
-    call c_check_rad_spin(m1%damps,spin_in)
-     if(spin_in) then
-      call exp_mat(m1%damps,sd )
-      call makeso3(m1%q,ms)
-      ms=sd*ms
-      sd=0
-      do i=1,3
-       sd(i,i)=1
-      enddo
-       ms=sd-ms
-   !    write(6,*) ms(1,1:3)
+!   if(use_quaternion.and.(.false.)) then
+!    call c_check_rad_spin(m1%damps,spin_in)
+!     if(spin_in) then
+!      call exp_mat(m1%damps,sd )
+!      call makeso3(m1%q,ms)
+!      sd=0
+!      do i=1,3
+!       sd(i,i)=1
+!      enddo
+!       ms=sd-ms
+!   !    write(6,*) ms(1,1:3)
    !    write(6,*) ms(2,1:3)
    !    write(6,*) ms(3,1:3)
-      call matinv(ms,ms,3,3,ier)
-    !   write(6,*) "ier ",ier
-    !   write(6,*) ms(1,1:3)
+!      call matinv(ms,ms,3,3,ier)
+!    !   write(6,*) "ier ",ier
+!    !   write(6,*) ms(1,1:3)
      !  write(6,*) ms(2,1:3)
      !  write(6,*) ms(3,1:3)
-       sf=matmul(ms,m1%d_spin)
-    !   write(6,*) "sf " 
-     !  write(6,*) sf
-     endif  
-   endif
-
+ !      sf=matmul(ms,m1%d_spin)
+ !   !   write(6,*) "sf " 
+ !    !  write(6,*) sf
+ !    endif  
+ !  endif
+ !
     call kill(ri)
    end  subroutine  c_normal_radiation 
 
@@ -13428,6 +13447,7 @@ prec=1.d-8
  
   end function iexp_ad
 
+  
 
 
   function c_expflo_map(h,x)   !,eps,nrmax)

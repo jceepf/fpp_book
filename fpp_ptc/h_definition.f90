@@ -364,10 +364,9 @@ type probe_8
    logical u,use_q
    type(integration_node),pointer :: last_node=>null()
   real(dp) e
-  real(dp) damps(3,3)
-  real(dp) b_kin(3,3)
-  real(dp) D_spin(3)
-!  real(dp) t_bks(3,3),t_bks0 
+!  real(dp) damps(3,3)
+!  real(dp) b_kin(3,3)
+!  real(dp) D_spin(3) 
 end type probe_8
   !@3 ---------------------------------------------</br>
   type TEMPORAL_PROBE
@@ -429,21 +428,27 @@ end type c_yu_w
   type(c_taylor) x(0:3)
 END TYPE c_quaternion
 
+!1BMAD$c_damap.tex
 type c_damap
+! Orbital part
  type (c_taylor) v(lnv) !@1 orbital part of the map
- integer :: n=0 !@1 number of plane allocated
  type(c_spinmatrix) s !@1 spin matrix
  type(c_quaternion) q
+! Stochastic part
+ complex(dp) e_ij(6,6) !@1 stochastic fluctuation in radiation theory
+! Number of planes allocated
+ integer :: n=0 !@1 number of planes allocated
  complex(dp) x0(lnv)
  logical :: tpsa=.false.
- !real(dpn),pointer :: db(:,:) => null(),m(:,:)=> null()
+!  The Yu matrix in phasors (Lie map matrix)
+ complex(dp), pointer :: cm(:,:)=> null() 
+!  Moment matrix (transpose of Yu Matrix)  
  real(dpn),pointer :: m(:,:)=> null()
- complex(dp), pointer :: cm(:,:)=> null()   !  to look at Yu matrix in phasors
- complex(dp) e_ij(6,6) !@1 stochastic fluctuation in radiation theory
-  real(dp) sm(3,3)
-  real(dp) damps(3,3)
-  real(dp) b_kin(3,3),D_spin(3)
 end type c_damap
+!2BMAD 
+ ! real(dp) sm(3,3)
+!  real(dp) damps(3,3)
+ ! real(dp) b_kin(3,3),D_spin(3)
 
   !@3 ---------------------------------------------</br>
   TYPE c_vector_field  !@1
@@ -468,7 +473,19 @@ end type c_damap
        type (c_vector_field), pointer :: f(:)=>null()
   END TYPE c_factored_lie
   !@3 ---------------------------------------------</br>
+!1BMAD$c_normal_form.tex
 TYPE c_normal_form
+ type(c_damap) Atot  !@1  For Spin   (m = Atot n Atot^-1)
+!!!Envelope radiation stuff to normalise radiation (Sand's like theory)
+ complex(dp) s_ij0(6,6)  !@1  equilibrium beam sizes
+ complex(dp) s_ijr(6,6)  !@1  equilibrium beam sizes in resonance basis
+ complex(dp) b_ijr(6,6)  !@1   stochastic kick in resonance basis
+ real(dp) emittance(3)   !@1  Equilibrium emittances as defined by Chao (computed from s_ijr(2*i-1,2*i) i=1,2,3 )
+!! controls resonances left in normal form
+ integer NRES,M(NDIM2t/2,NRESO),ms(NRESO) !@1 stores resonances to be left in the map, including spin (ms)
+!! redundant stuff
+ real(dp) tune(NDIM2t/2),damping(NDIM2t/2),spin_tune !@1 Stores simple information
+ logical positive ! forces positive tunes (close to 1 if <0)
  type(c_damap) a1   !@1 brings to fix point at least linear
  type(c_damap) a2   !@1 linear normal form
  type(c_factored_lie) g   !@1 nonlinear part of a in phasors
@@ -476,16 +493,9 @@ TYPE c_normal_form
  type(c_damap) a_t !@1 transformation a (m=a n a^-1)
  type(c_damap) n   !@1 transformation n (m=a n a^-1)
  type(c_damap) As  !@1  For Spin   (m = As a n a^-1 As^-1)
- type(c_damap) Atot  !@1  For Spin   (m = Atot n Atot^-1)
- integer NRES,M(NDIM2t/2,NRESO),ms(NRESO) !@1 stores resonances to be left in the map, including spin (ms)
- real(dp) tune(NDIM2t/2),damping(NDIM2t/2),spin_tune !@1 Stores simple information
- logical positive ! forces positive tunes (close to 1 if <0)
-!!!Envelope radiation stuff to normalise radiation (Sand's like theory)
- complex(dp) s_ij0(6,6)  !@1  equilibrium beam sizes
- complex(dp) s_ijr(6,6)  !@1  equilibrium beam sizes in resonance basis
- complex(dp) b_ijr(6,6)  !@1   stochastic kick in resonance basis
- real(dp) emittance(3)   !@1  Equilibrium emittances as defined by Chao (computed from s_ijr(2*i-1,2*i) i=1,2,3 )
 END TYPE c_normal_form
+!2BMAD  
+
   !@2 the routine c_canonize(at,a_cs,a0,a1,a2,phase) factors neatly the map "at"
   !@2 at= a_cs o rotation(phase) where  a_cs = a0 o a1 o a2 ; this gives the phase advance even nonlinear!
   !@3 ---------------------------------------------</br>
