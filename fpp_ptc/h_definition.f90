@@ -432,18 +432,21 @@ END TYPE c_quaternion
 type c_damap
 ! Orbital part
  type (c_taylor) v(lnv) !@1 orbital part of the map
- type(c_spinmatrix) s !@1 spin matrix
  type(c_quaternion) q
 ! Stochastic part
  complex(dp) e_ij(6,6) !@1 stochastic fluctuation in radiation theory
 ! Number of planes allocated
  integer :: n=0 !@1 number of planes allocated
+!  Initial orbit if tpsa =  true
  complex(dp) x0(lnv)
  logical :: tpsa=.false.
-!  The Yu matrix in phasors (Lie map matrix)
+!  Lie map matrix  (Yu's square matrix)
  complex(dp), pointer :: cm(:,:)=> null() 
 !  Moment matrix (transpose of Yu Matrix)  
  real(dpn),pointer :: m(:,:)=> null()
+! SO(3) is deprecated in FPP
+! and computed from quaternion if needed
+ type(c_spinmatrix) s !@1 spin matrix
 end type c_damap
 !2BMAD 
  ! real(dp) sm(3,3)
@@ -451,17 +454,22 @@ end type c_damap
  ! real(dp) b_kin(3,3),D_spin(3)
 
   !@3 ---------------------------------------------</br>
-  TYPE c_vector_field  !@1
-   !@1 n dimension used v(1:n) (nd2 by default) ; nrmax some big integer if eps<1
-   integer :: n=0,nrmax
-   !@1 if eps=-integer  then |eps| # of Lie brackets are taken
-   !@ otherwise eps=eps_tpsalie=10^-9
-   real(dp) eps
-   type (c_taylor) v(lnv)
- !  type(c_spinor) om
-   type(c_quaternion) q
+!1BMAD$c_vector_field.tex
+TYPE c_vector_field  !@1
+!@1 n dimension used v(1:n) (nd2 by default) ;
+!@1 nrmax some big limiting integer to use for exponentiation
+ integer :: n=0,nrmax
+!@1 if eps=-integer  then |eps| # of Lie brackets are taken
+!@ otherwise eps=eps_tpsalie=10^-9
+ real(dp) eps
+! orbital part
+ type (c_taylor) v(lnv)
+! quaternion part
+ type(c_quaternion) q
   END TYPE c_vector_field
+!2BMAD  
   !@3 ---------------------------------------------</br>
+
   TYPE c_vector_field_fourier  !@1
       integer :: n=0
       type (c_vector_field), pointer :: f(:)  =>null()
@@ -475,6 +483,7 @@ end type c_damap
   !@3 ---------------------------------------------</br>
 !1BMAD$c_normal_form.tex
 TYPE c_normal_form
+!!!  Full transformation with spin 
  type(c_damap) Atot  !@1  For Spin   (m = Atot n Atot^-1)
 !!!Envelope radiation stuff to normalise radiation (Sand's like theory)
  complex(dp) s_ij0(6,6)  !@1  equilibrium beam sizes
@@ -484,13 +493,14 @@ TYPE c_normal_form
 !! controls resonances left in normal form
  integer NRES,M(NDIM2t/2,NRESO),ms(NRESO) !@1 stores resonances to be left in the map, including spin (ms)
 !! redundant stuff
- real(dp) tune(NDIM2t/2),damping(NDIM2t/2),spin_tune !@1 Stores simple information
+ real(dp) tune(NDIM2t/2),damping(NDIM2t/2),spin_tune,quaternion_angle !@1 Stores simple information
  logical positive ! forces positive tunes (close to 1 if <0)
+ !!!  Things not to be used in the case of spin with quaternion
+ type(c_damap) a_t !@1 transformation a (m=a n a^-1)
  type(c_damap) a1   !@1 brings to fix point at least linear
  type(c_damap) a2   !@1 linear normal form
  type(c_factored_lie) g   !@1 nonlinear part of a in phasors
  type(c_factored_lie) ker !@1  kernel i.e. normal form in phasors
- type(c_damap) a_t !@1 transformation a (m=a n a^-1)
  type(c_damap) n   !@1 transformation n (m=a n a^-1)
  type(c_damap) As  !@1  For Spin   (m = As a n a^-1 As^-1)
 END TYPE c_normal_form

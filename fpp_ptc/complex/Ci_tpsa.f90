@@ -35,7 +35,7 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
   private div,ddivsc,dscdiv,divsc,scdiv,idivsc,iscdiv,equalc_ray_r6r 
   private unaryADD,add,daddsca,dscadd,addsc,scadd,iaddsc,iscadd,print_ql
   private unarySUB,subs,dsubsc,dscsub,subsc,scsub,isubsc,iscsub,c_clean_taylors
-  private c_allocda,c_killda,c_a_opt,K_opt,c_,c_allocdas,filter_part
+  private c_allocda,c_killda,c_a_opt,K_opt,c_,c_allocdas,filter_part,c_clean_c_factored_lie
   private dexpt,dcost,dsint,dtant,DAPRINTTAYLORS,c_clean_yu_w,mul_ql_m,mul_ql_cm
   PRIVATE GETCHARnd2,GETintnd2,dputchar,dputint, filter,check_j,c_dputint0,c_dputint0r
   private GETintnd2t,equalc_cspinor_cspinor,c_AIMAG,c_real,equalc_ray_ray,EQUALql_q,EQUALq_ql,EQUALql_i,EQUALql_ql
@@ -144,7 +144,8 @@ private c_fill_uni_r,c_null_uni,c_fill_uni,c_refill_uni,c_equal_UNI
 integer :: no_uni = 10000
 type(c_linear_map) q_phasor,qi_phasor
 private compute_lattice_functions_1,compute_lattice_functions_2
-
+!private c_clean_vector,c_clean_matrix,c_clean_vector_complex,c_clean_matrix_complex
+private A_opt_c_vector,K_OPT_c_vector
 
   INTERFACE compute_lattice_functions
      MODULE PROCEDURE compute_lattice_functions_1
@@ -523,6 +524,7 @@ private compute_lattice_functions_1,compute_lattice_functions_2
 
   INTERFACE clean
 !     MODULE PROCEDURE c_clean
+     MODULE PROCEDURE  c_clean_c_factored_lie
      MODULE PROCEDURE  c_clean_linear_map
      MODULE PROCEDURE c_clean_spinor
      MODULE PROCEDURE c_clean_taylor
@@ -740,6 +742,7 @@ private compute_lattice_functions_1,compute_lattice_functions_2
      MODULE PROCEDURE c_allocda
      MODULE PROCEDURE c_a_opt
      MODULE PROCEDURE A_OPT_c_damap
+     MODULE PROCEDURE A_opt_c_vector
      MODULE PROCEDURE c_allocdas
      MODULE PROCEDURE alloc_c_spinmatrix
      MODULE PROCEDURE alloc_c_vector_field_fourier
@@ -776,6 +779,7 @@ private compute_lattice_functions_1,compute_lattice_functions_2
      MODULE PROCEDURE c_killdas
      MODULE PROCEDURE K_opt
      MODULE PROCEDURE K_OPT_c_damap
+     MODULE PROCEDURE K_OPT_c_vector
      MODULE PROCEDURE kill_c_damap
      MODULE PROCEDURE kill_c_damaps
      MODULE PROCEDURE kill_c_spinmatrix
@@ -1583,6 +1587,41 @@ enddo
     if(present(s10))call KILL(s10)
   END SUBROUTINE K_OPT_c_damap
 
+  SUBROUTINE  A_opt_c_vector(S1,S2,s3,s4,s5,s6,s7,s8,s9,s10)
+!*
+    implicit none
+    type (c_vector_field),INTENT(INout)::S1,S2
+    type (c_vector_field),optional, INTENT(INout):: s3,s4,s5,s6,s7,s8,s9,s10
+    call alloc(s1)
+    call alloc(s2)
+    if(present(s3)) call alloc(s3)
+    if(present(s4)) call alloc(s4)
+    if(present(s5)) call alloc(s5)
+    if(present(s6)) call alloc(s6)
+    if(present(s7)) call alloc(s7)
+    if(present(s8)) call alloc(s8)
+    if(present(s9)) call alloc(s9)
+    if(present(s10))call alloc(s10)
+  END SUBROUTINE A_opt_c_vector
+
+
+  SUBROUTINE  K_OPT_c_vector(S1,S2,s3,s4,s5,s6,s7,s8,s9,s10)
+!*
+    implicit none
+    type (c_vector_field),INTENT(INout)::S1,S2
+    type (c_vector_field),optional, INTENT(INout):: s3,s4,s5,s6,s7,s8,s9,s10
+    call KILL(s1)
+    call KILL(s2)
+    if(present(s3)) call KILL(s3)
+    if(present(s4)) call KILL(s4)
+    if(present(s5)) call KILL(s5)
+    if(present(s6)) call KILL(s6)
+    if(present(s7)) call KILL(s7)
+    if(present(s8)) call KILL(s8)
+    if(present(s9)) call KILL(s9)
+    if(present(s10))call KILL(s10)
+  END SUBROUTINE K_OPT_c_vector
+
   SUBROUTINE  c_allocdas(S1,k)
 !*
     implicit none
@@ -1813,7 +1852,7 @@ enddo
       s1%tune=0
       s1%damping=0
       s1%spin_tune=0
-
+     s1%quaternion_angle=0
   END SUBROUTINE alloc_c_normal_form
 
   SUBROUTINE  kill_c_normal_form(S1)
@@ -1841,7 +1880,7 @@ enddo
       s1%tune=0
       s1%damping=0
       s1%spin_tune=0
-
+     s1%quaternion_angle=0
   END SUBROUTINE kill_c_normal_form
 
   SUBROUTINE  kill_c_factored_lie(S1)
@@ -4031,7 +4070,7 @@ endif
    !   CUTORDERquaternion=S1
 
      DO I=0,3
-      CUTORDERquaternion%x(i)=S1%x(i).cut.s2 
+      CUTORDERquaternion%x(i)=S1%x(i).cut.(s2-1) 
     enddo
 
     c_master=localmaster
@@ -5885,7 +5924,7 @@ endif
     s2%sigmas=0
  end SUBROUTINE  EQUAL_c_l_f
 
-
+!1BMAD$linear_lattice_functions.tex
   SUBROUTINE  compute_lattice_functions_2(m,f)
     implicit none
     type(c_lattice_function) f
@@ -5903,44 +5942,43 @@ endif
     type(c_linear_map) mi
     type(c_linear_map) q
     integer i,j
- 
-   
+! This routines specializes in linear maps for speed
+! It produces bona fide lattice functions with radiation
+! as well as with a coasting beam (no cavity)
     if(f%symplectic) then
       mi=inv_c_linear_map_symplectic(m)
     else
       mi=m**(-1)
     endif
 
-    f%h=0
-    f%b=0
-    f%k=0
-    f%e=0
-    f%s=0
+    f%h=0;f%b=0;f%k=0;f%e=0;f%s=0;
 
- !!!!    computing the de Moivre Lattice Functions  !!!!
+ !!!!  Computing the de Moivre Lattice Functions  !!!!
  !!!!  equivalent to Ripken ones
 
-!!!!  Coefficient of vector field matrices  B**2=-H
+!!!!  Coefficients of vector field matrices  B**2=-H
      do i = 1,3
       f%B(i,:,:)=matmul(matmul(m%mat,jp_mat(i,:,:)),mi%mat)
      enddo
 
-!!!! coefficient of invariants
+!!!! Coefficients of invariants
       do i = 1,3
       f%K(i,:,:)= -matmul(jt_mat,f%B(i,:,:))
      enddo
-!!!! coefficient of moments
+!!!! Coefficient of moments as functions of emittances
      do i = 1,3
       f%E(i,:,:)= -matmul(f%B(i,:,:),jt_mat)
      enddo
 !!!!  Dispersive quantities containing zeta and eta for example
+!!!!  as well as \gamma C of Teng-Edwards
      do i = 1,3
       f%H(i,:,:)=matmul(matmul(m%mat,ip_mat(i,:,:)),mi%mat)
      enddo
 
-!!!!    computing the n vector using quaternion
+!!!! Computing the n vector using quaternions
      do i = 1,3
        q=i
+!!!! Formula is identical to orbital!
        q=m*q*mi
        do j=1,3
         f%S(i,j,0:6)=q%q(j,0:6)
@@ -5948,6 +5986,7 @@ endif
      enddo
 
   end SUBROUTINE  compute_lattice_functions_1
+!2BMAD
 
   SUBROUTINE  d_compute_lattice_functions(a,f,a_l,a_li)
     implicit none
@@ -8678,7 +8717,61 @@ if(present(mfile)) mfi=mfile
     
 end   SUBROUTINE  c_clean_yu_w
 
-  SUBROUTINE  c_clean_taylor(S1,S2,prec,r)
+  SUBROUTINE  clean_matrix_complex(S1,S2,prec)
+  implicit none
+  complex(dp) s1(:,:),s2(:,:)
+    real(dp) prec
+
+  integer i,j
+
+   do i=1,size(s1,1)
+   do j=1,size(s1,2)
+      s2(i,j)=c_clean(s1(i,j),prec)
+   enddo
+   enddo
+  end SUBROUTINE  clean_matrix_complex
+
+  SUBROUTINE  clean_vector_complex(S1,S2,prec)
+  implicit none
+  complex(dp) s1(:),s2(:)
+    real(dp) prec
+
+  integer i 
+
+   do i=1,size(s1,1)
+      s2(i)=c_clean(s1(i),prec)
+   enddo
+  end SUBROUTINE  clean_vector_complex
+
+  SUBROUTINE  clean_matrix(S1,S2,prec)
+  implicit none
+  complex(dp) s1(:,:),s2(:,:)
+  integer i,j
+    real(dp) prec
+
+  complex(dp) v
+   do i=1,size(s1,1)
+   do j=1,size(s1,2)
+       v=s1(i,j)
+      s2(i,j)=c_clean(v,prec)
+   enddo
+   enddo
+  end SUBROUTINE  clean_matrix
+
+  SUBROUTINE  clean_vector(S1,S2,prec)
+  implicit none
+  complex(dp) s1(:),s2(:)
+  complex(dp) v
+    real(dp) prec
+  integer i 
+
+   do i=1,size(s1,1)
+      v=s1(i)
+      s2(i)=c_clean(v,prec)
+   enddo
+  end SUBROUTINE  clean_vector 
+
+   SUBROUTINE  c_clean_taylor(S1,S2,prec,r)
     implicit none
     type (c_taylor),INTENT(INOUT)::S2
     type (c_taylor), intent(INOUT):: s1
@@ -8843,6 +8936,19 @@ end   SUBROUTINE  c_clean_yu_w
 
 
   END SUBROUTINE c_clean_cm
+
+
+  SUBROUTINE  c_clean_c_factored_lie(S1,S2,prec,r)
+    implicit none
+    type (c_factored_lie),INTENT(INOUT)::S2    
+    type (c_factored_lie), intent(INOUT):: s1
+    real(dp) prec
+    integer i
+    type(c_ray),optional :: r
+    do i=1,s2%n
+     call c_clean_vector_field(S1%f(i),S1%f(i),prec,r)
+    enddo
+   end SUBROUTINE  c_clean_c_factored_lie
 
   SUBROUTINE  c_clean_vector_field(S1,S2,prec,r)
     implicit none
@@ -13241,10 +13347,10 @@ end subroutine c_stochastic_kick
 
   END FUNCTION complex_mul_vec 
 
-    FUNCTION map_mul_vec_q( r,S1 )
+    FUNCTION map_mul_vec_q( A,S1 )
     implicit none
     TYPE (c_vector_field) map_mul_vec_q
-    type(c_damap),intent(in):: r
+    type(c_damap),intent(in):: A
     TYPE (c_vector_field), INTENT (IN) :: S1
     integer localmaster,i,k
     TYPE (c_vector_field) f_orb
@@ -13259,19 +13365,22 @@ end subroutine c_stochastic_kick
      f_orb%n=s1%n
      call alloc(f_orb)
      call alloc(alpha_inv)
+
+!!!!   ???? equates quaternion too??? YES
      f_orb=s1
 
 
-     alpha_inv=r%q**(-1)
+     alpha_inv=A%q**(-1)
 
-     f_orb=map_mul_vec( r,f_orb )
-     f_orb%q=0.0_dp
-      map_mul_vec_q=f_orb
+!!!!!  map_mul_vec wipes out quaternion in f_orb??? NO, just copies
+     f_orb=map_mul_vec( A,f_orb )
+     f_orb%q=0.0_dp   !!! now removes
+      map_mul_vec_q=f_orb  !!! Only orbital is now transformed
 
      do i=0,3
       f_orb%q%x(i)=f_orb*alpha_inv%x(i)
     enddo
-    map_mul_vec_q%q=(alpha_inv*(s1%q*r)+f_orb%q)*r%q
+    map_mul_vec_q%q=(alpha_inv*(s1%q*A)+f_orb%q)*A%q
 
     map_mul_vec_q%nrmax=s1%nrmax
     map_mul_vec_q%eps=s1%eps
@@ -18933,7 +19042,7 @@ endif
 
 if(use_quaternion)then
       call c_normal_spin_linear_quaternion(m1,m1,n%AS,alpha)
-
+      n%quaternion_angle=alpha/2.0_dp
       ri=1 ; ri%q=m1%q.sub.0 ; ! exp(theta_0 L_y)   (2)
 !      sx=sqrt(ri%q%x(1)**2+ri%q%x(2)**2+ri%q%x(3)**2)
 !      cx=ri%q%x(0)
@@ -19572,6 +19681,73 @@ endif
 
 end subroutine fill_tree_element_line_zhe_outside_map
 
+  subroutine compute_lie_map_matrix_complex(T)  !,spin
+    implicit none
+    integer NO1,ND11,i
+    type(c_damap) mtotal,T
+     no1=c_%no
+     nd11=c_%nd
+
+     if(c_%nd>3) stop 100
+     call init_moment_map(NO1,nd11)
+ 
+     call create_moment_map_one_complex(T,nd11)
+     t%cm=transpose(T%cm)
+     
+ 
+  end subroutine compute_lie_map_matrix_complex
+
+  subroutine compute_lie_map_matrix(T)  !,spin
+    implicit none
+    integer NO1,ND11,i
+    type(c_damap) mtotal,T
+      real(dp) sig(6,6)
+     no1=c_%no
+     nd11=c_%nd
+      sig=0
+     if(c_%nd>3) stop 100
+     call init_moment_map(NO1,nd11)
+    call alloc(mtotal)
+    allocate(mtotal%m(nmono_from_moment,nmono_from_moment))
+    mtotal=0
+    do i=1,nmono_from_moment
+     mtotal%m(i,i)=1
+    enddo
+     call create_moment_map_one(mtotal,T,sig,nd11,fin=.false.)
+     allocate(t%m(nmono_from_moment,nmono_from_moment))
+     t%m=transpose(mtotal%m)
+     
+    call kill(mtotal)
+ 
+  end subroutine compute_lie_map_matrix
+
+
+subroutine create_taylor_vector(t,v,vc)   ! fix0 is the initial condition for the maps
+implicit none
+ 
+ 
+ 
+complex(dp) w
+integer  je(6),i,k,j
+ real(dpn),optional::  v(:)
+ complex(dp),optional::  vc(:)
+type(c_taylor) t
+ 
+if(present(v))   v=0
+if(present(vc))  vc=0
+       j=1
+
+        do while(.true.)
+
+          call  c_cycle(t,j,w ,je); if(j==0) exit;
+            k=hash(je(1),je(2),je(3),je(4),je(5),je(6))
+ if(present(v))           v(k)=w
+ if(present(vc))         vc(k)=w
+        enddo
+
+
+end subroutine create_taylor_vector
+
 
 
   subroutine init_moment_map(NO1,nd11)  !,spin
@@ -19632,8 +19808,8 @@ else
 
 stop 888
 endif
-      write(6,*) "nmono original",nmono
   enddo
+ !     write(6,*) "nmono original",nmono
 
 nmono_from_moment=nmono
 
@@ -19682,8 +19858,8 @@ else
  dfac(i)=1
  enddo
 endif
- write(6,*) "dfac "
- write(6,*) dfac
+ !write(6,*) "dfac "
+ !write(6,*) dfac
   sigdis0=0
   sigdis=0
 
@@ -20033,6 +20209,131 @@ call kill(t)
 
 end subroutine create_moment_map_one
 
+
+subroutine create_vector_field(finput,f)   ! fix0 is the initial condition for the maps
+implicit none
+ 
+ 
+complex(dp)v
+integer i1,i2,i3,i4,i5,i6,je(6),k !,mi,nz,noo,no1
+ 
+complex(dp)   coe ,eps
+!complex(dpn) r2
+complex(dpn) f(:,:) 
+type(c_vector_field) finput  
+type(c_taylor) t
+integer  i,inf,j,nd1 
+ 
+ 
+ nd1=c_%nd
+ 
+ 
+ nmono=size(in1)
+ 
+
+ 
+f=0
+ 
+call alloc(t)
+ 
+ f=0
+ 
+    
+ 
+   do i=1,nmono
+    
+     t=  dz_c(1)**in1(i)
+     t=t*dz_c(2)**in2(i)
+   if(nd1>1) then
+     t= dz_c(3)**in3(i)
+     t=t*dz_c(4)**in4(i)
+   endif
+   if(nd1>2) then
+     t= dz_c(5)**in5(i)
+     t=t*dz_c(6)**in6(i)
+   endif
+
+  t=finput*t
+
+       j=1
+
+        do while(.true.)
+
+          call  c_cycle(t,j,v ,je); if(j==0) exit;
+            k=hash(je(1),je(2),je(3),je(4),je(5),je(6))
+            f(k,i)=v+f(k,i)
+        enddo
+   enddo
+
+call kill(t)
+ 
+
+end subroutine create_vector_field 
+
+subroutine create_moment_map_one_complex(minput,nd11)   ! fix0 is the initial condition for the maps
+implicit none
+complex(dp)v
+integer i1,i2,i3,i4,i5,i6,no1,je(6),k !,mi,nz,noo
+ 
+complex(dp)   coe ,eps
+!complex(dpn) r2
+complex(dpn), allocatable :: mm(:,:) 
+type(c_damap) minput , m
+type(c_taylor) t
+integer  i,inf,j,nd1,nd11
+ 
+ 
+ nd1=iabs(nd11)
+ 
+ call alloc(m); 
+ nmono=size(in1)
+ if(.not.associated(minput%cm)) allocate(minput%cm(nmono,nmono))
+
+m=minput  
+
+ 
+call alloc(t)
+ 
+ 
+   minput%cm=0
+ 
+
+ 
+m=minput 
+do i=1,nd2
+m%v(i)=m%v(i)-(m%v(i).sub.0)
+enddo
+   do i=1,nmono
+    
+     t=  m%v(1)**in1(i)
+     t=t*m%v(2)**in2(i)
+   if(nd1>1) then
+     t=t*m%v(3)**in3(i)
+     t=t*m%v(4)**in4(i)
+   endif
+   if(nd1>2) then
+
+     t=t*m%v(5)**in5(i)
+     t=t*m%v(6)**in6(i)
+   endif
+       j=1
+
+        do while(.true.)
+
+          call  c_cycle(t,j,v ,je); if(j==0) exit;
+            k=hash(je(1),je(2),je(3),je(4),je(5),je(6))
+            minput%cm(i,k)=v
+        enddo
+   enddo
+
+ 
+
+
+
+call kill(t)
+ call kill(m) 
+
+end subroutine create_moment_map_one_complex
 
 subroutine create_moment_map(minput,sig,nd11,radk)   ! fix0 is the initial condition for the maps
 implicit none
