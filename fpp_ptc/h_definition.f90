@@ -485,6 +485,7 @@ TYPE c_vector_field  !@1
 TYPE c_normal_form
 !!!  Full transformation with spin 
  type(c_damap) Atot  !@1  For Spin   (m = Atot n Atot^-1)
+ type(c_vector_field) H,H_l,H_nl
 !!!Envelope radiation stuff to normalise radiation (Sand's like theory)
  complex(dp) s_ij0(6,6)  !@1  equilibrium beam sizes
  complex(dp) s_ijr(6,6)  !@1  equilibrium beam sizes in resonance basis

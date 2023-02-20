@@ -1839,6 +1839,7 @@ enddo
     call alloc(s1%a_t)
     call alloc(s1%AS)
     call alloc(s1%Atot)
+    call alloc(s1%H,s1%H_l,s1%H_nl)
     s1%as=1
     s1%nres=0
     s1%positive=.true.
@@ -1868,6 +1869,8 @@ enddo
     call kill(s1%a1)
     call kill(s1%AS)
     call kill(s1%Atot)
+    call kill(s1%H,s1%H_l,s1%H_nl)
+
     s1%positive=.true.
     s1%nres=0
     s1%m=0  ! orbital resonance
@@ -18733,7 +18736,7 @@ END FUNCTION FindDet
 
     implicit none
     type(c_damap) , intent(inout) :: xyso3
-    type(c_damap) m1,ri,nonl,a1,a2,mt,AS,xy 
+    type(c_damap) m1,ri,nonl,a1,a2,mt,AS,xy,Nf,N_cut_2,N_nl
     type(c_normal_form), intent(inout) ::  n
     type(c_damap), optional :: rot
     type(c_taylor), optional :: phase(:),nu_spin
@@ -18749,7 +18752,8 @@ END FUNCTION FindDet
     logical dospinr,change
     type(c_spinor) n0,nr
     type(c_quaternion) qnr
-    integer mker, mkers,mdiss,mdis,ndptbmad
+    integer mker, mkers,mdiss,mdis,ndptbmad,ncoast
+   
     if(lielib_print(13)/=0) then
      call kanalnummer(mker,"kernel.txt")
      call kanalnummer(mdis,"distortion.txt")
@@ -19293,6 +19297,48 @@ endif
 !call c_count_da(i_alloc)
 !write(6,*) " exiting c_normal ",i_alloc
 inside_normal=.false.
+!!!! finding a Lie exponent
+  if(use_quaternion.and.rf==0)  then
+   call alloc(Nf,N_cut_2,N_nl )
+   Nf=n%atot**(-1)*xyso3*n%atot
+   N_cut_2=Nf.cut.2
+
+! creating the linear vector field in phasors variables
+ncoast=0
+if(c_%ndpt/=0) ncoast=1
+!!!! create a full vector field for N_cut_2
+do i=1,(c_%nd-ncoast)
+ n%H_l%v(2*i-1)=-(i_*twopi*n%tune(i))*dz_c(2*i-1)
+ n%H_l%v(2*i)=(i_*twopi*n%tune(i))*dz_c(2*i)
+enddo
+if(ncoast/=0) then
+ n%H_l%v(c_%ndptb)=n%tune(c_%nd)*dz_c(c_%ndpt)
+endif
+if(dospinr) then
+ n%H_l%q=0.0_dp
+ n%H_l%q%x(2)=n%quaternion_angle 
+endif 
+!!!! Going into variables moving on a circle 
+n%H_l=ci_phasor()*n%H_l
+
+N_nl=N_cut_2**(-1)*nf
+ 
+n%H_nl=c_logf_spin(N_nl)
+
+n%H_l=c_phasor()*n%H_l
+n%H_nl=c_phasor()*n%H_nl
+
+ n%H=n%H_l+n%H_nl
+
+
+   call kill(Nf,N_cut_2,N_nl )
+
+
+  endif
+
+ 
+
+
 
  end subroutine c_normal !_with_quaternion
 
