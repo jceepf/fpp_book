@@ -145,8 +145,8 @@ integer :: no_uni = 10000
 type(c_linear_map) q_phasor,qi_phasor
 private compute_lattice_functions_1,compute_lattice_functions_2
 !private c_clean_vector,c_clean_matrix,c_clean_vector_complex,c_clean_matrix_complex
-private A_opt_c_vector,K_OPT_c_vector
-
+private A_opt_c_vector,K_OPT_c_vector,r_field_for_demin
+logical :: old_phase_calculation=.false.
   INTERFACE compute_lattice_functions
      MODULE PROCEDURE compute_lattice_functions_1
      MODULE PROCEDURE compute_lattice_functions_2
@@ -560,6 +560,13 @@ private A_opt_c_vector,K_OPT_c_vector
      MODULE PROCEDURE c_AIMAG
   END INTERFACE
 
+  INTERFACE cget_field_c_universal_taylor
+     MODULE PROCEDURE d_field_for_demin
+  END INTERFACE
+
+  INTERFACE  get_field_c_universal_taylor
+     MODULE PROCEDURE r_field_for_demin
+  END INTERFACE
 
 !exp_mat(f,m) is a subroutine to exponentiate matrices
   INTERFACE exp
@@ -4822,21 +4829,92 @@ endif
   END FUNCTION getpb
 
 
-    FUNCTION cgetpb( S1, s1p,S2 )  
+  FUNCTION cgetpb( S1,S1p, S2 )  
     implicit none
     TYPE (c_taylor) cgetpb
     TYPE (c_vector_field),optional, INTENT (IN) :: S1
-    INTEGER, optional,INTENT (IN) ::  S2
     TYPE (c_damap),optional, INTENT (IN) :: S1p
-    integer localmaster 
-    localmaster=master
+    INTEGER,optional, INTENT (IN) ::  S2
+    integer localmaster,n,i,j,l,fac,nd2here,ss
+    type(c_taylor) t,x
+    complex(dp) value
+    complex(dp), allocatable :: ncai(:)
+    integer, allocatable :: jc(:)
+    IF(.NOT.C_STABLE_DA) then
+     cgetpb%i=0
+     RETURN
+    endif
+
+    localmaster=c_master
+
+    nd2here=nd2-2*rf
+    ss=-1
+    if(present(s2)) ss=s2
+    allocate(jc(c_%nv))
+    jc=0
+    !    call check(s1)
+    call ass(cgetpb)
+    cgetpb=0.0_dp
+    call alloc(t,x)
 
  
- 
-    call ass(cgetpb)
-     cgetpb=getpb( s1=S1, s1p=s1p,s2=S2 )/n_cai
+     allocate(ncai(nd2here))
+     ncai=n_cai
+
+   
+    if(c_%ndpt/=0) then
+      ncai(c_%ndpt)=1
+      ncai(c_%ndptb)=1
+    endif
+
+
+
+
+
+    do j=1,nd2here
+    if(present(s1)) then
+     t=s1%v(j)
+    elseif(present(s1p)) then
+     t=s1p%v(j)
+     if(.not.present(s2))ss=1
+     else
+     write(6,*) " error in cgetpb "
+     stop
+    endif
+    x=0
+    call c_taylor_cycle(t,size=n)
+
+    do i=1,n
+       call c_taylor_cycle(t,ii=i,value=value,j=jc)
+       value=value/ncai(j)
+        fac=0
+        do l=1,nd2here
+         fac=jc(l)+fac
+        enddo
+        fac=fac+1
+       if(ss<0) then  !  fixed bug 2017 jan 9
+        if(mod(j,2)==0) then  
+          x=((value/fac).cmono.jc)*(1.0_dp.cmono.(j-1))+x
+        else
+          x=ss*((value/fac).cmono.jc)*(1.0_dp.cmono.(j+1))+x        
+        endif
+       else
+          x=((value/fac).cmono.jc)*(1.0_dp.cmono.(j))+x
+       endif
+    enddo
+
+    cgetpb=x+cgetpb
+
+
+    enddo ! j
+
+    call kill(t,x)
+    deallocate(jc)
+     deallocate(ncai)
+
     c_master=localmaster
-    END FUNCTION cgetpb
+
+  END FUNCTION cgetpb
 
   FUNCTION getpb_from_transverse( S1,f,S1p, S2 )  
     implicit none
@@ -18742,7 +18820,7 @@ END FUNCTION FindDet
     type(c_taylor), optional :: phase(:),nu_spin
     type(taylor) c1,s1
     integer,optional :: no_used
-    integer i,j,k,l,kr,not
+    integer i,j,k,l,kr,not,ncoast
     integer, allocatable :: je(:)
     logical(lp) removeit,rad_in
     complex(dp) v,lam,egspin(3)
@@ -18752,7 +18830,7 @@ END FUNCTION FindDet
     logical dospinr,change
     type(c_spinor) n0,nr
     type(c_quaternion) qnr
-    integer mker, mkers,mdiss,mdis,ndptbmad,ncoast
+    integer mker, mkers,mdiss,mdis,ndptbmad 
    
     if(lielib_print(13)/=0) then
      call kanalnummer(mker,"kernel.txt")
@@ -19243,7 +19321,7 @@ endif
          phase(i)=0.0_dp
       enddo
 endif
-    if(present(phase).or.present(nu_spin)) then
+    if((present(phase).or.present(nu_spin)).and.old_phase_calculation) then
 
  
         
@@ -19252,6 +19330,10 @@ endif
       else
         m1=n%Atot**(-1)*xy*n%Atot
       endif
+
+
+
+
           qphase=.false.
       call c_full_canonise(m1,a1,phase=phase,nu_spin=nu_spin)
       ! if(dospinr.and.present(nu_spin)) then
@@ -19298,7 +19380,8 @@ endif
 !write(6,*) " exiting c_normal ",i_alloc
 inside_normal=.false.
 !!!! finding a Lie exponent
-  if(use_quaternion.and.rf==0)  then
+
+!  if(use_quaternion.and.rf==0)  then
    call alloc(Nf,N_cut_2,N_nl )
    Nf=n%atot**(-1)*xyso3*n%atot
    N_cut_2=Nf.cut.2
@@ -19329,15 +19412,25 @@ n%H_l=c_phasor()*n%H_l
 n%H_nl=c_phasor()*n%H_nl
 
  n%H=n%H_l+n%H_nl
-
-
    call kill(Nf,N_cut_2,N_nl )
+!  endif
 
+if(.not.old_phase_calculation) then
+if(present(phase)) then
+! ncoast=0
+ !if(c_%ndpt/=0) ncoast=1
+ do i=1,c_%nd  !-ncoast
+  phase(i)=aimag(n%h%v(2*i).k.(2*i))/twopi
+ enddo
 
-  endif
+ if(c_%ndptb/=0) then
+   phase(c_%nd)=n%h%v(c_%ndptb)   ! overwrites if necessary
+ endif
+endif
 
+if(present(nu_spin))  nu_spin=spin_def_tune*n%h%q%x(2)/pi
  
-
+endif
 
 
  end subroutine c_normal !_with_quaternion
@@ -21812,13 +21905,31 @@ sum(ut%j(i,:)),(ut%j(i,ii),ii=1,ut%nv)
 
   end subroutine c_printunitaylor_old
 
-subroutine d_field_for_demin(f,ut,norm)
+subroutine r_field_for_demin(f,ut)
+implicit none
+type(c_vector_field),intent(inout):: f 
+type(c_universal_taylor), target :: ut
+complex(dp) ncai
+
+ncai=n_cai
+n_cai=1
+
+call d_field_for_demin(f,ut)
+
+n_cai=ncai
+
+  
+end subroutine r_field_for_demin
+
+
+subroutine d_field_for_demin(f,ut,norm,reorder)
 implicit none
 type(c_vector_field),intent(inout):: f 
 type(c_normal_form), optional :: norm
+logical, optional :: reorder
 complex(dp) v
 type(c_taylor) t 
-integer i,j,k,n(11),nv,nd2,Nu,i1
+integer i,j,k,n(11),nv,nd2,Nu,i1 
 integer, allocatable :: je(:),jf(:)
 type(c_vector_field) fs
 !type(universal_taylor), target :: Re, Im
@@ -21829,12 +21940,23 @@ complex(dp) zilch
 integer, allocatable :: ord(:)
 integer maxord,max,kmax
 type(c_universal_taylor), allocatable :: u(:)
-logical normal,keep,tune, reorder
+logical normal,keep,tune, re_order
+complex(dp), allocatable :: ncai(:)
 normal=.false.
 tune=.false.
-reorder=.true.
+re_order=.true.
 if(present(norm)) normal=.true.
+if(present(reorder)) re_order=reorder
+ allocate(ncai(c_%nd2))
+ncai=n_cai
+
  
+if(c_%ndpt/=0) then
+ ncai(c_%ndpt)=1
+ ncai(c_%ndptb)=1
+endif
+  
+
 prec=1.d-7
 zilch=0.0_dp
 call alloc(fs)
@@ -21862,7 +21984,7 @@ fs=f
 maxord=0
 
 do i=1,fs%n
-
+ 
        j=1
 
         do while(.true.)
@@ -21874,7 +21996,7 @@ je=0
     jf=je
     jf(k)=jf(k)+1
 
-     v=-(-1)**k*v/n_cai/jf(k)
+     v=-(-1)**k*v/ncai(i)/jf(k)
   if(normal) then
     call check_re(norm,jf,keep,tune)  
     if(.not.keep) v=0   
@@ -21885,12 +22007,7 @@ je=0
  if(abs(v)>0)       nu=nu+1
 
 
-!write(6,*) v
-!pause 555
-!write(6,*) i
-!write(6,*) je
-!write(6,*) jf
-!pause 8
+
    do i1=i+1,fs%n  !,-1
      k=d_mod_demin(i1)
        jf(k)=jf(k)-1
@@ -21904,11 +22021,6 @@ je=0
  enddo
 
 
-!write(6,*) Nu,"size of universal_taylor "
-!pause 111
-!!!!  doing 
-!call ALLOC(re,Nu,NV)
-!call ALLOC(im,Nu,NV)
 call ALLOC(ut0,Nu,NV,nd2)
 
 
@@ -21929,7 +22041,7 @@ do i=1,fs%n
     jf=je
     jf(k)=jf(k)+1
 
-     v=-(-1)**k*v/n_cai/jf(k)
+     v=-(-1)**k*v/ncai(i)/jf(k)
 
   if(normal) then
     call check_re(norm,jf,keep,tune)
@@ -21944,14 +22056,7 @@ if(abs(v)>0)     then
      ut0%J(nu,1:nv)=jf
  endif
 
-if(reorder) then
-  max=0
-  do kmax=1,nv
-   max=jf(kmax)+max
-  enddo
- 
-ord(max)=ord(max)+1
-endif
+
    do i1=i+1,fs%n  !,-1
      k=d_mod_demin(i1)
        jf(k)=jf(k)-1
@@ -21966,62 +22071,18 @@ endif
 
 call ALLOC(ut,Nu,NV,nd2)
 
-if(reorder) then
-!pause 777
-  allocate(u(0:no+1))
-do i=0,no+1
- k=ord(i)
- if(k==0) k=1
- 
- call  ALLOC(u(i),k,NV,nd2)
-! write(6,*) i,u(i)%n
- u(i)%n=0
-enddo
 
- !sum(ut%j(i,:))
-
- !call print(ut0,6)
-
-!pause 111
-do nu=1,ut0%n
-  i=sum(ut0%j(nu,1:nv))
- 
-  u(i)%n=u(i)%n+1
-  u(i)%j(u(i)%n,1:nv)=ut0%j(nu,1:nv)
-  u(i)%c(u(i)%n)=ut0%c(nu)
-enddo
-
-ut%n=0
-do nu=0,no+1
-  do i=1,u(nu)%n
-   if(abs(u(nu)%c(i))/=0) then
-    ut%n=ut%n+1
-    ut%j(ut%n,1:nv)= u(nu)%j(i,1:nv) 
-    ut%c(ut%n)=u(nu)%c(i)
-   endif
- enddo
-enddo
-
-endif
  
 ut=ut0
-!f=fs
 
-
-!  TYPE c_UNIVERSAL_TAYLOR
-!     INTEGER, POINTER:: N,NV,nd2    !  Number of coeeficients and number of variables
-!     complex(DP), POINTER,dimension(:)::C  ! Coefficients C(N)
-!     INTEGER, POINTER,dimension(:,:)::J ! Exponents of each coefficients J(N,NV)
-!      logical, POINTER:: order
-!  END TYPE c_UNIVERSAL_TAYLOR
-
+if(re_order) call c_uni_reorder(ut)
 
 call kill(u)
 call kill(fs)
 call kill(t)
 call kill(ut0)
-deallocate(je,jf,ord); 
-if(reorder) deallocate(u);
+deallocate(je,jf,ord,ncai); 
+ 
 
 end subroutine d_field_for_demin
 
