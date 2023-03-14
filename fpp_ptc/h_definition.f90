@@ -13,7 +13,7 @@ module definition
 ! GTPSA REMOVED !  use GTPSA
   implicit none
   public
-  integer,parameter::dpn=selected_real_kind(2*precision(1.e0))
+  integer,parameter::dpn=dp
  ! integer,parameter::dpn=kind(1.e0)
   logical(lp) :: newread=.false. ,newprint =  .false. , first_time = .true.
   logical(lp) :: print77=.true. ,read77 =  .true.

@@ -59,7 +59,7 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
   logical(lp) :: old  
   logical(lp),target  :: c_real_warning =.true.
   logical(lp) :: c_mess_up_vector=.false. 
-  real(dp) :: a_mess=0.d0 , b_mess=1.d0
+  real(dp) :: a_mess=0.0_dp , b_mess=1.0_dp
   integer :: i_piotr(3)= (/0,0,0/)
   logical :: c_skip_gofix=.false.
   PRIVATE null_it,Set_Up,de_Set_Up,LINE_L,RING_L,kill_DALEVEL,dealloc_DASCRATCH,set_up_level
@@ -101,7 +101,7 @@ logical :: remove_tune_shift=.false.
 complex(dp) :: n_cai=-2*i_
 integer :: complex_extra_order=0
 logical :: special_extra_order_1=.true.
-real(dp) :: epso_factor =1000.d0 ! for log
+real(dp) :: epso_factor =1000.0_dp ! for log
 logical(lp):: extra_terms_log=.false. 
 logical :: add_constant_part_concat=.true.,assume_c_quaternion_normalised=.true.
 private EQUAL_c_spinmatrix_probe,EQUAL_c_spinmatrix_3_by_3,EQUAL_3_by_3_probe,EQUAL_probe_c_spinmatrix
@@ -3344,7 +3344,7 @@ do i=1,n
 
  do j=1,id%n
   vt%v(j)=rot%v(j) - ID%v(j)
-  vtt%v(j)=-0.5d0*(vt*vt%v(j))
+  vtt%v(j)=-0.5_dp*(vt*vt%v(j))
  enddo
  vt=vt+vtt
 vtt=0.5_dp*(vflog.lb.vt)
@@ -5008,7 +5008,7 @@ endif
    real(dp), intent(out) :: c
 
    if(j(k)==0) then 
-     c=0.d0
+     c=0
     j(k)=j(k)-1
    else
     c=j(k)
@@ -6599,7 +6599,7 @@ if(nr(3)>nr(is)) is=3
         tune=aimag(log(egspin(2-spin_def_tune))/2.0_dp) 
  alpha=tune 
  if(alpha<0) tune=tune+twopi
-        alpha0=2.d0*(tune.sub.'0')/twopi 
+        alpha0=2.0_dp*(tune.sub.'0')/twopi 
         c=cos(tune)
         s=sin(tune)  
  alpha=tune 
@@ -12619,7 +12619,7 @@ alpha=2*atan2(q0%x(2),q0%x(0))
     r=m1
 
     do i=1,6 ; do j=1,6;
-     n%s_ijr(i,j)= 1.0_dp/(1.d0- r(i,i)*r(j,j))*m1%e_ij(i,j)
+     n%s_ijr(i,j)= 1.0_dp/(1.0_dp- r(i,i)*r(j,j))*m1%e_ij(i,j)
     enddo ;enddo;
 
      do i=1,3
@@ -17543,7 +17543,7 @@ endif
 
     logical(lp) removeit
 
-    c_phase_shift=0.d0
+    c_phase_shift=0.0_dp
     if(.not.c_%stable_da) return
 
 
@@ -17561,7 +17561,7 @@ endif
     integer,dimension(:)::j
 
  
-    c_zeroth=0.d0
+    c_zeroth=0.0_dp
     if(.not.c_%stable_da) return
 
     k=0
@@ -17789,7 +17789,7 @@ subroutine exp_vector_field_fourier(F,H,K,nlin)
          write(6,'(i4,1x,3(g23.16,1x))')i, norm
        endif
     enddo
-      fac=-1.d0
+      fac=-1.0_dp
       call add_vector_field_fourier(s3,dhs,s3,fac) ! (3c)
      K=s3
      call kill(s3)
@@ -19074,12 +19074,12 @@ endif
         if(c_skip_gofix) then
          do k=1,xy%n
                   if(mod(k,2)==1) then
-                     if(n%tune((k+1)/2)>0.5d0) n%tune((k+1)/2)=n%tune((k+1)/2)-1.0_dp
+                     if(n%tune((k+1)/2)>0.50_dp) n%tune((k+1)/2)=n%tune((k+1)/2)-1.0_dp
                     endif
          enddo
         endif
         if(nd2t==6) then
-           if(n%tune(3)>0.5d0) n%tune(3)=n%tune(3)-1.0_dp
+           if(n%tune(3)>0.50_dp) n%tune(3)=n%tune(3)-1.0_dp
         endif 
 
        if(ndpt/=0) then
@@ -19404,6 +19404,7 @@ endif
 !!!! Going into variables moving on a circle 
 n%H_l=ci_phasor()*n%H_l
 
+!!! Reverse-Dragt-Finn order for Lie map
 N_nl=N_cut_2**(-1)*nf
  
 n%H_nl=c_logf_spin(N_nl)
@@ -19795,9 +19796,9 @@ forward(3)%fix(1:6)=fix    ! exit
  forward(1)%ds=0.0_dp
  
  
-  forward(1)%ds=0.0d0
+  forward(1)%ds=0
  
-forward(1)%beta0=1.d0
+forward(1)%beta0=1.0_dp
 if(present(tree_zhe))  then
  do i=1,3
    CALL ALLOC_TREE_zhe(tree_zhe(i),forward(i)%N,forward(i)%NP)
@@ -21506,7 +21507,7 @@ subroutine cholesky_dt(A, G)
   integer    :: i,j
  
  
-  G(:,:)=0.0d0
+  G(:,:)=0
   do j = 1, size(A,1)
      gg = A(j,j) - dot_product(G(j,1:j-1),G(j,1:j-1))
      if (gg <= 0) then
@@ -21939,7 +21940,7 @@ real(dp) prec
 complex(dp) zilch
 integer, allocatable :: ord(:)
 integer maxord,max,kmax
-type(c_universal_taylor), allocatable :: u(:)
+!type(c_universal_taylor), allocatable :: u(:)
 logical normal,keep,tune, re_order
 complex(dp), allocatable :: ncai(:)
 normal=.false.
@@ -22077,7 +22078,7 @@ ut=ut0
 
 if(re_order) call c_uni_reorder(ut)
 
-call kill(u)
+!call kill(u)
 call kill(fs)
 call kill(t)
 call kill(ut0)
