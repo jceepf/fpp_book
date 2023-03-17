@@ -18802,7 +18802,7 @@ REAL(dp) FUNCTION FindDet(mat, n)
     
 END FUNCTION FindDet
 
- subroutine c_normal(xyso3,n,dospin,no_used,rot,phase,nu_spin)
+ subroutine c_normal(xyso3,n,dospin,no_used,rot,phase,nu_spin,canonize)
 !#general:  normal
 !# This routine normalises the map xy
 !# xy = n%a_t**(-1)*r*n%a_t 
@@ -18826,7 +18826,7 @@ END FUNCTION FindDet
     complex(dp) v,lam,egspin(3)
     complex(dp), allocatable :: eg(:)
     real(dp) norm,alpha,prec !,cx,sx
-    logical(lp), optional :: dospin
+    logical(lp), optional :: dospin,canonize
     logical dospinr,change
     type(c_spinor) n0,nr
     type(c_quaternion) qnr
@@ -19308,7 +19308,10 @@ endif
     n%n=c_simil(ri,m1,1)
     n%Atot=n%as*n%a_t
 
- 
+  if(present(canonize)) then
+   if(canonize) call c_canonise(n%atot,n%atot)
+  endif
+
 
 
     if(present(rot)) then
