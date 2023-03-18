@@ -145,7 +145,7 @@ integer :: no_uni = 10000
 type(c_linear_map) q_phasor,qi_phasor
 private compute_lattice_functions_1,compute_lattice_functions_2
 !private c_clean_vector,c_clean_matrix,c_clean_vector_complex,c_clean_matrix_complex
-private A_opt_c_vector,K_OPT_c_vector,r_field_for_demin
+private A_opt_c_vector,K_OPT_c_vector,r_field_for_demin,clean_c_universal_taylor
 logical :: old_phase_calculation=.false.
   INTERFACE compute_lattice_functions
      MODULE PROCEDURE compute_lattice_functions_1
@@ -535,6 +535,7 @@ logical :: old_phase_calculation=.false.
      MODULE PROCEDURE c_clean_quaternion
      MODULE PROCEDURE c_clean_taylors
      MODULE PROCEDURE c_clean_vector_field_fourier
+     MODULE PROCEDURE clean_c_universal_taylor
   end INTERFACE clean
   ! Exponential of Lie Operators
 
@@ -9048,6 +9049,48 @@ end   SUBROUTINE  c_clean_yu_w
     enddo
 
   END SUBROUTINE c_clean_vector_field
+
+  SUBROUTINE  clean_c_universal_taylor(S1,S2,prec,r)
+    implicit none
+    type (c_UNIVERSAL_TAYLOR),INTENT(INOUT)::S2
+    type (c_UNIVERSAL_TAYLOR), intent(INOUT):: s1
+    type (c_UNIVERSAL_TAYLOR) u,w
+    real(dp) prec
+    complex(dp) c
+    integer i,count
+    type(c_ray),optional :: r
+
+
+     call alloc(u,S1%n,S1%NV,S1%nd2)
+           
+     U%J=s1%J
+
+     count=0
+     do i=1,s1%n
+      U%c(i)=c_clean(s1%c(i),prec)
+      if(abs(U%c(i))>0) count=count+1
+     enddo
+     
+     call alloc(w,count,u%NV,u%nd2)
+     count=0
+      do i=1,s1%n
+      if(abs(U%c(i))>0) then
+       count=count+1
+       w%c(count)=U%c(i)
+       w%j(count,1:u%nv)=U%J(i,1:u%nv)
+      endif
+     enddo   
+
+     call kill(s2)
+      call alloc(s2,u%N,u%NV,u%nd2)
+
+     s2=w
+
+
+     call kill(u)
+     call kill(w)
+
+  END SUBROUTINE clean_c_universal_taylor
 
 
 !!!!  to change between coasting and focusing
@@ -21605,6 +21648,27 @@ end subroutine cholesky_dt
 
   END SUBROUTINE c_ALLOC_Us
 
+
+  function  c_get_coeff(S1,J)  !new sagan
+    implicit none
+    type (C_UNIVERSAL_TAYLOR),INTENT(IN)::S1
+    complex (dp)c_get_coeff
+    INTEGER i,n,done,J(:)
+     
+     c_get_coeff=0
+    do i=1,s1%n
+        done=0
+         DO N=1,S1%NV
+          done=iabs(S1%j(i,n)-J(n))+done
+        ENDDO
+        if(done==0) then
+         c_get_coeff=s1%c(i)
+      exit
+        endif
+    enddo
+
+  END function c_get_coeff
+
   SUBROUTINE  c_fill_uni_r(S2,S1)  !new sagan
     implicit none
     type (C_UNIVERSAL_TAYLOR),INTENT(INOUT)::S2
@@ -21790,67 +21854,6 @@ end subroutine cholesky_dt
    enddo
   end subroutine c_printunitaylors
 
-  !subroutine c_printunitaylor(ut,iunit,abs,prec)
-  !  implicit none
-  !  type(c_universal_taylor) :: ut
-  !  integer, optional               :: iunit
-  !  integer                :: i,ii
-  !  logical, optional :: abs
-  !  logical abst
-  !  integer iunit0
-  !  real(dp) xr,prec0
-  !  real(dp), optional ::prec
-  !    complex(dp) v
-  !  iunit0=6
-  !  abst=.false.
-  !   prec0=0
-
-!    if(present(prec)) prec0=prec
-!    if(present(abs)) abst=abs
-!    if(present(iunit)) iunit0=iunit
-!    if (.not. associated(ut%n)) then
-!       write(iunit0,'(A)') '    C_UNIVERSAL_TAYLOR IS EMPTY (NOT ASSOCIATED)'
-!       write(6,'(A)') '    C_UNIVERSAL_TAYLOR IS EMPTY (NOT ASSOCIATED)'
-!       return
-!    endif
-
-!    write(iunit0,'(/1X,A,I5,A,I5,A/1X,A/)') 'UNIV_TAYLOR   NO =',ut%n,', NV =',ut%nv,', INA = unita',&
-!         '*********************************************'
-!    if(ut%n /= 0) then
-!       write(iunit0,'(A)') '    I  COEFFICIENT          ORDER   EXPONENTS'
-!    else
-!       write(iunit0,'(A)') '   ALL COMPONENTS 0.0_dp '
-!    endif
-!
-!
-!
-!
-!
-!
-!    do i = 1,ut%n
-!     v=0
-!    if(norm2([real(ut%c(i))])>prec0) then
-!      v=real(ut%c(i))
-!    endif
-!    if(norm2([aimag(ut%c(i))])>prec0) then
-!      v=i_*aimag(ut%c(i))+v
-!    endif 
-!       if(norm2([ real(v),aimag(v)])<=prec0)   cycle
-!     if(abst) then
-!       xr=sqrt(real(ut%c(i))**2+aimag(ut%c(i))**2)
-!write(iunit0,'(I6,2X,(G21.14,1x,G21.14,3x,G21.14),I5,4X,18(2I2,1X))') i,v,xr,   &
-!sum(ut%j(i,:)),(ut%j(i,ii),ii=1,ut%nv)
-!     else
-!       write(iunit0,'(I6,2X,(G21.14,1x,G21.14),I5,4X,18(2I2,1X))') i,v,sum(ut%j(i,:)),(ut%j(i,ii),ii=1,ut%nv)
-!     endif
-!       if( .not. print77) then
-!          write(iunit0,*)  ut%c(i)
-!       endif
-!    enddo
-!
-!    write(iunit0,'(A)') '                                      '
-!
-!  end subroutine c_printunitaylor
 
   subroutine c_printunitaylor_old(ut,iunit,print_abs,prec)
     implicit none
