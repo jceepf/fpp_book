@@ -109,7 +109,7 @@ private EQUAL_probe_3_by_3,equalc_cspinor_spinor,EQUAL_3_by_3_c_spinmatrix
 private EQUALq_r,EQUALq_8_c,EQUALq_c_8,EQUALq,POWq,c_invq,subq,mulq,addq,alloc_c_quaternion,kill_c_quaternion
 private c_pri_quaternion,CUTORDERquaternion,c_trxquaternion,EQUALq_c_r,EQUALq_r_c,mulcq,c_exp_quaternion
 private equalc_quaternion_c_spinor,equalc_spinor_c_quaternion,unarySUB_q,c_trxquaternion_tpsa
-private c_exp_vectorfield_on_quaternion,c_vector_field_quaternion,addql,subql,mulqdiv,powql,quaternion_to_matrix
+private c_exp_vectorfield_on_quaternion,c_vector_field_quaternion,addql,subql,mulqdiv,powql
 private copy_tree_into_tree_zhe,absq2,absq,c_MAP_VEC,printcomplex,printpoly,print6
 !private equal_map_real8,equal_map_complex8,equal_real8_map,equal_complex8_map
 real(dp) dts
@@ -149,10 +149,24 @@ private A_opt_c_vector,K_OPT_c_vector,r_field_for_demin,clean_c_universal_taylor
 logical :: old_phase_calculation=.false.
 
 
-
-  INTERFACE compute_lattice_functions
-     MODULE PROCEDURE compute_lattice_functions_1
-     MODULE PROCEDURE compute_lattice_functions_2
+!  These routines computes lattice functions a la Ripken-Forest-Wolski
+!type c_lattice_function
+! real(dp) :: E(3,6,6) =0 ,K(3,6,6) =0 ! E : moments, K : Invariants
+! real(dp) :: H(3,6,6) = 0,B(3,6,6) =0 ! ML=exp( -alpha_i H(i,:,:) + mu_i B(i,:,:)) 
+! real(dp) :: S(1:3,1:3,0:6) =0  ! l,m,n  as function of z_i=1,6; 0 is the constant part 
+! real(dp) ::phase(3) =0 ,damping(3) =0 , spin(2) =0 ! Phase advances, spin can have a delta 
+! part if no cavity  
+! real(dp) fix(6) =0   ! closed orbit
+! type(fibre), pointer :: f => null()  ! Pointer to the fibre is relevant
+! type(integration_node), pointer :: t => null() ! Pointer to the integration node is relevant
+! logical :: symplectic = .true.   ! if true, then map assumed symplectic (faster inverse computation)
+!!!!  radiation quantity
+! real(dp) :: sigmas(6,6)   !  Beam sizes can be put there if computed
+!end type c_lattice_function 
+ 
+ INTERFACE compute_lattice_functions
+     MODULE PROCEDURE compute_lattice_functions_1  ! call compute_lattice_functions(ML,Lat)
+     MODULE PROCEDURE compute_lattice_functions_2  ! call compute_lattice_functions(M,Lat)
   END INTERFACE
 
   INTERFACE abs_square
@@ -526,14 +540,20 @@ logical :: old_phase_calculation=.false.
   end INTERFACE q_part
 
 
+!!! produce C such that  C**(-1)*R*C=diagonal!  c_phasor(n)= c_phasor()**(n)
+! if n_cai=-2i   (default)
+!  C(1) = 1/2 x_1 + 1/2 x_2  C(2) = -i/2 x_1 + i/2 x_2
+! if n_cai=-2i   (default)
+!  C(2) = 1/sqrt(2) x_1 + 1/sqrt(2) x_2  C(2) = -i/sqrt(2) x_1 + i/sqrt(2) x_2
   INTERFACE c_phasor
      MODULE PROCEDURE from_phasor
   end INTERFACE c_phasor
 
-
+!  Ci_phasor() is the inverse of C_phasor()
   INTERFACE ci_phasor
      MODULE PROCEDURE to_phasor
   end INTERFACE ci_phasor
+
 
   ! Exponential of Lie Operators
 
@@ -584,26 +604,41 @@ logical :: old_phase_calculation=.false.
      MODULE PROCEDURE r_field_for_demin
   END INTERFACE
 
+
 !exp_mat(f,m) is a subroutine to exponentiate matrices
   INTERFACE exp
-     MODULE PROCEDURE c_expflo    ! flow on c_taylor     !v3
-     MODULE PROCEDURE c_expflo_map                       !v4
-     MODULE PROCEDURE c_expflo_fac                       !v7
-     MODULE PROCEDURE c_exp_spinmatrix
-     MODULE PROCEDURE c_exp_vectorfield_on_quaternion    !v6
-     MODULE PROCEDURE c_exp_quaternion
-     MODULE PROCEDURE exp_ad    ! exp(<F,>)F    F is a vector field  !v5
+     MODULE PROCEDURE c_expflo    ! flow on c_taylor w=exp(F,t)  w=exp(F.grad)t  
+     MODULE PROCEDURE c_expflo_map  !T=exp(F,M)   T=exp(F.grad)M  M=1 of omitted
+
+
+!  TYPE c_factored_lie   Internally useful (Dragt-Finn factorization)
+!      integer :: n = 0
+!      integer :: dir= 0 !    1=dragt-Finn -1=reverse-dragt-Finn  
+! type (c_vector_field), pointer :: f(:)=>null()
+!  END TYPE c_factored_lie
+!  F is of type c_factor_lie
+     MODULE PROCEDURE c_expflo_fac  ! T=exp(F,M)  => T=exp(F_1.grad)...exp(F_no.grad)M or T=exp(F_no.grad)...exp(F_1.grad)M
+     MODULE PROCEDURE c_exp_spinmatrix   ! obsolescent
+     MODULE PROCEDURE c_exp_vectorfield_on_quaternion    ! internal use
+     MODULE PROCEDURE c_exp_quaternion  ! internal use
+
+! same as  map_mul_vec_q in (*)    If G=exp(G.grad)I   same as G*F=exp(<G,>)F 
+     MODULE PROCEDURE exp_ad    ! exp(<G,>)F    F and G  are vector fields
+
   END INTERFACE
 
+! call MAKEquaternion(M)   ! M%q is created from  the c_spinmatrix m%s
+!  Not so useful 
   INTERFACE MAKEquaternion
      MODULE PROCEDURE matrix_to_quaternion_in_c_damap
   END INTERFACE
 
+
   INTERFACE MAKESO3
+!!!  opposite of MAKEquaternion  (Very useful)
      MODULE PROCEDURE quaternion_to_matrix_in_c_damap
+!!      call MAKESO3(Ml,m) uses the quaternion in the linear map  
      MODULE PROCEDURE c_linear_map_to_matrix
-     MODULE PROCEDURE c_linear_map_to_3_by_3_by_6
-     MODULE PROCEDURE quaternion_to_matrix
   END INTERFACE
 
   INTERFACE AVERAGE
@@ -652,6 +687,11 @@ logical :: old_phase_calculation=.false.
      MODULE PROCEDURE c_logf  !# log of a map see subroutine c_flofacg
      MODULE PROCEDURE c_log_spinmatrix  !#  spinor=log(s)
 ! c_logf_spin is not overloaded
+!  F=c_logf_spin(M,H,epso,n,tpsa)  then   M=exp(F)I
+! H is a guess for F is known
+! epso = is a small number (optional) for convergence
+! n = maximal number of iteration (optional, defaulted to 1000)
+!  tpsa is true by default, otherwise it is a DA calculation 
   END INTERFACE
 
 
@@ -2668,6 +2708,7 @@ endif
   if(complex_extra_order==1.and.special_extra_order_1) s2=s2.cut.no
    call kill(s2)
   END SUBROUTINE flatten_c_factored_lie
+
 ! etienne1
   FUNCTION c_logf_spin( s1,h,epso,n,tpsa )
     implicit none
@@ -3358,10 +3399,7 @@ endif
 
   END FUNCTION GETORDERSPINMATRIX
 
-!!!!!!!!!!!!!!   programming extraction of nth order with parameters   !!!!!!!!!!!!!
 
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   FUNCTION from_phasor(k)
     implicit none
@@ -5525,6 +5563,8 @@ endif
     s2%sigmas=0
  end SUBROUTINE  EQUAL_c_l_f
 
+
+
 !1BMAD$linear_lattice_functions.tex
   SUBROUTINE  compute_lattice_functions_2(m,f)
     implicit none
@@ -5589,31 +5629,31 @@ endif
   end SUBROUTINE  compute_lattice_functions_1
 !2BMAD
 
-  SUBROUTINE  d_compute_lattice_functions(a,f,a_l,a_li)
-    implicit none
-    type(d_lattice_function) f
-    type(c_linear_map) m
-    type(c_linear_map) mi
-    type(c_linear_map) q
-    type(c_damap),intent(in) :: a
-    type(c_linear_map),optional, intent(inout):: a_l,a_li
-    integer i,j
- 
-    m=a
+!  SUBROUTINE  d_compute_lattice_functions(a,f,a_l,a_li)
+!    implicit none
+!    type(d_lattice_function) f
+!    type(c_linear_map) m
+!    type(c_linear_map) mi
+!!    type(c_linear_map) q
+!    type(c_damap),intent(in) :: a
+!    type(c_linear_map),optional, intent(inout):: a_l,a_li
+!    integer i,j
+! 
+!    m=a
 
-     if(do_damping.and.use_radiation_inverse) then
-       mi=m**(-1)
-     else
-       mi=inv_c_linear_map_symplectic(m)     
-     endif
+ !    if(do_damping.and.use_radiation_inverse) then
+ !      mi=m**(-1)
+ !    else
+ !      mi=inv_c_linear_map_symplectic(m)     
+ !    endif
+ !
  
- 
-     if(present(a_l))  a_l =m
-     if(present(a_li)) a_li=mi
- 
-    f%e=0
-    f%h=0
-    f%spin_lat=0
+ !    if(present(a_l))  a_l =m
+ !    if(present(a_li)) a_li=mi
+ !
+ !   f%e=0
+ !   f%h=0
+ !   f%spin_lat=0
 
  !!!!    computing the de Moivre Lattice Functions  !!!!
  !!!!  equivalent to Ripken ones
@@ -5629,45 +5669,35 @@ endif
    !  enddo
 !!!! coefficient of moments
  
-     do i = 1,3
-      f%E(i,:,:)=matmul(matmul(m%mat,jp_mat(i,:,:)),mi%mat)
-     enddo
-     do i = 1,3
-      f%E(i,:,:)= -matmul(f%E(i,:,:),jt_mat)
-     enddo
- 
-!!!!  Dispersive quantities containing zeta and eta for example
-     do i = 1,3
-      f%H(i,:,:)=matmul(matmul(m%mat,ip_mat(i,:,:)),mi%mat)
-      enddo
+  !   do i = 1,3
+  !    f%E(i,:,:)=matmul(matmul(m%mat,jp_mat(i,:,:)),mi%mat)
+  !!   enddo
+  !   do i = 1,3
+  !    f%E(i,:,:)= -matmul(f%E(i,:,:),jt_mat)
+  !   enddo
+  !
+!!!!!  Dispersive quantities containing zeta and eta for example
+ !    do i = 1,3
+ !     f%H(i,:,:)=matmul(matmul(m%mat,ip_mat(i,:,:)),mi%mat)
+ !     enddo
 
 !!!!    computing the n vector using quaternion
-  if(do_spin) then
-     do i = 1,3
-       q=i
-       q=m*q*mi
-       do j=1,3
-        f%Spin_lat(i,j,0:6)=q%q(j,0:6)
-       enddo
-     enddo
-  else
-  f%Spin_lat=0
-  f%spin=0
-  endif
- ! if(.not.do_damping) d_damping=0
- !     f%phase=d_phase
- !     f%damping=d_damping
- !     f%spin=d_spin_tune
- !     f%fixa=d_probe_a%x
- !     f%fixb=d_probe_b%x
+ ! if(do_spin) then
+ !    do i = 1,3
+ !      q=i
+ !      q=m*q*mi
+ !      do j=1,3
+ !       f%Spin_lat(i,j,0:6)=q%q(j,0:6)
+ !      enddo
+ !    enddo
+ ! else
+ ! f%Spin_lat=0
+ ! f%spin=0
+ ! endif
+ 
 
-  end SUBROUTINE  d_compute_lattice_functions
-!type c_lattice_function
-! real(dp) E(3,6,6),K(3,6,6),B(3,6,6)
-! real(dp) H(3,6,6)
-! real(dp)  S(1:3,0:6)
-! logical symplectic 
-!end type c_lattice_function
+ ! end SUBROUTINE  d_compute_lattice_functions
+ 
 
   SUBROUTINE  EQUALql_c_spin(S2,S1)
     implicit none
@@ -6210,59 +6240,29 @@ m%q=p%q
 
     end subroutine  c_linear_map_to_matrix 
 
-  subroutine  c_linear_map_to_3_by_3_by_6 (q_lin,m)
-    implicit none
-    real(dp), INTENT(INOUT) :: m(3,3,0:6)
-    TYPE(c_linear_map), INTENT(IN) :: q_lin
-    type(c_linear_map) sf,q,s
-    integer i,j
+!  subroutine  quaternion_to_matrix(q_lin,m)
+!    implicit none
+!    real(dp) m(3,3) 
+!    TYPE(c_quaternion), INTENT(IN) :: q_lin
+!    type(c_quaternion) s,sf
+!    integer i,j
 
-!type c_linear_map
-! complex(dp) mat(6,6)
-! complex(dp)  q(0:3,0:6) 
-!end type c_linear_map
+!    call alloc(s)
+!    call alloc(sf)
+!
+!    do i=1,3
+!     s=0.0_dp
+!     s%x(i)=1.0_dp
+!     sf=q_lin*s*q_lin**(-1) 
+!     do j=1,3
+!      m(j,i)=sf%x(j)
+!     enddo
+!    enddo
+!
+!    call kill(s)
+!    call kill(sf)
 
-     q=1
-     q%q=q_lin%q
-     s%mat=0
-     s%q=0
-     m=0
-    do i=1,3
-     s=i
-
-     sf=q*s*q**(-1)
-
-     do j=1,3
-      m(j,i,0:6)=sf%q(j,0:6)
-     enddo
-    enddo
- 
-
-    end subroutine  c_linear_map_to_3_by_3_by_6 
-
-  subroutine  quaternion_to_matrix(q_lin,m)
-    implicit none
-    real(dp) m(3,3) 
-    TYPE(c_quaternion), INTENT(IN) :: q_lin
-    type(c_quaternion) s,sf
-    integer i,j
-
-    call alloc(s)
-    call alloc(sf)
-
-    do i=1,3
-     s=0.0_dp
-     s%x(i)=1.0_dp
-     sf=q_lin*s*q_lin**(-1) 
-     do j=1,3
-      m(j,i)=sf%x(j)
-     enddo
-    enddo
-
-    call kill(s)
-    call kill(sf)
-
-   end subroutine quaternion_to_matrix 
+!   end subroutine quaternion_to_matrix 
 
 
   FUNCTION cdaddsc( S1, sc )
@@ -8934,17 +8934,41 @@ endif
 
 
 
+! FPP alone
+!  Avoid using in PTC. Use init with an internal_state
+!  c_init_all(NO1,nd_or_nv,np1,ndpt1,AC_rf,ptc)
+!  Initiatializes both the real and complex package
+! c_init_all(NO1,nd_or_nv) powers the TPSA packages with no maps: almost useless
+! c_init_all(NO1,nd_or_nv,np1) with np1=0,1,2,.... present, powers also maps
+! for example, c_init_all(1,2,0) allows maps with no parameters of 2-degrees of freedom
+!  AC_rf,ptc are reserved by the code PTC: avoid using in a non-ptc application
+! init_map_all(NO1,ND1,NP1,NDPT1) call also be used,  NP1,NDPT1 are optional then.
+   
 
-  subroutine c_init_all(NO1,NV1,np1,ndpt1,AC_rf,ptc)  !,spin
+
+  subroutine init_map_all(NO1,ND1,NP1,NDPT1)
     implicit none
-    integer, intent(in) :: NO1,NV1
+    integer NO1,ND1
+    integer,optional ::  NDPT1,NP1
+    logical(lp) PACKAGE1
+    integer ndptt,i,np11
+    np11=0
+     if(present(np1)) np11=np1 
+    call init(NO1,ND1,NP11,NDPT1)
+    call c_init(NO1,nd1,np11,ndpt1,0,ptc=my_false)
+  end subroutine init_map_all 
+
+
+  subroutine c_init_all(NO1,nd_or_nv,np1,ndpt1,AC_rf,ptc)  !,spin
+    implicit none
+    integer, intent(in) :: NO1,nd_or_nv
     integer, optional :: np1,ndpt1,AC_RF
     logical(lp), optional :: ptc  
-    call c_init(NO1,NV1,np1,ndpt1,AC_rf,ptc)
+    call c_init(NO1,nd_or_nv,np1,ndpt1,AC_rf,ptc)
      if(present(np1)) then
       call init(NO,nd,np,ndpt) 
      else
-      call init(NO,nv) 
+      call init(NO,nd_or_nv) 
    endif
  c_%nd2t=>nd2t
 c_%nd2harm=>nd2harm
@@ -18213,6 +18237,235 @@ type(c_damap), intent(inout) ::  u,u_c
 real(dp), optional, intent(inout) :: phase(:),damping(:)
 real(dp), optional, intent(inout) :: spin_tune(2)
 type(c_linear_map), optional :: q_cs,q_as,q_rot,q_orb   ! q_c is properly factorised
+real(dp) b(6,6),b0(6,6),ri(6,6),id(6,6),st(6,6),ang,damp(3),t,cphi,sphi,s(6,6),aq,daq
+type(c_linear_map) q ,qr,qc,qrot
+complex(dp) cri(6,6)
+integer i
+logical dos
+logical, optional :: dospin
+
+dos=.false.
+if(present(dospin)) then
+  dos=dospin
+else
+      if(force_spin_input_normal) then
+        write(6,*) " your default forces you to include dospin in the input of c_fast_canonise"
+        stop
+      endif
+endif
+s=0
+b0=0
+id=0
+do i=1,nd
+b0(2*i-1,2*i-1)=1
+b0(2*i,2*i)=1
+s(2*i-1,2*i)=1 
+s(2*i,2*i-1)=-1 
+enddo
+if(present(q_rot) ) then 
+qrot=0  ! actually makes identity
+endif
+b=0
+id=b0
+ri=0
+b=u
+ 
+if(ndpt/=0)  call extract_a0_mat(b,b0)
+
+
+!else
+   damp=1
+!endif
+!det=FindDet(b(1:nd2,1:nd2), nd2)**(1.0_dp/nd2)
+!write(6,*) damp
+
+ 
+      do i=1,ndt
+      if((i<=ndt)) then  !.or.(i>nd-rf)) then
+ !    damp(i)=sqrt(b(2*i-1,2*i-1)*b(2*i,2*i)-b(2*i-1,2*i)*b(2*i,2*i-1))
+       if(courant_snyder_teng_edwards) then
+        t=sqrt(b(2*i-1,2*i-1)**2+b(2*i-1,2*i)**2)
+        cphi=b(2*i-1,2*i-1)/t
+        sphi=b(2*i-1,2*i)/t
+       else
+        t=sqrt(b(2*i,2*i-1)**2+b(2*i,2*i)**2)
+
+        cphi=b(2*i,2*i)/t
+        sphi=-b(2*i,2*i-1)/t
+       endif
+
+       ri(2*i-1,2*i-1)=cphi 
+       ri(2*i,2*i)=cphi 
+       ri(2*i-1,2*i)=-sphi  
+       ri(2*i,2*i-1)=sphi  
+    endif
+ 
+ if(present(phase)) then
+     ang=-atan2(sphi,cphi)
+  phase(i)=phase(i)-ang/twopi
+ endif
+
+
+      enddo
+
+
+
+if(ndpt/=0) then
+        ri(5,5)=1
+        ri(6,6)=1
+        ri(ndptb,ndpt)=- b(ndptb,ndpt)
+        if(mod(ndpt,2)==0) then
+         i=ndpt/2
+        else
+         i=ndptb/2
+        endif
+         if(present(phase))       phase(i)=phase(i)+b(ndptb,ndpt)
+         if(present(q_rot) ) then 
+          qrot%mat(ndptb,ndpt)=-ri(ndptb,ndpt)
+          qrot%mat(5,5)=ri(5,5)
+          qrot%mat(6,6)=ri(6,6)
+         endif
+endif
+
+
+       st=matmul(b,ri)
+       st=matmul(b0,st)
+if(do_damping) then
+!b0=matmul(matmul(st,s),transpose(st))
+ 
+
+call canonize_damping(st,id,damp)
+ 
+       st=matmul(st,id)
+ !b0=matmul(matmul(st,s),transpose(st))
+ 
+ 
+endif
+if(present(damping)) then
+ do i=1,ndt
+  damping(i)=damping(i)+log(damp(i))
+ enddo
+endif
+
+if(present(q_rot) ) then 
+ qrot%mat(2*i-1,2*i-1)=ri(2*i-1,2*i-1)/damp(i) 
+ qrot%mat(2*i,2*i)=ri(2*i,2*i)/damp(i) 
+ qrot%mat(2*i-1,2*i)=-ri(2*i-1,2*i)/damp(i) 
+ qrot%mat(2*i,2*i-1)=-ri(2*i,2*i-1)/damp(i) 
+endif
+
+    u_c=st
+if(use_quaternion.and.dos) then
+q=1
+ q=u%q
+!  make sure isf not below y plane
+    !   aq=q%q(0,0)**2-(q%q(1,0)**2+q%q(2,0)**2+q%q(3,0)**2)
+      ! aq=real(q%q(2,0))   
+ 
+!if(aq<0) then
+!          qr=1   !  = i 
+!          qr=0.0_dp
+!          qr%q(1,0)=1.0_dp
+!          q=q*qr
+!endif
+ 
+ qr=1
+ qr=0.0_dp
+
+ 
+ aq=-atan2(real(q%q(2,0)),real(q%q(0,0)))
+ 
+ qr%q(0,0)= cos(aq)
+ qr%q(2,0)= sin(aq)
+
+ daq=0
+ if(ndpt/=0) then  
+
+  daq=(q%q(0,ndpt)*qr%q(2,0)+q%q(2,ndpt)*qr%q(0,0))/(q%q(2,0)*qr%q(2,0)-q%q(0,0)*qr%q(0,0))
+  qr%q(0,ndpt)=  -daq*qr%q(2,0)
+  qr%q(2,ndpt)= daq*qr%q(0,0)
+ endif
+ qc=q*qr
+ 
+ if(present(spin_tune).and.dos) then
+  spin_tune(1)=spin_tune(1)+aq/pi   ! changed 2018.11.01
+ endif
+cri=ri
+qc=qc*cri
+ u_c%q=qc 
+
+
+if(present(q_as) ) then 
+q_as=1 
+ if(abs(damp(1))+abs(damp(2))+abs(damp(3))<1.d-10) then
+   cri=inv_symplectic66(s)
+ else
+   call matinv(s,s,6,6,i)
+   cri=s
+ endif
+q_as=qc*cri
+endif
+
+endif
+ 
+ if(present(spin_tune).and.dos) then
+  spin_tune(2)=spin_tune(2)+daq/pi   ! changed 2018.11.01
+ endif
+
+if(present(q_cs) ) then 
+q_cs=u_c 
+endif
+if(present(q_orb)) then
+q_orb=u_c 
+q_orb=1.0_dp
+endif
+if(present(q_rot) ) then 
+ qrot%q=qr%q 
+ qrot%q(1:3,0:6)=-qrot%q(1:3,0:6)
+endif
+
+if(present(q_rot) ) then 
+ q_rot=qrot*q_rot
+endif
+ 
+end subroutine c_fast_canonise
+
+subroutine canonize_damping(b0,sd,damp)
+implicit none
+real(dp) b0(6,6),damp(3),sd(6,6)
+real(dp) a(3,3),v(3)
+integer i
+a=0
+!!!! makes J/= AJtranspose(A) _12,34,56 = 1
+do i=1,3
+ a(i,i)=b0(2*i-1,2*i-1)*b0(2*i,2*i)-b0(2*i-1,2*i)*b0(2*i,2*i-1)
+enddo
+ a(1,2)=b0(1,3)*b0(2,4)-b0(1,4)*b0(2,3)
+ a(1,3)=b0(1,5)*b0(2,6)-b0(1,6)*b0(2,5)
+ a(2,1)=b0(3,1)*b0(4,2)-b0(3,2)*b0(4,1)
+ a(2,3)=b0(3,5)*b0(4,6)-b0(4,6)*b0(3,5)
+ a(3,1)=b0(5,1)*b0(6,2)-b0(6,2)*b0(5,1)
+ a(3,2)=b0(5,3)*b0(6,4)-b0(6,4)*b0(5,3)
+
+   call matinv(a,a,3,3,i)
+ if(i/=0)  stop 250
+ v=1
+ v=matmul(a,v)
+ sd=0
+ do i=1,3
+  sd(2*i-1,2*i-1)=sqrt(v(i))
+  sd(2*i,2*i)=sd(2*i-1,2*i-1)
+   damp(i)=sd(2*i-1,2*i-1)
+ enddo
+
+end subroutine canonize_damping
+
+subroutine c_fast_canonise_old(u,u_c,phase,damping,q_cs,q_as,q_orb,q_rot,spin_tune ,dospin)
+implicit none
+type(c_damap), intent(inout) ::  u,u_c
+real(dp), optional, intent(inout) :: phase(:),damping(:)
+real(dp), optional, intent(inout) :: spin_tune(2)
+type(c_linear_map), optional :: q_cs,q_as,q_rot,q_orb   ! q_c is properly factorised
 real(dp) b(6,6),b0(6,6),ri(6,6),ang,damp(3),t,cphi,sphi,s(6,6),aq,daq
 type(c_linear_map) q ,qr,qc,qrot
 complex(dp) cri(6,6)
@@ -18247,7 +18500,7 @@ b=u
  
 if(ndpt/=0)  call extract_a0_mat(b,b0)
 
-if(present(damping).and.do_damping) then
+if(do_damping) then
 s=matmul(matmul(b,s),transpose(b))
 damp=0
 do i=1,ndt
@@ -18288,10 +18541,10 @@ endif
   damping(i)=damping(i)-log(damp(i))
  endif
 if(present(q_rot) ) then 
- qrot%mat(2*i-1,2*i-1)=ri(2*i-1,2*i-1)*damp(i)**2
- qrot%mat(2*i,2*i)=ri(2*i,2*i)*damp(i)**2
- qrot%mat(2*i-1,2*i)=-ri(2*i-1,2*i)*damp(i)**2
- qrot%mat(2*i,2*i-1)=-ri(2*i,2*i-1)*damp(i)**2
+ qrot%mat(2*i-1,2*i-1)=ri(2*i-1,2*i-1) !*damp(i)**2
+ qrot%mat(2*i,2*i)=ri(2*i,2*i) !*damp(i)**2
+ qrot%mat(2*i-1,2*i)=-ri(2*i-1,2*i) !*damp(i)**2
+ qrot%mat(2*i,2*i-1)=-ri(2*i,2*i-1) !*damp(i)**2
 endif
       enddo
 
@@ -18390,7 +18643,8 @@ if(present(q_rot) ) then
  q_rot=qrot*q_rot
 endif
  
-end subroutine c_fast_canonise
+end subroutine c_fast_canonise_old
+
 
 
 
@@ -18466,15 +18720,19 @@ REAL(dp) FUNCTION FindDet(mat, n)
     
 END FUNCTION FindDet
 
- subroutine c_normal(xyso3,n,dospin,no_used,rot,phase,nu_spin,canonize)
+subroutine c_normal(xyso3,n,dospin,no_used,rot,phase,nu_spin,canonize)
 !#general:  normal
 !# This routine normalises the map xy
 !# xy = n%a_t**(-1)*r*n%a_t 
 !# The linear part of r is described in Chap.4 for the orbital part
 !# and in Chap.6 for the spin. The nonlinear parts are in Chap.5 and 6.
 !# Dospin must be set to .true. if spin is to be normalised.
-!# Resonances can be left in the map. Thir number is in n%nres.
-!# They are nres rosnances The kth resonance is n%m(i,k).Q_i+n%ms(k)=integer
+!# Resonances can be left in the map. Their number is in n%nres.
+!# They are nres resonances The kth resonance is n%m(i,k).Q_i+n%ms(k)=integer
+!# canonize=.true. Then it is put into courant-snyder form or anti- courant-snyder form
+!# depending on the logical  courant_snyder_teng_edwards=true or false. (See blue or yellow book)
+!#  The map in phasors is exp(n%H_l.grad) exp(n%H_nl.grad)
+!# if fully normalized into a rotation then the map is exp(n%h.grad)
 
     implicit none
     type(c_damap) , intent(inout) :: xyso3
@@ -18973,7 +19231,7 @@ endif
     n%Atot=n%as*n%a_t
 
   if(present(canonize)) then
-   if(canonize) call c_canonise(n%atot,n%atot)
+   if(canonize) call c_full_canonise(n%atot,n%atot)
   endif
 
 
@@ -19051,7 +19309,7 @@ inside_normal=.false.
 !  if(use_quaternion.and.rf==0)  then
    call alloc(Nf,N_cut_2,N_nl )
    Nf=n%atot**(-1)*xyso3*n%atot
-   N_cut_2=Nf.cut.2
+   N_cut_2=Nf.cut.(-2)
 
 ! creating the linear vector field in phasors variables
 ncoast=0
@@ -19102,17 +19360,6 @@ endif
 
 
  end subroutine c_normal !_with_quaternion
-
-! FPP alone
-  subroutine init_map_all(NO1,ND1,NP1,NDPT1)
-    implicit none
-    integer NO1,ND1,NP1
-    integer,optional ::  NDPT1
-    logical(lp) PACKAGE1
-    integer ndptt,i
-    call init(NO1,ND1,NP1,NDPT1)
-    call c_init(NO1,nd1,np1,ndpt1,0,ptc=my_false)
-  end subroutine init_map_all 
 
 !!!!!!!!!!!!!!!!!!!!   tree tracking  for Zhe  : independent program
 
