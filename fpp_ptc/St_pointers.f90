@@ -4821,11 +4821,14 @@ enddo
 
 write(6,*)  "   "
 write(6,*)  " Phase advance and fractional"
-write(6,format8) phase,n%tune(1:c_%nd2)
+write(6,format3) phase(1:c_%nd)
+write(6,format3) n%tune(1:c_%nd)
+ 
 write(6,*)  " damping advance "
 write(6,format3) damping
 write(6,*)  " spin advance and chromaticity "
 write(6,format2) spin_tune
+write(6,format1) n%spin_tune
  write(6,*)  " Closed orbit before and after "
  write(6,format6)  my_fix
  write(6,format6)  xs0%x
