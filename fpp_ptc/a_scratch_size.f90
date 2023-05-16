@@ -245,6 +245,7 @@ module precision_constants
   !  lielib_print(16)=1  print eigenvalues in c_linear_a 
   !  lielib_print(17)=1  print magnets with excessive cutting
   integer , target :: old_integrator =1  ! before making spin high order
+  character*255 :: preffile="pref.txt"
 
   INTERFACE read
      MODULE PROCEDURE read_d

@@ -50,6 +50,8 @@ module S_fitting_new
   
 contains
 
+
+
   subroutine lattice_fit_tune_CHROM_gmap_new(R,my_state,EPSF,POLY,NPOLY,TARG,NP)
     IMPLICIT NONE
     TYPE(layout),target, intent(inout):: R

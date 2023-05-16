@@ -961,12 +961,32 @@ end  SUBROUTINE print_triad
 
     CALL COMPUTE_ENTRANCE_ANGLE_mengyu(ENT,EXI,ANG)
 
-    
-  !  D=B-A
-  !  dd=d
-  !  CALL CHANGE_BASIS(Dd,GLOBAL_FRAME,D,EXI)
-
   END SUBROUTINE FIND_PATCH_mengyu
+
+  SUBROUTINE FIND_PATCH_from_mengyu_to_ptc(D_m,ANG_m,D_ptc,ang_ptc)
+    ! FINDS PATCH BETWEEN ENT AND EXI : INTERFACED LATER FOR FIBRES
+    IMPLICIT NONE
+    REAL(DP)  ENT(3,3),ang(3)
+    REAL(DP), INTENT(INOUT):: D_m(3),ANG_m(3),D_ptc(3),ang_ptc(3)
+    REAL(DP) omega(3)
+
+ent=global_frame
+
+  omega=0.0_dp
+ang=0
+ang(3)=ang_m(3) 
+    CALL GEO_ROT(ENT,omega,ANG,1,BASIS=ent)
+ang=0
+ang(2)=ang_m(2) 
+    CALL GEO_ROT(ENT,omega,ANG,1,BASIS=ent)
+ang=0
+ang(1)=ang_m(1) 
+    CALL GEO_ROT(ENT,omega,ANG,1,BASIS=ent)
+ 
+call FIND_PATCH(global_origin,global_frame,d_m,ent,D_ptc,ang_ptc)
+
+  END SUBROUTINE FIND_PATCH_from_mengyu_to_ptc
+
 
 
   SUBROUTINE COMPUTE_ENTRANCE_ANGLE_bmad(ENTL,ENTB,A)

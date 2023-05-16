@@ -376,6 +376,7 @@ TYPE INTEGRATION_NODE
    TYPE (INTEGRATION_NODE), POINTER :: PREVIOUS  => null()
    TYPE (NODE_LAYOUT), POINTER :: PARENT_NODE_LAYOUT  => null()
    TYPE(FIBRE), POINTER :: PARENT_FIBRE  => null()
+   type(c_lattice_function), pointer :: lf  => null()
    !   TYPE(EXTRA_WORK), POINTER :: WORK
    TYPE(BEAM_BEAM_NODE), POINTER :: BB  => null()
 !   TYPE(tree_element), POINTER :: T

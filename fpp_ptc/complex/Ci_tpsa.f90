@@ -83,7 +83,9 @@ logical(lp) :: symp =my_false
 logical(lp) :: c_normal_auto=my_true,c_verbose=my_true
 integer :: spin_def_tune=1   !, private 
 integer :: order_gofix=1
-logical(lp) :: time_lie_choice=my_false,courant_snyder_teng_edwards=my_true,dosymp=my_false
+logical(lp) :: time_lie_choice=my_false,courant_snyder_teng_edwards=my_true,dosymp=.true.
+integer :: K_phase_choice=1
+character(20):: phase_choice(1:3)=["Courant-Snyder","Anti-Courant-Snyder","Mengyu"]
   private copy_damap_matrix,copy_matrix_matrix,invert_22,ALLOC_33t,kill_33t,matmul_33,print_33t
   private A_OPT_C_damap,K_OPT_c_damap,equalc_t,equalt_c,matmulr_33
 private c_add_vf,real_mul_vec
@@ -11607,7 +11609,7 @@ subroutine c_linear_ac_longitudinal(xy,a1,ac)
 !# "call c_gofix(m,a1)" produces
 !# m0=a1**(-1)*xy*a1 to order "order_gofix" around the parameter dependent fixed point.
 !# order_gofix is defaulted to 1.
-!# dosymp is defaulted to false. 
+!# dosymp is defaulted to true since 2023.4.21. 
 !# dosymp should be true if order_gofix > 1 (if c_gofix is used on its own).
 !# c_canonise will take care of a1 if needed to higher order.
 
@@ -11706,7 +11708,13 @@ if(dosymp) then
     do i=1,nd2 
      if(i/=ndptb.and.i/=ndpt) a1%v(i)=(1.0e0_dp.cmono.i)+a1%v(i)
     enddo
-
+allocate(je(nv))
+je=0
+do i=1,no
+je(ndpt)=i
+a1%v(ndptb)=a1%v(ndptb)-((a1%v(ndptb).sub.je).cmono.je)
+enddo
+deallocate(je)
 !call print(a1,6)
 !pause 333
 
@@ -13828,6 +13836,43 @@ c_master=localmaster
     call kill(nt)
 
   end subroutine c_nr_to_n0
+
+  subroutine c_q0_to_qr(n0,nr)  
+!#general: manipulation & normal
+!# same as c_nr_to_n0
+ 
+
+    implicit none
+    TYPE(c_quaternion), INTENT(INout) :: n0,nr
+    TYPE(c_quaternion) nt
+
+    call alloc(nt)
+
+     nt%x(2)=n0%x(2)
+     nt%x(1)=n0%x(1)-i_*n0%x(3) ! coefficient of  1/2(i + i k) 
+     nt%x(3)=n0%x(1)+i_*n0%x(3) ! coefficient of  1/2(i - i k)
+     nr=nt   
+    call kill(nt)
+
+  end subroutine c_q0_to_qr
+
+  subroutine c_qr_to_q0(nr,n0) 
+!#general: manipulation & normal
+!# same as c_nr_to_n0
+ 
+    implicit none
+    TYPE(c_quaternion), INTENT(INout) :: n0,nr
+    TYPE(c_quaternion) nt
+
+    call alloc(nt)
+
+     nt%x(2)=nr%x(2)
+     nt%x(1)=(nr%x(1)+nr%x(3))/2.0_dp    ! coefficient of i quaternion
+     nt%x(3)=i_*(nr%x(1)-nr%x(3))/2.0_dp ! coefficient of k quaternion
+     n0=nt 
+    call kill(nt)
+
+  end subroutine c_qr_to_q0
 
   subroutine c_find_om_da(S,om,n) 
 !#restricted : normal
@@ -18241,8 +18286,10 @@ real(dp) b(6,6),b0(6,6),ri(6,6),id(6,6),st(6,6),ang,damp(3),t,cphi,sphi,s(6,6),a
 type(c_linear_map) q ,qr,qc,qrot
 complex(dp) cri(6,6)
 integer i
-logical dos
+logical dos,rota
 logical, optional :: dospin
+
+rota=.not.(present(phase))
 
 dos=.false.
 if(present(dospin)) then
@@ -18287,11 +18334,30 @@ if(ndpt/=0)  call extract_a0_mat(b,b0)
         t=sqrt(b(2*i-1,2*i-1)**2+b(2*i-1,2*i)**2)
         cphi=b(2*i-1,2*i-1)/t
         sphi=b(2*i-1,2*i)/t
+            if(cphi*b(2*i-1,2*i)+sphi*b(2*i-1,2*i-1)< 0.and.rota) then
+             cphi=-cphi
+             sphi=-sphi
+            endif
+        
        else
-        t=sqrt(b(2*i,2*i-1)**2+b(2*i,2*i)**2)
+          if(K_phase_choice==2) then
+            t=sqrt(b(2*i,2*i-1)**2+b(2*i,2*i)**2)
 
-        cphi=b(2*i,2*i)/t
-        sphi=-b(2*i,2*i-1)/t
+            cphi=b(2*i,2*i)/t
+            sphi=-b(2*i,2*i-1)/t
+            if(cphi*b(2*i,2*i)-sphi*b(2*i,2*i-1)< 0.and.rota) then
+             cphi=-cphi
+             sphi=-sphi
+            endif
+         else  ! mengyu
+         t=sqrt(b(2*i-1,2*i-1)**2+b(2*i-1,2*i)**2)
+         sphi=-b(2*i-1,2*i-1)/t
+         cphi=b(2*i-1,2*i)/t
+            if(cphi*b(2*i-1,2*i)-sphi*b(2*i-1,2*i-1)< 0.and.rota) then
+             cphi=-cphi
+             sphi=-sphi
+            endif
+         endif
        endif
 
        ri(2*i-1,2*i-1)=cphi 
@@ -18459,191 +18525,6 @@ enddo
  enddo
 
 end subroutine canonize_damping
-
-subroutine c_fast_canonise_old(u,u_c,phase,damping,q_cs,q_as,q_orb,q_rot,spin_tune ,dospin)
-implicit none
-type(c_damap), intent(inout) ::  u,u_c
-real(dp), optional, intent(inout) :: phase(:),damping(:)
-real(dp), optional, intent(inout) :: spin_tune(2)
-type(c_linear_map), optional :: q_cs,q_as,q_rot,q_orb   ! q_c is properly factorised
-real(dp) b(6,6),b0(6,6),ri(6,6),ang,damp(3),t,cphi,sphi,s(6,6),aq,daq
-type(c_linear_map) q ,qr,qc,qrot
-complex(dp) cri(6,6)
-integer i
-logical dos
-logical, optional :: dospin
-
-dos=.false.
-if(present(dospin)) then
-  dos=dospin
-else
-      if(force_spin_input_normal) then
-        write(6,*) " your default forces you to include dospin in the input of c_fast_canonise"
-        stop
-      endif
-endif
-s=0
-b0=0
-do i=1,nd
-b0(2*i-1,2*i-1)=1
-b0(2*i,2*i)=1
-s(2*i-1,2*i)=1 
-s(2*i,2*i-1)=-1 
-enddo
-if(present(q_rot) ) then 
-qrot=0  ! actually makes identity
-endif
-b=0
-
-ri=0
-b=u
- 
-if(ndpt/=0)  call extract_a0_mat(b,b0)
-
-if(do_damping) then
-s=matmul(matmul(b,s),transpose(b))
-damp=0
-do i=1,ndt
-    damp(i)=sqrt(abs(s(2*i-1,2*i)))
-enddo
-else
-   damp=1
-endif
-!det=FindDet(b(1:nd2,1:nd2), nd2)**(1.0_dp/nd2)
-!write(6,*) damp
-
- 
-      do i=1,ndt
-      if((i<=ndt)) then  !.or.(i>nd-rf)) then
- !    damp(i)=sqrt(b(2*i-1,2*i-1)*b(2*i,2*i)-b(2*i-1,2*i)*b(2*i,2*i-1))
-       if(courant_snyder_teng_edwards) then
-        t=sqrt(b(2*i-1,2*i-1)**2+b(2*i-1,2*i)**2)
-        cphi=b(2*i-1,2*i-1)/t
-        sphi=b(2*i-1,2*i)/t
-       else
-        t=sqrt(b(2*i,2*i-1)**2+b(2*i,2*i)**2)
-
-        cphi=b(2*i,2*i)/t
-        sphi=-b(2*i,2*i-1)/t
-       endif
-       ri(2*i-1,2*i-1)=cphi /damp(i)
-       ri(2*i,2*i)=cphi/damp(i)
-       ri(2*i-1,2*i)=-sphi /damp(i)
-       ri(2*i,2*i-1)=sphi /damp(i)
-  
-    endif
- 
- if(present(phase)) then
-     ang=-atan2(sphi,cphi)
-  phase(i)=phase(i)-ang/twopi
- endif
-  if(present(damping)) then
-  damping(i)=damping(i)-log(damp(i))
- endif
-if(present(q_rot) ) then 
- qrot%mat(2*i-1,2*i-1)=ri(2*i-1,2*i-1) !*damp(i)**2
- qrot%mat(2*i,2*i)=ri(2*i,2*i) !*damp(i)**2
- qrot%mat(2*i-1,2*i)=-ri(2*i-1,2*i) !*damp(i)**2
- qrot%mat(2*i,2*i-1)=-ri(2*i,2*i-1) !*damp(i)**2
-endif
-      enddo
-
-
-
-      if(ndpt/=0) then
-        ri(5,5)=1
-        ri(6,6)=1
-        ri(ndptb,ndpt)=- b(ndptb,ndpt)
-        if(mod(ndpt,2)==0) then
-         i=ndpt/2
-        else
-         i=ndptb/2
-        endif
-if(present(phase))       phase(i)=phase(i)+b(ndptb,ndpt)
-if(present(q_rot) ) then 
- qrot%mat(ndptb,ndpt)=-ri(ndptb,ndpt)
- qrot%mat(5,5)=ri(5,5)
- qrot%mat(6,6)=ri(6,6)
-endif
-      endif
-
-       s=matmul(b,ri)
-       s=matmul(b0,s)
-    u_c=s
-if(use_quaternion.and.dos) then
-q=1
- q=u%q
-!  make sure isf not below y plane
-    !   aq=q%q(0,0)**2-(q%q(1,0)**2+q%q(2,0)**2+q%q(3,0)**2)
-      ! aq=real(q%q(2,0))   
- 
-!if(aq<0) then
-!          qr=1   !  = i 
-!          qr=0.0_dp
-!          qr%q(1,0)=1.0_dp
-!          q=q*qr
-!endif
- 
- qr=1
- qr=0.0_dp
-
- 
- aq=-atan2(real(q%q(2,0)),real(q%q(0,0)))
- 
- qr%q(0,0)= cos(aq)
- qr%q(2,0)= sin(aq)
-
- daq=0
- if(ndpt/=0) then  
-
-  daq=(q%q(0,ndpt)*qr%q(2,0)+q%q(2,ndpt)*qr%q(0,0))/(q%q(2,0)*qr%q(2,0)-q%q(0,0)*qr%q(0,0))
-  qr%q(0,ndpt)=  -daq*qr%q(2,0)
-  qr%q(2,ndpt)= daq*qr%q(0,0)
- endif
- qc=q*qr
- 
- if(present(spin_tune).and.dos) then
-  spin_tune(1)=spin_tune(1)+aq/pi   ! changed 2018.11.01
- endif
-cri=ri
-qc=qc*cri
- u_c%q=qc 
-
-
-if(present(q_as) ) then 
-q_as=1 
- if(abs(damp(1))+abs(damp(2))+abs(damp(3))<1.d-10) then
-   cri=inv_symplectic66(s)
- else
-   call matinv(s,s,6,6,i)
-   cri=s
- endif
-q_as=qc*cri
-endif
-
-endif
- 
- if(present(spin_tune).and.dos) then
-  spin_tune(2)=spin_tune(2)+daq/pi   ! changed 2018.11.01
- endif
-
-if(present(q_cs) ) then 
-q_cs=u_c 
-endif
-if(present(q_orb)) then
-q_orb=u_c 
-q_orb=1.0_dp
-endif
-if(present(q_rot) ) then 
- qrot%q=qr%q 
- qrot%q(1:3,0:6)=-qrot%q(1:3,0:6)
-endif
-
-if(present(q_rot) ) then 
- q_rot=qrot*q_rot
-endif
- 
-end subroutine c_fast_canonise_old
 
 
 
@@ -19419,9 +19300,9 @@ endif
 if(.not.sagan_gen) then
       L_r = L_r*N_r
 else
-   !  L_r=L_r*L_s
-       L_s=ma.sub.1
-       L_r=L_s**(-1)*ma
+   !   T(x)=T0 +L(x) + T2(x)
+       L_s=ma.sub.1 ! L_s=L
+       L_r=L_s**(-1)*ma  ! T=L_s o L_r
  
 endif
 
@@ -19431,7 +19312,7 @@ if(.not.sagan_gen) then
       m(i)=L_r%v(i)   ! orbital part
      enddo
 else
-     do i=1,L_r%n
+     do i=1,L_r%n   ! dimension of phase space
       m(i)= 1.0_dp.mono.i
      enddo
 
@@ -19671,7 +19552,7 @@ enddo
  call alloc(m); 
 
 
-
+!!  
 fix=minput 
 f0=minput%x0(1:6)  
 if(present(fix0)) f0=fix0
