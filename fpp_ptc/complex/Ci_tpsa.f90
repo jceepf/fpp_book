@@ -85,7 +85,7 @@ integer :: spin_def_tune=1   !, private
 integer :: order_gofix=1
 logical(lp) :: time_lie_choice=my_false,courant_snyder_teng_edwards=my_true,dosymp=.true.
 integer :: K_phase_choice=1
-character(20):: phase_choice(1:3)=["Courant-Snyder","Anti-Courant-Snyder","Mengyu"]
+character(20):: phase_choice(1:3)=["Courant-Snyder      ", "Anti-Courant-Snyder ","Mengyu              "]
   private copy_damap_matrix,copy_matrix_matrix,invert_22,ALLOC_33t,kill_33t,matmul_33,print_33t
   private A_OPT_C_damap,K_OPT_c_damap,equalc_t,equalt_c,matmulr_33
 private c_add_vf,real_mul_vec
@@ -6148,7 +6148,7 @@ if(nr(3)>nr(is)) is=3
         egspin(2)=1.0_dp
         egspin(1)=as%s%s(1,1)+i_*as%s%s(1,3)       
 
-        tune=aimag(log(egspin(2-spin_def_tune))/2.0_dp) 
+        tune=aimag(log(egspin(2+spin_def_tune))/2.0_dp) 
  alpha=tune 
  if(alpha<0) tune=tune+twopi
         alpha0=2.0_dp*(tune.sub.'0')/twopi 
@@ -6171,7 +6171,7 @@ m%q=p%q
       egspin(2)=1.0_dp
       egspin(1)=cos(alpha)+i_*sin(alpha)   
 !write(6,*) alpha/twopi   
- alpha=aimag(log(egspin(2-spin_def_tune)))/twopi  
+ alpha=aimag(log(egspin(2+spin_def_tune)))/twopi  
  
 !write(6,*)alpha0,alpha
  alpha=alpha/alpha0
@@ -8740,7 +8740,7 @@ end subroutine c_bmad_reinit
     integer, optional :: np1,ndpt1,AC_RF
     logical(lp), optional :: ptc  !spin,
     integer ndpt_ptc,i,i1,i2,i3,i4,i5,i6,noo,j
-    if(use_quaternion) spin_def_tune=-1
+ !   if(use_quaternion) spin_def_tune=1
  !NP=np1
  !NO=no1
  !ND=nv1  ! nv1 is just nd if map used 
@@ -12661,20 +12661,17 @@ end subroutine c_stochastic_kick
 !         t1=t1+iabs(ms(kr))
 !         t2=t2+iabs(ms(kr))
 !        endif
+if(spin_def_tune==-1) then
        if(k==1) then
         if(ms(kr)>0) then
-!         t2=t2+iabs(spin_def_tune)
            if(t2==0) removeit=my_false
         elseif(ms(kr)<0) then
-!         t1=t1+iabs(spin_def_tune)
            if(t1==0) removeit=my_false
         endif
         elseif(k==3) then
         if(ms(kr)>0) then
-!         t1=t1+iabs(spin_def_tune)
            if(t1==0) removeit=my_false
         elseif(ms(kr)<0) then
-!         t2=t2+iabs(spin_def_tune)
            if(t2==0) removeit=my_false
         endif
         else
@@ -12682,7 +12679,25 @@ end subroutine c_stochastic_kick
          t2=t2+iabs(ms(kr))
           if(t1==0.or.t2==0) removeit=my_false
         endif
-
+else
+       if(k==1) then
+        if(ms(kr)>0) then
+           if(t1==0) removeit=my_false
+        elseif(ms(kr)<0) then
+           if(t2==0) removeit=my_false
+        endif
+        elseif(k==3) then
+        if(ms(kr)>0) then
+           if(t2==0) removeit=my_false
+        elseif(ms(kr)<0) then
+           if(t1==0) removeit=my_false
+        endif
+        else
+         t1=t1+iabs(ms(kr))
+         t2=t2+iabs(ms(kr))
+          if(t1==0.or.t2==0) removeit=my_false
+        endif
+endif
 
 
     end subroutine check_resonance_spin
@@ -17251,7 +17266,7 @@ endif
     endif
        if(present(tune)) then
         tune=0.0_dp
-        tune=-spin_def_tune*tune0%v(2)   ! in phasors
+        tune=spin_def_tune*tune0%v(2)   ! in phasors
        endif
 
  
@@ -18975,7 +18990,7 @@ endif
       endif
       
       !!! tune is taken from egspin(1) or egspin(3)   spin_def_tune= +/- 1
-       n%spin_tune=aimag(log(egspin(2-spin_def_tune))/twopi)  
+       n%spin_tune=aimag(log(egspin(2+spin_def_tune))/twopi)  
  
       ! because  exp(a L_y) x = x- a z + O(a**2)
        ri=ri**(-1) ! exp(-alpha_0 L_y)   (3)
@@ -19235,7 +19250,7 @@ if(present(phase)) then
  endif
 endif
 
-if(present(nu_spin))  nu_spin=spin_def_tune*n%h%q%x(2)/pi
+if(present(nu_spin))  nu_spin=-spin_def_tune*n%h%q%x(2)/pi
  
 endif
 
