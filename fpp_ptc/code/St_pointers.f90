@@ -4734,8 +4734,13 @@ type(c_normal_form) n
 type(integration_node), pointer :: t
 real(dp) phase(3), spin_tune(2),damping(3)
 integer i
-f=>my_ering%start
 
+f=>my_ering%start
+do i=1,my_start-1
+f=>f%next
+enddo
+ 
+write(6,*) f%mag%name
 my_fix=0
 
 my_fix(ndpt_bmad+5)=my_delta
