@@ -1055,13 +1055,20 @@ call FIND_PATCH(global_origin,global_frame,d_m,ent,D_ptc,ang_ptc)
 
 
   END SUBROUTINE COMPUTE_ENTRANCE_ANGLE_bmad 
-
   
-subroutine convert_patch_mengyu_to_etienne(R,T,mengyu)
+subroutine convert_patch_mengyu_to_etienne(R,T,mengyu,b,exi,a,ent)
 implicit none
 real(dp) R(3),rx(3,3),ry(3,3),rz(3,3),rot_(3,3),rot_arr(3,3)
 real(dp) T(3),tra(3),sy,angx,angy,angz,S_IJ,S_JJ 
 logical mengyu
+real(dp),optional :: ent(3,3),exi(3,3),b(3),a(3)
+
+
+if(present(ent)) then
+ rot_arr= matmul(ent,transpose(exi))
+ t=a-b
+tra=matmul(ent,t)
+else
 
 angx= R(1)
 angy= R(2)
@@ -1083,6 +1090,9 @@ rz(3,1:3)=[0,0,1]
 rot_=matmul(Ry,RZ)
 rot_arr=matmul(RX,rot_)
 tra=matmul(rot_arr,t);
+
+endif
+
   
  
     angx=atan2(-rot_arr(3,2),rot_arr(3,3));
@@ -1113,12 +1123,28 @@ S_JJ=rot_(1,1)*rot_arr(1,1)+rot_(1,2)*rot_arr(1,2)+rot_(1,3)*rot_arr(1,3)
 
   end subroutine
 
+   subroutine print33(r)
+   implicit none
+   real(dp) r(3,3)
+    write(6,*) r(1,1:3)
+    write(6,*) r(2,1:3)
+    write(6,*) r(3,1:3)
+   end subroutine
 
-subroutine convert_patch_etienne_to_mengyu(R,T,mengyu)
+ subroutine convert_patch_etienne_to_mengyu(R,T,mengyu,b,exi,a,ent)
 implicit none
 real(dp) R(3),rx(3,3),ry(3,3),rz(3,3),rot_(3,3),rot_arr(3,3)
 real(dp) T(3),tra(3),sy,angx,angy,angz,S_IJ,S_JJ
 logical mengyu
+real(dp),optional :: ent(3,3),exi(3,3),b(3),a(3)
+
+
+if(present(ent)) then
+ rot_arr= matmul(ent,transpose(exi))
+ t=a-b
+tra=matmul(exi,t)
+    t=tra
+else
 
 angx= R(1)
 angy= R(2)
@@ -1139,8 +1165,9 @@ rz(3,1:3)=[0,0,1]
 rot_=matmul(Ry,Rx)
 rot_arr=matmul(Rz,rot_)
 tra=matmul(transpose(rot_arr),t);
+t=tra
 
-
+endif
     angz=atan2(rot_arr(1,2),rot_arr(1,1));
 rz(1,1:3)=[cos(angz),sin(angz),0.d0]
 rz(2,1:3)=[-sin(angz), cos(angz),0.d0]
@@ -1159,7 +1186,6 @@ S_IJ=rot_(2,1)*rot_arr(3,1)+rot_(2,2)*rot_arr(3,2)+rot_(2,3)*rot_arr(3,3)
 S_JJ=rot_(3,1)*rot_arr(3,1)+rot_(3,2)*rot_arr(3,2)+rot_(3,3)*rot_arr(3,3)
 
     angx=atan2(-S_IJ,S_JJ);
-    t=tra
  
     R(1)=angx;
     R(2)=angy;
@@ -1167,6 +1193,7 @@ S_JJ=rot_(3,1)*rot_arr(3,1)+rot_(3,2)*rot_arr(3,2)+rot_(3,3)*rot_arr(3,3)
   if(mengyu) R(2)=-R(2)
 
   end subroutine
+
 
 
   SUBROUTINE  COMPUTE_SCALAR(ENTL,I,ENTB,J,S_IJ) ! Adjusts frames of magnet_chart on the basis of the misalignments

@@ -5650,22 +5650,26 @@ integer :: kkk=0
     DIR=EL%P%DIR*EL%P%CHARGE
     X1=X(1)
     X3=X(3)
-
+ 
     if(k%TIME) then
        X5=SQRT(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)-1.0_dp
     else
        X5=X(5)
     endif
 
+
     IF(EL%P%NMUL>=1) THEN
        BBYTW=EL%BN(EL%P%NMUL)
        BBXTW=EL%AN(EL%P%NMUL)
-
+ 
 
        DO  J=EL%P%NMUL-1,1,-1
           BBYTWT=X1*BBYTW-X3*BBXTW+EL%BN(J)
           BBXTW=X3*BBYTW+X1*BBXTW+EL%AN(J)
+ 
           BBYTW=BBYTWT
+ 
+
        ENDDO
     ELSE
        BBYTW=0.0_dp
@@ -5676,10 +5680,10 @@ integer :: kkk=0
     IF(EL%P%EXACT) THEN
        X(2)=X(2)-YL*DIR*BBYTW
        X(4)=X(4)+YL*DIR*BBXTW
-    ELSE
+    ELSE 
        X(2)=X(2)-YL*(DIR*BBYTW-EL%P%B0-(X5-X1*DIR*EL%BN(1))*EL%P%B0)
        X(4)=X(4)+YL* DIR*BBXTW
-
+ 
        if(k%TIME) then
           X(6)=X(6)+YL*EL%P%B0*X1*(1.0_dp/EL%P%beta0+x(5))/(1.0_dp+X5)
        else
@@ -5894,7 +5898,6 @@ integer :: kkk=0
        CALL KICK (EL,DK1,X,k)
        CALL DRIFT(D2,DD2,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,X)
        CALL KICK (EL,DK2,X,k)
-
        CALL DRIFT(D2,DD2,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,X)
        CALL KICK (EL,DK1,X,k)
        CALL DRIFT(D1,DD1,EL%P%beta0,k%TOTALPATH,EL%P%EXACT,k%TIME,X)

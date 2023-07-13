@@ -54,8 +54,8 @@ integer ,target:: gino_START = 1,gino_np=0,gino_FIN=1,gino_ORDER=1
   integer :: logs_exp=30, num_iter = 20
   !logical :: absolute = .false.
  !private ind1,ind2,ipos,ireal,a_f,a_f0,yfit
-  integer, allocatable:: ind1(:),ind2(:),ipos(:)
-  logical, allocatable :: ireal(:)
+  !integer, allocatable:: ind1(:),ind2(:),ipos(:)
+  !logical, allocatable :: ireal(:)
   real(dp), private, allocatable :: a_f(:),a_f0(:),yfit(:),dyfit(:,:)
   integer sizeind1
   logical :: onefunc = .true.,skipzero=.false.,skipcomplex=.true.
