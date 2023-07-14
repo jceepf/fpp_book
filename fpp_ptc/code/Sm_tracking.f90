@@ -778,14 +778,14 @@ ENDIF
     if(patchg==10) then
      do i=1,3
       x(2*i-1)=x(2*i-1)+C%PATCH%A_D(i)
-      x(2*i)=x(2*i-1)+C%PATCH%A_ANG(i)
+      x(2*i)=x(2*i)+C%PATCH%A_ANG(i)
      enddo
      return
     endif
     if(patchg==30) then
      do i=1,3
       x(2*i-1)=x(2*i-1)+C%PATCH%B_D(i)
-      x(2*i)=x(2*i-1)+C%PATCH%B_ANG(i)
+      x(2*i)=x(2*i)+C%PATCH%B_ANG(i)
      enddo
      return
     endif
@@ -823,14 +823,14 @@ ENDIF
     if(patchg==10) then
      do i=1,3
       x(2*i-1)=x(2*i-1)+C%PATCH%A_D(i)
-      x(2*i)=x(2*i-1)+C%PATCH%A_ANG(i)
+      x(2*i)=x(2*i)+C%PATCH%A_ANG(i)
      enddo
      return
     endif
     if(patchg==30) then
      do i=1,3
       x(2*i-1)=x(2*i-1)+C%PATCH%B_D(i)
-      x(2*i)=x(2*i-1)+C%PATCH%B_ANG(i)
+      x(2*i)=x(2*i)+C%PATCH%B_ANG(i)
      enddo
      return 
     endif
