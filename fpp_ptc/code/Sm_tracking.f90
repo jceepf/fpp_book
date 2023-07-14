@@ -819,6 +819,7 @@ ENDIF
     logical(lp),INTENT(IN):: PATCH,ENTERING
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     integer(2) patchg,i
+! David translation
     if(patchg==10) then
      do i=1,3
       x(2*i-1)=x(2*i-1)+C%PATCH%A_D(i)
@@ -831,7 +832,7 @@ ENDIF
       x(2*i-1)=x(2*i-1)+C%PATCH%B_D(i)
       x(2*i)=x(2*i-1)+C%PATCH%B_ANG(i)
      enddo
-     return
+     return 
     endif
 
     if(C%PATCH%track) then
