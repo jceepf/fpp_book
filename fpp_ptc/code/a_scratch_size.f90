@@ -246,6 +246,14 @@ module precision_constants
   !  lielib_print(17)=1  print magnets with excessive cutting
   integer , target :: old_integrator =1  ! before making spin high order
   character*255 :: preffile="pref.txt"
+   logical :: newtpsa=.false., assume_da_map = .true.,previous_newtpsa=.false.,use_np=.true.
+   integer :: nphere=0
+  integer(2), pointer :: inds(:,:),ind1(:),ind2(:) => null()
+  integer(2) combien, poscombien
+  real(dp), pointer:: reel(:),finds(:,:,:)  => null()
+  complex(dp), pointer:: reelc(:)  => null()
+ 
+ ! complex(dp), allocatable:: comp(:)
 
   INTERFACE read
      MODULE PROCEDURE read_d
