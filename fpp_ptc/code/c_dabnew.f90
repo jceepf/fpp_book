@@ -3987,6 +3987,8 @@ call dainf(ma(1),inoa,i0,ipoa(1),ilma,illa)
     return
   end subroutine dacctt1
 
+ 
+
    subroutine dacctt2da(mb,ib,mc,ic,ma,ia)
     implicit none
     !     ***********************************
@@ -3997,17 +3999,18 @@ call dainf(ma(1),inoa,i0,ipoa(1),ilma,illa)
     !
     !-----------------------------------------------------------------------------
     !
-    !      INTEGER MON(c_lno+1),Ic_cc(c_lnv)
+    !      INTEGER MON(c_lno+1),Icc(lnv)
     !      INTEGER,dimension(:)::MB,MC,MA
     !ETIENNE
     !-----------------------------------------------------------------------------
     !
     integer i0,i,j,k,ia,ib,ic,illa,illb,illc,ilma,ilmb,ilmc,inoa,inob,inoc,inva,invb,invc 
-    integer ab,jk
+    integer ab,jk,ik
 
     !    integer,dimension(c_lno)::icc
      integer,dimension(:)::ma,mb,mc
      integer  ipoa(lnv),ipob(lnv),ipoc(lnv)
+     real(dp)xx
     !
     !ETIENNE
     !
@@ -4036,32 +4039,67 @@ call dainf(ma(1),inoa,i0,ipoa(1),ilma,illa)
     do i=inva-nphere+1,inva 
         cc(ipoa(i)+i)=1.0_dp
     enddo
+!cc(ipoa(i)+inva-nphere+1:ipoa(i)+inva)=1.0_dp
 
      do i=1,inva-nphere
-     do j=1,inva   !-nphere
+     do j=1,inva-nphere  !?
      do k=1,inva
       cc(ipoa(i)+k)=cc(ipoa(i)+k)+cc(ipob(i)+j)*cc(ipoc(j)+k)
      enddo
      enddo
+
+     do j=inva-nphere+1,inva
+!     do k=1,inva
+      cc(ipoa(i)+j)=cc(ipoa(i)+j)+cc(ipob(i)+j)*cc(ipoc(j)+j)
+!     enddo
+     enddo
+
      enddo
  
- 
+
      do i=1,inva-nphere
-     do j=1,inva  !-nphere  !?
+     do j=1,inva  -nphere  !?
      do jk=poscombien ,combien 
       cc(ipoa(i)+jk-1 )=cc(ipoa(i)+jk-1 ) + cc(ipob(i)+j)*cc(ipoc(j)+jk-1)
      enddo
      enddo
      enddo
  
+if(with_para==0) then
      do i=1,inva-nphere
      do jk=poscombien,combien 
      do ab=poscombien,combien
       cc(ipoa(i)+ab-1 )=cc(ipoa(i)+ab-1 )  + finds(ind1(jk),ind2(jk),ab)* & 
-       cc(ipob(i)+jk-1 )*(cc(ipoc(ind1(jk))+ind1(ab))*cc(ipoc(ind2(jk))+ind2(ab))+cc(ipoc(ind1(jk))+ind2(ab))*cc(ipoc(ind2(jk))+ind1(ab)))/2.0_dp
+      cc(ipob(i)+jk-1 )*(cc(ipoc(ind1(jk))+ind1(ab))*cc(ipoc(ind2(jk)) &
+      +ind2(ab))+cc(ipoc(ind1(jk))+ind2(ab))*cc(ipoc(ind2(jk))+ind1(ab)))/2.0_dp
      enddo
      enddo
      enddo
+ elseif(with_para==2) then
+
+
+     do i=1,inva-nphere
+     do ik=1,ninds
+      ab=nind1(ik)
+      jk=nind2(ik)
+      cc(ipoa(i)+ab-1 )=cc(ipoa(i)+ab-1 )  + finds1(ik)* & 
+      cc(ipob(i)+jk-1 )*(cc(ipoc(ind1(jk))+ind1(ab))*cc(ipoc(ind2(jk))+ind2(ab)) &
+     +cc(ipoc(ind1(jk))+ind2(ab))*cc(ipoc(ind2(jk))+ind1(ab)))/2.0_dp
+  
+     enddo
+     enddo
+elseif(with_para==1) then
+     do i=1,inva-nphere
+     do ik=1,ninds
+      ab=nind1(ik)
+      jk=nind2(ik)
+      cc(ipoa(i)+ab-1 )=cc(ipoa(i)+ab-1 )  + finds(ind1(jk),ind2(jk),ab)* & 
+      cc(ipob(i)+jk-1 )*(cc(ipoc(ind1(jk))+ind1(ab))*cc(ipoc(ind2(jk))+ind2(ab)) &
+     +cc(ipoc(ind1(jk))+ind2(ab))*cc(ipoc(ind2(jk))+ind1(ab)))/2.0_dp
+  
+     enddo
+     enddo
+endif
  
     return
   end subroutine dacctt2da
@@ -5985,27 +6023,56 @@ endif
     integer,dimension(lnv)::j
     character(10) c10,k10
     logical some
+    integer(2) xi(3),count
 
-
+    some=.false.
+ 
 if(newtpsa) then
     if(nomax.eq.1) then
+       count=0
        write(iunit,*) "1st order polynomial ", ina,nvmax
         do i=1,nvmax+1
-          if(cc(idapo(ina)+i-1).ne.0.0_dp) write(iunit,*) i-1, cc(idapo(ina)+i-1)
+          if(cc(idapo(ina)+i-1).ne.0.0_dp) then
+           xi(1)=i-1
+           xi(2)=ind1(i)
+           xi(3)=ind2(i)
+           if(xi(2)>=nvmax-nphere) then
+             xi(2)=-(xi(2)-(nvmax-nphere))
+           endif
+           if(xi(3)>=nvmax-nphere) then
+             xi(3)=-(xi(3)-(nvmax-nphere))
+           endif
+            write(iunit,*) xi, cc(idapo(ina)+i-1)
+            count=count+1
+          endif
         enddo
-
+          write(iunit,*) count, " monomial(s) printed "
       return
     endif
 
     if(nomax==2)  then
+       count=0
+
      write(iunit,*) "2nd order polynomial ", ina,nvmax
      do i=1,combien
-      if(cc(idapo(ina)+i-1).ne.0.0_dp) write(iunit,*) ind1(i),ind2(i),cc(idapo(ina)+i-1)
-     enddo
+          if(cc(idapo(ina)+i-1).ne.0.0_dp) then
+           xi(1)=i-1
+           xi(2)=ind1(i)
+           xi(3)=ind2(i)
+          if(xi(2)>=nvmax-nphere) then
+             xi(2)=-(xi(2)-(nvmax-nphere))
+           endif
+           if(xi(3)>=nvmax-nphere) then
+             xi(3)=-(xi(3)-(nvmax-nphere))
+           endif
+            write(iunit,*) xi, cc(idapo(ina)+i-1)
+            count=count+1
+          endif
+        enddo
+          write(iunit,*) count, " monomial(s) printed "
     return
     endif
 endif
-
 
     some=.false.
     !

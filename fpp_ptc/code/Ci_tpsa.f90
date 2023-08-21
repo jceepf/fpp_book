@@ -8760,9 +8760,10 @@ end subroutine c_bmad_reinit
  !ND2=2*nd !!!!  total dimension of phase space
  !nv=nd2+np !!!!  total number of Taylor variables
 
+ 
  nphere=0
 if(use_np) nphere=np1
- 
+
     ip_mat=0; jp_mat=0; jt_mat=0;
    
    do i=1,3
@@ -8874,8 +8875,9 @@ endif
 !write(6,*) "ndc2t,nd2t,nd2harm,nd2"
 !write(6,*) ndc2t,nd2t,nd2harm,nd2
  
- 
+!if(no==2.and.newtpsa) call dacctt2datest
       call c_daini(no,nv,0)
+if(no==2.and.newtpsa) call c_dacctt2datest(ND2)
 
   
     c_master=0  !  master=1   2002.12.2
@@ -8960,7 +8962,7 @@ endif
       jp_mat(3,5,6)=0
     endif 
  
- 
+
   end subroutine c_init
 
 
@@ -9225,12 +9227,14 @@ endif
      enddo
     endif
  
+ if(newspin) then
      t1%s = t1%s*t2
      t1%q = t1%q*t2
     
-     tempnew%s=t1%s*t2%s
+      tempnew%s=t1%s*t2%s
       tempnew%q=t1%q*t2%q
- 
+ endif
+
  if(.not.c_similarity) then   
     call c_check_rad(t1%e_ij,rad1)
     call c_check_rad(t2%e_ij,rad2)
@@ -11919,6 +11923,7 @@ subroutine c_full_canonise(at,a_cs,as,a0,a1,a2,rotation,phase,nu_spin,irot)
         call alloc(ri)
   !  at= (a,s) =  (a,I) o  (I,s)
   !  call c_full_norm_spin(at%s,kspin,norm)  
+
     call c_full_norm_spin_map(at,kspin,norm)
  
  ! storing the spin because the code is careless (sets it to zero)   
@@ -18848,9 +18853,9 @@ inside_normal=.true.
 else
     call  c_gofix(m1,a1) 
 endif 
-   call print(a1%v(1))
+ 
      m1=c_simil(a1,m1,-1)
-   call print(m1%v(1))
+ 
 
 
     ! Does the the diagonalisation into a rotation

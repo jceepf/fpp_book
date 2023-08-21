@@ -108,6 +108,10 @@ if(nohere==1.and.newtpsa) then
  if(associated(ind1)) then
    DEALLOCATE(ind1,ind2,inds,reel,reelc);
  endif
+ if(associated(nind2)) then
+   DEALLOCATE(nind1,nind2);
+  ninds=0
+ endif
 combien=nvhere+1
 allocate(ind1(combien),ind2(combien),inds(0:nvhere,0:nvhere))
 allocate(reel(combien),reelc(combien)  )  !,comp(combien))
@@ -136,6 +140,17 @@ if(nohere==2.and.newtpsa) then
  if(associated(ind1)) then
    DEALLOCATE(ind1,ind2,inds,reel,reelc,finds);
  endif
+ if(associated(finds)) then
+   DEALLOCATE(finds);
+ endif
+ if(associated(finds1)) then
+   DEALLOCATE(finds1);
+ endif
+ if(associated(nind2)) then
+   DEALLOCATE(nind1,nind2);
+  ninds=0
+ endif
+ 
 combien=(nvhere+2)*(nvhere+1)/2
 allocate(ind1(combien),ind2(combien),inds(0:nvhere,0:nvhere))
 allocate(reel(combien),reelc(combien)  )  !,comp(combien))
@@ -156,8 +171,12 @@ do i=1,nvhere
    inds(0,i)=k
 enddo
 poscombien=k+1
-allocate(finds(nvhere,nvhere,poscombien:combien ))
-finds=1
+
+if(with_para<2) then
+  allocate(finds(nvhere,nvhere,poscombien:combien ))
+ finds=1
+endif
+
 do i=1,nvhere
 do  j=i,nvhere
   k=k+1
@@ -167,6 +186,9 @@ do  j=i,nvhere
    inds(j,i)=k
 enddo
 enddo
+
+if(with_para<2) then
+
       do i=1,nvhere
       do k=1,nvhere
       do j=poscombien,combien
@@ -175,9 +197,10 @@ enddo
       enddo
       enddo
 
-!write(6,*) k,poscombien,combien
+endif
+ !write(6,*) k,poscombien,combien
 !pause 765
-!do k=1,combien
+!do k=1,combien  !+ finds(ind1(jk),ind2(jk),ab)* & 
 !write(6,*) ind1(k),ind2(k),inds(ind1(k),ind2(k)),inds(ind2(k),ind1(k))
 !enddo
  endif

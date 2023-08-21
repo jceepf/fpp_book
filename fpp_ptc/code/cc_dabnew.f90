@@ -9,7 +9,7 @@ module c_dabnew
   private
 !  public
  
-  public c_ldamax, c_lstmax,c_leamax,c_liamax 
+  public c_ldamax, c_lstmax,c_leamax,c_liamax,c_dacctt2datest
  
   private daalc_lno1,daall,damult,dasqrt,dacmut,dacma,DALINt,dacctt,dacctt1,dacctt2tpsa,dacctt2da
   private dainvt,dadert,dacfut,dainvt1
@@ -708,7 +708,7 @@ if(newtpsa) then
           ind=c_nda_dab
           if(c_nda_dab.gt.c_lda) then
              write(line,'(a52)') 'ERROR IN DAALL, MAX NUMBER OF DA VECTORS EXHAUSTED,1'
-             stop 300
+             stop 3001
           endif
        endif
        if(ind>c_lda_max_used) c_lda_max_used=ind
@@ -872,7 +872,7 @@ do i=1,l
           ind=c_nda_dab
           if(c_nda_dab.gt.c_lda) then
              write(line,'(a52)') 'ERROR IN DAALL, MAX NUMBER OF DA VECTORS EXHAUSTED,1'
-             stop 300
+             stop 3002
           endif
        endif
        if(ind>c_lda_max_used) c_lda_max_used=ind
@@ -1045,7 +1045,7 @@ if(newtpsa) then
           ind=c_nda_dab
           if(c_nda_dab.gt.c_lda) then
              write(line,'(a52)') 'ERROR IN DAALL, MAX NUMBER OF DA VECTORS EXHAUSTED,1'
-             stop 300
+             stop 3003
           endif
        endif
        if(ind>c_lda_max_used) c_lda_max_used=ind
@@ -1226,7 +1226,7 @@ if(newtpsa) then
           ind=c_nda_dab
           if(c_nda_dab.gt.c_lda) then
              write(line,'(a52)') 'ERROR IN DAALL, MAX NUMBER OF DA VECTORS EXHAUSTED,1'
-             stop 300
+             stop 3004
           endif
        endif
        if(ind>c_lda_max_used) c_lda_max_used=ind
@@ -3837,11 +3837,12 @@ deallocate(g0,h0, G,H, Ga, He,f0,f,fi)
     !-----------------------------------------------------------------------------
     !
     integer i0,i,j,k,ia,ib,ic,illa,illb,illc,ilma,ilmb,ilmc,inoa,inob,inoc,inva,invb,invc 
-    integer ab,jk
+    integer ab,jk,ik
 
     !    integer,dimension(c_lno)::icc
      integer,dimension(:)::ma,mb,mc
      integer  ipoa(c_lnv),ipob(c_lnv),ipoc(c_lnv)
+     complex(dp)xx
     !
     !ETIENNE
     !
@@ -3870,35 +3871,182 @@ call dainf(ma(1),inoa,i0,ipoa(1),ilma,illa)
     do i=inva-nphere+1,inva 
         c_cc(ipoa(i)+i)=1.0_dp
     enddo
+!c_cc(ipoa(i)+inva-nphere+1:ipoa(i)+inva)=1.0_dp
 
      do i=1,inva-nphere
-     do j=1,inva   !-nphere
+     do j=1,inva-nphere  !?
      do k=1,inva
       c_cc(ipoa(i)+k)=c_cc(ipoa(i)+k)+c_cc(ipob(i)+j)*c_cc(ipoc(j)+k)
      enddo
      enddo
+
+     do j=inva-nphere+1,inva
+!     do k=1,inva
+      c_cc(ipoa(i)+j)=c_cc(ipoa(i)+j)+c_cc(ipob(i)+j)*c_cc(ipoc(j)+j)
+!     enddo
+     enddo
+
      enddo
  
- 
+
      do i=1,inva-nphere
-     do j=1,inva  !-nphere  !?
+     do j=1,inva  -nphere  !?
      do jk=poscombien ,combien 
       c_cc(ipoa(i)+jk-1 )=c_cc(ipoa(i)+jk-1 ) + c_cc(ipob(i)+j)*c_cc(ipoc(j)+jk-1)
      enddo
      enddo
      enddo
  
+if(with_para==0) then
      do i=1,inva-nphere
      do jk=poscombien,combien 
      do ab=poscombien,combien
       c_cc(ipoa(i)+ab-1 )=c_cc(ipoa(i)+ab-1 )  + finds(ind1(jk),ind2(jk),ab)* & 
-       c_cc(ipob(i)+jk-1 )*(c_cc(ipoc(ind1(jk))+ind1(ab))*c_cc(ipoc(ind2(jk))+ind2(ab))+c_cc(ipoc(ind1(jk))+ind2(ab))*c_cc(ipoc(ind2(jk))+ind1(ab)))/2.0_dp
+      c_cc(ipob(i)+jk-1 )*(c_cc(ipoc(ind1(jk))+ind1(ab))*c_cc(ipoc(ind2(jk)) &
+      +ind2(ab))+c_cc(ipoc(ind1(jk))+ind2(ab))*c_cc(ipoc(ind2(jk))+ind1(ab)))/2.0_dp
      enddo
      enddo
      enddo
+ elseif(with_para==2) then
+ 
+
+     do i=1,inva-nphere
+     do ik=1,ninds
+      ab=nind1(ik)
+      jk=nind2(ik)
+      c_cc(ipoa(i)+ab-1 )=c_cc(ipoa(i)+ab-1 )  + finds1(ik)* & 
+      c_cc(ipob(i)+jk-1 )*(c_cc(ipoc(ind1(jk))+ind1(ab))*c_cc(ipoc(ind2(jk))+ind2(ab)) &
+     +c_cc(ipoc(ind1(jk))+ind2(ab))*c_cc(ipoc(ind2(jk))+ind1(ab)))/2.0_dp
+  
+     enddo
+     enddo
+elseif(with_para==1) then
+     do i=1,inva-nphere
+     do ik=1,ninds
+      ab=nind1(ik)
+      jk=nind2(ik)
+      c_cc(ipoa(i)+ab-1 )=c_cc(ipoa(i)+ab-1 )  + finds(ind1(jk),ind2(jk),ab)* & 
+      c_cc(ipob(i)+jk-1 )*(c_cc(ipoc(ind1(jk))+ind1(ab))*c_cc(ipoc(ind2(jk))+ind2(ab)) &
+     +c_cc(ipoc(ind1(jk))+ind2(ab))*c_cc(ipoc(ind2(jk))+ind1(ab)))/2.0_dp
+  
+     enddo
+     enddo
+endif
  
     return
   end subroutine dacctt2da
+
+
+   subroutine c_dacctt2datest(cnd2)
+    implicit none
+
+    integer i,k,kp,knp,cnd2
+    integer ab,jk
+    logical trash,trash1,trash2,trash3,trash4
+
+ 
+i=0
+k=0
+kp=0
+knp=0
+     do jk=poscombien,combien 
+     do ab=poscombien,combien
+i=i+1
+
+if(ind1(jk)>cnd2.or.ind2(jk)>cnd2) then
+trash=.false.
+k=k+1
+!write(6,*) i,jk,ab
+!write(6,*) ind1(jk),ind2(jk),ind1(ab),ind2(ab)
+if(ind1(jk)>cnd2) then
+ trash1=(ind1(jk)/=ind1(ab))
+ trash3=(ind1(jk)/=ind2(ab))
+endif
+if(ind2(jk)>cnd2) then
+ trash2=(ind2(jk)/=ind2(ab))
+ trash4=(ind2(jk)/=ind1(ab))
+endif
+trash=(trash1.or.trash2).and.(trash3.or.trash4)
+!pause
+endif
+if(trash) then 
+ kp=kp+1
+else
+ knp=knp+1
+endif
+!      c_cc(ipoa(i)+ab-1 )=c_cc(ipoa(i)+ab-1 )  + finds(ind1(jk),ind2(jk),ab)* & 
+ !     c_cc(ipob(i)+jk-1 )*(c_cc(ipoc(ind1(jk))+ind1(ab))*c_cc(ipoc(ind2(jk)) &
+!      +ind2(ab))+c_cc(ipoc(ind1(jk))+ind2(ab))*c_cc(ipoc(ind2(jk))+ind1(ab)))/2.0_dp
+     enddo
+     enddo
+  
+i=0
+k=0
+kp=0
+ninds=knp
+knp=0
+allocate(nind1(ninds),nind2(ninds))
+
+nind1=0
+nind2=0
+ 
+
+     do jk=poscombien,combien 
+     do ab=poscombien,combien
+i=i+1
+
+if(ind1(jk)>cnd2.or.ind2(jk)>cnd2) then
+trash=.false.
+k=k+1
+!write(6,*) i,jk,ab
+!write(6,*) ind1(jk),ind2(jk),ind1(ab),ind2(ab)
+if(ind1(jk)>cnd2) then
+ trash1=(ind1(jk)/=ind1(ab))
+ trash3=(ind1(jk)/=ind2(ab))
+endif
+if(ind2(jk)>cnd2) then
+ trash2=(ind2(jk)/=ind2(ab))
+ trash4=(ind2(jk)/=ind1(ab))
+endif
+trash=(trash1.or.trash2).and.(trash3.or.trash4)
+!pause
+endif
+if(trash) then 
+ kp=kp+1
+else
+ knp=knp+1
+ nind1(knp)=ab
+ nind2(knp)=jk
+endif
+     enddo
+     enddo
+
+
+
+!allocate(finds(nvhere,nvhere,poscombien:combien ))
+if(with_para==2) then
+write(6,*) combien,ninds,size(nind1), size(nind2)
+allocate(finds1(ninds))
+finds1=1
+      do i=1,ninds
+       if(ind1(nind1(i))/=ind2(nind1(i)))      finds1(i)=2
+      enddo
+endif
+!write(6,*) size(finds1),size(ind1), size(ind2)
+
+!pause 777
+
+ !    do ik=1,ninds
+!      ab=nind1(ik)
+!      jk=nind2(ik)
+!finds1(i)
+ !     c_cc(ipoa(i)+ab-1 )=c_cc(ipoa(i)+ab-1 )  + finds(ind1(jk),ind2(jk),ab)* & 
+ !     c_cc(ipoa(i)+ab-1 )=c_cc(ipoa(i)+ab-1 )  + finds1(ik)* & 
+
+
+    return
+  end subroutine c_dacctt2datest
+
 
 
   subroutine c_dacct(ma,ia,mb,ib,mc,ic)
@@ -4724,7 +4872,7 @@ allocate(r0(i0),g0(i0),h0(i0) ,r1(i0,i0), G(i0,i0),H(i0,i0) , Ga(i0,i0,i0), He(i
    enddo
  
     call c_matinv(g,h,i0,i0,ier)
-
+  
    ! h0=-matmul(h,g0)
     
  
@@ -4749,6 +4897,7 @@ allocate(r0(i0),g0(i0),h0(i0) ,r1(i0,i0), G(i0,i0),H(i0,i0) , Ga(i0,i0,i0), He(i
       else
        call dacctt2tpsa(mb,i0,mcc,i0,mccc,i0)
       endif     
+ 
 
        do i=1,i0
         c_cc(ipoo(i)+poscombien-1:ipoo(i)+combien-1)=-c_cc(ipoo(i)+poscombien-1:ipoo(i)+combien-1)
@@ -5745,32 +5894,61 @@ end function c_clean_complex
     !
     !-----------------------------------------------------------------------------
     !
-    integer i,ii,illa,ilma,ina,inoa,inva,ioa,iout,ipoa,iunit
+    integer i,ii,illa,ilma,ina,inoa,inva,ioa,iout,ipoa,iunit,count
     integer,dimension(c_lnv)::j
     character(10) c10,k10
     real(dp) a,b
     complex(dp) ccc
     logical some,imprime
     logical  long
+  integer(2) xi(3)
      long=longprint
       if(iunit/=6) longprint=.true.
     some=.false.
  
 if(newtpsa) then
     if(c_nomax.eq.1) then
+       count=0
        write(iunit,*) "1st order polynomial ", ina,c_nvmax
         do i=1,c_nvmax+1
-          if(c_cc(c_idapo(ina)+i-1).ne.0.0_dp) write(iunit,*) i-1, c_cc(c_idapo(ina)+i-1)
+          if(c_cc(c_idapo(ina)+i-1).ne.0.0_dp) then
+           xi(1)=i-1
+           xi(2)=ind1(i)
+           xi(3)=ind2(i)
+           if(xi(2)>=c_nvmax-nphere) then
+             xi(2)=-(xi(2)-(c_nvmax-nphere))
+           endif
+           if(xi(3)>=c_nvmax-nphere) then
+             xi(3)=-(xi(3)-(c_nvmax-nphere))
+           endif
+            write(iunit,*) xi, c_cc(c_idapo(ina)+i-1)
+            count=count+1
+          endif
         enddo
-
+          write(iunit,*) count, " monomial(s) printed "
       return
     endif
 
     if(c_nomax==2)  then
+       count=0
+
      write(iunit,*) "2nd order polynomial ", ina,c_nvmax
      do i=1,combien
-      if(c_cc(c_idapo(ina)+i-1).ne.0.0_dp) write(iunit,*) ind1(i),ind2(i),c_cc(c_idapo(ina)+i-1)
-     enddo
+          if(c_cc(c_idapo(ina)+i-1).ne.0.0_dp) then
+           xi(1)=i-1
+           xi(2)=ind1(i)
+           xi(3)=ind2(i)
+          if(xi(2)>=c_nvmax-nphere) then
+             xi(2)=-(xi(2)-(c_nvmax-nphere))
+           endif
+           if(xi(3)>=c_nvmax-nphere) then
+             xi(3)=-(xi(3)-(c_nvmax-nphere))
+           endif
+            write(iunit,*) xi, c_cc(c_idapo(ina)+i-1)
+            count=count+1
+          endif
+        enddo
+          write(iunit,*) count, " monomial(s) printed "
     return
     endif
 endif
