@@ -3604,7 +3604,9 @@ endif
     if(newtpsa) then
     ipoa=c_idapo(ina)
     anorm = 0.0_dp
-    do i=ipoa,ipoa+c_nmmax-1
+     if(c_nomax==1) illa=c_nmmax+1
+     if(c_nomax==2) illa=combien 
+    do i=ipoa,ipoa+illa-1 
        anorm = anorm + abs(c_cc(i))
     enddo
       return
@@ -3836,7 +3838,7 @@ deallocate(g0,h0, G,H, Ga, He,f0,f,fi)
     !ETIENNE
     !-----------------------------------------------------------------------------
     !
-    integer i0,i,j,k,ia,ib,ic,illa,illb,illc,ilma,ilmb,ilmc,inoa,inob,inoc,inva,invb,invc 
+    integer i,j,k,ia,ib,ic,illa,illb,illc,ilma,ilmb,ilmc,inoa,inob,inoc,inva,invb,invc 
     integer ab,jk,ik
 
     !    integer,dimension(c_lno)::icc
@@ -3856,31 +3858,35 @@ deallocate(g0,h0, G,H, Ga, He,f0,f,fi)
   stop 880
  endif
     
-call dainf(ma(1),inoa,i0,ipoa(1),ilma,illa)
-
  
-    do i=1,i0 
  
+    do i=1,ia 
     call dainf(ma(i),inoa,inva,ipoa(i),ilma,illa)
-    call dainf(mb(i),inob,invb,ipob(i),ilmb,illb)
-    call dainf(mc(i),inoc,invc,ipoc(i),ilmc,illc)
-
-     c_cc(ipoa(i):ipoa(i)+combien)=0.0_dp
+     c_cc(ipoa(i):ipoa(i)+combien-1)=0.0_dp
    enddo
-    
-    do i=inva-nphere+1,inva 
+ 
+    do i=1,ib
+    call dainf(mb(i),inob,invb,ipob(i),ilmb,illb)
+   enddo
+ 
+    do i=1,ic
+    call dainf(mc(i),inoc,invc,ipoc(i),ilmc,illc)
+   enddo
+
+ 
+    do i=invc-nphere+1,invc 
         c_cc(ipoa(i)+i)=1.0_dp
     enddo
 !c_cc(ipoa(i)+inva-nphere+1:ipoa(i)+inva)=1.0_dp
-
-     do i=1,inva-nphere
-     do j=1,inva-nphere  !?
-     do k=1,inva
+ 
+     do i=1,invc-nphere
+     do j=1,invc-nphere  !?
+     do k=1,invc
       c_cc(ipoa(i)+k)=c_cc(ipoa(i)+k)+c_cc(ipob(i)+j)*c_cc(ipoc(j)+k)
      enddo
      enddo
-
-     do j=inva-nphere+1,inva
+ 
+     do j=invc-nphere+1,invc
 !     do k=1,inva
       c_cc(ipoa(i)+j)=c_cc(ipoa(i)+j)+c_cc(ipob(i)+j)*c_cc(ipoc(j)+j)
 !     enddo
@@ -3888,9 +3894,9 @@ call dainf(ma(1),inoa,i0,ipoa(1),ilma,illa)
 
      enddo
  
-
-     do i=1,inva-nphere
-     do j=1,inva  -nphere  !?
+ 
+     do i=1,invc-nphere
+     do j=1,invc  -nphere  !?
      do jk=poscombien ,combien 
       c_cc(ipoa(i)+jk-1 )=c_cc(ipoa(i)+jk-1 ) + c_cc(ipob(i)+j)*c_cc(ipoc(j)+jk-1)
      enddo
@@ -3898,7 +3904,7 @@ call dainf(ma(1),inoa,i0,ipoa(1),ilma,illa)
      enddo
  
 if(with_para==0) then
-     do i=1,inva-nphere
+     do i=1,invc-nphere
      do jk=poscombien,combien 
      do ab=poscombien,combien
       c_cc(ipoa(i)+ab-1 )=c_cc(ipoa(i)+ab-1 )  + finds(ind1(jk),ind2(jk),ab)* & 
@@ -3910,7 +3916,7 @@ if(with_para==0) then
  elseif(with_para==2) then
  
 
-     do i=1,inva-nphere
+     do i=1,invc-nphere
      do ik=1,ninds
       ab=nind1(ik)
       jk=nind2(ik)
@@ -3921,7 +3927,7 @@ if(with_para==0) then
      enddo
      enddo
 elseif(with_para==1) then
-     do i=1,inva-nphere
+     do i=1,invc-nphere
      do ik=1,ninds
       ab=nind1(ik)
       jk=nind2(ik)
@@ -3932,6 +3938,10 @@ elseif(with_para==1) then
      enddo
      enddo
 endif
+  
+do i=1,inva
+ c_cc(ipoa(i))=c_cc(ipob(i))
+enddo
  
     return
   end subroutine dacctt2da
@@ -4121,7 +4131,12 @@ if(newtpsa) then
 
     if(c_nomax==2)  then
       if(assume_da_map) then
+ 
+ 
         call dacctt2da(maa,c_nvmax,mb,c_nvmax,mcc,c_nvmax)
+
+ 
+
       else
        call dacctt2tpsa(maa,c_nvmax,mb,c_nvmax,mcc,c_nvmax)
       endif
@@ -5915,10 +5930,10 @@ if(newtpsa) then
            xi(1)=i-1
            xi(2)=ind1(i)
            xi(3)=ind2(i)
-           if(xi(2)>=c_nvmax-nphere) then
+           if(xi(2)>c_nvmax-nphere) then
              xi(2)=-(xi(2)-(c_nvmax-nphere))
            endif
-           if(xi(3)>=c_nvmax-nphere) then
+           if(xi(3)>c_nvmax-nphere) then
              xi(3)=-(xi(3)-(c_nvmax-nphere))
            endif
             write(iunit,*) xi, c_cc(c_idapo(ina)+i-1)
@@ -5938,10 +5953,10 @@ if(newtpsa) then
            xi(1)=i-1
            xi(2)=ind1(i)
            xi(3)=ind2(i)
-          if(xi(2)>=c_nvmax-nphere) then
+          if(xi(2)>c_nvmax-nphere) then
              xi(2)=-(xi(2)-(c_nvmax-nphere))
            endif
-           if(xi(3)>=c_nvmax-nphere) then
+           if(xi(3)>c_nvmax-nphere) then
              xi(3)=-(xi(3)-(c_nvmax-nphere))
            endif
             write(iunit,*) xi, c_cc(c_idapo(ina)+i-1)

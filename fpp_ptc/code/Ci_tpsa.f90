@@ -9073,8 +9073,9 @@ c_%nv=>nv
     integer i
     type(c_damap) ie1,ie2 
     type(c_damap), intent(inout):: x,y
+    logical rad1
+
     if(.not.c_stable_da) return
- 
     ie1%n=nv;ie2%n=nv;
     call alloc(ie1)
     call alloc(ie2)
@@ -9092,8 +9093,14 @@ c_%nv=>nv
       enddo
  
 if(use_quaternion)   THEN
+  rad1=assume_da_map
+ ! assume_da_map=.false.
+
             y%q=x%q*y
+
       y%q=y%q**(-1)
+  assume_da_map=rad1
+
 else
        y%s=x%s*y
       call c_inv_as(y%s,y%s)
@@ -9218,9 +9225,11 @@ endif
  
     ! if(old) then
  
-
+ 
     call c_etcct(t1%v%i,t1%n,t2%v%i,t2%n,tempnew%v%i)
-    
+
+   !     call c_dacct(t1%v%i,t1%n,t2%v%i,t2%n,tempnew%v%i,tempnew%n)
+
     if(add_constant_part_concat) then
      do i=1,t1%n
       tempnew%v(i)=tempnew%v(i)+(s1%v(i).sub.'0')
@@ -9228,11 +9237,17 @@ endif
     endif
  
  if(newspin) then
-     t1%s = t1%s*t2
+ rad1=assume_da_map
+!assume_da_map=.false.
+ 
      t1%q = t1%q*t2
-    
-      tempnew%s=t1%s*t2%s
+ 
       tempnew%q=t1%q*t2%q
+ 
+  assume_da_map=rad1
+ else
+     t1%s = t1%s*t2
+     tempnew%s=t1%s*t2%s
  endif
 
  if(.not.c_similarity) then   
@@ -11701,7 +11716,7 @@ subroutine c_linear_ac_longitudinal(xy,a1,ac)
  
     v=v.cut.(order_gofix+1)
  
-
+ 
 
     w=v**(-1)    !  W= (Map-1)**-1   
 
@@ -11714,13 +11729,16 @@ subroutine c_linear_ac_longitudinal(xy,a1,ac)
      x%v(i)=1.0e0_dp.cmono.i  !  Identity in all the parameter planes
     enddo
     if(ndpt/=0) x%v(ndpt)=1.0e0_dp.cmono.ndpt !  If coasting, then energy is a parameter
+ 
+    a1=v
+ 
 
     v=w*x  ! v contains the fixed point, for example v(1)= eta_x * x_pt + ...
          
-
+ 
     a1=v
-
-  ! however a1 is not a  transformation, we must add the identity (done at the end) 
+ 
+   ! however a1 is not a  transformation, we must add the identity (done at the end) 
   ! also we must add some stuff to time to make it symplectic if coasting
   ! because the Lie operator which produces v(1)= eta_x * x_pt + ...
   ! is, within a sign, eta_x * x_pt * p_x-eta_x_prime * x_pt * x-...  which affects time
@@ -11814,13 +11832,12 @@ else
  endif       
 
 else ! npdt=0
-
+ 
     do i=1,nd2 
        a1%v(i)=(1e0_dp.cmono.i)+a1%v(i)  ! ndpt is already identity
     enddo 
-
+ 
 endif
-
  
  
     call kill(t1);
@@ -12172,17 +12189,18 @@ end subroutine c_full_factorise
   type(quaternion) q0,q1,e_y,q3,qs
   real(dp) alpha,cosalpha,sinalpha,tone
 
+ 
 q0=m_in%q.sub.0
-!call print(q0)
-!pause 3
+ 
          as=1
 
 q1=q0
 q1%x(0)=0.0_dp
 qs=1.0_dp/sqrt(q1%x(1)**2+q1%x(2)**2+q1%x(3)**2)
+ 
+ 
 q1=q1*qs   ! q1=n
-!call print(q1)
-!pause 4
+ 
 e_y=0.0_dp
 e_y%x(2)=1.0_dp
 !call print(e_y)
@@ -18848,34 +18866,35 @@ inside_normal=.true.
     ! including the coasting beam gymnastic: time-energy is canonical
     ! but energy is constant. (Momentum compaction, phase slip etc.. falls from there)
  ! etienne
+ 
   if(c_skip_gofix) then
   a1=1
 else
     call  c_gofix(m1,a1) 
 endif 
  
-     m1=c_simil(a1,m1,-1)
  
-
+  m1=c_simil(a1,m1,-1)
+ 
+ 
 
     ! Does the the diagonalisation into a rotation
     call c_linear_a(m1,a2)  
  
-
+ 
+  
 
     !!! Now the linear map is normalised
     m1=c_simil(a2,m1,-1)
- 
+  
  
     !!! We go into the phasors' basis
     ri=from_phasor(-1)
  
-
     m1=c_simil(ri,m1,1)
-
  
-
  
+!stop 999
     ri=(m1.sub.-1)**(-1) 
 
     ri%s=1  ! make spin identity
@@ -18976,7 +18995,7 @@ endif
       enddo  ! over vector index
 
       m1=c_simil(n%g%f(i),m1,-1)
-  
+ 
     enddo
  
  
@@ -18987,6 +19006,7 @@ endif
     n%a1=a1
     n%a2=a2
 
+ 
 !!!!!   here we put the normalised linear part into the factored vector field
 !!!!!   not necessary but useful
     do k=1,xy%n
@@ -19055,7 +19075,9 @@ endif
  
 
 if(use_quaternion)then
+
       call c_normal_spin_linear_quaternion(m1,m1,n%AS,alpha)
+
       n%quaternion_angle=alpha/2.0_dp
       ri=1 ; ri%q=m1%q.sub.0 ; ! exp(theta_0 L_y)   (2)
 !      sx=sqrt(ri%q%x(1)**2+ri%q%x(2)**2+ri%q%x(3)**2)
@@ -19106,6 +19128,8 @@ endif
       !!! tune is taken from egspin(1) or egspin(3)   spin_def_tune= +/- 1
        n%spin_tune=aimag(log(egspin(2+spin_def_tune))/twopi)  
  
+  
+ 
       ! because  exp(a L_y) x = x- a z + O(a**2)
        ri=ri**(-1) ! exp(-alpha_0 L_y)   (3)
 
@@ -19126,7 +19150,8 @@ endif
             write(mkers,*) "Order ",i
           endif
   
-        
+ 
+         
           mt=m1*ri !  S*exp(-theta_0 L_y)    (5)
  
  
@@ -19200,6 +19225,9 @@ endif
         enddo ! k
      
         call c_nr_to_n0(nr,nr)  !   (10)
+ 
+!write(6,*) " i spin ",i
+!call print(nr,6)
  
 
 if(use_quaternion)then

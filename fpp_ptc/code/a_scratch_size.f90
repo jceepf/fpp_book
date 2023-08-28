@@ -249,7 +249,7 @@ module precision_constants
   integer , target :: old_integrator =1  ! before making spin high order
   character*255 :: preffile="pref.txt"
    logical :: newtpsa=.false., assume_da_map = .true.,previous_newtpsa=.false.,use_np=.true.,newspin=.true.
-   integer :: with_para=0
+   integer :: with_para=2
    integer :: nphere=0
   integer(4), pointer :: inds(:,:),ind1(:),ind2(:) => null()
   integer(4), pointer :: nind1(:),nind2(:) => null()
