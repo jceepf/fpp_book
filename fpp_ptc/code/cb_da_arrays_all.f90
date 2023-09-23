@@ -15,7 +15,7 @@ module c_da_arrays
   ! johan
   ! integer,parameter::c_lno=2,c_lnv=6,c_lc_nomax=8,c_lc_nvmax=9,c_lstmax=800500,c_ldamax=16000,c_leamax=5000,c_liamax=50000
   !
-  integer,parameter::c_lno=200,c_lnv=100 
+  integer,parameter::c_lno=200,c_lnv=200 
   integer :: c_lstmax=800500,c_ldamax=16000,c_leamax=5000,c_liamax=50000
 !  integer,parameter::c_lno=200,c_lnv=100,c_lc_nomax=8,c_lc_nvmax=9,c_lstmax=800500,c_ldamax=16000,c_leamax=5000,c_liamax=50000
   logical(lp) :: c_reallocate = .true.

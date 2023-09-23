@@ -144,7 +144,7 @@ module S_status
   private track_TREE_G_complexr,track_TREE_G_complexp,track_TREE_probe_complexr,track_TREE_probe_complexp_new
   real(dp),TARGET ::INITIAL_CHARGE=1
   logical :: mcmillan=.false.
-  real(dp) :: radfac=1   ! to fudge radiation (lower it)
+  real(dp) :: radfac=1,flucfac=1   ! to fudge radiation (lower it)
   TYPE B_CYL
      integer firsttime
      integer, POINTER ::  nmul,n_mono   !,nmul_e,n_mono_e
@@ -264,7 +264,7 @@ CONTAINS
     ! if(junk_e) then    
     !  cflucf=cfluc*p%p0c**5
     ! else
-      cflucf=cfluc0*twopii/p%GAMMA0I**5/p%MASS**2
+      cflucf=flucfac*cfluc0*twopii/p%GAMMA0I**5/p%MASS**2
     ! endif
   end function cflucf
 

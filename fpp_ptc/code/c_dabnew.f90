@@ -5506,8 +5506,9 @@ endif
     call daall(mi,ia,'$$PIN2  $$',inoa,inva)
     call daall(me,ia,'$$PIN3  $$',inoa,inva)
     !
+ 
     do i=1,ia
-       do k=1,nvmax
+       do k=1,size(jj)
           jj(k) = 0
        enddo
        jj(i) = 1

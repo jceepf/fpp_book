@@ -9238,8 +9238,7 @@ endif
  
  if(newspin) then
  rad1=assume_da_map
-!assume_da_map=.false.
- 
+  
      t1%q = t1%q*t2
  
       tempnew%q=t1%q*t2%q
@@ -9250,6 +9249,10 @@ endif
      tempnew%s=t1%s*t2%s
  endif
 
+ !     t1%q = t1%q*t2
+ !     t1%s = t1%s*t2
+ !     tempnew%s=t1%s*t2%s
+ !     tempnew%q=t1%q*t2%q
  if(.not.c_similarity) then   
     call c_check_rad(t1%e_ij,rad1)
     call c_check_rad(t2%e_ij,rad2)
@@ -10566,6 +10569,8 @@ endif
     IF(.NOT.C_STABLE_DA) RETURN
     localmaster=c_master
 
+
+stop 2333
 
     do i=1,lnv
        jn(i)=0
