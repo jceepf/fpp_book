@@ -1748,7 +1748,16 @@ endif
     do i=1,c_nvmax
        icu=jv(i)+icu
     enddo
-if(icu>c_nomax) return
+if(icu>c_nomax) then
+ write(6,*) "in cc_dabnew Crash 1, 0 continue "
+  read(5,*) i
+  if(i==1) then 
+    cjj=sqrt(-cjj)
+    stop
+   endif
+   
+! return
+endif
 
  if(newtpsa) then
 ipoa=c_idapo(ina)
@@ -1951,8 +1960,16 @@ icu=0
     do i=1,size(jv)
        icu=jv(i)+icu
     enddo
-if(icu>c_nomax) return
-
+if(icu>c_nomax) then
+ write(6,*) "in cc_dabnew Crash 1, 0 continue "
+  read(5,*) i
+  if(i==1) then 
+    cjj=sqrt(-cjj)
+    stop
+   endif
+   
+! return
+endif
  if(newtpsa) then
 ipoa=c_idapo(ina)
 
@@ -5124,7 +5141,8 @@ endif
 
     do i=1,ib
        do j=1,ib
-          do k=1,ib
+!          do k=1,ib
+          do k=1,size(jj)
              jj(k) = 0
           enddo
           jj(j) = 1
