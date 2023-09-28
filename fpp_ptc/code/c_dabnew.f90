@@ -1683,8 +1683,12 @@ endif
     do i=1,nvmax
        icu=jv(i)+icu
     enddo
-if(icu>nomax) then
- write(6,*) "in c_dabnew Crash 1, 0 continue "
+  ic1=0
+    do i=nvmax+1,size(jv)
+       ic1=jv(i)+ic1
+    enddo
+if(icu>nomax.or.ic1>0) then
+ write(6,*) "in c_dabnew Crash 1, 0 continue ",icu,ic1
   read(5,*) i
   if(i==1) then 
     cjj=sqrt(-cjj)
@@ -1889,8 +1893,12 @@ endif
     do i=1,size(jv)
        icu=jv(i)+icu
     enddo
-if(icu>nomax) then
- write(6,*) "in c_dabnew Crash 1, 0 continue "
+  ic1=0
+    do i=nvmax+1,size(jv)
+       ic1=jv(i)+ic1
+    enddo
+if(icu>nomax.or.ic1>0) then
+ write(6,*) "in c_dabnew Crash 1, 0 continue ",icu,ic1
   read(5,*) i
   if(i==1) then 
     cjj=sqrt(-cjj)
