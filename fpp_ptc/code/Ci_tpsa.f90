@@ -8760,9 +8760,9 @@ end subroutine c_bmad_reinit
  !ND2=2*nd !!!!  total dimension of phase space
  !nv=nd2+np !!!!  total number of Taylor variables
 
- 
+! present(np1) always true if called for PTC bona fide maps
  nphere=0
-if(use_np) nphere=np1
+if(use_np.and.present(np1)) nphere=np1
 
     ip_mat=0; jp_mat=0; jt_mat=0;
    
@@ -8962,6 +8962,8 @@ endif
       jp_mat(3,5,6)=0
     endif 
  
+if(.not.(use_np.and.present(np1))) npara_fpp=0
+
 
   end subroutine c_init
 
