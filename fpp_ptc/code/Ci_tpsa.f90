@@ -21797,7 +21797,7 @@ call kill(t,t_tot)
           !   J(K)=S2%J(I,K)
           !ENDDO
 
-           s1=s1+(S2%C(I).cmono.S2%J(I,1:nv))
+           s1=s1+(S2%C(I).cmono.S2%J(I,1:S2%nv))    ! bug 2023.10.16
          ! CALL c_POK(S1,S2%J(I,1:nv),S2%C(I))
           !CALL c_POK(S1,J,S2%C(I))
        ENDIF
