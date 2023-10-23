@@ -7347,7 +7347,7 @@ endif
     type (c_damap),INTENT(INout)::S1
     logical, optional :: dospin
     integer i,j,k,mfi
-    logical(lp) rad_in,dos
+    logical(lp) rad_in,dos,imp
     real(dp) norm
      dos=.true.
      mfi=6
@@ -7355,14 +7355,22 @@ endif
 
      if(present(dospin)) dos=dospin
 
-    write(mfi,*) " tpsa status ",s1%tpsa
+    write(mfi,*) " tpsa status for tracking type(c_ray) ",s1%tpsa
     if(s1%tpsa) then
      write(mfi,*) s1%n, " Dimensional TPSA map around z=0 "
     else
      write(mfi,*) s1%n, " Dimensional DA map (around chosen orbit in map%x0) "
     endif
+    imp=.false.
     do i=1,s1%n
-     if(s1%tpsa) write(6,*) s1%x0(i)
+      if(abs(s1%x0(i))/=0) then
+        imp=.true.
+       exit
+      endif
+    enddo
+       if(s1%tpsa.or.imp) write(6,*) "Initial orbit for TPSA calculations" 
+    do i=1,s1%n
+     if(s1%tpsa.or.imp) write(6,*) s1%x0(i)
      call c_pri(s1%v(i),mfile,prec)
      enddo
     
@@ -9311,7 +9319,9 @@ endif
 
     t2=s2;t1=s1;
 
-
+    do i=1,t2%n
+     t1%v(i)=t1%v(i)-t2%x0(i)
+    enddo
 
 
 
