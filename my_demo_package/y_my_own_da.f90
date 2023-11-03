@@ -396,6 +396,7 @@ contains
     TYPE (my_taylor), INTENT (IN) :: S1, S2
 
      add%a=S1%a + S2%a     
+     call clean(add)
 
   END FUNCTION add
 

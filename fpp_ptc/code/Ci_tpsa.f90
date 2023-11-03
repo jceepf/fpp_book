@@ -1918,7 +1918,7 @@ end subroutine c_get_indices
      s2%s3 = s1%s3
      s2%q = s1%q
      s2%n = s1%n
-     s2%x0  = s1%x0
+!     s2%x0  = s1%x0
   END SUBROUTINE equalc_ray_ray
 
  SUBROUTINE  equalc_ray_r6(S2,S1)
@@ -1931,7 +1931,7 @@ end subroutine c_get_indices
 
 !    
      s2%x=0.0_dp
-     s2%x0=0.0_dp
+!     s2%x0=0.0_dp
      do i=1,size(s1)
        s2%x(i)=s1(i)
      enddo
@@ -7368,8 +7368,9 @@ endif
        exit
       endif
     enddo
-       if(s1%tpsa.or.imp) write(6,*) "Initial orbit for TPSA calculations" 
     do i=1,s1%n
+       if(s1%tpsa.or.imp) write(6,*) "Initial orbit for TPSA calculations" 
+
      if(s1%tpsa.or.imp) write(6,*) s1%x0(i)
      call c_pri(s1%v(i),mfile,prec)
      enddo
@@ -9296,9 +9297,9 @@ endif
 
   FUNCTION c_concat_tpsa(s2,s1)
     implicit none
-    TYPE (c_damap) c_concat_tpsa,t2,t1,tempnew,t0,t0i
+    TYPE (c_damap) c_concat_tpsa,t2,t1,tempnew,t0
     TYPE (c_damap), INTENT (IN) :: s2, s1
-    complex(dp) f2it(6,6),f2i(6,6)
+    complex(dp) f2it(6,6),f2i(6,6),ct,c0
 
     logical(lp) rad1,rad2
     integer localmaster,i
@@ -9313,22 +9314,26 @@ endif
     t2%n=s2%n
     t1%n=s1%n
     tempnew%n=t2%n
-    call alloc(t2,t1,tempnew);  
+    call alloc(t2,t1,tempnew,t0);  
 
 
 
     t2=s2;t1=s1;
 
-    do i=1,t2%n
-     t1%v(i)=t1%v(i)-t2%x0(i)
-    enddo
+     t1%x0=0
+     t2%x0=0
+     do i=1,s1%n
+       t1%v(i)=t1%v(i)-s2%x0(i)       
+     enddo
+     do i=1,s1%n
+      tempnew%v(i)=t2%v(i).o.t1 
+     enddo
 
-
-
-
-    call c_etcct(t2%v%i,t2%n,t1%v%i,t1%n,tempnew%v%i)
 
  
+    !call c_etcct(t2%v%i,t2%n,t1%v%i,t1%n,tempnew%v%i)
+   
+
      tempnew%s = t2%s.o.t1
      tempnew%q = t2%q.o.t1
  
@@ -9356,7 +9361,7 @@ endif
    if(complex_extra_order==1.and.special_extra_order_1) c_concat_tpsa=c_concat_tpsa.cut.no
 
 
-     call kill(t2,t1,tempnew);  
+     call kill(t2,t1,tempnew,t0);  
     c_master=localmaster
 
   END FUNCTION c_concat_tpsa
@@ -10320,8 +10325,8 @@ endif
     TYPE (c_damap), INTENT (IN) :: S1
     TYPE (c_ray), INTENT (IN) ::  S2
     TYPE (c_quaternion) q
-
-    type(c_ray) temp2
+     TYPE (c_damap) tempmap
+ 
     real(dp) norm
     integer i
     integer localmaster
@@ -10333,15 +10338,14 @@ endif
     c_concat_map_ray=s2
   !  c_concat_map_ray%x=0.0_dp
   !  c_concat_map_ray%n=s2%n
-
-    temp2=0
-    temp2%n=s2%n
-    temp2=s2
-    temp2%x0=0.0_dp
-     norm=0
-    do i=1,s1%n
-     norm=norm+abs(s2%x0(i))
-    enddo
+ 
+    tempmap%n=s1%n
+     call alloc(tempmap)
+ 
+ !    norm=0
+ !   do i=1,s1%n
+ !    norm=norm+abs(s2%x0(i))
+ !   enddo
 
    ! if(norm>eps_tpsalie.and.S1%tpsa) then
    !  write(6,*) "Both c_ray and c_damap are tpsa: not allowed "
@@ -10350,24 +10354,29 @@ endif
 
      if(S1%tpsa) then
       do i=1,s1%n
-        temp2%x(i)=s2%x(i)  !-s1%x0(i)
+        tempmap%v(i)=s2%x(i)
+        tempmap%x0(i)=s1%x0(i)
        enddo
      else     
       do i=1,s1%n
-        temp2%x(i)=s2%x(i)-s2%x0(i)
+        tempmap%v(i)=s2%x(i)
+        tempmap%x0(i)=0.d0  !s1%x(i)
        enddo
     endif
- 
+       tempmap=s1.o.tempmap
+
       if(use_quaternion) then
-       c_concat_map_ray=s1%q.o.temp2    !s2
-      else
-       c_concat_map_ray=s1%s.o.temp2    !s2
+       c_concat_map_ray%q=tempmap%q    !s2
+    !  else
+  
+   !  c_concat_map_ray%s=tempmap%s  !s2
       endif
  ! order important because the first one puts s2%x into c_concat_map_ray%x
-     do i=1,s1%n
-      c_concat_map_ray%x(i)=s1%v(i).o.temp2
+     
+      do i=1,s1%n
+       c_concat_map_ray%x(i)=tempmap%v(i)
      enddo
-
+    call kill(tempmap)
     c_master=localmaster
 
   END FUNCTION c_concat_map_ray
@@ -10614,10 +10623,10 @@ stop 2333
     TYPE (c_damap) pow_tpsaMAP
     TYPE (c_damap), INTENT (IN) :: S1
     INTEGER, INTENT (IN) :: R2
-    TYPE (c_damap) S11,s0
+    TYPE (c_damap) S11
     INTEGER I,R22
     integer localmaster
-    complex(dp) v(lnv)
+    complex(dp) v(lnv),x0(lnv)
      v=0
      IF(.NOT.C_STABLE_DA) then
      pow_tpsaMAP%v%i=0
@@ -10629,38 +10638,134 @@ stop 2333
     call c_assmap(pow_tpsaMAP)
     
     s11%n=s1%n
-    s0%n=s1%n
-    call alloc(s11,s0)
+ 
+    call alloc(s11)
 
-    s11=1
+
+    do i=1,s1%n
+      s11%v(i)=(1.0_dp.cmono.i) + s1%x0(i)
+    enddo
+   s11%x0=s1%x0
+ 
 
     R22=IABS(R2)
     DO I=1,R22
+ 
        s11=s1.o.s11
+ 
    ENDDO
-    do i=1,s11%n
-       v(i)=s11%v(i).sub.'0'
-     enddo
-    IF(R2.LT.0) THEN
+       IF(R2.LT.0) THEN
+ 
 
+
+ 
+     v=0
+x0=s11%x0
+s11%x0=0
+
+     do i=1,s11%n
+       v(i)=s11%v(i).sub.'0'
+       s11%v(i)=s11%v(i)-v(i)  ! making it DA
+     enddo
+ 
  !     CALL c_etinv1(S11%v%i,S11%v%i,s11%n)
         CALL c_etinv(S11,S11)
+!!!! exchange roles of x0 and constant part of TPSA
+        do i=1,s11%n
+           s11%v(i)=s11%v(i)+x0(i)
+       enddo
+      s11%x0=v
+
 
     ENDIF
 
-    do i=1,s1%n
-       s0%v(i)=(1.0_dp.cmono.i)-v(i)
-       !s11%v(i)=s11%v(i)-(s11%v(i).sub.'0')
-    enddo
-    s11=s11.o.s0
+
+
     pow_tpsaMAP=s11
          if(complex_extra_order==1.and.special_extra_order_1) pow_tpsaMAP=pow_tpsaMAP.cut.no
 
-    call kill(s11,s0)
+    call kill(s11)
 
     c_master=localmaster
 
   END FUNCTION pow_tpsaMAP
+
+    FUNCTION pow_tpsaMAPnew( S1, R2 )
+    implicit none
+    TYPE (c_damap) pow_tpsaMAPnew
+    TYPE (c_damap), INTENT (IN) :: S1
+    INTEGER, INTENT (IN) :: R2
+    TYPE (c_damap) S11
+    INTEGER I,R22
+    integer localmaster
+    complex(dp) v(lnv),x0(lnv)
+     v=0
+     IF(.NOT.C_STABLE_DA) then
+     pow_tpsaMAPnew%v%i=0
+     RETURN
+     endif
+    localmaster=c_master
+
+     pow_tpsaMAPnew%N=s1%n
+    call c_assmap(pow_tpsaMAPnew)
+    
+    s11%n=s1%n
+ 
+    call alloc(s11)
+
+
+    do i=1,s1%n
+      s11%v(i)=1.0_dp.cmono.i
+    enddo
+   s11%x0=s1%x0
+    do i=1,s11%n
+     s11%v(i)=s11%v(i)+(s1%v(i).sub.'0')
+    enddo
+
+ !   R22=IABS(R2)
+ !   DO I=1,R22
+ 
+  !     s11=s1.o.s11
+ 
+ !  ENDDO
+s11=s1
+       IF(R2.LT.0) THEN
+ 
+
+
+ 
+     v=0
+x0=s11%x0
+s11%x0=0
+
+     do i=1,s11%n
+       v(i)=s11%v(i).sub.'0'
+       s11%v(i)=s11%v(i)-v(i)  ! making it DA
+     enddo
+ 
+ !     CALL c_etinv1(S11%v%i,S11%v%i,s11%n)
+        CALL c_etinv(S11,S11)
+!!!! exchange roles of x0 and constant part of TPSA
+        do i=1,s11%n
+           s11%v(i)=s11%v(i)+x0(i)
+       enddo
+      s11%x0=v
+
+
+    ENDIF
+
+
+
+    pow_tpsaMAPnew=s11
+         if(complex_extra_order==1.and.special_extra_order_1) pow_tpsaMAPnew=pow_tpsaMAPnew.cut.no
+
+    call kill(s11)
+
+    c_master=localmaster
+
+  END FUNCTION pow_tpsaMAPnew
+
+  
 
   FUNCTION POWMAPs( SS1, R2 )
     implicit none
@@ -10794,7 +10899,7 @@ SUBROUTINE  c_EQUALcray(S2,S1)
 
      s2%x=0.0_dp
      s2%n=0 
-     s2%x0=0.0_dp
+!     s2%x0=0.0_dp
      s2%s1=0.0_dp
      s2%s2=0.0_dp
      s2%s3=0.0_dp
@@ -19371,8 +19476,8 @@ ncoast=0
 if(c_%ndpt/=0) ncoast=1
 !!!! create a full vector field for N_cut_2
 do i=1,(c_%nd-ncoast)
- n%H_l%v(2*i-1)=-(i_*twopi*n%tune(i))*dz_c(2*i-1)
- n%H_l%v(2*i)=(i_*twopi*n%tune(i))*dz_c(2*i)
+ n%H_l%v(2*i-1)=-(i_*twopi*n%tune(i))*dz_c(2*i-1)-n%damping(i)*dz_c(2*i-1)
+ n%H_l%v(2*i)=(i_*twopi*n%tune(i))*dz_c(2*i)-n%damping(i)*dz_c(2*i)
 enddo
 if(ncoast/=0) then
  n%H_l%v(c_%ndptb)=n%tune(c_%nd)*dz_c(c_%ndpt)
