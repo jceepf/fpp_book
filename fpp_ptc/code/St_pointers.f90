@@ -4645,6 +4645,138 @@ call kill(n)
 end subroutine phase_advance
 
 
+subroutine alloc_modulation(p,an,bn,DC_ac,A_ac,theta_ac, D_ac)
+implicit none
+real(dp) DC_ac,A_ac,theta_ac, D_ac 
+type(fibre),target :: p
+real(dp) an(:),bn(:)
+integer i1,i2
+
+       i2=size(an) 
+if(i2<p%mag%p%nmul) then
+   write(6,*) " size of input multipole arrays too small "
+ stop 999
+endif
+
+ !  MODULATE
+!  QF2SPIN   1
+! 1.d0 0 0       !DC_ac,A_ac,theta_ac
+! 1.d0   2       ! D_ac,n_ac  
+! 1 0 0.0001d0         ! n d_bn(n) d_an(n)  
+ 
+                   allocate(P%MAG%DC_ac)
+                   allocate(P%MAG%A_ac)
+                   allocate(P%MAG%theta_ac)
+                   allocate(P%MAG%D_ac)
+
+                   allocate(P%MAGP%DC_ac)
+                   allocate(P%MAGP%A_ac)
+                   allocate(P%MAGP%theta_ac)
+                   CALL alloc(P%MAGP%DC_ac)
+                   CALL alloc(P%MAGP%A_ac)
+                   CALL alloc(P%MAGP%theta_ac)
+                   allocate(P%MAGp%D_ac)
+                   CALL alloc(P%MAGP%D_ac)
+
+
+
+                   P%MAG%D_ac=D_ac
+                   P%MAG%DC_ac=DC_ac
+                   P%MAG%A_ac=A_ac
+                   P%MAG%theta_ac=theta_ac*twopi
+                   P%MAGP%D_ac=D_ac
+                   P%MAGP%DC_ac=DC_ac
+                   P%MAGP%A_ac=A_ac
+                   P%MAGP%theta_ac=theta_ac*twopi
+
+                   P%MAG%slow_ac=1
+                   P%MAGP%slow_ac=1
+
+                   if(i2>p%mag%p%nmul) then
+                      CALL ADD(P,i2,0,0.0_dp)
+                   endif
+                   allocate(P%MAG%d_an(p%mag%p%nmul))
+                   allocate(P%MAG%d_bn(p%mag%p%nmul))
+                   allocate(P%MAGp%d_an(p%mag%p%nmul))
+                   allocate(P%MAGp%d_bn(p%mag%p%nmul))
+                   allocate(P%MAG%d0_an(p%mag%p%nmul))
+                   allocate(P%MAG%d0_bn(p%mag%p%nmul))
+                   allocate(P%MAGp%d0_an(p%mag%p%nmul))
+                   allocate(P%MAGp%d0_bn(p%mag%p%nmul))
+
+
+                   P%MAG%d_an=0.0_dp
+                   P%MAG%d_bn=0.0_dp
+
+                   call alloc(P%MAGp%d_an,p%mag%p%nmul)
+                   call alloc(P%MAGp%d_bn,p%mag%p%nmul)
+                   call alloc(P%MAGp%d0_an,p%mag%p%nmul)
+                   call alloc(P%MAGp%d0_bn,p%mag%p%nmul)
+                   do i1=1,p%mag%p%nmul
+                      P%MAG%d0_bn(i1)=P%MAG%bn(i1)
+                      P%MAG%d0_an(i1)=P%MAG%an(i1)
+                      P%MAGp%d0_bn(i1)=P%MAG%bn(i1)
+                      P%MAGp%d0_an(i1)=P%MAG%an(i1)
+                   enddo
+
+                   do i1=1,p%mag%p%nmul
+                      P%MAG%d_an(i1) =an(i1)
+                      P%MAGp%d_an(i1)=an(i1)
+                      P%MAG%d_bn(i1) =bn(i1)
+                      P%MAGp%d_bn(i1)=bn(i1)
+                   enddo
+                   !
+   
+ 
+
+end subroutine alloc_modulation
+
+subroutine kill_modulation(p)
+implicit none
+type(fibre),target :: p
+ 
+ 
+
+                   P%MAG%slow_ac=0
+                   P%MAGP%slow_ac=0
+
+                   CALL kill(P%MAGP%DC_ac)
+                   CALL kill(P%MAGP%A_ac)
+                   CALL kill(P%MAGP%theta_ac)
+                   CALL kill(P%MAGP%D_ac)
+                   call kill(P%MAGp%d_an)
+                   call kill(P%MAGp%d_bn)
+                   call kill(P%MAGp%d0_an)
+                   call kill(P%MAGp%d0_bn)
+                   call kill(P%MAGp%d_an )
+                   call kill(P%MAGp%d_bn )
+                   call kill(P%MAGp%d0_an)
+                   call kill(P%MAGp%d0_bn)
+
+
+                   deallocate(P%MAG%DC_ac)
+                   deallocate(P%MAG%A_ac)
+                   deallocate(P%MAG%theta_ac)
+                   deallocate(P%MAG%D_ac)
+
+                   deallocate(P%MAGP%DC_ac)
+                   deallocate(P%MAGP%A_ac)
+                   deallocate(P%MAGP%theta_ac)
+                   deallocate(P%MAGp%D_ac)
+
+
+                   deallocate(P%MAG%d_an )
+                   deallocate(P%MAG%d_bn )
+                   deallocate(P%MAGp%d_an)
+                   deallocate(P%MAGp%d_bn)
+                   deallocate(P%MAG%d0_an)
+                   deallocate(P%MAG%d0_bn )
+                   deallocate(P%MAGp%d0_an)
+                   deallocate(P%MAGp%d0_bn)
+
+end subroutine kill_modulation
+
+
 
 end module pointer_lattice
 
