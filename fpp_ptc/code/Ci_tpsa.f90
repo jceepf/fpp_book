@@ -29,7 +29,7 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
   integer,private,dimension(lnv)::jfil,jfilt
 
   private equal,DAABSEQUAL,Dequaldacon ,equaldacon ,Iequaldacon,derive,DEQUALDACONS  !,AABSEQUAL 2002.10.17
-  private pow, GETORDER,CUTORDER,getchar,GETint,GETORDERMAP  !, c_bra_v_spinmatrix
+  private pow, GETORDER,CUTORDER,getchar,GETint,GETORDERMAP,GETORDERVEC  !, c_bra_v_spinmatrix
   private getdiff,getdATRA  ,mul,dmulsc,dscmul,GETintmat   !,c_spinor_spinmatrix
   private mulsc,scmul,imulsc,iscmul,DAREADTAYLORS,c_pri_c_ray,EQUALql_c_spin
   private div,ddivsc,dscdiv,divsc,scdiv,idivsc,iscdiv,equalc_ray_r6r 
@@ -451,6 +451,7 @@ logical :: old_phase_calculation=.false.
      MODULE PROCEDURE GETint !  complex(dp)= t.sub.j(:) same as above using array
      MODULE PROCEDURE GETORDERMAP  ! extract order i of map  N=M.sub.i  
 !with negative integer map.sub.i the spin is handled with iabs(i)-1
+     MODULE PROCEDURE GETORDERVEC
      MODULE PROCEDURE GETORDERquaternion! same as above for quaternion (negative not accepted)
      MODULE PROCEDURE GETORDERSPINMATRIX ! same FOR SPIN MATRICES (negative not accepted)
   END INTERFACE
@@ -466,6 +467,7 @@ logical :: old_phase_calculation=.false.
 ! where is a polynomial in variables  3,4,...nv
 ! notice that w=t.par.'13 0'  returns w=a(z_1^1 z2^3 z3^0)  where a contains variables 4,5,... 
      MODULE PROCEDURE GETintnd2  !same using array t.par.[1,3]
+     MODULE PROCEDURE GETintnd2t  
   END INTERFACE
 
  
@@ -688,14 +690,17 @@ logical :: old_phase_calculation=.false.
      MODULE PROCEDURE c_logc
      MODULE PROCEDURE c_logf  !# log of a map see subroutine c_flofacg
      MODULE PROCEDURE c_log_spinmatrix  !#  spinor=log(s)
-! c_logf_spin is not overloaded
-!  F=c_logf_spin(M,H,epso,n,tpsa)  then   M=exp(F)I
+! c_logf_spin is overloaded as ln
+!  F=ln(M,H,epso,n,tpsa)  then   M=exp(F)I
 ! H is a guess for F is known
 ! epso = is a small number (optional) for convergence
 ! n = maximal number of iteration (optional, defaulted to 1000)
 !  tpsa is true by default, otherwise it is a DA calculation 
   END INTERFACE
 
+  INTERFACE ln
+     MODULE PROCEDURE c_logf_spin
+  END INTERFACE
 
   INTERFACE cos
      MODULE PROCEDURE dcost
@@ -3349,6 +3354,7 @@ endif
   END FUNCTION GETORDERMAP
 
 
+
   FUNCTION GETORDERquaternion( S1, S2 ) ! spin routine function
     implicit none
     TYPE (c_quaternion) GETORDERquaternion
@@ -3401,6 +3407,37 @@ endif
 
   END FUNCTION GETORDERSPINMATRIX
 
+  FUNCTION GETORDERVEC( S1, S2 )
+    implicit none
+    TYPE (c_vector_field) GETORDERVEC
+    TYPE (c_vector_field), INTENT (IN) :: S1
+    INTEGER, INTENT (IN) :: S2
+    INTEGER I,s22
+    integer localmaster
+    IF(.NOT.C_STABLE_DA) then
+     GETORDERVEC%v%i=0
+     RETURN
+    endif
+    localmaster=c_master
+
+    s22=iabs(s2)
+    GETORDERVEC%n=s1%n
+    call C_ass_vector_field(GETORDERVEC)
+    GETORDERVEC=s1
+    DO I=1,s1%n
+       GETORDERVEC%V(I)=(GETORDERVEC%V(I)).SUB.S22
+    ENDDO
+    
+    if(s2<0) s22=s22-1
+
+     GETORDERVEC%q=GETORDERVEC%q.SUB.S22
+  
+
+ 
+
+    c_master=localmaster
+
+  END FUNCTION GETORDERVEC
 
 
   FUNCTION from_phasor(k)
