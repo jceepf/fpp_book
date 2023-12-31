@@ -30,9 +30,9 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
 
   private equal,DAABSEQUAL,Dequaldacon ,equaldacon ,Iequaldacon,derive,DEQUALDACONS  !,AABSEQUAL 2002.10.17
   private pow, GETORDER,CUTORDER,getchar,GETint,GETORDERMAP,GETORDERVEC  !, c_bra_v_spinmatrix
-  private getdiff,getdATRA  ,mul,dmulsc,dscmul,GETintmat   !,c_spinor_spinmatrix
+  private getdiff,getdATRA  ,mul,dmulsc,dscmul,GETintmat,GETintnd2_universal   !,c_spinor_spinmatrix
   private mulsc,scmul,imulsc,iscmul,DAREADTAYLORS,c_pri_c_ray,EQUALql_c_spin
-  private div,ddivsc,dscdiv,divsc,scdiv,idivsc,iscdiv,equalc_ray_r6r 
+  private div,ddivsc,dscdiv,divsc,scdiv,idivsc,iscdiv,equalc_ray_r6r,complex_mul_map
   private unaryADD,add,daddsca,dscadd,addsc,scadd,iaddsc,iscadd,print_ql
   private unarySUB,subs,dsubsc,dscsub,subsc,scsub,isubsc,iscsub,c_clean_taylors
   private c_allocda,c_killda,c_a_opt,K_opt,c_,c_allocdas,filter_part,c_clean_c_factored_lie
@@ -41,7 +41,7 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
   private GETintnd2t,equalc_cspinor_cspinor,c_AIMAG,c_real,equalc_ray_ray,EQUALql_q,EQUALq_ql,EQUALql_i,EQUALql_ql
   PRIVATE DEQUAL,REQUAL,varf,varf001,equalc_spinor_cspinor,EQUALql_r  !,CHARINT,pbbrav,cpbbrav
   !  PUBLIC VAR,ASS
-  private pbbra,liebra,full_absT,c_asstaylor,getcharnd2s,GETintnd2s,GETintk
+  private pbbra,liebra,full_absT,c_asstaylor,getcharnd2s,GETintnd2s,GETintk,c_get_coeff
   private shiftda,shift000,cDEQUAL,pri,rea,cfu000,alloc_DA,alloc_c_spinmatrix,cpbbra,alloc_c_damaps
   private alloc_c_damap,c_DPEKMAP,c_DPOKMAP,kill_c_damap,kill_c_spinmatrix,c_etcct,c_spinmatrix_mul_cray
   private EQUALspinmatrix,c_trxtaylor,powmap,POWMAPs,alloc_c_vector_field,kill_c_vector_field,kill_c_damaps
@@ -344,6 +344,7 @@ logical :: old_phase_calculation=.false.
      MODULE PROCEDURE real_mul_vec  ! real(dp)*vf  G=rF  → F.grad
      MODULE PROCEDURE complex_mul_vec  !# complex(dp)*vf G=cF
      MODULE PROCEDURE real_mul_map     !# real(dp)*c_damap B=rA
+     MODULE PROCEDURE complex_mul_map     !# real(dp)*c_damap B=rA
 ! Vector fields
      MODULE PROCEDURE c_bra_v_ct     !# F.grad taylor       t = F*a (no quaternion effect)
      MODULE PROCEDURE c_bra_v_dm     !# c_damap=(F.grad +q ) c_damap     !T = F* A
@@ -454,6 +455,7 @@ logical :: old_phase_calculation=.false.
      MODULE PROCEDURE GETORDERVEC
      MODULE PROCEDURE GETORDERquaternion! same as above for quaternion (negative not accepted)
      MODULE PROCEDURE GETORDERSPINMATRIX ! same FOR SPIN MATRICES (negative not accepted)
+     MODULE PROCEDURE c_get_coeff
   END INTERFACE
 
   INTERFACE OPERATOR (.index.)
@@ -468,6 +470,7 @@ logical :: old_phase_calculation=.false.
 ! notice that w=t.par.'13 0'  returns w=a(z_1^1 z2^3 z3^0)  where a contains variables 4,5,... 
      MODULE PROCEDURE GETintnd2  !same using array t.par.[1,3]
      MODULE PROCEDURE GETintnd2t  
+     MODULE PROCEDURE GETintnd2_universal  ! .par. on unversal into a c_taylor
   END INTERFACE
 
  
@@ -1603,7 +1606,7 @@ end subroutine c_get_indices
     call alloc(s1%H,s1%H_l,s1%H_nl)
     s1%as=1
     s1%nres=0
-    s1%positive=.true.
+    s1%positive=default_fractional_tune_positive
     s1%m=0  ! orbital resonance
     s1%ms=0  ! spin resonance
     s1%g%dir=-1
@@ -2240,7 +2243,7 @@ end subroutine c_get_indices
 
     integer i 
 
-    call check_snake
+    call c_check_snake
 
     do i=1,3
       s2%v(i)=s1%v(i)
@@ -2257,7 +2260,7 @@ end subroutine c_get_indices
 
     integer i 
 
-    call check_snake
+    call c_check_snake
 
     do i=1,3
       s2%v(i)=s1%x(i)
@@ -2274,7 +2277,7 @@ end subroutine c_get_indices
 
     integer i 
 
-    call check_snake
+    call c_check_snake
     s2%x(1)=0.0_dp
     do i=1,3
       s2%x(i)=s1%v(i)
@@ -2810,7 +2813,11 @@ endif
 !     call c_flofacg(s1,c_logf_spin,epso,n)
   if(complex_extra_order==1.and.special_extra_order_1) c_logf_spin=c_logf_spin.cut.no
     c_master=localmaster
-
+   if(.not.c_stable_da) then
+      write(6,*) "Unstable in c_logf_spin"
+      write(6,*) "Perhaps map to far from Identity"
+    endif
+    
   END FUNCTION c_logf_spin
 
 ! etienne2
@@ -7037,6 +7044,97 @@ m%q=p%q
 
   END FUNCTION GETCHARnd2
 
+  FUNCTION GETintnd2_universal( S1, S2 )
+    implicit none
+    TYPE (c_taylor) GETintnd2_universal,junk
+    TYPE (c_universal_taylor), INTENT (IN) :: S1
+    integer , INTENT (IN) ::  S2(:)
+    integer i,k,jj(1:lnv)
+    integer localmaster,nd2p
+
+     IF(.NOT.C_STABLE_DA) then
+     GETintnd2_universal%i=0
+     RETURN
+     endif
+    localmaster=c_master
+
+    !    call check(s1)
+    call ass(GETintnd2_universal)
+
+    call alloc(junk)
+
+    do i=1,lnv
+       jfil(i)=0
+    enddo
+    nd2p=size(s2)
+  !  ndel=0
+
+!lfilter
+    !frs get around compiler problem
+    !frs    do i=1,len(trim(ADJUSTR (s2)))
+    do i=1,nd2p
+       Jfil(I)=s2(i)
+       if(i>nv) then
+          if(Jfil(i)>0) then
+             GETintnd2_universal=0.0_dp
+             return
+          endif
+       endif
+
+    enddo
+
+    !do i=nd2+ndel+1,nv
+    do i=nd2p+1,nv
+       if(jfil(i)/=0) then
+ 
+            write(6,*)" error in GETintnd2 for .para. "
+          ! call !write_e(0)
+          stop
+       endif
+    enddo
+
+ ! TYPE c_UNIVERSAL_TAYLOR
+ !    INTEGER, POINTER:: N,NV,nd2 => null()   !  Number of coeeficients and number of variables
+ !    complex(DP), POINTER,dimension(:)::C => null() ! Coefficients C(N)
+ !    INTEGER, POINTER,dimension(:,:)::J=> null() ! Exponents of each coefficients J(N,NV)
+ ! END TYPE c_UNIVERSAL_TAYLOR
+
+ 
+junk=0.0_dp
+do i=1,s1%n
+  if(lfilter(s1%j(i,1:nv),nd2p)) then
+    jj=0
+    jj(nd2p+1:nv)=s1%j(i,nd2p+1:nv)
+ 
+   junk=junk+ (s1%c(i).cmono.jj)
+ 
+  endif
+enddo
+
+ 
+
+    GETintnd2_universal=junk
+
+    call kill(junk)
+    c_master=localmaster
+
+  END FUNCTION GETintnd2_universal
+
+
+  function lfilter(j,nd2p)
+    implicit none
+    logical lfilter
+    integer i,nd2p
+    integer,dimension(:)::j
+
+    lfilter=.true.
+
+    do i=1,nd2p
+       if(jfil(i)/=j(i)) lfilter=.false.
+    enddo
+
+  end  function lfilter
+
   FUNCTION GETintnd2( S1, S2 )
     implicit none
     TYPE (c_taylor) GETintnd2,junk
@@ -7296,6 +7394,7 @@ m%q=p%q
     enddo
 
   end  function filter
+
 
   function c_filter_part(j)
     implicit none
@@ -9385,8 +9484,8 @@ endif
      tempnew%q = t2%q.o.t1
  
     
-     tempnew%s=t2%s*t1%s
-     tempnew%q=t2%q*t1%q
+     tempnew%s=tempnew%s*t1%s
+     tempnew%q=tempnew%q*t1%q
  
  
  if(.not.c_similarity) then   
@@ -10372,7 +10471,7 @@ endif
     TYPE (c_damap), INTENT (IN) :: S1
     TYPE (c_ray), INTENT (IN) ::  S2
     TYPE (c_quaternion) q
-     TYPE (c_damap) tempmap
+     TYPE (c_damap) tempmap,tempmap1
  
     real(dp) norm
     integer i
@@ -10386,8 +10485,9 @@ endif
   !  c_concat_map_ray%x=0.0_dp
   !  c_concat_map_ray%n=s2%n
  
-    tempmap%n=s1%n
-     call alloc(tempmap)
+    tempmap%n=nv   !s1%n
+    tempmap1%n=nv   !s1%n
+     call alloc(tempmap,tempmap1)
  
  !    norm=0
  !   do i=1,s1%n
@@ -10403,6 +10503,11 @@ endif
       do i=1,s1%n
         tempmap%v(i)=s2%x(i)
         tempmap%x0(i)=s1%x0(i)
+        tempmap1%v(i)=s1%v(i)
+       enddo
+      do i=s1%n+1,nv
+        tempmap%v(i)=s2%x(i)
+        tempmap1%v(i)=1.0_dp.cmono.i
        enddo
   !   else     
   !    do i=1,s1%n
@@ -10410,12 +10515,18 @@ endif
   !      tempmap%x0(i)=0.d0  !s1%x(i)
   !     enddo
   !  endif
-       tempmap=s1.o.tempmap
+      if(use_quaternion) then
+        tempmap%q=s2%q
+        tempmap1%q=s1%q
+ 
+      endif
 
+       tempmap=tempmap1.o.tempmap
+ 
       if(use_quaternion) then
        c_concat_map_ray%q=tempmap%q    !s2
     !  else
-  
+ 
    !  c_concat_map_ray%s=tempmap%s  !s2
       endif
  ! order important because the first one puts s2%x into c_concat_map_ray%x
@@ -10423,7 +10534,7 @@ endif
       do i=1,s1%n
        c_concat_map_ray%x(i)=tempmap%v(i)
      enddo
-    call kill(tempmap)
+    call kill(tempmap,tempmap1)
     c_master=localmaster
 
   END FUNCTION c_concat_map_ray
@@ -13127,6 +13238,8 @@ endif
       tt=s1%v(i)+ s2%v(i) 
       c_add_map%v(i)=tt
     enddo
+    
+    c_add_map%q=s1%q+ s2%q 
     c_add_map%s=s1%s+ s2%s 
     c_add_map%e_ij=s1%e_ij+ s2%e_ij 
 
@@ -13155,6 +13268,7 @@ endif
       tt=s1%v(i)- s2%v(i) 
       c_sub_map%v(i)=tt
     enddo
+    c_sub_map%q=s1%q- s2%q 
     c_sub_map%s=s1%s- s2%s 
     c_sub_map%e_ij=s1%e_ij- s2%e_ij 
 
@@ -13319,9 +13433,51 @@ endif
     enddo
     enddo
 
+    do i=0,3
+     real_mul_map%q%x(i)=r*s1%q%x(i)
+    enddo
+
     c_master=localmaster
 
   END FUNCTION real_mul_map
+
+    FUNCTION complex_mul_map( r,S1 )
+    implicit none
+    TYPE (c_damap) complex_mul_map
+    complex(dp),intent(in):: r
+    TYPE (c_damap), INTENT (IN) :: S1
+    integer localmaster,i,j
+
+    IF(.NOT.C_STABLE_DA) then
+     complex_mul_map%v%i=0
+     RETURN
+     endif
+    localmaster=c_master
+
+    !    call check(s1)
+    complex_mul_map%n=s1%n
+    call c_assmap(complex_mul_map)
+    
+    do i=1,s1%n
+     complex_mul_map%v(i)=r*s1%v(i)
+    enddo
+
+
+    do i=1,3
+    do j=1,3
+     complex_mul_map%s%s(i,j)=r*s1%s%s(i,j)
+    enddo
+    enddo
+
+    do i=0,3
+     complex_mul_map%q%x(i)=r*s1%q%x(i)
+    enddo
+ 
+
+    c_master=localmaster
+
+  END FUNCTION complex_mul_map
+
 
     FUNCTION real_mul_vec( r,S1 )
     implicit none
@@ -13350,6 +13506,7 @@ endif
      real_mul_vec%q%x(i)=r*s1%q%x(i)
     enddo
 
+ 
 
     real_mul_vec%nrmax=s1%nrmax
     real_mul_vec%eps=s1%eps
@@ -13384,6 +13541,8 @@ endif
     do i=0,3
      complex_mul_vec%q%x(i)=r*s1%q%x(i)
     enddo
+
+  
 
     complex_mul_vec%nrmax=s1%nrmax
     complex_mul_vec%eps=s1%eps
@@ -13604,20 +13763,23 @@ prec=1.d-8
   
 
 
+
   function c_expflo_map(h,x)   !,eps,nrmax)
     implicit none
     ! DOES EXP( \VEC{H} ) X = Y
 
-    integer i,j,localmaster
+    integer i,j,localmaster,jj
     type(c_damap) c_expflo_map
     type(c_damap), optional, intent(in):: x
     type(c_vector_field), intent(in) :: h
-
+    real(dp) coe,r,rbefore
+    type(c_damap) m1,mtemp
+    logical more
     IF(.NOT.C_STABLE_DA) then
      c_expflo_map%v%i=0
      RETURN
      endif 
-
+    call alloc(m1,mtemp)
     localmaster=c_master
 
     if(present(x)) then
@@ -13625,8 +13787,9 @@ prec=1.d-8
     else
      c_expflo_map%n=nd2
     endif
- 
+
     call c_assmap(c_expflo_map)
+jj=c_nda_dab
 
     if(present(x)) then
      c_expflo_map=x
@@ -13634,68 +13797,23 @@ prec=1.d-8
      c_expflo_map=1
     endif
 
-
-    do i=1,c_expflo_map%n
-     c_expflo_map%v(i)=texp(h,c_expflo_map%v(i))
-    enddo
-   if(use_quaternion) then
-     c_expflo_map%q=texp(h,c_expflo_map%q)
-   else
-    do i=1,3     
-      do j=1,3
-      c_expflo_map%s%s(i,j)=texp(h,c_expflo_map%s%s(i,j))
-      enddo     
-     enddo
-   endif
-
-        if(present(x)) c_expflo_map%x0=x%x0    
-c_master=localmaster
  
-  end function c_expflo_map
-
-
-  function c_expflo(h,x)   !,eps,nrmax)
-    implicit none
-    ! DOES EXP( \VEC{H} ) X = Y
-    logical(lp) more
-    integer i ,localmaster
-    type(c_taylor) c_expflo
-    type(c_taylor), intent(in):: x
-    type(c_taylor) b1,b2,b3,b4
-    type(c_vector_field), intent(in) :: h
-    real(dp) coe,r,rbefore
-    IF(.NOT.C_STABLE_DA) then
-     c_expflo%i=0
-     RETURN
-     endif 
-
-    localmaster=c_master
-
-    call ass(c_expflo)
-
-    call alloc(b1)
-    call alloc(b2)
-    call alloc(b3)
-    call alloc(b4)
-    b4=x
-    b1=x
-
     more=.true.
     rbefore=1e30_dp
-    do i=1,h%nrmax
-       coe=1.0_dp/REAL(i,kind=DP)
+
+m1=c_expflo_map  
+
  
-        b2=coe*b1
+mtemp=m1
  
-!       call dacmu(b1,coe,b2)
-        b1=h*b2
- 
-!       call daflo(h,b2,b1)
-        b3=b1+b4
-!       call daadd(b4,b1,b3)
-       r=full_abs(b1)
- !      call daabs(b1,r)
-!write(6,*) " i",i,r
+do i=1,h%nrmax
+coe=i 
+mtemp=((1.d0/coe)*(h*mtemp))
+ m1=mtemp + m1
+    r=0
+     do j=1,mtemp%n
+       r=full_abs(mtemp%v(j))+r
+     enddo
 
        if(more) then
           if(r.gt.h%eps) then
@@ -13707,36 +13825,64 @@ c_master=localmaster
           endif
        else
           if(r.ge.rbefore) then
-             c_expflo=b3
+             c_expflo_map=m1
+             if(present(x)) c_expflo_map%x0=x%x0    
+
             c_master=localmaster
-!             call dacop(b3,y)
-             call kill(b4)
-             call kill(b3)
-             call kill(b2)
-             call kill(b1)
+            call kill(m1,mtemp)
+ 
+
              return
           endif
           rbefore=r
        endif
-100    continue
-       b4=b3
-!       call dacop(b3,b4)
-       
-    enddo
-    if(lielib_print(2)==1) then
-       write(6,'(a6,1x,G21.14,1x,a25)') ' NORM ',h%eps,' NEVER REACHED IN EXPFLO '
-    endif
-    c_expflo=b3
-!    call dacop(b3,y)
-    call kill(b4)
-    call kill(b3)
-    call kill(b2)
-    call kill(b1)
+   100    continue
+ 
+enddo
+
+
+            call kill(m1,mtemp)
+        if(present(x)) c_expflo_map%x0=x%x0    
+
+       c_master=localmaster
+  write(6,*) "r,rbefore",r,rbefore
+  write(6,*) "eps,nrmax",h%eps,h%nrmax
+  write(6,*) "Convergence not achieved in  c_expflo_map "
+  write(6,*) "Try changing eps or nrmax in the vector field " 
+  c_stable_da=.false.
+  end function c_expflo_map
+
+   function c_expflo(h,x)   !,eps,nrmax)
+    implicit none
+    ! DOES EXP( \VEC{H} ) X = Y
+    logical(lp) more
+    integer i ,localmaster
+    type(c_taylor) c_expflo
+    type(c_taylor), intent(in):: x
+    type(c_vector_field), intent(in) :: h
+    type(c_damap) m
+    IF(.NOT.C_STABLE_DA) then
+     c_expflo%i=0
+     RETURN
+     endif 
+    localmaster=c_master
+
+    call ass(c_expflo)
+      
+     call alloc(m)
+
+      m=0
+      m%v(1)=x
+      m=exp(h,m)
+
+      c_expflo=m%v(1)
+
+     call kill(m)
 
     c_master=localmaster
-    
   end function c_expflo
   
+
    subroutine c_flofacg(xy0,h,epso,n)
 !#internal: manipulation
 !# Use preferably function c_logf or its interface
@@ -19226,6 +19372,9 @@ endif
             n%tune((k+1)/2)=aimag(log(eg(k)))/twopi
             n%damping((k+1)/2)=real(log(eg(k)))
             if(n%tune((k+1)/2)<0.and.n%positive) n%tune((k+1)/2)=n%tune((k+1)/2)+1.0_dp
+            if(n%tune((k+1)/2)<-0.5_dp.and.(.not.n%positive)) n%tune((k+1)/2)=n%tune((k+1)/2)+1.0_dp
+            if(n%tune((k+1)/2)> 0.5_dp.and.(.not.n%positive)) n%tune((k+1)/2)=n%tune((k+1)/2)-1.0_dp
+
         endif
        endif 
       enddo
@@ -21766,8 +21915,10 @@ end subroutine cholesky_dt
   function  c_get_coeff(S1,J)  !new sagan
     implicit none
     type (C_UNIVERSAL_TAYLOR),INTENT(IN)::S1
+    integer,INTENT(IN)::J(:)
+
     complex (dp)c_get_coeff
-    INTEGER i,n,done,J(:)
+    INTEGER i,n,done
      
      c_get_coeff=0
     do i=1,s1%n
