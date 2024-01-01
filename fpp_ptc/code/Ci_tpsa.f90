@@ -5618,6 +5618,7 @@ endif
     type(c_linear_map) ml
     type(c_damap) m
      ml=m
+ 
     call   compute_lattice_functions_1(ml,f)
 
     end SUBROUTINE  compute_lattice_functions_2
@@ -5637,6 +5638,7 @@ endif
     else
       mi=m**(-1)
     endif
+
 
     f%h=0;f%b=0;f%k=0;f%e=0;f%s=0;
 
@@ -17512,7 +17514,7 @@ end subroutine extract_a2
     type(c_damap) temp,as_y,as_nl,rot_y
     type(c_spinor) n_expo,n_tune,tune0
     type(c_taylor) tr
-    type(taylor) si,co
+!    type(taylor) si,co
      real(dp) si0,co0
     type(c_taylor) t
     type(c_quaternion) qnr
@@ -17531,7 +17533,7 @@ end subroutine extract_a2
     call alloc(tune0)
     call alloc(temp,as_y,as_nl,rot_y)
     call alloc(tr)
-    call alloc(si,co)
+!    call alloc(si,co)
     call alloc(t)
     call alloc(qnr)
     tune0=0
@@ -17677,7 +17679,7 @@ endif
     call kill(n_expo)
     call kill(temp,as_y,as_nl,rot_y)
     call kill(tune0)
-    call kill(si,co)
+!    call kill(si,co)
     call kill(tr)
     call kill(n_tune)
     call kill(t)
