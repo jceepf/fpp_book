@@ -72,7 +72,7 @@ integer :: m6lim =10
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 real(dp) :: faclim =1
 integer  :: old_integrator_init =1
-logical :: default_fractional_tune_positive=.true.
+logical :: default_fractional_tune_positive=.true.,negative_synchrotron_tune=.true.
 
 TYPE sub_taylor
      INTEGER j(lnv)

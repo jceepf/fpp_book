@@ -18888,11 +18888,12 @@ call canonize_damping(st,id,damp)
  !b0=matmul(matmul(st,s),transpose(st))
  
  
-endif
 if(present(damping)) then
  do i=1,ndt
   damping(i)=damping(i)+log(damp(i))
  enddo
+endif
+
 endif
 
 if(present(q_rot) ) then 
@@ -19350,10 +19351,16 @@ endif
       enddo  ! over vector index
 
       m1=c_simil(n%g%f(i),m1,-1)
- 
     enddo
  
- 
+  !     if(dospinr)then
+        do i=1,size(n%g%f)
+         n%g%f(i)%q=0.0_dp   ! makes identity 2024.1.2
+        enddo
+        do i=1,size(n%ker%f)
+         n%ker%f(i)%q=0.0_dp
+        enddo
+  !     endif
  
 
     n%a_t=a1*a2*from_phasor()*texp(n%g)*from_phasor(-1)
@@ -19389,7 +19396,7 @@ endif
          enddo
         endif
         if(nd2t==6) then
-           if(n%tune(3)>0.50_dp) n%tune(3)=n%tune(3)-1.0_dp
+           if(n%tune(3)>0.50_dp.and.negative_synchrotron_tune) n%tune(3)=n%tune(3)-1.0_dp
         endif 
 
        if(ndpt/=0) then
