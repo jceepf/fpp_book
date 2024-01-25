@@ -12162,7 +12162,8 @@ implicit none
     
 end subroutine c_factor_map
 !!  no spin here
-subroutine c_canonise(at,a_cs,a0,a1,a2,phase,nu_spin,irot) 
+subroutine c_canonise(at,a_cs,a0,a1,a2,phase,irot) 
+!subroutine c_canonise(at,a_cs,a0,a1,a2,phase,nu_spin,irot) 
 !#general: manipulation
 !# This routine is of great pedagogical importance.
 !# It is restricted to the orbital motion,
@@ -12174,10 +12175,11 @@ subroutine c_canonise(at,a_cs,a0,a1,a2,phase,nu_spin,irot)
     implicit none                             
     type(c_damap) , intent(inout) :: at,a_cs 
     type(c_damap) , optional, intent(inout) :: a2,a1,a0
-    type(c_taylor) ,optional, intent(inout) :: phase(:),nu_spin
+    type(c_taylor) ,optional, intent(inout) :: phase(:) !,nu_spin
  
      integer ,optional, intent(in) :: irot
-    call c_full_canonise(at,a_cs,a0=a0,a1=a1,a2=a2,phase=phase,nu_spin=nu_spin,irot=irot)
+   ! call c_full_canonise(at,a_cs,a0=a0,a1=a1,a2=a2,phase=phase,nu_spin,irot=irot)
+    call c_full_canonise(at,a_cs,a0=a0,a1=a1,a2=a2,phase=phase,irot=irot)
 
 end subroutine c_canonise
 
@@ -16390,6 +16392,7 @@ end subroutine get_6d_ohmi
 
 
 subroutine teng_edwards_a1(a1,R_TE,CS_TE,COSLIKE,t_e)
+! newest based on de Moivres
 !#general: normal
 !# This is the famous Teng-Edwards factorisation 
 !# a1= R_TE * CS_TE
@@ -16398,180 +16401,126 @@ subroutine teng_edwards_a1(a1,R_TE,CS_TE,COSLIKE,t_e)
 !# and it fails for large coupling. 
 !# The parameter coslike is true if the R_TE(1,1) entry of the matrix
 !# is between -1 and 1. If it is "hyperbolic", then coslike is false.
-!# I am not a big fan of this fabtorisation, but it works for small couplings.
+!# I am not a big fan of this factorisation, but it works for small couplings.
+
+implicit none
+type(c_damap) , intent(inout) :: a1,R_TE,CS_TE
+type(c_damap) a1i
+type(c_taylor) A(4,4),Ai(4,4),H1(4,4),gam
+integer i,j,k,l(4)
+real(dp) I1(4,4),gamma
+logical COSLIKE,t_e
+type(c_vector_field)  f_R_TE,f_R_TEs
+type(c_universal_taylor) uf
+
+do i=1,4
+do j=1,4
+ call alloc(A(i,j))
+ call alloc(Ai(i,j))
+ call alloc(H1(i,j))
+enddo
+enddo
+call alloc(gam)
+call alloc(f_R_TE,f_R_TEs)
+I1=0
+i1(1,1)=1
+i1(2,2)=1
+
+call alloc(a1i)
+
+a1i=a1**(-1)
+
+do i=1,4
+do j=1,4
+ l=0
+ l(j)=1
+ A(i,j)=a1%v(i).par.l
+ Ai(i,j)=a1i%v(i).par.l
+enddo
+enddo
 
 
-    implicit none
-    type(c_damap) , intent(inout) :: a1,R_TE,CS_TE
+do i=1,4
+do j=1,4
+do k=1,4
+ H1(i,k)=A(i,j)*I1(j,k)+H1(i,k)
+enddo
+enddo
+enddo
 
-    type(c_damap) g,s1,s1i
 
+
+do i=1,4
+do j=1,4
+ call kill(A(i,j))
+ call alloc(A(i,j))
+enddo
+enddo
+
+do i=1,4
+do j=1,4
+do k=1,4
+ A(i,k)=H1(i,j)*Ai(j,k)+A(i,k)
+enddo
+enddo
+enddo
+
+COSLIKE=.true.
+gamma=a(1,1)
+if(gamma>=1) COSLIKE=.false.
+if(gamma>=0) then
+ gam=sqrt(a(1,1))
+ r_te=1
+ R_TE%v(1)=gam*dz_c(1)
+  do i=2,4
+   R_TE%v(i)=gam*dz_c(i)
+  enddo
+  do i=1,2
+  do j=3,4
+   R_TE%v(i)=-a(i,j)/gam*dz_c(j)+R_TE%v(i)
+   R_TE%v(j)=a(j,i)/gam*dz_c(i)+R_TE%v(j)
+  enddo
+  enddo
+ t_e=.true.
+else
+ t_e=.false.
+endif
+
+do i=1,4
+do j=1,4
+ call kill(A(i,j))
+ call kill(Ai(i,j))
+ call kill(h1(i,j))
+enddo
+enddo
+
+if(.not.t_e) goto 100
+! symplectifying if delta is a variable
+if(c_%ndpt/=0) then
+f_R_TE=ln(R_TE)
+call get_field_c_universal_taylor(f_R_TE,uf)
  
-    integer i,j
 
-    type(c_taylor) m(4,4),unpb
-    type(c_taylor) at(2,2),dt(2,2),bt(2,2),ct(2,2),ati(2,2),dti(2,2),alpha,det
-    logical(lp) t_e,COSLIKE
-    real(dp) alpha0,epsone
-    type(c_vector_field) h
+do i=1,c_%nd
+ f_R_TEs%v(2*i-1)=-(uf.d.(2*i))
+ f_R_TEs%v(2*i)=(uf.d.(2*i-1))
+enddo
 
-    if(nd2t/=4) then
-     write(6,*) " The number of harmonic planes in the orbital part must be 4 "
-     t_e=my_false
-    return
-    endif
-    
-    call alloc_nn(m)
-    call alloc_nn(at)
-    call alloc_nn(dt)
-    call alloc_nn(bt)
-    call alloc_nn(ct)
-    call alloc_nn(ati)
-    call alloc_nn(dti)
-    call alloc(alpha,det)
+  R_TE=exp(f_R_TEs)
 
-
-       t_e=my_true
-       call  copy_damap_matrix(a1,m)
-       call  copy_matrix_matrix(m(1:2,1:2),at)
-       call  copy_matrix_matrix(m(1:2,3:4),bt)
-       call  copy_matrix_matrix(m(3:4,1:2),ct)
-
-       call  copy_matrix_matrix(m(3:4,3:4),dt)
-        
-       call invert_22(at,ati)
-       call invert_22(dt,dti)
-       if(.not.C_STABLE_DA) then
-        t_e=my_false
-       endif 
-
-
-       call matmul_nn(ct,ati,ati,sc=-1.0_dp)
-       call matmul_nn(ati,bt,bt)
-       call matmul_nn(bt,dti,bt)
-       if(.not.C_STABLE_DA) then
-        t_e=my_false
-        goto 888
-       endif 
-
-
-       alpha=bt(1,1)
-       alpha0=alpha
-
-       if(alpha0<=-1.0_dp) then
-       write(6,*) "alpha0<=-1.0_dp ",alpha0
-        t_e=my_false
-        goto 888
-       endif
-        
-       det=sqrt(1.0_dp/(1.0_dp+alpha))
-
-
-
-
-       if(alpha0>=0.0_dp) then
-          COSLIKE=my_true
-       else
-          ! det=sqrt(one/(one-alpha))
-          COSLIKE=my_false
-       endif
-
+endif 
  
-        CS_TE=0
-       do i=1,2
-          do j=1,2
-             CS_TE%v(i)=at(i,j)*(1.0_dp.cmono.j)/det+CS_TE%v(i)
-             CS_TE%v(i+2)=dt(i,j)*(1.0_dp.cmono.(j+2))/det+CS_TE%v(i+2)
-          enddo
-       enddo
-
-       !  The rotation matrix is created but it may not have the correbt path length
-       !dependence
-       if(c_%ndpt/=0.and.t_e) then   
-          g%n=nv
-          call alloc(g)
-          call alloc(h)
-          call alloc(unpb)
-          call alloc(s1)
-          call alloc(s1i)
-          epsone=-no
-
-          do i=1,nv
-             g%v(i)=1.0_dp.cmono.i
-          enddo
-          g%v(ndpt)=0.0_dp
-
-          do i=1,nd2t
-             s1%v(i) = CS_TE%v(i)*g
-          enddo
+100 call kill(gam)
+call kill(f_R_TE,f_R_TEs)
+ 
+if(.not.t_e) return
 
 
-           s1%v(ndptb)=1.0_dp.cmono.ndptb
-           s1%v(ndpt)=1.0_dp.cmono.ndpt
+CS_TE=R_TE**(-1)*a1
+ 
+ 
+end subroutine teng_edwards_a1 
 
-
-           CS_TE%v(ndptb)=1.0_dp.cmono.ndptb
-           CS_TE%v(ndpt) =1.0_dp.cmono.ndpt
-!!!!!
-          s1i=s1**(-1)
-          s1i=s1i*CS_TE    ! s1i is completely nonlinear.
-          call c_flofacg(s1i,h,epsone)
-
-          alpha0=1.0_dp
-          if(mod(ndpt,2)==0) alpha0=-1.0_dp
-          do i=1,nd2t
-             h%v(i)=alpha0*(h%v(i).d.ndpt)
-          enddo
-          call c_int_partial(h,unpb,2)
-          !  un%pb=un%vebtor  ! this is the longitudinal part
-
-             s1i%v(ndptb)=s1i%v(ndptb)+unpb
-
-
-
-   
-          CS_TE=s1*s1i
-
-
-          call kill(s1i)
-          call kill(s1)
-          call kill(h)
-          call kill(unpb)
-          call kill(g)
-
-          do i=7,nd2
-           cs_te%v(i)=1.0_dp.cmono.i
-          enddo
-
-       else
-
-
-         do i=5,nd2
-          cs_te%v(i)=1.0_dp.cmono.i
-         enddo
-
-       endif
-         888 continue
-       if(.not.t_e) then       
-        C_STABLE_DA=my_true
-        cs_te=0
-        R_TE=0
-        write(6,*) " Teng-Edwards is crap : Too much coupling! "
-       else       
-        R_TE=a1*cs_TE**(-1)
-       endif  
-
-
-
-    call kill_nn(m)
-    call kill_nn(at)
-    call kill_nn(dt)
-    call kill_nn(bt)
-    call kill_nn(ct)
-    call kill_nn(ati)
-    call kill_nn(dti)
-    call kill(alpha,det)
-end subroutine teng_edwards_a1
 
   subroutine c_int_partial(v,h,nd0)
     implicit none
@@ -21783,19 +21732,56 @@ allocate(id(n,n),ik(n,n), j(n,n),ji(n,n))
 deallocate(id,ik, j,ji)
 end   SUBROUTINE furman_step
 
-
-  subroutine checksympn(s1,norm,orthogonal)
+  subroutine checksympn(s1,norm,orthogonal,normt)
     implicit none
     TYPE (c_damap) s1
+    real(dp)  norm1,mat(8,8),xj(8,8),normt1
     real(dp), optional :: norm
+    integer i,j
     logical(lp), optional :: orthogonal
-    TYPE (damap) s1o
-     call alloc(s1o)
-       s1o=s1
-     call checksymp(s1o,norm,orthogonal)
-     call kill(s1o)
+    real(dp), optional :: normt 
+    logical(lp) nn
+    ! checks symplectic conditions on linear map
+    nn=.not.present(norm)
+    mat=0.d0
+    mat=s1
+ 
+    xj=0.d0
+    if(present(orthogonal)) then
+       if(orthogonal) then
+          do i=1,nd
+             xj(2*i-1,2*i-1)=1.0_dp
+             xj(2*i,2*i)=1.0_dp
+          enddo
+       else
+          do i=1,nd
+             xj(2*i-1,2*i)=1.0_dp
+             xj(2*i,2*i-1)=-1.0_dp
+          enddo
+       endif
+    else
+       do i=1,nd
+          xj(2*i-1,2*i)=1.0_dp
+          xj(2*i,2*i-1)=-1.0_dp
+       enddo
+    endif
+    xj= MATMUL( transpose(mat),MATMUL(xj,mat))
+
+    norm1=0.0_dp
+   normt1=0.0_dp
+    do i=1,nd2
+       if(lielib_print(9)==1.or.nn)     write(6,'(6(1x,E15.8))') xj(i,1:nd2)
+       do j=1,nd2
+          norm1=norm1+abs(xj(i,j))
+          if(i<5.and.j<5) normt1=normt1+abs(xj(i,j))
+       enddo
+    enddo
+    norm1=abs(norm1-nd2)
+    if(lielib_print(9)==1.or.nn) write(6,'(a29,(1x,E15.8))')"deviation from symplecticity ", norm1
+    if(present(norm)) norm=abs(norm1)
 
   end subroutine checksympn
+
 
 ! cholesky_d.f -*-f90-*-
 ! Using Cholesky decomposition, cholesky_d.f solve a linear equation Ax=b,
@@ -22579,5 +22565,147 @@ deallocate(me)
  end subroutine check_re
 
   ! End of Universal complex Taylor Routines
+
+subroutine symplectify_general(m1,L_r , N_r , L_s, N_s,Q_s )
+implicit none
+TYPE(c_damap),intent(inout):: m1 ,L_r , N_r , N_s , L_s,Q_s
+type(c_vector_field) f,fs,ft
+complex(dp) v
+type(c_taylor) t,dt
+real(dp),allocatable::  mat(:,:)
+integer i,j,k,n(11),nv,nd2,al,ii,a,mul
+integer, allocatable :: je(:)
+real(dp) dm,norm,normb,norma,h(4)
+TYPE(c_damap) mt,ids,m4,ml,m
+real(dp),allocatable::   S(:,:),id(:,:)
+
+! Q_s is a normalized quaternion
+! m = L_r o N_r o L_s o N_s o Q_s  
+! d= = L_r o N_r
+! ms= L_s o N_s o Q_s
+
+allocate(S(m1%n,m1%n),id(m1%n,m1%n))
+
+call c_get_indices(n,0)
+nv=n(4)
+nd2=n(3)
+
+S=0
+id=0
+do i=1,nd2/2
+ S(2*I-1,2*I)=1 ; S(2*I,2*I-1)=-1;
+ Id(2*I-1,2*I-1)=1 ; id(2*I,2*I)=1;
+enddo
+
+
+call alloc(m)
+m=m1
+Q_s=1
+Q_s%q=m%q
+m%q=1.0_dp
+
+ call alloc(f);call alloc(fs);call alloc(ft);
+call alloc(t,dt);call alloc(mt,ids,m4,ml);
+
+allocate(mat(m%n,m%n))
+
+ t=Q_s%q%x(0)**2+Q_s%q%x(1)**2+Q_s%q%x(2)**2+Q_s%q%x(3)**2
+ dm=t
+
+ if(dm/=0) then
+ t=1.0_dp/sqrt(t)
+ do i=0,3 
+  Q_s%q%x(i)=t*Q_s%q%x(i)
+ enddo
+ endif
+
+
+mat=0
+
+
+! constructing Furman's contracting matrix from my review sec.3.8.2
+
+  mat=m.sub.1
+
+ 
+ call furman_symp(mat)
+ 
+
+allocate(je(nv))
+
+ L_s=m.sub.1
+ L_s%q=1.0_dp
+ do i=1,nd2
+ do j=1,nd2
+ je=0
+ je(j)=1
+  L_s%v(i)=L_s%v(i)+(-(L_s%v(i).sub.je)+mat(i,j))*dz_c(j)
+ enddo
+ enddo
+ 
+ 
+mt=m*L_s**(-1)
+ 
+
+L_r=mt.sub.1
+ 
+
+mt=L_r**(-1)*mt
+
+f=log(mt)
+
+fs=0
+
+! Integrating a symplectic operator using the hypercube's diagonal
+
+je=0
+do i=1,f%n
+
+       j=1
+
+        do while(.true.)
+
+          call  c_cycle(f%v(i),j,v ,je); if(j==0) exit;
+         dm=1
+         do ii=1,nd2
+          dm=dm+je(ii)
+         enddo
+        t=v.cmono.je
+        do a=1,nd2
+         dt=t.d.a
+        do al=1,nd2
+        do k=1,nd2
+          fs%v(al)=fs%v(al)+s(a,al)*s(k,i)*(id(k,a)*t+(1.0_dp.cmono.k)*dt)/dm
+        enddo ! k
+        enddo ! al
+        enddo ! a
+        enddo
+
+enddo
+ 
+
+
+ 
+N_s=exp(fs)
+ 
+
+N_r= mt*N_s**(-1)
+ 
+
+N_s= L_s**(-1)*N_s*L_s 
+ 
+L_r%q=1.0_dp
+N_r%q=1.0_dp
+L_s%q=1.0_dp 
+N_s%q=1.0_dp 
+
+
+deallocate(je);deallocate(s,id);
+ call kill(f);call kill(fs);call kill(ft);
+call kill(t,dt);call kill(mt,ids,m4,ml);
+deallocate(mat)
+call kill(m)
+
+end subroutine symplectify_general
 
   END MODULE  c_tpsa
