@@ -31,9 +31,9 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
   private equal,DAABSEQUAL,Dequaldacon ,equaldacon ,Iequaldacon,derive,DEQUALDACONS  !,AABSEQUAL 2002.10.17
   private pow, GETORDER,CUTORDER,getchar,GETint,GETORDERMAP,GETORDERVEC  !, c_bra_v_spinmatrix
   private getdiff,getdATRA  ,mul,dmulsc,dscmul,GETintmat,GETintnd2_universal   !,c_spinor_spinmatrix
-  private mulsc,scmul,imulsc,iscmul,DAREADTAYLORS,c_pri_c_ray,EQUALql_c_spin
+  private mulsc,scmul,imulsc,iscmul,DAREADTAYLORS,c_pri_c_ray,EQUALql_c_spin,exp_mat_,c_exp_mat_
   private div,ddivsc,dscdiv,divsc,scdiv,idivsc,iscdiv,equalc_ray_r6r,complex_mul_map
-  private unaryADD,add,daddsca,dscadd,addsc,scadd,iaddsc,iscadd,print_ql
+  private unaryADD,add,daddsca,dscadd,addsc,scadd,iaddsc,iscadd,print_ql,matrixvecfr,r_matrixvecfr 
   private unarySUB,subs,dsubsc,dscsub,subsc,scsub,isubsc,iscsub,c_clean_taylors
   private c_allocda,c_killda,c_a_opt,K_opt,c_,c_allocdas,filter_part,c_clean_c_factored_lie
   private dexpt,dcost,dsint,dtant,DAPRINTTAYLORS,c_clean_yu_w,mul_ql_m,mul_ql_cm
@@ -41,7 +41,7 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
   private GETintnd2t,equalc_cspinor_cspinor,c_AIMAG,c_real,equalc_ray_ray,EQUALql_q,EQUALq_ql,EQUALql_i,EQUALql_ql
   PRIVATE DEQUAL,REQUAL,varf,varf001,equalc_spinor_cspinor,EQUALql_r  !,CHARINT,pbbrav,cpbbrav
   !  PUBLIC VAR,ASS
-  private pbbra,liebra,full_absT,c_asstaylor,getcharnd2s,GETintnd2s,GETintk,c_get_coeff
+  private pbbra,liebra,full_absT,c_asstaylor,getcharnd2s,GETintnd2s,GETintk,c_get_coeff,pri_matrix,c_pri_matrix
   private shiftda,shift000,cDEQUAL,pri,rea,cfu000,alloc_DA,alloc_c_spinmatrix,cpbbra,alloc_c_damaps
   private alloc_c_damap,c_DPEKMAP,c_DPOKMAP,kill_c_damap,kill_c_spinmatrix,c_etcct,c_spinmatrix_mul_cray
   private EQUALspinmatrix,c_trxtaylor,powmap,POWMAPs,alloc_c_vector_field,kill_c_vector_field,kill_c_damaps
@@ -91,6 +91,7 @@ character(20):: phase_choice(1:3)=["Courant-Snyder      ", "Anti-Courant-Snyder 
 private c_add_vf,real_mul_vec
 private c_sub_vf,c_spinor_sub_spinor,matmult_33,EQUALq_i
 private c_IdentityEQUALfactored,c_log_spinmatrix,c_concat_c_ray,equalc_ray_r6,equalc_r6_ray
+private equalc_r6r_ray
 private dotc_spinor,c_spinor_spinor,c_read_spinmatrix,c_read_map,c_concat_spinmatrix_ray
 private GETdiff_universal
 
@@ -229,6 +230,8 @@ logical :: old_phase_calculation=.false.
     MODULE PROCEDURE r_matrixMAPr
     MODULE PROCEDURE MAPmatrixr
     MODULE PROCEDURE r_MAPmatrixr
+    MODULE PROCEDURE r_matrixvecfr
+    MODULE PROCEDURE matrixvecfr 
    !  MODULE PROCEDURE c_DPEKMAP
   !   MODULE PROCEDURE c_DPOKMAP
      MODULE PROCEDURE EQUALspinmatrix
@@ -244,6 +247,7 @@ logical :: old_phase_calculation=.false.
       MODULE PROCEDURE equalc_ray_r6
       MODULE PROCEDURE equalc_ray_r6r
       MODULE PROCEDURE equalc_r6_ray
+      MODULE PROCEDURE equalc_r6r_ray
       MODULE PROCEDURE equalc_ray_ray
       MODULE PROCEDURE equal_c_vector_field_fourier
       MODULE PROCEDURE equalc_spinor_cspinor
@@ -611,6 +615,10 @@ logical :: old_phase_calculation=.false.
      MODULE PROCEDURE r_field_for_demin
   END INTERFACE
 
+  INTERFACE exp_mat
+     MODULE PROCEDURE exp_mat_    ! flow on c_taylor w=exp(F,t)  w=exp(F.grad)t  
+     MODULE PROCEDURE c_exp_mat_  !T=exp(F,M)   T=exp(F.grad)M  M=1 of omitted
+  END INTERFACE
 
 !exp_mat(f,m) is a subroutine to exponentiate matrices
   INTERFACE exp
@@ -835,6 +843,8 @@ logical :: old_phase_calculation=.false.
      MODULE PROCEDURE printcomplex
      MODULE PROCEDURE printpoly
      MODULE PROCEDURE print6
+     MODULE PROCEDURE c_pri_matrix
+     MODULE PROCEDURE pri_matrix
   END INTERFACE
 
  
@@ -1997,6 +2007,19 @@ end subroutine c_get_indices
 
      
   END SUBROUTINE equalc_r6_ray
+
+ SUBROUTINE  equalc_r6r_ray(S1,S2)
+!*
+    implicit none
+    type (c_ray),INTENT(in)::S2
+    real(dp),INTENT(inOUT)::S1(:)
+    integer i
+
+     do i=1,size(s1)
+       s1(i)=s2%x(i)
+     enddo
+     
+  END SUBROUTINE equalc_r6r_ray
 
 
  SUBROUTINE  equalc_t_ct(S2,S1)
@@ -7478,6 +7501,38 @@ endif
   END SUBROUTINE c_pri_c_ray
 
 
+  SUBROUTINE  pri_matrix(S1,MFILE)
+    implicit none
+        INTEGER,OPTIONAL,INTENT(IN)::MFILE
+    real(dp),INTENT(INout)::S1(:,:)
+    integer i ,mfi
+ 
+     mfi=6
+     if(present(mfile)) mfi=mfile
+ 
+  
+    do i=1,size(s1,1)
+     write(mfi,'(200(1X,G23.16))'  ) s1(i,:)
+    enddo
+ 
+  END SUBROUTINE pri_matrix
+
+  SUBROUTINE  c_pri_matrix(S1,MFILE)
+    implicit none
+        INTEGER,OPTIONAL,INTENT(IN)::MFILE
+    complex(dp),INTENT(INout)::S1(:,:)
+    integer i ,mfi
+ 
+     mfi=6
+     if(present(mfile)) mfi=mfile
+ 
+
+    do i=1,size(s1,1)
+     write(mfi,'(400(1X,G23.16))'  ) s1(i,:)
+    enddo
+ 
+  END SUBROUTINE c_pri_matrix
+
   SUBROUTINE  c_pri_map(S1,MFILE,prec,dospin)
     implicit none
         INTEGER,OPTIONAL,INTENT(IN)::MFILE
@@ -11224,7 +11279,9 @@ SUBROUTINE  c_EQUALcray(S2,S1)
     enddo
     ! if(old) then
     do i=1,min(S1%n,size(s2,1))
-       do j=1,min(S1%n,size(s2,2))
+   !    do j=1,min(S1%n,size(s2,2))
+       do j=1,min(nv,size(s2,2))
+
           JL(j)=1
           call c_dapek(S1%v(i)%i,JL,s2(i,j))
           JL(j)=0
@@ -11249,8 +11306,10 @@ SUBROUTINE  c_EQUALcray(S2,S1)
     enddo
 
     ! if(old) then
-    do i=1,S1%n
-       do j=1,S1%n
+    do i=1,min(S1%n,size(s2,1))
+       do j=1,min(nv,size(s2,2))
+!    do i=1,S1%n
+!       do j=1,S1%n
           JL(j)=1
           call c_dapek(S1%v(i)%i,JL,x)
           s2(i,j)=x
@@ -11260,6 +11319,65 @@ SUBROUTINE  c_EQUALcray(S2,S1)
  
  
   END SUBROUTINE r_matrixMAPr
+
+
+
+
+  SUBROUTINE  matrixvecfr(S2,S1)
+!*
+    implicit none
+    complex(dp),INTENT(inOUT)::S2(:,:)            !(ndim2,ndim2)
+    type (c_vector_field),INTENT(IN)::S1
+    integer i,j,JL(lnv)
+    IF(.NOT.C_STABLE_DA) RETURN
+    call c_check_snake
+
+    do i=1,lnv
+       JL(i)=0
+    enddo
+    ! if(old) then
+    do i=1,min(S1%n,size(s2,1))
+   !    do j=1,min(S1%n,size(s2,2))
+       do j=1,min(nv,size(s2,2))
+
+          JL(j)=1
+          call c_dapek(S1%v(i)%i,JL,s2(i,j))
+          JL(j)=0
+       enddo
+    enddo
+
+  END SUBROUTINE matrixvecfr
+
+  SUBROUTINE  r_matrixvecfr(S2,S1)
+!*
+    implicit none
+    real(dp),INTENT(inOUT)::S2(:,:)            !(ndim2,ndim2)
+    type (c_vector_field),INTENT(IN)::S1
+    integer i,j,JL(lnv)
+    complex(dp) x
+ 
+    IF(.NOT.C_STABLE_DA) RETURN
+    call c_check_snake
+
+    do i=1,lnv
+       JL(i)=0
+    enddo
+
+    ! if(old) then
+    do i=1,min(S1%n,size(s2,1))
+       do j=1,min(nv,size(s2,2))
+!    do i=1,S1%n
+!       do j=1,S1%n
+          JL(j)=1
+          call c_dapek(S1%v(i)%i,JL,x)
+          s2(i,j)=x
+          JL(j)=0
+       enddo
+    enddo
+ 
+ 
+  END SUBROUTINE r_matrixvecfr
+
 
   SUBROUTINE  MAPmatrixr(S1,S2)
 !*
@@ -11277,8 +11395,12 @@ SUBROUTINE  c_EQUALcray(S2,S1)
     enddo
 
     ! if(old) then
-    do i=1,s1%n  !size(s2,1)
-       do j=1,s1%n  !,size(s2,2)
+    do i=1,min(S1%n,size(s2,1))
+       do j=1,min(nv,size(s2,2))
+ 
+
+   ! do i=1,s1%n  !size(s2,1)
+   !    do j=1,s1%n  !,size(s2,2)
           JL(j)=1
           call c_dapok(S1%v(i)%i,JL,s2(i,j))  
           JL(j)=0
@@ -11304,9 +11426,15 @@ SUBROUTINE  c_EQUALcray(S2,S1)
      s1%v(i)=(0.0_dp,0.0_dp)
     enddo
 
+
+    do i=1,min(S1%n,size(s2,1))
+       do j=1,min(nv,size(s2,2))
+ 
+
+
     ! if(old) then
-    do i=1,s1%n  !size(s2,1)
-       do j=1,s1%n   !,size(s2,2)
+!    do i=1,s1%n  !size(s2,1)
+!       do j=1,s1%n   !,size(s2,2)
           JL(j)=1
           x=s2(i,j)
           call c_dapok(S1%v(i)%i,JL,x)
@@ -15080,8 +15208,60 @@ function c_vector_field_quaternion(h,ds) ! spin routine
 
   end  subroutine c_check_rad_spin
 
+ subroutine c_exp_mat_(f,m)
+    implicit none
+    complex(dp), intent(inout) :: f(:,:) 
+    complex(dp), intent(inout) ::  m(:,:)
+    integer i,n
+    real(dp) norma,normb,x,y
+    complex(dp), allocatable :: t(:,:),ft(:,:)
+    y=1.d-7
+    
+    n=size(m,1)
+     allocate(t(n,n))
+     allocate(ft(n,n))
+ft=f
+ t=0
+ m=0
+  do i=1,n
+   m(i,i)=1
+   t(i,i)=1
+ enddo
+       normb=c_norm_matrix(ft)
+    x=1
+    do i=1,10000
+      t=matmul(ft,t)/x
+      norma=c_norm_matrix(t)
+      m= m+t
+      x=x+1
+      
+      if(norma<y.and.norma>=normb.and.i>100) exit
+      normb=norma
+    enddo
+   if(i>10000-10)  write(6,*) "c_exp_mat",i
+  deallocate(t)
+  deallocate(ft)
+  end  subroutine c_exp_mat_
 
- subroutine exp_mat(f,m)
+    function c_norm_matrix(f)
+    implicit none
+    real(dp) c_norm_matrix
+    complex(dp), intent(in) :: f(:,:) 
+     integer i,j,n
+ 
+
+    c_norm_matrix=0
+    n=size(f,1)
+
+    do i=1,n
+    do j=1,n
+     c_norm_matrix=c_norm_matrix+abs(f(i,j))
+    enddo
+    enddo
+
+ end function c_norm_matrix
+
+ subroutine exp_mat_(f,m)
     implicit none
     real(dp), intent(inout) :: f(:,:) 
     real(dp), intent(inout) ::  m(:,:)
@@ -15114,7 +15294,7 @@ ft=f
    if(i>10000-10)  write(6,*) "exp_mat",i
   deallocate(t)
   deallocate(ft)
-  end  subroutine exp_mat
+  end  subroutine exp_mat_
 
     function norm_matrix(f)
     implicit none
@@ -15928,468 +16108,6 @@ ft=f
     endif
     return
   end subroutine etdiv
-
-
-subroutine ohmi_factor(a_t,z,r,ok,mf)
-implicit none
-type(c_damap), intent(inout) :: a_t, z,r
-type(c_damap) at,h
-type(damap) ma
-integer,optional :: mf
-integer mf0,i
-logical ok
-real(dp) norm
-
-mf0=0
-if(present(mf)) mf0=mf
-
-call alloc(ma)
-call alloc(at,h)
-
-at=a_t
-z=1
-r=1
-
- ma=at
-call checksymp(ma,norm)
-
-write(6,*) " norm 1",norm
-
-call get_6d_disp(at,h)
-call get_6d_ohmi(at,h,z,mf,ok)
-
-at=z**(-1)*a_t
- ma=at
-call checksymp(ma,norm)
-
-write(6,*) " norm 2",norm
-
-write(6,*) " teng also",norm
-read(5,*) i
-if(i==1.and.ok) call get_4d_disp0(at,r,ok)
-
-
-call kill(at,h)
-call kill(ma)
-end subroutine ohmi_factor
-
-subroutine get_4d_disp0(a_t,r,ok)  !,h1,sig)
-implicit none 
-type(c_damap), intent(inout) ::a_t,r
-type(c_taylor) h1(2,2),sig(2,2),mu,tc
-type(c_taylor) a12(2,2),a22(2,2),a22d(2,2)
-integer i,j,nd2n
-integer, allocatable :: je(:)
-logical ok
-
-call alloc_nn(h1)
-call alloc_nn(sig)
-call alloc_nn(a12)
-call alloc_nn(a22)
-call alloc_nn(a22d)
-call alloc(mu,tc)
-
-
-nd2n=6
-allocate(je(nd2n))
-
-je=0
-do i=1,2
-do j=1,2
- je(2+j)=1
- a12(i,j)=a_t%v(i).par.je
- je(2+j)=0
-enddo
-enddo
-do i=1,2
-do j=1,2
- je(2+j)=1
- a22(i,j)=a_t%v(i+2).par.je
- je(2+j)=0
-enddo
-enddo
-
-call   dagger_22(a22,a22d)
-call matmul_nn(a12,a22d,h1)
-call matmul_nn(a22,a22d,sig)
-!call print(a_t%v(1),6)
-!call print(a_t%v(2),6)
-!call print(a12,6)
-! pause 756
-!call print(a_t%v(3),6)
-!call print(a_t%v(4),6)
-!call print(a22,6)
-!pause 980
-!call print(h1,6)
-!pause 981
-!call print(sig,6)
-if(real(sig(1,1).sub.'0')<=0.0_dp) then
- ok=.false.
- deallocate(je)
- call kill_nn(h1)
- call kill_nn(sig)
- call kill_nn(a12)
- call kill_nn(a22)
- call kill_nn(a22d)
- call kill(mu,tc)
-endif
-
-mu=sqrt(sig(1,1))
-tc=1.0_dp/mu
-call  matmulr_nn(h1,h1,tc)   !mu D1
-call   dagger_22(h1,sig)
-tc=-1.0_dp
-call  matmulr_nn(sig,sig,tc) 
-!
-r=0
-! 1 1 block
-do i=1,4
- r%v(i)=mu*(1.0_dp.cmono.i)
-enddo
-! 3 3
-r%v(5)=1.0_dp.cmono.5
-r%v(6)=1.0_dp.cmono.6
-
-! 1 2
-do i=1,2
-do j=1,2
- r%v(i)=r%v(i) + h1(i,j)*(1.0_dp.cmono.(j+2))
-enddo
-enddo
-! 2 1
-
-do i=1,2
-do j=1,2
- r%v(i+2)=r%v(i+2) + sig(i,j)*(1.0_dp.cmono.(j))
-enddo
-enddo
-
-
-
-
-deallocate(je)
-call kill_nn(h1)
-call kill_nn(sig)
-call kill_nn(a12)
-call kill_nn(a22)
-call kill_nn(a22d)
-call kill(mu,tc)
-
- end subroutine get_4d_disp0 
-
-
-subroutine get_6d_disp(a_t,h)
-implicit none 
-type(c_damap), intent(inout) :: a_t, h
-type(c_taylor) disp(6),disp_ave0(6)
-integer kp,i,n,j,k,k0
-integer, allocatable :: je(:)
-type(c_damap) r0
-complex(dp) w
-
-h=0
-call alloc(r0)
-call alloc(disp)
-call alloc(disp_ave0)
-
-allocate(je(nv))
-je=0
-do i=1,6
- disp(i)=a_t%v(i)*c_phasor()
-enddo
-
-
-do kp=1,6
-       j=1
-
-        do while(.true.) 
-          call  c_cycle(disp(kp),j,w ,je); if(j==0) exit;
-          k0=0;
-          do n=1,2
-
-!!!   keep only the terms in the third plane
-
-         k0=k0+abs(je(2*n))+abs(je(2*n-1))
-
-          enddo
-         if(k0==0) disp_ave0(kp)=disp_ave0(kp)+ (w.cmono.je)
-
-       enddo
-
-enddo
-
-
-!!!! These are all the dispersion function a la Ripken in my Nishikawa paper
-do i=1,6
- h%v(i)=disp_ave0(i)
-enddo
-
-
-!!!!  Here I set the initial transverse conditions to be zero
-h=h*ci_phasor()*a_t**(-1)
- ! " Dispersion and zeta in terms of initial delta "
-deallocate(je)
-
-
-
-
-
-call kill(r0)
-call kill(disp)
-call kill(disp_ave0)
-
- end subroutine get_6d_disp 
-
-
-subroutine get_6d_ohmi(a_t,h,z,mf,ok)
-implicit none 
-type(c_damap), intent(inout) :: h,z,a_t
-type(c_taylor) h1(2,2),h2(2,2),sig(2,2),sigma,rho,sigmai,det1,det2,lam,tc
-type(c_taylor) h1d(2,2),h2d(2,2),t(2,2)
-type(c_vector_field) vf,vfs
-integer, allocatable :: je(:)
-integer i,j,mf,kll
-logical ok
-type(c_damap) a_cs,q,at
-real(dp) norm
-
-ok=.true.
- 
-vf%n=0;vfs%n=0;
-
-call  alloc_nn(h1)
-call  alloc_nn(h2)
-call  alloc_nn(h1d)
-call  alloc_nn(h2d)
-call  alloc_nn(sig)
-call  alloc_nn(t)
- call  alloc(det2,lam,tc)
- call  alloc(det1)
-call alloc(vf);call alloc(vfs);
-call alloc(sigma,rho,sigmai)   
-call alloc(a_cs,at,q); 
- 
-allocate(je(6))
-je=0
-do i=1,2
-do j=1,2
- je(4+j)=1
- h1(i,j)=h%v(i).par.je
- je(4+j)=0
-enddo
-enddo
-do i=1,2
-do j=1,2
- je(4+j)=1
- h2(i,j)=h%v(i+2).par.je
- je(4+j)=0
-enddo
-enddo
-do i=1,2
-do j=1,2
- je(4+j)=1
- sig(i,j)=h%v(i+4).par.je
- je(4+j)=0
-enddo
-enddo
- 
-
-
-
-sigma=sig(1,1)
-if(real(sigma.sub.'0')<=0.0_dp) then
- ok=.false.
-call  kill_nn(h1)
-call  kill_nn(h2)
-call  kill_nn(h1d)
-call  kill_nn(h2d)
-call  kill_nn(sig)
-call  kill_nn(t)
- call  kill(det2,lam,tc)
- call  kill(det1)
-call kill(vf);call kill(vfs);
-call kill(a_cs,at,q); 
-call kill(sigma,rho,sigmai)  
-
-
- return
-endif
-rho=sqrt(sigma)
-sigmai=1.0_dp/sigma
-
-call  matmulr_nn(h1,h1,sigmai)
-call  matmulr_nn(h2,h2,sigmai)
-call  dagger_22(h1,h1d)
-call  dagger_22(h2,h2d)
-
-det1=h1(1,1)*h1(2,2)-h1(1,2)*h1(2,1)
-det2=h2(1,1)*h2(2,2)-h2(1,2)*h2(2,1)
-lam=rho**2/(1.0_dp+rho)
-
-z=0
-! 1 1 block
-t(1,1)=1.0_dp;t(2,2)=1.0_dp;t(1,2)=0.0_dp;t(2,1)=0.0_dp
-tc=1.0_dp-lam*det1
-call  matmulr_nn(t,t,tc)
-do i=1,2
-do j=1,2
- z%v(i)=z%v(i) + t(i,j)*(1.0_dp.cmono.j)
-enddo
-enddo
-! 2 2
-t(1,1)=1.0_dp;t(2,2)=1.0_dp;t(1,2)=0.0_dp;t(2,1)=0.0_dp
-tc=1.0_dp-lam*det2
-call  matmulr_nn(t,t,tc)
-do i=1,2
-do j=1,2
- z%v(i+2)=z%v(i+2) + t(i,j)*(1.0_dp.cmono.(j+2))
-enddo
-enddo
-! 3 3
-t(1,1)=1.0_dp;t(2,2)=1.0_dp;t(1,2)=0.0_dp;t(2,1)=0.0_dp
-tc=rho
-call  matmulr_nn(t,t,tc)
-do i=1,2
-do j=1,2
- z%v(i+4)=z%v(i+4) + t(i,j)*(1.0_dp.cmono.(j+4))
-enddo
-enddo
-! 1 2
-call matmul_nn(h1,h2d,t)
-tc=-lam
-call  matmulr_nn(t,t,tc)
-
-do i=1,2
-do j=1,2
- z%v(i)=z%v(i) + t(i,j)*(1.0_dp.cmono.(j+2))
-enddo
-enddo
-! 2 1
-call matmul_nn(h2,h1d,t)
-tc=-lam
-call  matmulr_nn(t,t,tc)
-
-do i=1,2
-do j=1,2
- z%v(i+2)=z%v(i+2) + t(i,j)*(1.0_dp.cmono.(j))
-enddo
-enddo
-
-! 1 3
- 
-tc=rho
-call  matmulr_nn(h1,t,tc)
-
-do i=1,2
-do j=1,2
- z%v(i)=z%v(i) + t(i,j)*(1.0_dp.cmono.(j+4))
-enddo
-enddo
-
-! 2 3
- 
-tc=rho
-call  matmulr_nn(h2,t,tc)
-
-do i=1,2
-do j=1,2
- z%v(i+2)=z%v(i+2) + t(i,j)*(1.0_dp.cmono.(j+4))
-enddo
-enddo
-
-! 3 1
- 
-tc=-rho
-call  matmulr_nn(h1d,t,tc)
-
-do i=1,2
-do j=1,2
- z%v(i+4)=z%v(i+4) + t(i,j)*(1.0_dp.cmono.(j))
-enddo
-enddo
-
-! 3 2
- 
-tc=-rho
-call  matmulr_nn(h2d,t,tc)
-
-do i=1,2
-do j=1,2
- z%v(i+4)=z%v(i+4) + t(i,j)*(1.0_dp.cmono.(j+2))
-enddo
-enddo
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-a_cs=z
-q=z
-
-at=a_t
- 
-do kll=1,no+2
-
-! kll=1+kll
-
-at=a_cs**(-1)*at
-
-h=0
- call get_6d_disp(at,h)
-h%v(5)=0
-h%v(6)=0
-
-
-vf=0
-do i=1,4
-vf%v(i)=h%v(i)
-enddo
-
-tc=getpb_from_transverse(vf,vfs)
-
-
-call c_full_norm_damap(h,norm)
-
-if(mf/=0) write(mf,*) "norm in Ohmi ",norm
-
- 
-
-
-
-a_cs=exp(vfs)
- 
-q=q*a_cs
- 
-  if(mf/=0) then
-  write(mf,*) " Dispersion and zeta in terms of initial delta ",kll
- 
-
-  call print(h,mf)
-
-endif
-!write(6,*) " more "
-!!read(5,*) kkk
-
- 
-
-enddo
- 
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-z=q
-
-deallocate(je)
-call  kill_nn(h1)
-call  kill_nn(h2)
-call  kill_nn(h1d)
-call  kill_nn(h2d)
-call  kill_nn(sig)
-call  kill_nn(t)
- call  kill(det2,lam,tc)
- call  kill(det1)
-call kill(vf);call kill(vfs);
-call kill(a_cs,at,q); 
-call kill(sigma,rho,sigmai) 
-end subroutine get_6d_ohmi
-
 
 subroutine teng_edwards_a1(a1,R_TE,CS_TE,COSLIKE,t_e)
 ! newest based on de Moivres
@@ -21732,14 +21450,14 @@ allocate(id(n,n),ik(n,n), j(n,n),ji(n,n))
 deallocate(id,ik, j,ji)
 end   SUBROUTINE furman_step
 
-  subroutine checksympn(s1,norm,orthogonal,normt)
+  subroutine checksympn(s1,norm,orthogonal)  !,normt)
     implicit none
     TYPE (c_damap) s1
     real(dp)  norm1,mat(8,8),xj(8,8),normt1
     real(dp), optional :: norm
     integer i,j
     logical(lp), optional :: orthogonal
-    real(dp), optional :: normt 
+  !  real(dp), optional :: normt 
     logical(lp) nn
     ! checks symplectic conditions on linear map
     nn=.not.present(norm)
