@@ -86,7 +86,7 @@ integer :: order_gofix=1
 logical(lp) :: time_lie_choice=my_false,courant_snyder_teng_edwards=my_true,dosymp=.true.
 integer :: K_phase_choice=1
 character(20):: phase_choice(1:3)=["Courant-Snyder      ", "Anti-Courant-Snyder ","Mengyu              "]
-  private copy_damap_matrix,copy_matrix_matrix,invert_22,ALLOC_33t,kill_33t,matmul_33,prin_33t
+  private copy_damap_matrix,copy_matrix_matrix,invert_22,dALLOC_33t,dkill_33t,matmul_33,prin_33t
   private A_OPT_C_damap,K_OPT_c_damap,equalc_t,equalt_c,matmulr_33
 private c_add_vf,real_mul_vec
 private c_sub_vf,c_spinor_sub_spinor,matmult_33,EQUALq_i
@@ -870,11 +870,11 @@ logical :: old_phase_calculation=.false.
   END INTERFACE
 
   INTERFACE ALLOC_nn
-     MODULE PROCEDURE ALLOC_33t
+     MODULE PROCEDURE dALLOC_33t
   END INTERFACE
 
   INTERFACE kill_nn
-     MODULE PROCEDURE kill_33t
+     MODULE PROCEDURE dkill_33t
   END INTERFACE
 
 
@@ -4300,7 +4300,7 @@ endif
 
   FUNCTION GETdiff_universal( S1, S2 )
     implicit none
-    TYPE (c_taylor) GETdiff_universal
+    TYPE (c_taylor) GETdiff_universal,d_temp
     TYPE (c_universal_taylor), INTENT (IN) :: S1
     INTEGER, INTENT (IN) ::  S2
     integer localmaster,i
@@ -4315,29 +4315,25 @@ endif
     
      localmaster=c_master
     
-
+    call alloc(d_temp)
     !    call check(s1)
     call ass(GETdiff_universal)
-    c_temp=0.0_dp
-    ! if(old) then
-  !  CALL c_dader(S2,S1%I,c_temp%i)
+    d_temp=0.0_dp
+ 
     do i=1,s1%n
      if(s2<=s1%nv) then
      if(s1%j(i,s2)>0) then
-       j=s1%j(i,:)
+       j=s1%j(i,1:s1%nv)
        j(s2)=j(s2)-1
-       c_temp=c_temp+((s1%j(i,s2)*s1%c(i)).cmono.j)
+        d_temp=d_temp+((s1%j(i,s2)*s1%c(i)).cmono.j)
      endif
     endif
     enddo
 
-    GETdiff_universal=c_temp
-    !    else
-    !       CALL NEWdader(S2,S1%J,TEMPL)
-    !       call NEWc_dacop(tempL,GETdiff%J)
-    !    endif
+    GETdiff_universal=d_temp
  
- 
+     call kill(d_temp)
+
     c_master=localmaster
     deallocate(J)
   END FUNCTION GETdiff_universal
@@ -11543,7 +11539,7 @@ subroutine c_linear_a(xy,a1)
     
     endif
  
-
+!###1  Find complex eigenvalues and eigenvectors
     call c_eig6(fm0,reval,imval,vr,vi)
 
     !! This routine will locate the modulated plane
@@ -11568,7 +11564,9 @@ subroutine c_linear_a(xy,a1)
           write(6,'(6(1x,G21.14))') vi(i,1:6)
         enddo
       endif
-      
+
+!###2   Trying to locate planes when almost mid-plane symmetric
+ 
       call c_locate_planes(vr,vi,idef)
 
       if(i_piotr(1)==0) then   !.and.nd<=ndharm) then
@@ -11579,7 +11577,7 @@ subroutine c_linear_a(xy,a1)
         write(6,*) " Manually identify the location of distinct tunes in the order you like "
         read(5,*) idef(1:ndharm)
       else
-        
+      
         do j=1,size(i_piotr)
            idef(j)=i_piotr(j)
         enddo
@@ -11593,6 +11591,8 @@ subroutine c_linear_a(xy,a1)
     else
       !!  c_locate_planes tries to locate the planes: important if there is little coupling
       !! I suppose that this routine can be refined
+!###2'   Trying to locate planes when almost mid-plane symmetric
+
       call c_locate_planes(vr,vi,idef)
       if(lielib_print(16)==1) then
         do i=1,nd2harm  !t
@@ -11606,7 +11606,7 @@ subroutine c_linear_a(xy,a1)
     endif 
 
 
-
+!!!! useless stuff for testing
     if(c_mess_up_vector) then
       vrt=a_mess*vr-b_mess*vi
       vit=a_mess*vi+b_mess*vr
@@ -11618,6 +11618,9 @@ subroutine c_linear_a(xy,a1)
     xx=1.0_dp
 
     
+!###3  
+!   Enforce Poisson bracket = 1
+!   Zero 
 
     do i=1,ndharm  !ndt                
 
@@ -11657,31 +11660,7 @@ subroutine c_linear_a(xy,a1)
    
     a1 = fm
 
-!    call alloc(s1)
-    !if(courant_snyder_teng_edwards) then
-    !!!! Here starts the gymnastics that insures a Courant-Snyder/Teng-Edwards 
-    !!! choice A_12=A_34==0
-    !
-    !    s1=1
-    !
-    !       do i=1,ndharm  !ndt 
-    !          p=ATAN(-fm(2*i-1,2*i)/fm(2*i,2*i))
-    !          s1%v(2*i-1) =(COS(p).cmono.(2*i-1))+(sin(p).cmono.(2*i))
-    !          s1%v(2*i)   =(COS(p).cmono.(2*i))-(sin(p).cmono.(2*i-1))
-    !       enddo
-    !       a1=s1*a1
-    !       s1=1
-    !       fm=a1
-    !       ! adjust sa to have sa(1,1)>0 and sa(3,3)>0 rotate by pi if necessary.
-    !       do i=1,ndharm  !ndt
-    !          p=1.0_dp
-    !          if(fm(2*i-1,2*i-1).lt.0.0_dp) p=-1.0_dp
-    !           s1%v(2*i-1) = p.cmono.(2*i-1)
-    !           s1%v(2*i)   = p.cmono.(2*i)
-    !       enddo
-    !       a1=s1*a1
-    !endif
-    !!!!!  In the case of magnet modulations, planes are put back in their places.
+ !!!!!  
 
     
     if(ndpt/=0) then
@@ -11703,6 +11682,8 @@ subroutine c_linear_a(xy,a1)
     a1%q=1.0_dp
     a1=a1**(-1)
     
+!###4  Perhaps not necessary for new BMAD
+    !!!!!  In the case of magnet modulations, planes are put back in their places.
 
     if(rf>0.and.ndpt>0.and.do_linear_ac_longitudinal) then 
     !  if(ndpt>0) then 
@@ -12071,8 +12052,7 @@ subroutine c_linear_ac_longitudinal(xy,a1,ac)
 
   end subroutine c_linear_ac_longitudinal
 
-
- subroutine c_gofix(xy,a1)
+ subroutine c_gofix_old(xy,a1)
 !#restricted:  normal 
 !# The routine c_gofix computes a1 such that 
 !# "call c_gofix(m,a1)" produces
@@ -12252,7 +12232,136 @@ endif
     call kill(t1);
     call kill(v);call kill(w);call kill(rel);call kill(x);
     return
-  end subroutine c_gofix
+  end subroutine c_gofix_old
+
+ subroutine c_gofix(xy,a1)
+!#restricted:  normal 
+!# The routine c_gofix computes a1 such that 
+!# "call c_gofix(m,a1)" produces
+!# m0=a1**(-1)*xy*a1 to order "order_gofix" around the parameter dependent fixed point.
+!# order_gofix is defaulted to 1.
+!# dosymp is defaulted to true since 2023.4.21. 
+!# dosymp should be true if order_gofix > 1 (if c_gofix is used on its own).
+!# c_canonise will take care of a1 if needed to higher order.
+
+    implicit none
+    integer i,j,ndloc 
+    type(c_damap), intent(inout) ::  xy,a1 
+    type(c_damap) w,v,rel,x
+    type(c_taylor) t1
+    real(dp), allocatable :: mt(:,:),mv(:)
+    integer, allocatable :: je(:)
+    type(c_universal_taylor) uf1
+    type(c_vector_field) vf1
+  !  ndct=iabs(ndpt-ndptb)  ! 1 if coasting, otherwise 0
+  !  ndc2t=2*ndct  ! 2 if coasting, otherwise 0
+  !  nd2t=nd2-2*rf-ndc2t   !  size of harmonic oscillators minus modulated clocks
+  !  ndt=nd2t/2        ! ndt number of harmonic oscillators minus modulated clocks
+  !  nd2harm=nd2t+2*rf  !!!!  total dimension of harmonic phase space
+  !  ndharm=ndt+rf  !!!! total number of harmonic planes
+!   write(6,*) " nd2,ndct,ndc2t,nd2t,ndt,nd2harm,rf,ndpt "
+!   write(6,'(8(1x,i4))') nd2,ndct,ndc2t,nd2t,ndt,nd2harm,rf,ndpt
+
+  if(.not.c_stable_da) return
+
+     ndloc=0
+                 
+
+    ! COMPUTATION OF A1 AND A1I USING DAINV
+    rel%n=nv; w%n=nv; v%n=nv;x%n=nv
+    call alloc(rel);call alloc(w);call alloc(v);call alloc(x);
+    call alloc(t1);
+
+    rel=1
+    v=1
+ 
+
+    x=xy
+
+!##1
+! v=map-identity in harmonic planes
+    do i=1,nd2  
+     if(i/=ndpt.and.i/=ndptb) then
+        v%v(i)=x%v(i)-rel%v(i)    !   V= X-1  where X is the map
+       else
+        if(mod(i,2)==0) ndloc=i/2  ! degree of freedom of coasting plane
+      endif
+    enddo
+ 
+!##2 
+!  map is cut to order 2 or above
+    v=v.cut.(order_gofix+1)
+ 
+ 
+!##3
+!  map is inverted at least to order 1
+    w=v**(-1)    !  W= (Map-1)**-1   
+
+ 
+!##4 
+! a map x is created with dimension nv
+! x is zero except for the parameters and delta if coasting
+
+    x=0
+    x%s=1    ! spin part is identity
+    x%q=1.0_dp 
+    do i=nd2+1,nv
+     x%v(i)=1.0e0_dp.cmono.i  !  Identity in all the parameter planes
+    enddo
+    if(ndpt/=0) x%v(ndpt)=1.0e0_dp.cmono.ndpt !  If coasting, then energy is a parameter
+ 
+   ! a1=v
+ 
+
+    v=w*x  ! v contains the fixed point, for example v(1)= eta_x * x_pt + ...
+         
+    a1=v
+
+!##5  if costing beam, a symplectic map is created from delta dependence
+if(ndpt/=0) then
+
+allocate(je(nv))
+call alloc(vf1)
+do i=1,nd2
+je=0
+je(i)=1
+a1%v(i)=a1%v(i)-(a1%v(i).sub.je)*(1.0_dp.cmono.je) !+(1.0_dp.cmono.je)
+enddo
+
+do i=1,nd2
+vf1%v(i)=a1%v(i)
+enddo
+
+call get_field_c_universal_taylor(vf1,uf1)
+
+ 
+a1=1
+do i=1,nd
+ if(ndpt/=2*i-1.and.ndptb/=2*i-1) a1%v(2*i-1)=a1%v(2*i-1)-(uf1.d.(2*i))
+  if(ndpt/=2*i.and.ndptb/=2*i) a1%v(2*i)  =a1%v(2*i)  +(uf1.d.(2*i-1))
+enddo
+
+if(mod(ndpt,2)==0) then
+ a1%v(ndptb)= a1%v(ndptb) - (uf1.d.ndpt)
+else
+ a1%v(ndptb)= a1%v(ndptb) + (uf1.d.ndpt)
+endif
+
+call kill(vf1)
+call kill(uf1)
+deallocate(je)
+else
+ 
+    do i=1,nd2 
+       a1%v(i)=(1e0_dp.cmono.i)+a1%v(i)  ! ndpt is already identity
+    enddo 
+ 
+endif
+ 
+    call kill(t1);
+    call kill(v);call kill(w);call kill(rel);call kill(x);
+    return
+  end subroutine c_gofix 
 
  ! dragt-finn
 subroutine c_factor_map(m,l,f,dir)  
@@ -14394,8 +14503,8 @@ enddo
     call alloc(nt)
 
      nt%x(2)=n0%x(2)
-     nt%x(1)=n0%x(1)-i_*n0%x(3) ! coefficient of  1/2(i + i k) 
-     nt%x(3)=n0%x(1)+i_*n0%x(3) ! coefficient of  1/2(i - i k)
+     nt%x(1)=n0%x(1)-i_*n0%x(3) ! coefficient of  1/2(i + sqrt(-1) k) 
+     nt%x(3)=n0%x(1)+i_*n0%x(3) ! coefficient of  1/2(i - sqrt(-1) k)
      nr=nt   
     call kill(nt)
 
@@ -16436,7 +16545,7 @@ end subroutine teng_edwards_a1
     deallocate(a)
   end subroutine matmul_33
 
-  subroutine alloc_33t(a)
+  subroutine dalloc_33t(a)
 !*
     implicit none
     type(c_taylor) a(:,:)
@@ -16448,7 +16557,7 @@ end subroutine teng_edwards_a1
        enddo
     enddo
 
-  end subroutine alloc_33t
+  end subroutine dalloc_33t
 
   subroutine prin_33t(a,mf,prec)
 !*
@@ -16467,7 +16576,7 @@ end subroutine teng_edwards_a1
   end subroutine prin_33t
 
 
-  subroutine kill_33t(a)
+  subroutine dkill_33t(a)
 !*
     implicit none
     type(c_taylor) a(:,:)
@@ -16479,7 +16588,7 @@ end subroutine teng_edwards_a1
        enddo
     enddo
 
-  end subroutine kill_33t
+  end subroutine dkill_33t
 
   subroutine copy_matrix_matrix(ma,a)
 !*
@@ -18900,6 +19009,7 @@ inside_normal=.true.
   a1=1
 else
     call  c_gofix(m1,a1) 
+  
 endif 
  
  
@@ -22470,7 +22580,7 @@ subroutine c_normal_new(xyso3,n,dospin,no_used,rot,phase,nu_spin,canonize)
     real(dp) norm,alpha,prec !,cx,sx
     logical(lp), optional :: dospin,canonize
     logical dospinr 
-    type(c_quaternion) q0,qr
+
     integer mker, mkers,mdiss,mdis,ndptbmad 
     type(c_vector_field) f
 
@@ -22485,12 +22595,6 @@ subroutine c_normal_new(xyso3,n,dospin,no_used,rot,phase,nu_spin,canonize)
      return
     endif
 
-    if(lielib_print(13)/=0) then
-     call kanalnummer(mker,"kernel.txt")
-     call kanalnummer(mdis,"distortion.txt")
-     call kanalnummer(mkers,"kernel_spin.txt")
-     call kanalnummer(mdiss,"distortion_spin.txt")
-    endif
 
     dospinr=.false.
     if(present(dospin)) then
@@ -22532,22 +22636,11 @@ if(bmad_automatic) then
     if(k==-1) dospinr=.true.
 endif
 
- ! else
- !  call c_full_norm_spin(xyso3%s,k,norm)
- !   if(k==-1) dospinr=.true.
- ! endif
-!endif
 
 if(spin_automatic) then
   dospinr=.false.
-!  if(use_quaternion) then
     call c_full_norm_quaternion(xyso3%q,k,norm)
     if(k==-1) dospinr=.true.
-!  else
-!   call c_full_norm_spin(xyso3%s,k,norm)
-!    if(k==-1) dospinr=.true.
-!  endif
-write(6,*)"dospin ", dospinr
 endif
 
 inside_normal=.true.
@@ -22575,18 +22668,23 @@ inside_normal=.true.
     ! but energy is constant. (Momentum compaction, phase slip etc.. falls from there)
  ! etienne
  
-  if(c_skip_gofix) then
+if(c_skip_gofix) then
   a1=1
 else
-    call  c_gofix(m1,a1) 
-endif 
+!#1 Go to fix point 
  
+    call  c_gofix(m1,a1) 
+ 
+ endif
  
   m1=c_simil(a1,m1,-1)
  
  
 
     ! Does the the diagonalisation into a rotation
+
+!#2 doing the linear normal form exactly
+
     call c_linear_a(m1,a2)  
  
  
@@ -22623,6 +22721,7 @@ if(dospinr) then
   
       n%AS=1
  
+!#3  Linear part of spin 
        call c_normal_spin_linear_quaternion(m1,m1,n%AS,alpha)
 
       n%quaternion_angle=alpha/2.0_dp
@@ -22635,6 +22734,7 @@ if(dospinr) then
  
 endif
 
+!#4  Linear part of the orbit map and zeroth order of quaternion
 
      ri=(m1.sub.-1)**(-1) 
 
@@ -22655,20 +22755,15 @@ endif
  
     n%ker=0  ! In case reusing normal form
 call alloc(f)
-!    do i=2,not
     do i=1,not
-      if(lielib_print(13)/=0) then
-        write(mdis,*) " **************************************** " 
-        write(mdis,*) "Order ",i
-        write(mker,*) " **************************************** " 
-        write(mker,*) "Order ",i
-      endif
+ 
 
       nonl=(m1*ri)
       nonl= exp_inv(n%ker,nonl)
-  !    nonl%q=1.0_dp
+  
+!#5 vector field of nonlinear part computed
       f=0
-      f=ln(nonl)
+      f=ln(nonl,tpsa=.false.)
 
  
 
@@ -22676,12 +22771,7 @@ call alloc(f)
 !!!!!!!!!!!!!!!!!  doing the orbital  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       do k=1,xy%n
-        if(lielib_print(13)/=0) then
-          write(mdis,*) " **************************************** " 
-          write(mdis,*) "field component ",k
-          write(mker,*) " **************************************** " 
-          write(mker,*) "field component ",k
-        endif
+ 
 
         n%g%f(i)%v(k)=0.0_dp
         n%ker%f(i)%v(k)=0.0_dp
@@ -22691,7 +22781,6 @@ call alloc(f)
 
         do while(.true.) 
 
-!           call  c_cycle(nonl%v(k),j,v ,je); if(j==0) exit;
            call  c_cycle(f%v(k),j,v ,je); if(j==0) exit;
            call check_kernel(k,xy%n,je,removeit)
 
@@ -22713,44 +22802,28 @@ call alloc(f)
               if(coast(l)) cycle 
               lam=lam*eg(l)**je(l)
             enddo
-
-            if(lielib_print(13)/=0) then
-                 write(mdis,*) k
-                 write(mdis,'(6(1x,i4))') je(1:nd2)
-                 write(mdis,*) v
-                 write(mdis,*) abs(v/(1-lam))
-            endif
+ 
 
             je(k)=je(k)+1
-
+!#6 Removing the "resonances "
             n%g%f(i)%v(k)=n%g%f(i)%v(k)+(v.cmono.je)/(1.0_dp-lam)
 
           else ! Put in the kernel
-
-            if(lielib_print(13)/=0) then
-               je(k)=je(k)-1
-               write(mker,*) k
-               write(mker,'(6(1x,i4))') je(1:nd2)
-               write(mker,*) v
-               write(mker,*) abs(v/(1-lam))
-               je(k)=je(k)+1
-            endif
-               n%ker%f(i)%v(k)=n%ker%f(i)%v(k)+(v.cmono.je)
+ 
+ !#7  Leaving the Kernel which might include resonances in the one-resonance model
+              n%ker%f(i)%v(k)=n%ker%f(i)%v(k)+(v.cmono.je)
             endif
 
         enddo  ! over monomial
       enddo  ! over vector index
 !!!!!!!!!!!!!!!!! end of doing the orbital  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if(dospinr) then
-      call alloc(q0) 
-      call alloc(qr)
-q0=f%q
-
-
-call c_q0_to_qr(q0,q0)
-
  
-
+ !#8 the basis is changed to   
+ ! e_x =  1/2(i + sqrt(-1) k) 
+ ! e_z =  1/2(i - sqrt(-1) k)
+ ! e_y =  j
+call c_q0_to_qr(f%q,f%q)
 
       do k=1,3
  
@@ -22759,7 +22832,7 @@ call c_q0_to_qr(q0,q0)
 
         do while(.true.) 
 
-            call  c_cycle(q0%x(k),j,v ,je); if(j==0) exit;
+            call  c_cycle(f%q%x(k),j,v ,je); if(j==0) exit;
            call check_kernel_spin(k,xy%n,je,removeit)
               if(n%nres>0.and.removeit) then 
                 do kr=1,n%nres
@@ -22778,7 +22851,11 @@ call c_q0_to_qr(q0,q0)
                   if(coast(l)) cycle 
                   lam=lam*eg(l)**je(l)
                 enddo
-               qr%x(k)=qr%x(k) +(v.cmono.je)/(1.0_dp-lam)   ! (9)
+!#9 Removing the "resonances "
+               n%g%f(i)%q%x(k)=n%g%f(i)%q%x(k) +(v.cmono.je)/(1.0_dp-lam)   ! (9)
+             else ! Put in the kernel
+ !#10  Leaving the Kernel which might include resonances in the one-resonance model
+              n%ker%f(i)%q%x(k)=n%ker%f(i)%q%x(k)+(v.cmono.je)
             endif
 
 
@@ -22786,13 +22863,10 @@ call c_q0_to_qr(q0,q0)
         enddo  ! over monomial
       enddo  ! over quaternion index
  
-        call c_qr_to_q0(qr,qr)  !   (10)
- 
+ !#11 the basis is changed back to   i,j,k
 
- 
-        n%g%f(i)%q=qr
-call kill(q0);
-call kill(qr);
+        call c_qr_to_q0(n%g%f(i)%q,n%g%f(i)%q)  !   (10)
+
 endif
  
       m1=c_simil(n%g%f(i),m1,-1)
@@ -22803,18 +22877,21 @@ endif
 
 call kill(f)
  
-    n%a_t=texp(n%g)
-    n%a_t=n%as*n%a_t 
 
-    n%a_t=a1*a2*from_phasor()*n%a_t*from_phasor(-1)
+ !#12   n%a_t contains everything
 
-      n%a1=a1
+    n%a_t=a1*a2*from_phasor()*texp(n%g,n%as)*from_phasor(-1)
+
+
+! not so useful 
+    n%a1=a1
     n%a2=a2
  
  
- 
+!#13   
+
 !!!!!   here we put the normalised linear part into the factored vector field
-!!!!!   not necessary but useful
+!!!!!   not necessary but very useful
     do k=1,xy%n
        if(.not.coast(k)) then    
         je=0
@@ -22832,6 +22909,7 @@ call kill(f)
        endif 
       enddo
 
+!!!!  Not used except for moments
         if(c_skip_gofix) then
          do k=1,xy%n
                   if(mod(k,2)==1) then
@@ -22839,6 +22917,9 @@ call kill(f)
                     endif
          enddo
         endif
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!#14  The synchrotron tune should be a small negative number if necessary
         if(nd2t==6) then
            if(n%tune(3)>0.50_dp.and.negative_synchrotron_tune) n%tune(3)=n%tune(3)-1.0_dp
         endif 
@@ -22855,15 +22936,19 @@ call kill(f)
             endif
        endif
 
- 
+ !#15  Checking for fluctuation, ie, stochastic radiation
+ ! c_normal_radiation normalizes the stochastic map
     call c_check_rad(m1%e_ij,rad_in)
     if(rad_in) call c_normal_radiation(m1,n)
 
      ri=from_phasor()
     n%n=c_simil(ri,m1,1)
- !   n%Atot=n%as*n%a_t
+
+
+!   backward compatibility
     n%Atot= n%a_t
 
+!   not necessary
   if(present(canonize)) then
    if(canonize) call c_full_canonise(n%atot,n%atot)
   endif
@@ -22880,26 +22965,7 @@ call kill(f)
          phase(i)=0.0_dp
       enddo
 endif
-    if((present(phase).or.present(nu_spin)).and.old_phase_calculation) then
-
  
-        
-      if(present(rot)) then
-        m1=rot
-      else
-        m1=n%Atot**(-1)*xy*n%Atot
-      endif
-
-
-
-
-          qphase=.false.
-      call c_full_canonise(m1,a1,phase=phase,nu_spin=nu_spin)
-      ! if(dospinr.and.present(nu_spin)) then
-      !  if(real(nu_spin.sub.'0')<0) nu_spin=-nu_spin   ! 2018.11.01  to match phase advance
-      ! endif
-          qphase=qphasedef
-    endif
 
  
     call kill(m1);call kill(nonl);call kill(a1);call kill(a2);call kill(ri);call kill(rispin);
@@ -22907,12 +22973,7 @@ endif
       deallocate(eg)
       deallocate(je)
 
-    if(lielib_print(13)/=0) then
-     close(mker)
-     close(mdis)
-     close(mdiss)
-     close(mkers)
-    endif
+ 
 
  
    call kill(xy)
@@ -22920,6 +22981,8 @@ endif
 !write(6,*) " exiting c_normal ",i_alloc
 inside_normal=.false.
 !!!! finding a Lie exponent
+
+!#18   Normalized vector fields are computed or created (linear)
 
 !  if(use_quaternion.and.rf==0)  then
    call alloc(Nf,N_cut_2,N_nl )
@@ -22929,7 +22992,9 @@ inside_normal=.false.
 ! creating the linear vector field in phasors variables
 ncoast=0
 if(c_%ndpt/=0) ncoast=1
+
 !!!! create a full vector field for N_cut_2
+!#19   Linear vector field for orbital and constant quaternion computed
 do i=1,(c_%nd-ncoast)
  n%H_l%v(2*i-1)=-(i_*twopi*n%tune(i))*dz_c(2*i-1)-n%damping(i)*dz_c(2*i-1)
  n%H_l%v(2*i)=(i_*twopi*n%tune(i))*dz_c(2*i)-n%damping(i)*dz_c(2*i)
@@ -22941,16 +23006,25 @@ if(dospinr) then
  n%H_l%q=0.0_dp
  n%H_l%q%x(2)=n%quaternion_angle 
 endif 
+
+
+!  Put in ordinary Floquet (x,p)
 !!!! Going into variables moving on a circle 
 n%H_l=ci_phasor()*n%H_l
 
 !!! Reverse-Dragt-Finn order for Lie map
 N_nl=N_cut_2**(-1)*nf
  
+!#19  Put in phasors
+
 n%H_nl=c_logf_spin(N_nl)
+
+!#19  Put in ordinary Floquet (x,p)
 
 n%H_l=c_phasor()*n%H_l
 n%H_nl=c_phasor()*n%H_nl
+
+!#19  Only valid without damping and no resonance left in
 
  n%H=n%H_l+n%H_nl
    call kill(Nf,N_cut_2,N_nl )
