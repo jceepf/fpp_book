@@ -11591,7 +11591,7 @@ subroutine c_linear_a(xy,a1)
     else
       !!  c_locate_planes tries to locate the planes: important if there is little coupling
       !! I suppose that this routine can be refined
-!###2'   Trying to locate planes when almost mid-plane symmetric
+!###3   Trying to locate planes when almost mid-plane symmetric
 
       call c_locate_planes(vr,vi,idef)
       if(lielib_print(16)==1) then
@@ -11618,7 +11618,7 @@ subroutine c_linear_a(xy,a1)
     xx=1.0_dp
 
     
-!###3  
+!###4  
 !   Enforce Poisson bracket = 1
 !   Zero 
 
@@ -11682,7 +11682,7 @@ subroutine c_linear_a(xy,a1)
     a1%q=1.0_dp
     a1=a1**(-1)
     
-!###4  Perhaps not necessary for new BMAD
+!###5  Perhaps not necessary for new BMAD
     !!!!!  In the case of magnet modulations, planes are put back in their places.
 
     if(rf>0.and.ndpt>0.and.do_linear_ac_longitudinal) then 
@@ -18910,6 +18910,8 @@ subroutine c_normal(xyso3,n,dospin,no_used,rot,phase,nu_spin,canonize)
     call kill(n%g)
     call alloc(n%ker)
     call alloc(n%g)
+    n%g%dir=-1
+    n%ker%dir=1
 
     if(lielib_print(13)/=0) then
      call kanalnummer(mker,"kernel.txt")
@@ -22566,7 +22568,7 @@ subroutine c_normal_new(xyso3,n,dospin,no_used,rot,phase,nu_spin,canonize)
 
     implicit none
     type(c_damap) , intent(inout) :: xyso3
-    type(c_damap) m1,ri,nonl,a1,a2,mt,AS,xy,Nf,N_cut_2,N_nl,rispin
+    type(c_damap) m1,ri,nonl,a0,a1,mt,AS,xy,Nf,N_cut_2,N_nl,rispin
     type(c_normal_form), intent(inout) ::  n
     type(c_damap), optional :: rot
     type(c_taylor), optional :: phase(:),nu_spin
@@ -22582,13 +22584,15 @@ subroutine c_normal_new(xyso3,n,dospin,no_used,rot,phase,nu_spin,canonize)
     logical dospinr 
 
     integer mker, mkers,mdiss,mdis,ndptbmad 
-    type(c_vector_field) f
+    type(c_vector_field) F
 
 
     call kill(n%ker)
     call kill(n%g)
     call alloc(n%ker)
     call alloc(n%g)
+    n%g%dir=-1
+    n%ker%dir=1
 
     if(.not.use_quaternion) then
      call c_normal(xyso3,n,dospin,no_used,rot,phase,nu_spin,canonize)
@@ -22655,7 +22659,7 @@ inside_normal=.true.
     call alloc(xy);
     xy=xyso3
  
-    call alloc(m1);call alloc(nonl);call alloc(a1);call alloc(a2);call alloc(ri,rispin);
+    call alloc(m1);call alloc(nonl);call alloc(a0);call alloc(a1);call alloc(ri,rispin);
  
     allocate(je(nv))    
     allocate(eg(xyso3%n))
@@ -22669,15 +22673,15 @@ inside_normal=.true.
  ! etienne
  
 if(c_skip_gofix) then
-  a1=1
+  a0=1
 else
 !#1 Go to fix point 
  
-    call  c_gofix(m1,a1) 
+    call  c_gofix(m1,a0) 
  
  endif
  
-  m1=c_simil(a1,m1,-1)
+  m1=c_simil(a0,m1,-1)
  
  
 
@@ -22685,15 +22689,15 @@ else
 
 !#2 doing the linear normal form exactly
 
-    call c_linear_a(m1,a2)  
+    call c_linear_a(m1,a1)  
  
  
   
 
     !!! Now the linear map is normalised
-    m1=c_simil(a2,m1,-1)
+    m1=c_simil(a1,m1,-1)
   
- 
+ !#3
     !!! We go into the phasors' basis
     ri=from_phasor(-1)
  
@@ -22721,7 +22725,7 @@ if(dospinr) then
   
       n%AS=1
  
-!#3  Linear part of spin 
+!#4  Linear part of spin 
        call c_normal_spin_linear_quaternion(m1,m1,n%AS,alpha)
 
       n%quaternion_angle=alpha/2.0_dp
@@ -22734,7 +22738,7 @@ if(dospinr) then
  
 endif
 
-!#4  Linear part of the orbit map and zeroth order of quaternion
+!#5  Linear part of the orbit map and zeroth order of quaternion
 
      ri=(m1.sub.-1)**(-1) 
 
@@ -22754,17 +22758,23 @@ endif
  
  
     n%ker=0  ! In case reusing normal form
-call alloc(f)
+call alloc(F)
     do i=1,not
  
-
+!#6
       nonl=(m1*ri)
       nonl= exp_inv(n%ker,nonl)
   
-!#5 vector field of nonlinear part computed
-      f=0
-      f=ln(nonl,tpsa=.false.)
-
+!#7 vector field of nonlinear part computed
+      F=0
+      F=ln(nonl,tpsa=.false.)
+if(dospinr) then
+ !#8 the basis is changed to   
+ ! e_x =  1/2(i + sqrt(-1) k) 
+ ! e_z =  1/2(i - sqrt(-1) k)
+ ! e_y =  j
+ call c_q0_to_qr(F%q,F%q)
+endif
  
 
 
@@ -22781,7 +22791,7 @@ call alloc(f)
 
         do while(.true.) 
 
-           call  c_cycle(f%v(k),j,v ,je); if(j==0) exit;
+           call  c_cycle(F%v(k),j,v ,je); if(j==0) exit;
            call check_kernel(k,xy%n,je,removeit)
 
            if(n%nres>0.and.removeit) then 
@@ -22805,12 +22815,12 @@ call alloc(f)
  
 
             je(k)=je(k)+1
-!#6 Removing the "resonances "
+!#9 Removing the "resonances "
             n%g%f(i)%v(k)=n%g%f(i)%v(k)+(v.cmono.je)/(1.0_dp-lam)
 
           else ! Put in the kernel
  
- !#7  Leaving the Kernel which might include resonances in the one-resonance model
+ !#10  Leaving the Kernel which might include resonances in the one-resonance model
               n%ker%f(i)%v(k)=n%ker%f(i)%v(k)+(v.cmono.je)
             endif
 
@@ -22819,11 +22829,6 @@ call alloc(f)
 !!!!!!!!!!!!!!!!! end of doing the orbital  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if(dospinr) then
  
- !#8 the basis is changed to   
- ! e_x =  1/2(i + sqrt(-1) k) 
- ! e_z =  1/2(i - sqrt(-1) k)
- ! e_y =  j
-call c_q0_to_qr(f%q,f%q)
 
       do k=1,3
  
@@ -22832,7 +22837,7 @@ call c_q0_to_qr(f%q,f%q)
 
         do while(.true.) 
 
-            call  c_cycle(f%q%x(k),j,v ,je); if(j==0) exit;
+            call  c_cycle(F%q%x(k),j,v ,je); if(j==0) exit;
            call check_kernel_spin(k,xy%n,je,removeit)
               if(n%nres>0.and.removeit) then 
                 do kr=1,n%nres
@@ -22851,10 +22856,10 @@ call c_q0_to_qr(f%q,f%q)
                   if(coast(l)) cycle 
                   lam=lam*eg(l)**je(l)
                 enddo
-!#9 Removing the "resonances "
+!#11 Removing the "resonances "
                n%g%f(i)%q%x(k)=n%g%f(i)%q%x(k) +(v.cmono.je)/(1.0_dp-lam)   ! (9)
              else ! Put in the kernel
- !#10  Leaving the Kernel which might include resonances in the one-resonance model
+ !#12  Leaving the Kernel which might include resonances in the one-resonance model
               n%ker%f(i)%q%x(k)=n%ker%f(i)%q%x(k)+(v.cmono.je)
             endif
 
@@ -22863,7 +22868,7 @@ call c_q0_to_qr(f%q,f%q)
         enddo  ! over monomial
       enddo  ! over quaternion index
  
- !#11 the basis is changed back to   i,j,k
+ !#13 the quaternion basis is changed back to   i,j,k inverting \#8
 
         call c_qr_to_q0(n%g%f(i)%q,n%g%f(i)%q)  !   (10)
 
@@ -22875,20 +22880,20 @@ endif
     enddo
  
 
-call kill(f)
+call kill(F)
  
 
- !#12   n%a_t contains everything
+ !#14   n%a_t contains everything
 
-    n%a_t=a1*a2*from_phasor()*texp(n%g,n%as)*from_phasor(-1)
+    n%a_t=a0*a1*from_phasor()*texp(n%g,n%as)*from_phasor(-1)
 
 
 ! not so useful 
-    n%a1=a1
-    n%a2=a2
+    n%a1=a0
+    n%a2=a1
  
  
-!#13   
+!#15   
 
 !!!!!   here we put the normalised linear part into the factored vector field
 !!!!!   not necessary but very useful
@@ -22919,7 +22924,7 @@ call kill(f)
         endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-!#14  The synchrotron tune should be a small negative number if necessary
+!#16  The synchrotron tune should be a small negative number if necessary
         if(nd2t==6) then
            if(n%tune(3)>0.50_dp.and.negative_synchrotron_tune) n%tune(3)=n%tune(3)-1.0_dp
         endif 
@@ -22936,7 +22941,7 @@ call kill(f)
             endif
        endif
 
- !#15  Checking for fluctuation, ie, stochastic radiation
+ !#17  Checking for fluctuation, ie, stochastic radiation
  ! c_normal_radiation normalizes the stochastic map
     call c_check_rad(m1%e_ij,rad_in)
     if(rad_in) call c_normal_radiation(m1,n)
@@ -22968,7 +22973,7 @@ endif
  
 
  
-    call kill(m1);call kill(nonl);call kill(a1);call kill(a2);call kill(ri);call kill(rispin);
+    call kill(m1);call kill(nonl);call kill(a0);call kill(a1);call kill(ri);call kill(rispin);
 
       deallocate(eg)
       deallocate(je)
@@ -23015,16 +23020,16 @@ n%H_l=ci_phasor()*n%H_l
 !!! Reverse-Dragt-Finn order for Lie map
 N_nl=N_cut_2**(-1)*nf
  
-!#19  Put in phasors
+!#20  Put in phasors
 
 n%H_nl=c_logf_spin(N_nl)
 
-!#19  Put in ordinary Floquet (x,p)
+!#21  Put in ordinary Floquet (x,p)
 
 n%H_l=c_phasor()*n%H_l
 n%H_nl=c_phasor()*n%H_nl
 
-!#19  Only valid without damping and no resonance left in
+!#22  Only valid without damping and no resonance left in
 
  n%H=n%H_l+n%H_nl
    call kill(Nf,N_cut_2,N_nl )
