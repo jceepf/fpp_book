@@ -10857,6 +10857,9 @@ stop 2353
       s11%v(i)=(1.0_dp.cmono.i) + s1%x0(i)
     enddo
    s11%x0=s1%x0
+
+! etienne bug 2024.03.07
+   s11%q=1.0_dp
  
 
     R22=IABS(R2)
