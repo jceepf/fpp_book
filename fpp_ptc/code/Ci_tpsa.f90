@@ -97,7 +97,7 @@ private GETdiff_universal
 
 !integer,private,parameter::ndd=6
 private c_concat_vector_field_ray,CUTORDERVEC,kill_c_vector_field_fourier,alloc_c_vector_field_fourier
-private complex_mul_vec,equal_c_vector_field_fourier,c_IdentityEQUALVECfourier
+private complex_mul_vec,equal_c_vector_field_fourier,c_IdentityEQUALVECfourier,c_taylor_mul_vec
 private c_add_map,c_sub_map,c_read_spinor,flatten_c_factored_lie_r,c_EQUALcray,c_read_quaternion
 integer :: n_fourier=12,n_extra=0
 logical :: remove_tune_shift=.false.
@@ -347,6 +347,7 @@ logical :: old_phase_calculation=.false.
      MODULE PROCEDURE c_trxquaternion    !# c_quaternion=  c_quaternion * c_damap 
      MODULE PROCEDURE real_mul_vec  ! real(dp)*vf  G=rF  → F.grad
      MODULE PROCEDURE complex_mul_vec  !# complex(dp)*vf G=cF
+     MODULE PROCEDURE c_taylor_mul_vec  !# c_taylor*vf G=cF
      MODULE PROCEDURE real_mul_map     !# real(dp)*c_damap B=rA
      MODULE PROCEDURE complex_mul_map     !# real(dp)*c_damap B=rA
 ! Vector fields
@@ -13622,6 +13623,43 @@ endif
     c_master=localmaster
 
   END FUNCTION complex_mul_vec 
+
+    FUNCTION c_taylor_mul_vec( r,S1 )
+    implicit none
+    TYPE (c_vector_field) c_taylor_mul_vec
+    type(c_taylor),intent(in):: r
+    TYPE (c_vector_field), INTENT (IN) :: S1
+    integer localmaster,i
+
+    IF(.NOT.C_STABLE_DA) then
+     c_taylor_mul_vec%v%i=0
+     RETURN
+     endif
+    localmaster=c_master
+
+    !    call check(s1)
+    c_taylor_mul_vec%n=s1%n
+    call c_ass_vector_field(c_taylor_mul_vec)
+    
+    do i=1,s1%n
+     c_taylor_mul_vec%v(i)=r*s1%v(i)
+    enddo
+
+ 
+
+    do i=0,3
+     c_taylor_mul_vec%q%x(i)=r*s1%q%x(i)
+    enddo
+
+  
+
+    c_taylor_mul_vec%nrmax=s1%nrmax
+    c_taylor_mul_vec%eps=s1%eps
+
+    c_master=localmaster
+
+  END FUNCTION c_taylor_mul_vec 
+
 
     FUNCTION map_mul_vec_q( A,S1 )
     implicit none

@@ -64,7 +64,8 @@ MODULE S_DEF_KIND
   PRIVATE PUSH_NSMI_R,PUSH_NSMI_D
   PRIVATE PUSH_SSMI_R,PUSH_SSMI_D
 
-  PRIVATE GETANBNR,GETANBNP,ZEROR_teapot,ZEROP_teapot,ALLOCTEAPOT,KILLTEAPOT
+!  PRIVATE GETANBNR,GETANBNP 
+  PRIVATE ZEROR_teapot,ZEROP_teapot,ALLOCTEAPOT,KILLTEAPOT
   PRIVATE GETAEBER,GETAEBEP
   PRIVATE SPROTR,SPROTP,SPROT
   PRIVATE SseCR,SseCP,Ssec
@@ -30686,7 +30687,7 @@ SUBROUTINE RAD_SPIN_qua_PROBEP(c,p,k,ds,zw)
     CALL get_omega_spin(c,OM,B2,dlds,XP,P%X,pos,k,Ed,B,zw)
 
      !  call radiate_2(c,DS,FAC,P,b2,dlds,XP,before,k,pos,Ed,B)
-       call radiate_2_probe(c,DS,FAC,P,b2,dlds,XP,k,pos,Ed,B,k%stochastic)
+       call radiate_2_probe(c,DS,FAC,P,b2,dlds,XP,k,pos,Ed,B,k%envelope)
 
     endif
    if(k%spin) then 
@@ -30701,7 +30702,7 @@ SUBROUTINE RAD_SPIN_qua_PROBEP(c,p,k,ds,zw)
    endif
     if((k%radiation.or.k%envelope)) then
  !      call radiate_2(c,DS,FAC,P,b2,dlds,XP,before,k,pos,Ed,B)
-        call radiate_2_probe(c,DS,FAC,P,b2,dlds,XP,k,pos,Ed,B,k%stochastic)
+        call radiate_2_probe(c,DS,FAC,P,b2,dlds,XP,k,pos,Ed,B,k%envelope)
 
     endif
      CALL KILL(B);CALL KILL(XP);CALL KILL(XPA);CALL KILL(ed);
