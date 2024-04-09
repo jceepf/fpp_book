@@ -4514,7 +4514,7 @@ call kill(ft)
 end subroutine symplectify_for_oleksii
 
 
-subroutine phase_advance
+subroutine phase_advance(mf)
 implicit none
 type(fibre),pointer:: f
 type(probe) xs0,xs1
@@ -4523,8 +4523,12 @@ type(c_damap) id
 type(c_normal_form) n
 type(integration_node), pointer :: t
 real(dp) phase(3), spin_tune(2),damping(3)
-integer i
+integer i,mff
+integer,optional :: mf
+
 use_quaternion=.true.
+mff=0
+if(present(mf)) mff=mf
 
 f=>my_ering%start
 do i=1,my_start-1
@@ -4557,9 +4561,30 @@ xs=xs0+id
 id=xs
 
 call c_normal(id,n,dospin=my_estate%spin)
- 
+
+if(mff/=0) then
+ write(mff,*) " Linear A from c_normal "
+ call print(n%atot,mff)
+endif
+
+
+
+
 call c_fast_canonise(n%atot,n%atot, dospin=my_estate%spin)
- 
+
+if(mff/=0) then
+ write(mff,*) " Linear A canonised "
+ call print(n%atot,mff)
+ write(mff,*) " end of Info from phase_advance "
+endif
+
+if(mff/=0) then
+ write(mff,*) " Info from map :tunes, damping, spin "
+ write(mff,*) n%tune(1:c_%nd)
+ write(mff,*) n%damping(1:c_%nd)
+ write(mff,*) n%spin_tune
+ write(mff,*) " end of Info from map "
+endif
 phase=0
 spin_tune=0
 damping=0

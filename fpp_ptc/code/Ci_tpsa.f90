@@ -150,6 +150,7 @@ private compute_lattice_functions_1,compute_lattice_functions_2
 !private c_clean_vector,c_clean_matrix,c_clean_vector_complex,c_clean_matrix_complex
 private A_opt_c_vector,K_OPT_c_vector,r_field_for_demin,clean_c_universal_taylor
 logical :: old_phase_calculation=.false.
+logical :: new_cycle=.true.
 
 
 !  These routines computes lattice functions a la Ripken-Forest-Wolski
@@ -1806,6 +1807,11 @@ end subroutine c_get_indices
  
     if(s1%i==0) call c_crap1("EQUAL 2") ! call allocw(s1)
 
+    if(new_cycle) then
+
+    call c_real_imag(s1%i,c_real%i,1)      
+
+    else
     allocate(j(c_%nv))
     c_real=0.0_dp
    
@@ -1815,11 +1821,13 @@ end subroutine c_get_indices
        call c_taylor_cycle(s1,ii=i,value=value,j=j)
        x=real(value)
        c_real=c_real+(x.cmono.j)
+!write(6,*) i,n
    enddo
-   
+   deallocate(j)
+   endif
      c_master=localmaster
 
-   deallocate(j)
+
   END  function c_real
 
  function  c_aimag(S1)
@@ -1845,6 +1853,11 @@ end subroutine c_get_indices
  
     if(s1%i==0) call c_crap1("EQUAL 2") ! call allocw(s1)
 
+    if(new_cycle) then
+
+    call c_real_imag(s1%i,c_aimag%i,2)      
+
+    else
     allocate(j(c_%nv))
     c_aimag=0.0_dp
    
@@ -1855,10 +1868,12 @@ end subroutine c_get_indices
        x=aimag(value)
        c_aimag=c_aimag+(x.cmono.j)
    enddo
-   
+      deallocate(j)
+
+   endif
      c_master=localmaster
 
-   deallocate(j)
+
   END  function c_aimag
 
 
@@ -18632,7 +18647,9 @@ complex(dp) cri(6,6)
 integer i
 logical dos,rota
 logical, optional :: dospin
+type(c_damap) uct
 
+call alloc(uct)
 rota=.not.(present(phase))
 rota=.true.
 
@@ -18778,7 +18795,7 @@ if(ndpt/=0) then  !2023.12.10
  endif
 endif
 
-    u_c=st
+    uct=st
 if(use_quaternion.and.dos) then
 q=1
  q=u%q
@@ -18816,7 +18833,7 @@ q=1
  endif
 cri=ri
 qc=qc*cri
- u_c%q=qc 
+ uct%q=qc 
 
 
 if(present(q_as) ) then 
@@ -18837,10 +18854,10 @@ endif
  endif
 
 if(present(q_cs) ) then 
-q_cs=u_c 
+q_cs=uct 
 endif
 if(present(q_orb)) then
-q_orb=u_c 
+q_orb=uct 
 q_orb=1.0_dp
 endif
 if(present(q_rot) ) then 
@@ -18851,7 +18868,9 @@ endif
 if(present(q_rot) ) then 
  q_rot=qrot !*q_rot  2023.12.10
 endif
- 
+u_c=uct
+ call kill(uct)
+
 end subroutine c_fast_canonise
 
 subroutine canonize_damping(b0,sd,damp)
