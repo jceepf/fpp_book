@@ -925,8 +925,10 @@ endif
              ind=c_nda_dab
              if(c_nda_dab.gt.c_lda) then
                 write(6,'(a53)') 'ERROR IN DAALL, MAX NUMBER OF DA VECTORS EXHAUSTED,20'
+                write(6,*) " try c_lda_used=c_lda_used*N   where is N is an integer greater than 1 "
+                write(6,*) " put c_lda_used=c_lda_used*N  in your program  before you initialize FPP or PTC "
                 !    ipause=mypauses(10,line)
-                call dadeb !(31,'ERR DAALL ',1)
+ !               call dadeb !(31,'ERR DAALL ',1)
                 stop 111
              endif
           endif
