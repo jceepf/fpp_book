@@ -18027,8 +18027,8 @@ f1=0
      enddo
  if(present(damping)) then
      do i=1,ndt
-      f1%v(2*i-1)= f1%v(2*i-1) - (damping(i).cmono.(2*i-1))
-      f1%v(2*i)  = f1%v(2*i)   - (damping(i).cmono.(2*i)) 
+      f1%v(2*i-1)= f1%v(2*i-1) - (damping(i).cmono.(2*i-1))/twopi
+      f1%v(2*i)  = f1%v(2*i)   - (damping(i).cmono.(2*i))/twopi
      enddo
  endif
       if(dos) then
