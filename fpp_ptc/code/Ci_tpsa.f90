@@ -9485,7 +9485,8 @@ endif
     call c_check_rad(t1%e_ij,rad1)
     call c_check_rad(t2%e_ij,rad2)
    
-    if((rad1.or.rad2).and.nd2==6) then
+ !   if((rad1.or.rad2).and.nd2==6) then
+    if(rad1.or.rad2) then
   !   write(6,*) " stochastic "
       t1=t1.sub.1     
       m2=t1    
@@ -12768,11 +12769,11 @@ alpha=2*atan2(q0%x(2),q0%x(0))
     call alloc(ri)
     r=m1
 
-    do i=1,6 ; do j=1,6;
+    do i=1,c_%nd2 ; do j=1,c_%nd2;
      n%s_ijr(i,j)= 1.0_dp/(1.0_dp- r(i,i)*r(j,j))*m1%e_ij(i,j)
     enddo ;enddo;
 
-     do i=1,3
+     do i=1,c_%nd
       n%emittance(i)=abs(n%s_ijr(2*i-1,2*i))/abs(n_cai)
      enddo
     n%b_ijr=m1%e_ij 
@@ -15149,8 +15150,8 @@ function c_vector_field_quaternion(h,ds) ! spin routine
 
     rad_in=my_true
     norm=0.0_dp
-    do i=1,6
-       do j=1,6
+    do i=1,min(c_%nd2,6)
+       do j=1,min(c_%nd2,6)
           norm=norm+abs(e_ij(i,j))
        enddo
     enddo
@@ -18594,7 +18595,7 @@ endif
        st=matmul(b0,st)
 if(do_damping) then
 !b0=matmul(matmul(st,s),transpose(st))
- 
+
 
 call canonize_damping(st,id,damp)
  
@@ -18719,9 +18720,9 @@ enddo
  a(1,2)=b0(1,3)*b0(2,4)-b0(1,4)*b0(2,3)
  a(1,3)=b0(1,5)*b0(2,6)-b0(1,6)*b0(2,5)
  a(2,1)=b0(3,1)*b0(4,2)-b0(3,2)*b0(4,1)
- a(2,3)=b0(3,5)*b0(4,6)-b0(4,6)*b0(3,5)
- a(3,1)=b0(5,1)*b0(6,2)-b0(6,2)*b0(5,1)
- a(3,2)=b0(5,3)*b0(6,4)-b0(6,4)*b0(5,3)
+ a(2,3)=b0(3,5)*b0(4,6)-b0(3,6)*b0(4,5)
+ a(3,1)=b0(5,1)*b0(6,2)-b0(5,2)*b0(6,1)
+ a(3,2)=b0(5,3)*b0(6,4)-b0(5,4)*b0(6,3)
 
    call matinv(a,a,3,3,i)
  if(i/=0)  stop 250
@@ -22797,9 +22798,13 @@ inside_normal=.false.
 ncoast=0
 if(c_%ndpt/=0) ncoast=1
 !!!! create a full vector field for N_cut_2
+
 do i=1,(c_%nd-ncoast)
- n%H_l%v(2*i-1)=-(i_*twopi*n%tune(i))*dz_c(2*i-1)-n%damping(i)*dz_c(2*i-1)
- n%H_l%v(2*i)=(i_*twopi*n%tune(i))*dz_c(2*i)-n%damping(i)*dz_c(2*i)
+
+lam=n%tune(i)
+if(n%tune(i)>0.5e0_dp) lam=lam-1.0_dp
+ n%H_l%v(2*i-1)=-(i_*twopi*lam)*dz_c(2*i-1)-n%damping(i)*dz_c(2*i-1)
+ n%H_l%v(2*i)=(i_*twopi*lam)*dz_c(2*i)-n%damping(i)*dz_c(2*i)
 enddo
 if(ncoast/=0) then
  n%H_l%v(c_%ndptb)=n%tune(c_%nd)*dz_c(c_%ndpt)
@@ -23352,7 +23357,7 @@ endif
  end subroutine c_normal_new !_with_quaternion
 
 
-subroutine c_normal_new_no_fac(xyso3,n,dospin,no_used,rot,phase,nu_spin,canonize)
+subroutine c_normal_new_no_fac(xyso3,n,dospin,no_used,rot,phase,nu_spin,canonize,doberz)
 !#general:  normal
 !# This routine normalises the map xy
 !# xy = n%a_t**(-1)*r*n%a_t 
@@ -23380,14 +23385,14 @@ subroutine c_normal_new_no_fac(xyso3,n,dospin,no_used,rot,phase,nu_spin,canonize
     complex(dp) v,lam,egspin(3)
     complex(dp), allocatable :: eg(:)
     real(dp) norm,alpha,prec !,cx,sx
-    logical(lp), optional :: dospin,canonize
+    logical(lp), optional :: dospin,canonize,doberz
     logical dospinr,change
     type(c_spinor) n0,nr
     type(c_quaternion) qnr
     type(c_vector_field) kerf,gf
     integer mker, mkers,mdiss,mdis,ndptbmad 
        real(dp), allocatable :: da(:)
- 
+     
 
     call kill(n%ker)
     call kill(n%g)
@@ -23629,9 +23634,23 @@ gf%v(k)=0.0_dp
         enddo  ! over monomial
       enddo  ! over vector index
 !kert=exp(n%ker%f(i))
+
+if(present(doberz)) then
+do l=1,ant%n
+ kert%v(l)=kerf%v(l)+(1.0_dp.cmono.l)
+enddo
+else
 kert=exp(kerf)
+endif
+
 ker=kert*ker
+if(present(doberz)) then
+do l=1,ant%n
+ ant%v(l)=gf%v(l)+(1.0_dp.cmono.l)
+enddo
+else
 ant=exp(gf)
+endif
 an=an*ant
       m1=c_simil(ant,m1,-1)
 !call c_full_norm_vector_field(n%g%f(i),norm)
