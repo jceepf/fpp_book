@@ -14127,6 +14127,11 @@ mtemp=((1.d0/coe)*(h*mtemp))
      do j=1,mtemp%n
        r=full_abs(mtemp%v(j))+r
      enddo
+!!!! added in 2024.8.10
+     do j=0,3
+       r=full_abs(mtemp%q%x(j))+r
+     enddo
+!!!! added in 2024.8.10
 
        if(more) then
           if(r.gt.h%eps) then
@@ -15144,8 +15149,7 @@ function c_vector_field_quaternion(h,ds) ! spin routine
 
     call c_ass_quaternion(c_exp_vectorfield_on_quaternion)
 
-
-
+ 
 
     check=.true.
     eps=1.d-10
