@@ -21938,14 +21938,14 @@ IF(O>1) call exp_vector_field_fourier(Fc,Ht,Ht)   ! (2)
 jq=0
                call check_kernel_ham(ki,n,je,nu,da,removeit,m,nus,jq)
  
-
+!!! m.nu+k=0   =>  k=-p
  if(removeit.and.present(mres)) then
    ires=0
     do l=1,c_%nd
      ires=iabs(mres(L)-(je(2*L)-je(2*L-1)))+ires
     enddo
    ires=iabs(mres(-1)-jq)+ires
-   ires=iabs(-mres(0)-m)+ires
+   ires=iabs(-mres(0)-m)+ires !k=-p
    if(ires==0) removeit=.false.
   endif
  if(removeit.and.present(mres)) then
@@ -21954,7 +21954,7 @@ jq=0
      ires=iabs(-mres(L)-(je(2*L)-je(2*L-1)))+ires
     enddo
     ires=iabs(-mres(-1)-jq)+ires
-    ires=iabs(mres(0)-m)+ires
+    ires=iabs(mres(0)-m)+ires !k=-p
    if(ires==0) removeit=.false.
   endif
 
@@ -21993,14 +21993,14 @@ jq=0
  
  
   call check_kernel_ham(0,n,je,nu,da,removeit,m,nus,jq)
-
+!!! m.nu+k=0   =>  k=-p
  if(removeit.and.present(mres)) then
    ires=0
     do l=1,c_%nd
      ires=iabs(mres(L)-(je(2*L)-je(2*L-1)))+ires
     enddo
    ires=iabs(mres(-1)-jq)+ires
-   ires=iabs(-mres(0)-m)+ires
+   ires=iabs(-mres(0)-m)+ires  !k=-p
    if(ires==0) removeit=.false.
   endif
  if(removeit.and.present(mres)) then
@@ -22009,7 +22009,7 @@ jq=0
      ires=iabs(-mres(L)-(je(2*L)-je(2*L-1)))+ires
     enddo
     ires=iabs(-mres(-1)-jq)+ires
-    ires=iabs(mres(0)-m)+ires
+    ires=iabs(mres(0)-m)+ires !k=-p
    if(ires==0) removeit=.false.
   endif
 
