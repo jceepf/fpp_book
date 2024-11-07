@@ -114,7 +114,7 @@ private EQUALq_r,EQUALq_8_c,EQUALq_c_8,EQUALq,POWq,c_invq,subq,mulq,addq,alloc_c
 private c_pri_quaternion,CUTORDERquaternion,c_trxquaternion,EQUALq_c_r,EQUALq_r_c,mulcq,c_exp_quaternion
 private equalc_quaternion_c_spinor,equalc_spinor_c_quaternion,unarySUB_q,c_trxquaternion_tpsa
 private c_exp_vectorfield_on_quaternion,c_vector_field_quaternion,addql,subql,mulqdiv,powql
-private copy_tree_into_tree_zhe,absq2,absq,c_MAP_VEC,printcomplex,printpoly,print6
+private copy_tree_into_tree_zhe,absq2,absq,c_MAP_VEC,c_VEC_MAP,printcomplex,printpoly,print6
 !private equal_map_real8,equal_map_complex8,equal_real8_map,equal_complex8_map
 real(dp) dts
 real(dp), private :: sj(6,6)
@@ -152,8 +152,9 @@ private compute_lattice_functions_1,compute_lattice_functions_2
 private A_opt_c_vector,K_OPT_c_vector,r_field_for_demin,clean_c_universal_taylor
 logical :: old_phase_calculation=.false.
 logical :: new_cycle=.true.
- 
-
+private EQUAL_arrayreal_arraytaylor,EQUAL_arraycomplex_arraytaylor
+private  EQUAL_arraytaylor_arrayreal,EQUAL_arraytaylor_arraycomplex
+logical :: correct_quaternion_field=.true.
 !  These routines computes lattice functions a la Ripken-Forest-Wolski
 !type c_lattice_function
 ! real(dp) :: E(3,6,6) =0 ,K(3,6,6) =0 ! E : moments, K : Invariants
@@ -215,6 +216,7 @@ logical :: new_cycle=.true.
      MODULE PROCEDURE equalt_c
      MODULE PROCEDURE c_EQUALMAP  !#  c_damap=c_damap
      MODULE PROCEDURE c_MAP_VEC
+     MODULE PROCEDURE c_VEC_MAP
     MODULE PROCEDURE c_IdentityEQUALMAP
     MODULE PROCEDURE c_IdentityEQUALSPIN
     MODULE PROCEDURE c_IdentityEQUALSPINOR   !# c_spinor = 0,1,2, or 3
@@ -263,6 +265,10 @@ logical :: new_cycle=.true.
       MODULE PROCEDURE equal_real8_map
       MODULE PROCEDURE equal_complex8_map   ! replaces c_dpekmap
       MODULE PROCEDURE copy_tree_into_tree_zhe
+      MODULE PROCEDURE EQUAL_arrayreal_arraytaylor 
+        MODULE PROCEDURE  EQUAL_arraycomplex_arraytaylor
+        MODULE PROCEDURE  EQUAL_arraytaylor_arrayreal
+        MODULE PROCEDURE  EQUAL_arraytaylor_arraycomplex
   end  INTERFACE
 
      ! UNIVERSAL_TAYLOR
@@ -2405,6 +2411,63 @@ end subroutine c_get_indices
  
   END SUBROUTINE EQUAL
 
+
+  SUBROUTINE  EQUAL_arraytaylor_arrayreal(S2,S1)
+!*
+    implicit none
+    type (c_taylor),INTENT(inOUT)::S2(:)
+    real(dp),INTENT(IN)::S1(:)
+    integer i
+    IF(.NOT.C_STABLE_DA) RETURN
+
+    do i=1,size(s1)
+     s2(i)=s1(i)
+    enddo
+ 
+  end SUBROUTINE  EQUAL_arraytaylor_arrayreal
+
+  SUBROUTINE  EQUAL_arrayreal_arraytaylor(S2,S1)
+!*
+    implicit none
+    real(dp),INTENT(inOUT)::S2(:)
+    type (c_taylor),INTENT(IN)::S1(:)
+    integer i
+    IF(.NOT.C_STABLE_DA) RETURN
+
+    do i=1,size(s1)
+     s2(i)=s1(i)
+    enddo
+ 
+  end SUBROUTINE  EQUAL_arrayreal_arraytaylor
+
+  SUBROUTINE  EQUAL_arraytaylor_arraycomplex(S2,S1)
+!*
+    implicit none
+    type (c_taylor),INTENT(inOUT)::S2(:)
+    complex(dp),INTENT(IN)::S1(:)
+    integer i
+    IF(.NOT.C_STABLE_DA) RETURN
+
+    do i=1,size(s1)
+     s2(i)=s1(i)
+    enddo
+ 
+  end SUBROUTINE  EQUAL_arraytaylor_arraycomplex
+
+  SUBROUTINE  EQUAL_arraycomplex_arraytaylor(S2,S1)
+!*
+    implicit none
+    complex(dp),INTENT(inOUT)::S2(:)
+    type (c_taylor),INTENT(IN)::S1(:)
+    integer i
+    IF(.NOT.C_STABLE_DA) RETURN
+
+    do i=1,size(s1)
+     s2(i)=s1(i)
+    enddo
+ 
+  end SUBROUTINE  EQUAL_arraycomplex_arraytaylor
+
   SUBROUTINE  equal_map_real8(S2,S1)
 !*
     implicit none
@@ -3288,10 +3351,14 @@ FUNCTION cpbbra( S1, S2 )
  
      call c_ass_quaternion(liebraquaternion)
  
+     if(correct_quaternion_field) then
 
-    liebraquaternion=s1*s2-s2*s1
+       liebraquaternion=s2*s1-s1*s2
 
+      else
+       liebraquaternion=s1*s2-s2*s1
 
+      endif
     c_master=localmaster
 
   END FUNCTION liebraquaternion
@@ -3321,7 +3388,7 @@ FUNCTION cpbbra( S1, S2 )
 
     if(use_quaternion)   THEN
  
-     liebra%q=s2%q*s1%q-s1%q*s2%q
+      liebra%q=s1%q.lb.s2%q 
  
      liebra%q=liebra%q+c_bra_v_q(s1,s2%q)-c_bra_v_q(s2,s1%q)
    ! c_bra_v_q
@@ -11251,9 +11318,27 @@ s11%x0=0
     do i=1,min(s1%n,s2%n)
        s2%v(i)=s1%v(i)
     enddo
+     s2%q=s1%q
 
   END SUBROUTINE c_MAP_VEC
 
+ SUBROUTINE  c_VEC_MAP(S2,S1)
+!*
+    implicit none
+    type (c_damap),INTENT(in)::S1
+    type (c_vector_field),INTENT(INOUT)::S2
+    integer i
+    IF(.NOT.C_STABLE_DA) RETURN
+    
+    call c_check_snake
+
+    S2=0
+    do i=1,min(s1%n,s2%n)
+       s2%v(i)=s1%v(i)
+    enddo
+     s2%q=s1%q
+
+  END SUBROUTINE c_VEC_MAP
 
  SUBROUTINE  c_EQUALVEC(S2,S1)
 !*
@@ -13373,7 +13458,7 @@ endif
 
    END SUBROUTINE c_kernel 
 
-   SUBROUTINE C_AVERAGE(F,A,F_FLOQUET) 
+   SUBROUTINE C_AVERAGE(F,A,F_FLOQUET,ergodic) 
 !#internal: normal
 !# This routine averages a function F using the canonical trnsformation A.
 !# This is explained in Sec.2.2.1 of my Springer book.
@@ -13382,12 +13467,16 @@ endif
     TYPE(c_damap) A
     TYPE(c_TAYLOR) F,F_FLOQUET,FQ
     complex(dp) v
-    INTEGER I
+    INTEGER I,n_ergodic
     logical(lp) removeit
+    logical,optional  :: ergodic
     integer, allocatable :: je(:)
 
+     n_ergodic=A%n
     allocate(je(nv))  
-         
+         if(present(ergodic) ) then
+         n_ergodic =A%n - 2
+        endif
      call alloc(fq)
     
     F_FLOQUET=(F*A)*TO_PHASOR(-1) 
@@ -13395,18 +13484,41 @@ endif
     i=1
     do while(.true.) 
      call  c_cycle(F_FLOQUET,i,v ,je); if(i==0) exit;   
-     call check_kernel(0,A%n,je,removeit) 
+
+     call check_kernel(0,n_ergodic,je,removeit) 
      if(.not.removeit) then
        fq=fq+(v.cmono.je)
      endif
     enddo
-     
     f_floquet=fq
     call kill(fq)
 
     deallocate(je)
 
    END SUBROUTINE C_AVERAGE 
+
+    subroutine check_kernel_ergodic(n,je,removeit)
+!#internal: normal
+!# This routine identifies terms in an orbital vector field that
+!# are not in the kernel of a complete normalisation.
+!# Namely it preserves generators of rotation.
+!# Due to the vagueries of accelerator physics,
+!# it leaves non-linear generators of rotations even in the
+!# case of a damped oscillator.
+    implicit none
+    logical(lp) removeit
+    integer i,n,je(:),t,o
+
+      removeit=my_true
+      t=0
+      do i=1,n,2
+         if(coast(i)) cycle 
+       t=t+abs(je(i)-je(i+1))
+      enddo
+        if(t==0) removeit=my_false
+
+    end subroutine check_kernel_ergodic
+
 
 
   function c_expflo_fac(h,x)   !,eps,nrmax)
@@ -14959,9 +15071,11 @@ function c_vector_field_quaternion(h,ds) ! spin routine
         c_vector_field_quaternion%x(i)=h*ds%x(i)
       enddo
   ! order reversed for compositional map considerations
- 
+      if(correct_quaternion_field)  then
        c_vector_field_quaternion=c_vector_field_quaternion+ (ds*h%q) 
- 
+      else
+       c_vector_field_quaternion=c_vector_field_quaternion+ ( h%q*ds) 
+      endif
      c_master=localmaster
 
    end function c_vector_field_quaternion
@@ -19288,6 +19402,110 @@ if(present(vc))  vc=0
 
 end subroutine create_taylor_vector
 
+subroutine create_vector_taylor(v,vc,w)   ! fix0 is the initial condition for the maps
+implicit none
+ 
+ 
+ 
+ 
+ 
+ real(dpn),optional::  v(:)
+ complex(dp),optional::  vc(:)
+type(c_taylor) t,w
+integer i
+
+
+call alloc(t)
+w=0
+   
+ 
+do i=1,nmono
+ 
+     t=  dz_c(1)**in1(i)
+     t=t*dz_c(2)**in2(i)
+   if(c_%nd>1) then
+     t= dz_c(3)**in3(i)
+     t=t*dz_c(4)**in4(i)
+   endif
+   if(c_%nd>2) then
+     t= dz_c(5)**in5(i)
+     t=t*dz_c(6)**in6(i)
+   endif
+ if(present(v)) then
+   w=t*v(i)+w
+ elseif(present(vc)) then
+    w=t*vc(i)+w
+ else
+
+  write(6,*) "error in create_vector_taylor "
+  stop 476
+ endif
+enddo
+ 
+call kill(t)
+
+ 
+end subroutine create_vector_taylor
+
+subroutine create_vector_field(finput,f)   ! fix0 is the initial condition for the maps
+implicit none
+ 
+ 
+complex(dp)v
+integer i1,i2,i3,i4,i5,i6,je(6),k !,mi,nz,noo,no1
+ 
+complex(dp)   coe ,eps
+!complex(dpn) r2
+complex(dpn) f(:,:) 
+type(c_vector_field) finput  
+type(c_taylor) t
+integer  i,inf,j,nd1 
+ 
+ 
+ nd1=c_%nd
+ 
+ 
+ nmono=size(in1)
+ 
+
+ 
+f=0
+ 
+call alloc(t)
+ 
+ f=0
+ 
+    
+ 
+   do i=1,nmono
+    
+     t=  dz_c(1)**in1(i)
+     t=t*dz_c(2)**in2(i)
+   if(nd1>1) then
+     t= dz_c(3)**in3(i)
+     t=t*dz_c(4)**in4(i)
+   endif
+   if(nd1>2) then
+     t= dz_c(5)**in5(i)
+     t=t*dz_c(6)**in6(i)
+   endif
+
+  t=finput*t
+
+       j=1
+
+        do while(.true.)
+
+          call  c_cycle(t,j,v ,je); if(j==0) exit;
+            k=hash(je(1),je(2),je(3),je(4),je(5),je(6))
+            f(k,i)=v+f(k,i)
+        enddo
+   enddo
+
+call kill(t)
+ 
+
+end subroutine create_vector_field 
 
 
   subroutine init_moment_map(NO1,nd11)  !,spin
@@ -19750,65 +19968,6 @@ call kill(t)
 end subroutine create_moment_map_one
 
 
-subroutine create_vector_field(finput,f)   ! fix0 is the initial condition for the maps
-implicit none
- 
- 
-complex(dp)v
-integer i1,i2,i3,i4,i5,i6,je(6),k !,mi,nz,noo,no1
- 
-complex(dp)   coe ,eps
-!complex(dpn) r2
-complex(dpn) f(:,:) 
-type(c_vector_field) finput  
-type(c_taylor) t
-integer  i,inf,j,nd1 
- 
- 
- nd1=c_%nd
- 
- 
- nmono=size(in1)
- 
-
- 
-f=0
- 
-call alloc(t)
- 
- f=0
- 
-    
- 
-   do i=1,nmono
-    
-     t=  dz_c(1)**in1(i)
-     t=t*dz_c(2)**in2(i)
-   if(nd1>1) then
-     t= dz_c(3)**in3(i)
-     t=t*dz_c(4)**in4(i)
-   endif
-   if(nd1>2) then
-     t= dz_c(5)**in5(i)
-     t=t*dz_c(6)**in6(i)
-   endif
-
-  t=finput*t
-
-       j=1
-
-        do while(.true.)
-
-          call  c_cycle(t,j,v ,je); if(j==0) exit;
-            k=hash(je(1),je(2),je(3),je(4),je(5),je(6))
-            f(k,i)=v+f(k,i)
-        enddo
-   enddo
-
-call kill(t)
- 
-
-end subroutine create_vector_field 
 
 subroutine create_moment_map_one_complex(minput,nd11)   ! fix0 is the initial condition for the maps
 implicit none
