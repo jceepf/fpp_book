@@ -1678,7 +1678,10 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     type(INTEGRATION_NODE), pointer :: C
     type(probe), INTENT(INOUT) :: xs
     TYPE(INTERNAL_STATE) K
-
+if(C%parent_fibre%mag%name=="MAP") then
+   if(c%cas==case1) call track_mapr(C,XS)
+return
+endif
     if(2*old_integrator+c%parent_fibre%mag%old_integrator>0) then
      call TRACK_NODE_FLAG_probe_R(C,XS,K)
     else
@@ -1701,6 +1704,10 @@ CASE(KIND0,KIND1,KIND3,kind6,KIND8,KIND9,KIND11:KIND14,KIND15,kind17,KIND18,KIND
     type(INTEGRATION_NODE), pointer :: C
     type(probe_8), INTENT(INOUT) :: xs
     TYPE(INTERNAL_STATE) K
+if(C%parent_fibre%magp%name=="MAP") then
+   if(c%cas==case1) call track_mapp(C,XS)
+return
+endif
     if(compute_stoch_kick) then
       c%delta_rad_in=0
       c%delta_rad_out=0 
@@ -1731,7 +1738,37 @@ CASE(KIND0,KIND1,KIND3,kind6,KIND8,KIND9,KIND11:KIND14,KIND15,kind17,KIND18,KIND
     endif
     end SUBROUTINE TRACK_NODE_FLAG_probe_wrap_p
 
+  subroutine track_mapr(c,xs)   !electric teapot s
+    IMPLICIT NONE
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    type(probe), INTENT(INout) :: xs
+    real(dp) x(2)
+x(1)=cos(twopi*c%parent_fibre%mag%bn(2))*xs%x(1)+sin(twopi*c%parent_fibre%mag%bn(2))*xs%x(2)
+x(2)=cos(twopi*c%parent_fibre%mag%bn(2))*xs%x(2)-sin(twopi*c%parent_fibre%mag%bn(2))*xs%x(1)
+x(2)=x(2)+c%parent_fibre%mag%bn(3)*x(1)**2
+xs%x(1)=x(1)
+xs%x(2)=x(2)
+  end subroutine track_mapr
+
+  subroutine track_mapp(c,xs)   !electric teapot s
+    IMPLICIT NONE
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    type(probe_8), INTENT(INout) :: xs
+    type(real_8) x(3)
+call alloc(x)
+ x(3)=twopi*c%parent_fibre%magp%bn(2)
+x(1)=cos(x(3))*xs%x(1)+sin(x(3))*xs%x(2)
+x(2)=cos(x(3))*xs%x(2)-sin(x(3))*xs%x(1)
+
+x(2)=x(2)+c%parent_fibre%magp%bn(3)*x(1)**2
+
+xs%x(1)=x(1)
+xs%x(2)=x(2)
  
+call kill(x)
+ 
+
+  end subroutine track_mapp
 
   SUBROUTINE TRACK_NODE_FLAG_probe_R(C,XS,K)
     IMPLICIT NONE

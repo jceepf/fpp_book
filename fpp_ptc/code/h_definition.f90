@@ -468,6 +468,8 @@ TYPE c_vector_field  !@1
  type (c_taylor) v(lnv)
 ! quaternion part
  type(c_quaternion) q
+!  type(c_spinor) h
+  type(c_spinmatrix) L
   END TYPE c_vector_field
 !2BMAD  
   !@3 ---------------------------------------------</br>
