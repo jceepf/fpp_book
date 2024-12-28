@@ -29,7 +29,7 @@ MODULE S_DEF_ELEMENT
   logical(lp), PRIVATE :: VERBOSE = .FALSE.
   logical(lp), PRIVATE :: GEN = .TRUE.
   logical(lp),TARGET :: ALWAYS_EXACTMIS=.TRUE.
-  logical(lp),TARGET :: FEED_P0C=.FALSE.
+  logical(lp),TARGET :: FEED_P0C=.true.   ! changed 2024.12.13
   integer, TARGET :: np_pol=0
   !  logical(lp) :: isomorphism_MIS=.TRUE.  !Not needed anymore always should be true
   private put_aperture_el,put_aperture_elp

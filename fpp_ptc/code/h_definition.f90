@@ -13,6 +13,7 @@ module definition
 ! GTPSA REMOVED !  use GTPSA
   implicit none
   public
+!  integer,parameter::dpn=sp
   integer,parameter::dpn=dp
  ! integer,parameter::dpn=kind(1.e0)
   logical(lp) :: newread=.false. ,newprint =  .false. , first_time = .true.
@@ -441,7 +442,7 @@ type c_damap
 !  Initial orbit if tpsa =  true
  complex(dp) x0(lnv)
 !  Lie map matrix  (Yu's square matrix)
- complex(dp), pointer :: cm(:,:)=> null() 
+ complex(dpn), pointer :: cm(:,:)=> null() 
 !  Moment matrix (transpose of Yu Matrix)  
  real(dpn),pointer :: m(:,:)=> null()
 ! SO(3) is deprecated in FPP

@@ -4757,7 +4757,7 @@ n%atot=xs
 
  f%tm%lf%symplectic=.not.my_estate%radiation
  
-  call c_fast_canonise(n%atot,n%atot,phase=phase,damping=damping,spin_tune=spin_tune,dospin=my_estate%spin)
+call c_fast_canonise(n%atot,n%atot,phase=phase,damping=damping,spin_tune=spin_tune,dospin=my_estate%spin)
  
 xs=xs0+n%atot
 t=>t%next

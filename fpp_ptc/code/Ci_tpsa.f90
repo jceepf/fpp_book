@@ -140,7 +140,7 @@ integer i_alloc
 integer, private :: nmono
 integer  nmono_from_moment
 real(dp), private  :: tiny =1e-20_dp
-    logical :: sagan_gen =.false.
+    logical :: sagan_gen =.false.,symplectify_map=.false.
 integer mf_,n1_,n2_
 logical :: do_damping=.false.,do_spin=.false.,use_radiation_inverse = .true.
 logical :: force_spin_input_normal=.false.
@@ -155,6 +155,7 @@ logical :: old_phase_calculation=.false.
 logical :: new_cycle=.true.
 private EQUAL_arrayreal_arraytaylor,EQUAL_arraycomplex_arraytaylor
 private  EQUAL_arraytaylor_arrayreal,EQUAL_arraytaylor_arraycomplex
+private quaternion_to_spinmatrix,makeso3_equal
 logical :: correct_quaternion_field=.true.
 !  These routines computes lattice functions a la Ripken-Forest-Wolski
 !type c_lattice_function
@@ -670,7 +671,13 @@ logical :: correct_quaternion_field=.true.
      MODULE PROCEDURE quaternion_to_matrix_in_c_damap
 !!      call MAKESO3(Ml,m) uses the quaternion in the linear map  
      MODULE PROCEDURE c_linear_map_to_matrix
+     MODULE PROCEDURE quaternion_to_spinmatrix
   END INTERFACE
+
+  INTERFACE assignment (=)
+     MODULE PROCEDURE makeso3_equal
+  END INTERFACE
+
 
   INTERFACE AVERAGE
      MODULE PROCEDURE c_AVERAGE   !2000.12.25
@@ -6372,6 +6379,39 @@ m%q=p%q
      call kill(sf)
 
     end subroutine  quaternion_to_matrix_in_c_damap
+
+
+  subroutine  quaternion_to_spinmatrix(q,p)
+    implicit none
+    TYPE(c_quaternion), INTENT(IN) :: q
+    TYPE(c_spinmatrix), INTENT(INOUT) :: p
+    type(c_quaternion) s,sf
+    integer i,j
+
+     call alloc(s)
+     call alloc(sf)
+
+    do i=1,3
+     s=0.0_dp
+     s%x(i)=1.0_dp
+     sf=q*s*q**(-1)
+     do j=1,3
+      p%s(j,i)=sf%x(j)
+     enddo
+    enddo
+     call kill(s)
+     call kill(sf)
+
+    end subroutine  quaternion_to_spinmatrix
+
+
+  subroutine  makeso3_equal(p,q)
+    implicit none
+    TYPE(c_quaternion), INTENT(IN) :: q
+    TYPE(c_spinmatrix), INTENT(INOUT) :: p
+      call quaternion_to_spinmatrix(q,p)
+    end subroutine  makeso3_equal
+
 
   subroutine  c_linear_map_to_matrix (q_lin,m)
     implicit none
@@ -19369,10 +19409,13 @@ END FUNCTION FindDet
 
     call alloc(L_r , N_r , N_s , L_s)
     
-     if(.not.sagan_gen) call symplectify_for_zhe(ma,L_r , N_r, L_s , N_s )
+     if(.not.sagan_gen.or.symplectify_map) call symplectify_for_zhe(ma,L_r , N_r, L_s , N_s )
 
      
-
+      if(symplectify_map) then
+       L_r=1
+       N_r=1
+      endif
 
 
 !    np=ma%n+18
@@ -19405,7 +19448,7 @@ END FUNCTION FindDet
      mg(i)=0.e0_dp
     enddo
 
-if(.not.sagan_gen) then
+if(.not.sagan_gen.or.symplectify_map) then
       L_r = L_r*N_r
 else
    !   T(x)=T0 +L(x) + T2(x)
@@ -19414,7 +19457,7 @@ else
  
 endif
 
-if(.not.sagan_gen) then
+if(.not.sagan_gen.or.symplectify_map) then
 
      do i=1,L_r%n
       m(i)=L_r%v(i)   ! orbital part
@@ -19459,7 +19502,7 @@ endif
      call alloc(ms)
 
 
-if(.not.sagan_gen) then
+if(.not.sagan_gen.or.symplectify_map) then
       
        ms=n_s
 
@@ -19502,7 +19545,7 @@ endif
 
 
 !     write(6,*) " mul ",mul
-      if(.not.sagan_gen) then
+      if(.not.sagan_gen.or.symplectify_map) then
         t(3)%rad=L_s
       else
            t(3)%rad=L_s
@@ -19767,13 +19810,10 @@ end subroutine fill_tree_element_line_zhe_outside_map
 
 subroutine create_taylor_vector(t,v,vc)   ! fix0 is the initial condition for the maps
 implicit none
- 
- 
- 
 complex(dp) w
 integer  je(6),i,k,j
  real(dpn),optional::  v(:)
- complex(dp),optional::  vc(:)
+ complex(dpn),optional::  vc(:)
 type(c_taylor) t
  
 if(present(v))   v=0
@@ -19795,11 +19835,9 @@ subroutine create_vector_taylor(v,vc,w)   ! fix0 is the initial condition for th
 implicit none
  
  
- 
- 
- 
  real(dpn),optional::  v(:)
- complex(dp),optional::  vc(:)
+ complex(dpn),optional::  vc(:)
+complex(dp) vcc
 type(c_taylor) t,w
 integer i
 
@@ -19823,7 +19861,8 @@ do i=1,nmono
  if(present(v)) then
    w=t*v(i)+w
  elseif(present(vc)) then
-    w=t*vc(i)+w
+vcc=vc(i)
+    w=t*vcc+w
  else
 
   write(6,*) "error in create_vector_taylor "
@@ -20099,7 +20138,7 @@ enddo
 
 
 
-subroutine create_moment_map_one(mtotal,minput,sig,nd11,fin)   ! fix0 is the initial condition for the maps
+subroutine create_moment_map_one(mtotal,minput,sig,nd11,fin)  !,equilibrium_moments)   ! fix0 is the initial condition for the maps
 implicit none
  
  
@@ -20113,6 +20152,7 @@ type(c_damap) m,minput,mtotal
 type(c_taylor) t
 integer  i,inf,j,nd1,nd11
  logical,optional :: fin
+!real(dp),optional :: equilibrium_moments(:)
 logical ende
 
 ende=.false.
@@ -21373,7 +21413,9 @@ end subroutine symplectify_for_zhe
      endif
     enddo
     if(i>nrmax-10) then
-     write(6,*) i, a, "did not converge in orthonormalisep"
+     write(6,*) i, a, "did not converge in orthonormalisep 1"
+     read(5,*) i
+
      ! stop
     endif
     deallocate(rt)
