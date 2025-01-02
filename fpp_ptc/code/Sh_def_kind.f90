@@ -17324,7 +17324,7 @@ call  kill(del,pz,h)
     call kill(d)
 
   end subroutine fxp_canonical
-
+!  Ma Ande
   subroutine fxr(f,x,k,b,p,hcurv)   ! CAN BE USED BY ANY ELEMENT INCLUDING ABELL
     implicit none
 
@@ -17340,9 +17340,9 @@ call  kill(del,pz,h)
     else
        beta0=1.0_dp;GAMMA0I=0.0_dp;
     endif
-
+!!! B(1:3) is real b-field/ brho
     d(1)=root(x(2)**2+x(4)**2+(1.0_dp+hcurv*x(1))**2)
-    d(2)=(d(1)**3)/root(1.0_dp+2*x(5)/beta0+x(5)**2)
+    d(2)=(d(1)**3)/root(1.0_dp+2*x(5)/beta0+x(5)**2)  ! Ma =sqrt( (1+delta_p/p0))**2)  x(5)=D_E/p0c
     d(3)=1.0_dp+hcurv*x(1)
 
     c(1)=d(1)**2-x(2)**2
@@ -18049,6 +18049,7 @@ call  step_symp_p_PANCAkE(hh,tI,y,k,GR)
 
   end  subroutine rks_pancakep
   ! 4 order Runge
+! Ma Ande
   subroutine rk4_pancaker(ti,h,GR,y,k)
     IMPLICIT none
 
@@ -18572,7 +18573,7 @@ butcher(8,5)*g(j)+butcher(8,6)*o(j)+butcher(8,7)*p(j))
     endif
   END SUBROUTINE ADJUST_ABELLP
 
-
+! MA Ande
   SUBROUTINE ADJUST_PANCAKER(EL,X,k,J)
     IMPLICIT NONE
     real(dp), INTENT(INOUT) :: X(6)
@@ -18588,7 +18589,7 @@ butcher(8,5)*g(j)+butcher(8,6)*o(j)+butcher(8,7)*p(j))
       IF(EL%P%DIR==1) THEN
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
-         if(el%xprime.and.EL%p%method/=1) call conv_to_xp(el,x,k)
+         if(el%xprime.and.EL%p%method/=1) call conv_to_xp(el,x,k)   ! conversion from px to x'
       ELSE
          if(el%xprime.and.EL%p%method/=1) call conv_to_xp(el,x,k)
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
@@ -18597,7 +18598,7 @@ butcher(8,5)*g(j)+butcher(8,6)*o(j)+butcher(8,7)*p(j))
     else
     d(1)=-EL%P%DIR*el%xc ;d(3)=el%dc;d(2)=-EL%P%DIR*el%vc;
       IF(EL%P%DIR==1) THEN
-        if(el%xprime.and.EL%p%method/=1)  call conv_to_px(el,x,k)
+        if(el%xprime.and.EL%p%method/=1)  call conv_to_px(el,x,k) ! conversion from x' to p
         CALL TRANS(d,x,el%p%BETA0,el%p%exact,k%time)
         CALL ROT_XZ(el%angc,x,el%p%BETA0,el%p%exact,k%time)
       ELSE
@@ -18698,6 +18699,7 @@ butcher(8,5)*g(j)+butcher(8,6)*o(j)+butcher(8,7)*p(j))
 
   END SUBROUTINE ADJUST_PANCAKEP
 
+! Ma Ande (not important)
   SUBROUTINE INTER_PANCAKE(EL,X,k,POS)
     IMPLICIT NONE
     real(dp),INTENT(INOUT):: X(6)
