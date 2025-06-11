@@ -41,7 +41,7 @@ module ptc_spin
   REAL(DP) :: bran_init=pi  
   logical :: locate_with_no_cavity = .false.,full_way=.true.
   integer  :: item_min=3,mfdebug
-
+  integer  :: case_map=case1
 
 
   INTERFACE assignment (=)
@@ -1679,7 +1679,7 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     type(probe), INTENT(INOUT) :: xs
     TYPE(INTERNAL_STATE) K
 if(C%parent_fibre%mag%name=="MAP") then
-   if(c%cas==case1) call track_mapr(C,XS)
+   if(c%cas==case_map) call track_mapr(C,XS,K)
 return
 endif
     if(2*old_integrator+c%parent_fibre%mag%old_integrator>0) then
@@ -1705,7 +1705,7 @@ CASE(KIND0,KIND1,KIND3,kind6,KIND8,KIND9,KIND11:KIND14,KIND15,kind17,KIND18,KIND
     type(probe_8), INTENT(INOUT) :: xs
     TYPE(INTERNAL_STATE) K
 if(C%parent_fibre%magp%name=="MAP") then
-   if(c%cas==case1) call track_mapp(C,XS)
+   if(c%cas==case_map) call track_mapp(C,XS,k)
 return
 endif
     if(compute_stoch_kick) then
@@ -1738,7 +1738,276 @@ CASE(KIND0,KIND1,KIND3,kind6,KIND8,KIND9,KIND11:KIND14,KIND15,kind17,KIND18,KIND
     endif
     end SUBROUTINE TRACK_NODE_FLAG_probe_wrap_p
 
-  subroutine track_mapr(c,xs)   !electric teapot s
+
+  subroutine track_mapr(c,xs,K)   !electric teapot s
+    IMPLICIT NONE
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    type(probe), INTENT(INout) :: xs
+    TYPE(INTERNAL_STATE) K
+    integer i,n ,nz
+    real(dp) x(6),dl,q0(3),qf(3),pf0(3),pf(3),pfi(3),dpfi(3)
+    real(dp) :: eps=1.d-7, norm,normold
+    C%PARENT_FIBRE%MAG%P%DIR    => C%PARENT_FIBRE%DIR
+    C%PARENT_FIBRE%MAG%P%beta0  => C%PARENT_FIBRE%beta0
+    C%PARENT_FIBRE%MAG%P%GAMMA0I=> C%PARENT_FIBRE%GAMMA0I
+    C%PARENT_FIBRE%MAG%P%GAMBET => C%PARENT_FIBRE%GAMBET
+    C%PARENT_FIBRE%MAG%P%MASS => C%PARENT_FIBRE%MASS
+    C%PARENT_FIBRE%MAG%P%ag => C%PARENT_FIBRE%ag
+    C%PARENT_FIBRE%MAG%P%CHARGE=>C%PARENT_FIBRE%CHARGE
+
+
+
+    q0(1)=xs%x(1)
+    q0(2)=xs%x(3)
+    q0(3)=xs%x(5)
+    pf0(1)=xs%x(2)  ! initial guess pf=pi
+    pf0(2)=xs%x(4)
+    pf0(3)=xs%x(6)
+    
+ 
+   n=c%parent_fibre%mag%p%nst
+   dl=c%parent_fibre%mag%l/n
+
+!  below is a call to an
+   pf=pf0
+   pfi=1.d38
+   normold=1.d38
+   do i=1,1000
+    call newtow_searchr(c,q0,qf,pf0,pf,dl,k)
+    dpfi=pf-pfi
+    norm=abs(dpfi(1))+abs(dpfi(2))+abs(dpfi(3))
+    if(norm>eps) then 
+     normold=norm
+    else
+     if(norm>=normold) then
+      exit
+       else
+      normold=norm
+     endif
+    endif
+     pfi=pf
+   enddo
+   if(i>999) then
+    check_stable=.false.
+    return
+   endif 
+    xs%x(1)=qf(1)
+    xs%x(3)=qf(2)
+    xs%x(5)=qf(3)
+    xs%x(2)=pf(1)  ! initial guess pf=pi
+    xs%x(4)=pf(2)
+    xs%x(6)=pf(3)
+
+
+
+
+
+  end subroutine track_mapr
+  
+  subroutine newtow_searchr(c,q0,qf,pf0,pf,dl,k)
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    real(dp), INTENT(INout) :: q0(3),qf(3),pf0(3),pf(3)
+    type(element), pointer :: mag   
+    TYPE(INTERNAL_STATE) K 
+    real(dp) pz,onedelta,X(6),dl
+    real(dp) dir ,divr(3)
+    TYPE(TEAPOT),pointer :: EL
+    real(dp) b(3),VM,e(3),phi,mat(3,3)
+    integer i,nmat,ier
+    mag=>c%parent_fibre%mag
+    el=>c%parent_fibre%mag%tp10
+    IF(.NOT.EL%DRIFTKICK) stop 888
+    DIR=EL%P%DIR*EL%P%CHARGE
+    do i=1,3
+     x(2*i-1)=q0(i)
+     x(2*i)=pf(i)
+    enddo
+ 
+    call GETELECTRIC(EL,E,phi,B,VM,X,kick=my_true)
+    onedelta=root(1.0_dp+2.0_dp/c%parent_fibre%beta0*q0(3)+q0(3)**2)
+if(.not.check_stable) return
+
+!!! Evaluation of the map of the generating function
+    pz=root(onedelta**2-pf(1)**2-pf(2)**2)
+     divr(1)=-mag%p%b0*pz
+    divr(1)=-DIR*B(1)+divr(1)
+    divr(2)=-DIR*B(2) 
+    divr(3)=-(1.0_dp+mag%p%b0*q0(1))*(1.0_dp/c%parent_fibre%beta0+q0(3))/pz 
+    divr(3)=divr(3)+1.0_dp/c%parent_fibre%beta0*(1-k%TOTALPATH)
+
+    divr(1)=dl*divr(1)+pf(1)
+    divr(2)=dl*divr(2)+pf(2)
+    divr(3)=dl*divr(3)+pf(3)
+
+! computation of the derivative
+! this could be done with a compatible TPSA or by numerical differentiation
+!  it is not needed to be 100% exact
+    mat=0
+    mat(1,1)=1.0_dp+dl*pf(1)/pz
+    mat(1,2)= dl*pf(2)/pz
+    mat(2,2)=1.0_dp
+    mat(3,1)=-dl*(1.0_dp+mag%p%b0*q0(1))*(1.0_dp/c%parent_fibre%beta0+q0(3))/pz**3*pf(1)
+    mat(3,2)=-dl*(1.0_dp+mag%p%b0*q0(1))*(1.0_dp/c%parent_fibre%beta0+q0(3))/pz**3*pf(2)
+    mat(3,3)=1.0_dp
+    divr=pf0-divr
+    nmat=3
+   call matinv(mat,mat,nmat,nmat,ier)
+    divr=matmul(mat,divr)
+    pf=pf+divr
+!!! Evaluation of q final
+!!!! not needed except at the end but we can do it at every step also
+     qf(1)=q0(1)+dl*(1.0_dp+mag%p%b0*q0(1))*pf(1)/pz
+     qf(2)=q0(2)+dl*(1.0_dp+mag%p%b0*q0(1))*pf(2)/pz
+     qf(3)=q0(3) 
+    
+
+  end subroutine newtow_searchr
+
+  subroutine track_mapp(c,xs,K)   !electric teapot s
+    IMPLICIT NONE
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    type(probe_8), INTENT(INout) :: xs
+    type(probe)  xs0,xs1
+    type(elementp), pointer :: mag   
+
+    TYPE(INTERNAL_STATE) K
+    integer i,j(6),dir
+    type(real_8)  x(6),dl,q0(3),qf(3),pf0(3),pf(3),pz,divr(3)
+    type(c_damap) id
+    type(damap) idp,id0
+!    real(dp) x0(6)
+    type(real_8) b(3),VM,e(3),phi ,onedelta
+    TYPE(TEAPOTP),pointer :: EL
+
+    call alloc(b);call alloc(vm);call alloc(e);call alloc(phi);
+    mag=>c%parent_fibre%magp
+    el=>c%parent_fibre%magp%tp10
+
+    C%PARENT_FIBRE%MAGp%P%DIR    => C%PARENT_FIBRE%DIR
+    C%PARENT_FIBRE%MAGp%P%beta0  => C%PARENT_FIBRE%beta0
+    C%PARENT_FIBRE%MAGp%P%GAMMA0I=> C%PARENT_FIBRE%GAMMA0I
+    C%PARENT_FIBRE%MAGp%P%GAMBET => C%PARENT_FIBRE%GAMBET
+    C%PARENT_FIBRE%MAGp%P%MASS => C%PARENT_FIBRE%MASS
+    C%PARENT_FIBRE%MAGp%P%ag => C%PARENT_FIBRE%ag
+    C%PARENT_FIBRE%MAGp%P%CHARGE=>C%PARENT_FIBRE%CHARGE
+    DIR=EL%P%DIR*EL%P%CHARGE
+
+if(c_%no>0) then
+    call alloc(dl)
+    call alloc(x)
+    call alloc(q0)
+    call alloc(qf)
+    call alloc(pf0)
+    call alloc(pf)
+    call alloc(id)
+    call alloc(idp,id0)
+    call alloc(pz)
+    call alloc(onedelta)
+    call alloc(divr)
+    call alloc(b);call alloc(vm);call alloc(e);call alloc(phi);
+    call alloc(divr)
+endif
+     xs0=xs
+     xs1=xs
+      call track_mapr(c,xs1,K)
+
+ ! here I protect against the polymorph not being TPSA
+ ! this is not sufficient.... 
+ ! maybe the correct Julia implementation will be easier with Deniau's package
+!  we should be able to get polymorphs which are not bona fide maps, ie, taylor series
+! as function of parameters (multipole strength) without dependence on x,px, etc....
+if(c_%no==0) then    
+     xs=xs1
+     return
+endif 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+! compute the inverted map around the known solution
+!  for real numbers computed by track_mapr
+     do i=1,6
+      id0%v(i)=xs%x(i)-(xs%x(i).sub.'0')  ! removed the closed orbit
+     enddo
+     x(1)=xs0%x(1)+dz_8(1)
+     x(3)=xs0%x(3)+dz_8(3)
+     x(5)=xs0%x(5)+dz_8(5)
+     x(2)=xs1%x(2)+dz_8(2)
+     x(4)=xs1%x(4)+dz_8(4)
+     x(6)=xs1%x(6)+dz_8(6)
+ 
+     q0(1)=x(1)
+     q0(2)=x(3)
+     q0(3)=x(5)
+     pf(1)=x(2)
+     pf(2)=x(4)
+     pf(3)=x(6)
+
+!   evaluated the generating function as before
+!   by for polymorph
+     onedelta=sqrt(1.0_dp+2.0_dp/c%parent_fibre%beta0*q0(3)+q0(3)**2)
+
+   dl=c%parent_fibre%magp%l/c%parent_fibre%magp%p%nst
+
+     call GETELECTRIC(EL,E,phi,B,VM,X,kick=my_true)
+ 
+     pz=sqrt(onedelta**2-pf(1)**2-pf(2)**2)
+ 
+
+     divr(1)=-mag%p%b0*pz
+    divr(1)=-DIR*B(1)+divr(1)
+    divr(2)=-DIR*B(2) 
+    divr(3)=-(1.0_dp+mag%p%b0*q0(1))*(1.0_dp/c%parent_fibre%beta0+q0(3))/pz 
+    divr(3)=divr(3)+1.0_dp/c%parent_fibre%beta0*(1-k%TOTALPATH)
+
+    divr(1)=dl*divr(1)+pf(1)
+    divr(2)=dl*divr(2)+pf(2)
+    divr(3)=dl*divr(3)+pf(3)
+    qf(1)=q0(1)+dl*(1.0_dp+mag%p%b0*q0(1))*pf(1)/pz
+    qf(2)=q0(2)+dl*(1.0_dp+mag%p%b0*q0(1))*pf(2)/pz
+    qf(3)=q0(3) 
+ 
+!    Create a map around the closed orbit (Qf,P) as a function of (Q,PF)
+    idp%v(2)=divr(1)-(divr(1).sub.'0')
+    idp%v(4)=divr(2)-(divr(2).sub.'0')
+    idp%v(6)=divr(3)-(divr(3).sub.'0')
+    idp%v(1)=qf(1)-(qf(1).sub.'0')
+    idp%v(3)=qf(2)-(qf(2).sub.'0')
+    idp%v(5)=qf(3)-(qf(3).sub.'0')
+ 
+    j=0
+    j(2)=1
+    j(4)=1
+    j(6)=1
+!   Partially invert IDP around the closed orbit
+!   This operation is available in Matt's package  
+!   (QF,PF) as a function of (Q,P) but only the "DA" part
+!   This bypasses the Newton Search on a Taylor series
+    idp=idp**j
+
+!   Multiply  the magnet map times the original map around the orbit
+    id0=idp*id0
+ 
+!   Add the orbit back. We are done.
+
+    do i=1,6
+     xs%x(i)=id0%v(i)+xs1%x(i)
+    enddo
+    call kill(dl)
+    call kill(x)
+    call kill(q0)
+    call kill(qf)
+    call kill(pf0)
+    call kill(pf)
+    call kill(id)
+    call kill(idp,id0)
+    call kill(pz)
+    call kill(onedelta)
+    call kill(divr)
+    call kill(b);call kill(vm);call kill(e);call kill(phi);
+    call kill(divr)
+ if(.not.check_stable) stop 100
+  end subroutine track_mapp
+
+  subroutine track_mapr1(c,xs)   !electric teapot s
     IMPLICIT NONE
     TYPE(integration_node),pointer, INTENT(IN):: c
     type(probe), INTENT(INout) :: xs
@@ -1802,9 +2071,9 @@ endif
    xs%x(3)=xs%x(3)-c%parent_fibre%mag%an(1)/2.0_dp*xs%x(4)
   
 
-  end subroutine track_mapr
+  end subroutine track_mapr1
 
-  subroutine track_mapp(c,xs)   !electric teapot s
+  subroutine track_mapp1(c,xs)   !electric teapot s
     IMPLICIT NONE
     TYPE(integration_node),pointer, INTENT(IN):: c
     type(probe_8), INTENT(INout) :: xs
@@ -1889,7 +2158,7 @@ call kill(x)
 call kill(dl,k,rhoi,z)
 
 
-  end subroutine track_mapp
+  end subroutine track_mapp1
 
   SUBROUTINE TRACK_NODE_FLAG_probe_R(C,XS,K)
     IMPLICIT NONE
