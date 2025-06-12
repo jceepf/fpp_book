@@ -1682,6 +1682,10 @@ if(C%parent_fibre%mag%name=="MAP") then
    if(c%cas==case_map) call track_mapr(C,XS,K)
 return
 endif
+if(C%parent_fibre%mag%name=="MAP2") then
+   if(c%cas==case_map) call track_mapr2(C,XS,K)
+return
+endif
     if(2*old_integrator+c%parent_fibre%mag%old_integrator>0) then
      call TRACK_NODE_FLAG_probe_R(C,XS,K)
     else
@@ -1798,10 +1802,6 @@ CASE(KIND0,KIND1,KIND3,kind6,KIND8,KIND9,KIND11:KIND14,KIND15,kind17,KIND18,KIND
     xs%x(4)=pf(2)
     xs%x(6)=pf(3)
 
-
-
-
-
   end subroutine track_mapr
   
   subroutine newtow_searchr(c,q0,qf,pf0,pf,dl,k)
@@ -1862,6 +1862,153 @@ if(.not.check_stable) return
     
 
   end subroutine newtow_searchr
+
+subroutine newtow_searchr2(c,x0,xf,dl,k)
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    TYPE(INTERNAL_STATE) K 
+    real(dp), INTENT(INout) :: x0(6),xf(6),dl
+    real(dp)  x0t(6),xft(6),fm(6),fp(6),mat(6,6)
+    real(dp):: eps =1d-7
+    integer i ,nmat,ier
+    nmat=6
+    write(6,format6) x0
+    write(6,format6) xf
+pause 567
+    do i=1,6
+       x0t=x0
+       xft=xf
+       xft(i)= xft(i)+eps  
+       fp=xft
+    call newtow_eval2(c,x0t,fp,dl,k)
+       xft(i)= xft(i)-2*eps  
+       fm=xft
+    call newtow_eval2(c,x0t,fm,dl,k)
+ 
+     mat(1:6,i)=(fp-fm)/4.0_dp/eps   ! 4 because (x+xf)/2
+
+    enddo
+    !do i=1,6
+    !  mat(i,i)=mat(i,i)-1.0_dp
+    !enddo
+    write(6,format6) x0
+    write(6,format6) xf
+      xft=0
+     fp=xf
+    call newtow_eval2(c,x0,fp,dl,k)
+    xft=fp-x0
+    write(6,format6) x0
+    write(6,format6) fp
+         nmat=3
+   call matinv(mat,mat,nmat,nmat,ier)
+    xft=matmul(mat,xft)
+
+
+if(ier/=0) then
+ check_stable=.false.
+ write(6,*) "Unstable "
+ return
+ endif
+
+     xf=xf+xft
+    write(6,format6) x0
+    write(6,format6) xf
+ end subroutine newtow_searchr2
+
+subroutine newtow_eval2(c,x0,xf,dl,k)
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    real(dp), INTENT(INout) :: x0(6),xf(6)
+    type(element), pointer :: mag   
+    TYPE(INTERNAL_STATE) K 
+    real(dp) pz,onedelta,X(6),dl,f(6)
+    real(dp) dir  
+    TYPE(TEAPOT),pointer :: EL
+    real(dp) b(3),VM,e(3),phi 
+    integer i  
+    mag=>c%parent_fibre%mag
+    el=>c%parent_fibre%mag%tp10
+    IF(.NOT.EL%DRIFTKICK) stop 888
+    DIR=EL%P%DIR*EL%P%CHARGE
+
+    do i=1,6
+     x(i)=(x0(i)+xf(i))/2
+    enddo
+
+    call GETELECTRIC(EL,E,phi,B,VM,X,kick=my_true)
+    onedelta=root(1.0_dp+2.0_dp/c%parent_fibre%beta0*x(5)+x(5)**2)
+if(.not.check_stable) return
+
+!!! Evaluation of the map of the generating function
+    pz=root(onedelta**2-x(2)**2-x(4)**2)
+    f(2)=mag%p%b0*pz
+    f(2)=DIR*B(1)+f(2)
+    f(2)=DIR*B(2) 
+    f(6)=(1.0_dp+mag%p%b0*x(1))*(1.0_dp/c%parent_fibre%beta0+x(5))/pz 
+    f(6)=f(6)-1.0_dp/c%parent_fibre%beta0*(1-k%TOTALPATH)
+
+    f(2)=dl*f(2) 
+    f(4)=dl*f(4) 
+    f(6)=dl*f(6) 
+
+     f(1)= dl*(1.0_dp+mag%p%b0*x(1))*x(2)/pz
+     f(2)= dl*(1.0_dp+mag%p%b0*x(1))*x(4)/pz
+     f(3)= 0 
+     xf=x0+f
+ 
+  end subroutine newtow_eval2
+
+  subroutine track_mapr2(c,xs,K)   !electric teapot s
+    IMPLICIT NONE
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    type(probe), INTENT(INout) :: xs
+    TYPE(INTERNAL_STATE) K
+    integer i,n ,nz
+    real(dp) x0(6),dl,xf(6),xfi(6),dpfi(6)
+    real(dp) :: eps=1.d-7, norm,normold
+    C%PARENT_FIBRE%MAG%P%DIR    => C%PARENT_FIBRE%DIR
+    C%PARENT_FIBRE%MAG%P%beta0  => C%PARENT_FIBRE%beta0
+    C%PARENT_FIBRE%MAG%P%GAMMA0I=> C%PARENT_FIBRE%GAMMA0I
+    C%PARENT_FIBRE%MAG%P%GAMBET => C%PARENT_FIBRE%GAMBET
+    C%PARENT_FIBRE%MAG%P%MASS => C%PARENT_FIBRE%MASS
+    C%PARENT_FIBRE%MAG%P%ag => C%PARENT_FIBRE%ag
+    C%PARENT_FIBRE%MAG%P%CHARGE=>C%PARENT_FIBRE%CHARGE
+
+
+    x0(:)=xs%x(:)
+    xf(:)=xs%x(:)
+ 
+ 
+   n=c%parent_fibre%mag%p%nst
+   dl=c%parent_fibre%mag%l/n
+
+!  below is a call to an
+ 
+   xfi=1.d38
+   normold=1.d38
+   do i=1,1000
+    call newtow_searchr2(c,x0,xf,dl,k)
+
+    dpfi=xf-xfi
+    norm=abs(dpfi(1))+abs(dpfi(2))+abs(dpfi(3))+abs(dpfi(4))+abs(dpfi(5))+abs(dpfi(6))
+    if(norm>eps) then 
+     normold=norm
+    else
+     if(norm>=normold) then
+      exit
+       else
+      normold=norm
+     endif
+    endif
+     xfi=xf
+   enddo
+   if(i>999) then
+    check_stable=.false.
+    return
+   endif 
+    xs%x(1:6)=xf(1:6)
+ 
+
+  end subroutine track_mapr2
+  
 
   subroutine track_mapp(c,xs,K)   !electric teapot s
     IMPLICIT NONE
