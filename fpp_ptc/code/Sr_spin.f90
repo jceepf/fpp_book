@@ -2116,7 +2116,7 @@ subroutine newtow_eval(c,x,f,dl,k)
     integer i  
     mag=>c%parent_fibre%mag
     el=>c%parent_fibre%mag%tp10
-    IF(.NOT.EL%DRIFTKICK) stop 888
+!    IF(.NOT.EL%DRIFTKICK) stop 888
     DIR=EL%P%DIR*EL%P%CHARGE
 
  

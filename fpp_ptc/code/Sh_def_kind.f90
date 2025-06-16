@@ -2346,8 +2346,7 @@ CALL FRINGECAV(EL,X,k,2)
        do ko=1,el%nf
 
 
-          x(5)=x(5)-el%f(ko)*dir*EL%volt*volt_c*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO) &
-               +EL%phase0)/EL%P%P0C
+          x(5)=x(5)-el%f(ko)*dir*EL%volt*volt_c*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO) )/EL%P%P0C
           ! doing crabola
 
           X1=X(1)
@@ -2370,8 +2369,8 @@ CALL FRINGECAV(EL,X,k,2)
 
           ! multipole * cos(omega t+ phi)/p0c
 
-          X(2)=X(2)-el%f(ko)*dir*BBYTW/EL%P%P0C*(el%a+ el%r*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0))
-          X(4)=X(4)+el%f(ko)*DIR*BBXTW/EL%P%P0C*(el%a+ el%r*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0))
+          X(2)=X(2)-el%f(ko)*dir*BBYTW/EL%P%P0C*(el%a+el%r*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)))
+          X(4)=X(4)+el%f(ko)*DIR*BBXTW/EL%P%P0C*(el%a+el%r*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)))
 
           IF(EL%P%NMUL>=1) THEN
              BBYTW=-EL%BN(EL%P%NMUL)/EL%P%NMUL
@@ -2390,7 +2389,7 @@ CALL FRINGECAV(EL,X,k,2)
              BBYTW=0.0_dp
              BBXTW=0.0_dp
           ENDIF
-          X(5)=X(5)+el%f(ko)*ko*O*dir*BBYTW/EL%P%P0C*el%r*sin(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)
+          X(5)=X(5)+el%f(ko)*ko*O*dir*BBYTW/EL%P%P0C*el%r*sin(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))
 
        enddo
         
@@ -2436,7 +2435,7 @@ CALL FRINGECAV(EL,X,k,2)
     do ko=1,el%nf
 
        x(5)=x(5)-el%f(ko)*dir*EL%volt*volt_c*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+ &
-            EL%PH(KO)+EL%phase0)/EL%P%P0C
+            EL%PH(KO))/EL%P%P0C
        ! doing crabola
 
        X1=X(1)
@@ -2461,8 +2460,8 @@ CALL FRINGECAV(EL,X,k,2)
 
        ! multipole * cos(omega t+ phi)/p0c
 
-       X(2)=X(2)-el%f(ko)*dir*BBYTW/EL%P%P0C*(el%a+ el%r*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0))
-       X(4)=X(4)+el%f(ko)*DIR*BBXTW/EL%P%P0C*(el%a+ el%r*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0))
+       X(2)=X(2)-el%f(ko)*dir*BBYTW/EL%P%P0C*(el%a+ el%r*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)))
+       X(4)=X(4)+el%f(ko)*DIR*BBXTW/EL%P%P0C*(el%a+ el%r*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)))
 
        IF(EL%P%NMUL>=1) THEN
           BBYTW=-EL%BN(EL%P%NMUL)/EL%P%NMUL
@@ -2481,7 +2480,7 @@ CALL FRINGECAV(EL,X,k,2)
           BBYTW=0.0_dp
           BBXTW=0.0_dp
        ENDIF
-       X(5)=X(5)+el%f(ko)*ko*O*dir*BBYTW/EL%P%P0C*el%r*sin(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)
+       X(5)=X(5)+el%f(ko)*ko*O*dir*BBYTW/EL%P%P0C*el%r*sin(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))
 
     enddo
 
@@ -2522,14 +2521,14 @@ CALL FRINGECAV(EL,X,k,2)
     ad=0.0_dp
    do ko=1,el%nf    ! over modes
 
-    C1=el%f(ko)*V*sin(ko*O*z)*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%phase0+EL%PH(KO))*0.5_dp
-    S1=el%f(ko)*(ko*O)*V*sin(ko*O*z)*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%phase0+EL%PH(KO))/2.0_dp
+    C1=el%f(ko)*V*sin(ko*O*z)*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))*0.5_dp
+    S1=el%f(ko)*(ko*O)*V*sin(ko*O*z)*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))/2.0_dp
     AD(1)=-C1+AD(1)
     AD(2)=S1+AD(2)
-    ad(3)=ad(3)-(ko*O)*el%f(ko)*V*cos(ko*O*z)*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%phase0+EL%PH(KO))*0.5_dp
+    ad(3)=ad(3)-(ko*O)*el%f(ko)*V*cos(ko*O*z)*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))*0.5_dp
 
 !!!   -DA_3/DT FOR KICK IN X(5)
-    A(3)=A(3)-EL%P%DIR*el%f(ko)*V*COS(ko*O*z)*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)
+    A(3)=A(3)-EL%P%DIR*el%f(ko)*V*COS(ko*O*z)*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))
    enddo
 !vvvv
     A(1)=AD(1)*X(1)  ! A_x
@@ -2594,16 +2593,16 @@ CALL FRINGECAV(EL,X,k,2)
 
    do ko=1,el%nf    ! over modes
 
-    C1=el%f(ko)*V*sin(ko*O*z)*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%phase0+EL%PH(KO))*0.5_dp
-    S1=el%f(ko)*(ko*O)*V*sin(ko*O*z)*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%phase0+EL%PH(KO))/2.0_dp
+    C1=el%f(ko)*V*sin(ko*O*z)*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))*0.5_dp
+    S1=el%f(ko)*(ko*O)*V*sin(ko*O*z)*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))/2.0_dp
 
     AD(1)=-C1+AD(1)
     AD(2)=S1+AD(2)
 
-    ad(3)=ad(3)-(ko*O)*el%f(ko)*V*cos(ko*O*z)*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%phase0+EL%PH(KO))*0.5_dp
+    ad(3)=ad(3)-(ko*O)*el%f(ko)*V*cos(ko*O*z)*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))*0.5_dp
 
 !!!   DA_3/DT FOR KICK IN X(5)
-    A(3)=A(3)-EL%P%DIR*el%f(ko)*V*COS(ko*O*z)*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)
+    A(3)=A(3)-EL%P%DIR*el%f(ko)*V*COS(ko*O*z)*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))
    enddo
 
     A(1)=AD(1)*X(1)
@@ -3953,8 +3952,8 @@ stop
 
    do ko=1,el%nf    ! over modes
 
-    s1=cos(kbmad*ko*O*z)*sin(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%phase0+EL%PH(KO))
-    c1=cos(kbmad*ko*O*z)*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%phase0+EL%PH(KO))
+    s1=cos(kbmad*ko*O*z)*sin(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))
+    c1=cos(kbmad*ko*O*z)*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))
 
 
     X(2)=X(2)+V*S1*X(1)*0.5_dp
@@ -4015,8 +4014,8 @@ stop
 
     do ko=1,el%nf    ! over modes
 
-    s1=cos(kbmad*ko*O*z)*sin(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%phase0+EL%PH(KO))
-    c1=cos(kbmad*ko*O*z)*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%phase0+EL%PH(KO))
+    s1=cos(kbmad*ko*O*z)*sin(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))
+    c1=cos(kbmad*ko*O*z)*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))
 
 !    print *, "nf=", el%nf, "jc=", jc, "ko=", ko, "it=", it, "T=", el%t, "kbmad=", kbmad, "ph0=", EL%phase0
 !    call PRTP1("PHS=", EL%phas)
@@ -4086,15 +4085,15 @@ stop
        !    EL%DELTA_E=x(5)
 
        IF(EL%N_BESSEL>0) THEN
-          X(2)=X(2)-X(1)*el%f(ko)*DF*VL*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)/(ko*O)
-          X(4)=X(4)-X(3)*el%f(ko)*DF*VL*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)/(ko*O)
+          X(2)=X(2)-X(1)*el%f(ko)*DF*VL*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))/(ko*O)
+          X(4)=X(4)-X(3)*el%f(ko)*DF*VL*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))/(ko*O)
        ENDIF
 
 !!!!!   el%t should be the "phase" of the cavity if many modes are used
 !!!!!   indeed EL%PH(KO) should be used to shape the harmonic profile of the cavity only
 !!!!!   if tot_t=1 (default)  then it=1 if totalpath=1 other zero
 !!!!!   if tot_t=0 it=1 always
-       x(5)=x(5)-el%f(ko)*F*VL*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)
+       x(5)=x(5)-el%f(ko)*F*VL*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))
 
        ! doing crabola
 
@@ -4119,8 +4118,8 @@ stop
 
        ! multipole * cos(omega t+ phi)/p0c
 
-       X(2)=X(2)-el%f(ko)*YL*DIR*BBYTW/EL%P%P0C*(EL%A+EL%R*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0))
-       X(4)=X(4)+el%f(ko)*YL*DIR*BBXTW/EL%P%P0C*(EL%A+EL%R*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0))
+       X(2)=X(2)-el%f(ko)*YL*DIR*BBYTW/EL%P%P0C*(EL%A+EL%R*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)))
+       X(4)=X(4)+el%f(ko)*YL*DIR*BBXTW/EL%P%P0C*(EL%A+EL%R*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)))
 
        IF(EL%P%NMUL>=1) THEN
           BBYTW=-EL%BN(EL%P%NMUL)/EL%P%NMUL
@@ -4140,7 +4139,7 @@ stop
           BBXTW=0.0_dp
        ENDIF
 
-       X(5)=X(5)+el%f(ko)*(ko*O)*YL*DIR*BBYTW/EL%P%P0C*EL%R*sin(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)
+       X(5)=X(5)+el%f(ko)*(ko*O)*YL*DIR*BBYTW/EL%P%P0C*EL%R*sin(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))
     enddo    ! over modes
 
 
@@ -4205,7 +4204,7 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
        !    EL%DELTA_E=x(5)
 
        IF(EL%N_BESSEL>0) THEN
-          C1 = el%f(ko)*DF*VL*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)/(ko*O)
+          C1 = el%f(ko)*DF*VL*COS(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))/(ko*O)
           X(2)=X(2)-X(1)*C1
           X(4)=X(4)-X(3)*C1
 !          call PRTP1("C1", C1)
@@ -4214,7 +4213,7 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
 !      write (*,'(7(a,E25.16))') '@ KO= ', ko*1.0_dp, ' F= ', F%r, ' F(KO)= ', el%f(ko)%r, ' P(KO)= ', EL%PH(KO)%r, ' T= ', EL%t,&
 !                                ' IT= ', 1.0_dp*it
 
-       x(5)=x(5)-el%f(ko)*F*VL*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)
+       x(5)=x(5)-el%f(ko)*F*VL*SIN(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))
 
        ! doing crabola
 
@@ -4239,8 +4238,8 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
 
        ! multipole * cos(omega t+ phi)/p0c
 
-       X(2)=X(2)-el%f(ko)*YL*DIR*BBYTW/EL%P%P0C*(EL%A+EL%R*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0))
-       X(4)=X(4)+el%f(ko)*YL*DIR*BBXTW/EL%P%P0C*(EL%A+EL%R*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0))
+       X(2)=X(2)-el%f(ko)*YL*DIR*BBYTW/EL%P%P0C*(EL%A+EL%R*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)))
+       X(4)=X(4)+el%f(ko)*YL*DIR*BBXTW/EL%P%P0C*(EL%A+EL%R*cos(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)))
 
        IF(EL%P%NMUL>=1) THEN
           BBYTW=-EL%BN(EL%P%NMUL)/EL%P%NMUL
@@ -4260,7 +4259,7 @@ SUBROUTINE KICKCAVP(EL,YL,X,k)
           BBXTW=0.0_dp
        ENDIF
 
-       X(5)=X(5)+el%f(ko)*(ko*O)*YL*DIR*BBYTW/EL%P%P0C*EL%R*sin(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO)+EL%phase0)
+       X(5)=X(5)+el%f(ko)*(ko*O)*YL*DIR*BBYTW/EL%P%P0C*EL%R*sin(ko*O*(x(6)+EL%t*it)+EL%PHAS+EL%PH(KO))
 
     enddo    ! over modes
 
@@ -16348,9 +16347,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
        if(ASSOCIATED(EL%CAVITY_TOTALPATH)) then
           deallocate(EL%CAVITY_TOTALPATH)
        endif
-       if(ASSOCIATED(EL%phase0)) then
-          deallocate(EL%phase0)
-       endif
+
        if(ASSOCIATED(EL%ACC)) then
        call kill_acceleration(EL%ACC)
           deallocate(EL%ACC)
@@ -16359,7 +16356,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
 
        NULLIFY(EL%ACC)
        NULLIFY(EL%t)
-       NULLIFY(EL%phase0)
+
        NULLIFY(EL%CAVITY_TOTALPATH)
        NULLIFY(EL%N_BESSEL)
        NULLIFY(EL%H1)
@@ -16399,9 +16396,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
        if(ASSOCIATED(EL%CAVITY_TOTALPATH)) then
           deallocate(EL%CAVITY_TOTALPATH)
        endif
-       if(ASSOCIATED(EL%phase0)) then
-          deallocate(EL%phase0)
-       endif
+
        if(ASSOCIATED(EL%F)) then
           CALL KILL(EL%F,EL%NF)
           deallocate(EL%F)
@@ -16440,7 +16435,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
 
        NULLIFY(EL%ACC)
        NULLIFY(EL%t)
-       NULLIFY(EL%phase0)
+
        NULLIFY(EL%CAVITY_TOTALPATH)
        NULLIFY(EL%N_BESSEL)
        NULLIFY(EL%H1)
@@ -16970,8 +16965,7 @@ endif
       elp%c4%volt =1.0_dp
       el%c4%phas  =0.0_dp
       elp%c4%phas =0.0_dp
-      el%c4%phase0  =0.0_dp
-      elp%c4%phase0 =0.0_dp
+
       el%c4%t  =tc
       elp%c4%t =tc
 
@@ -20652,7 +20646,8 @@ butcher(8,5)*g(j)+butcher(8,6)*o(j)+butcher(8,7)*p(j))
 !!! newyoshida
     CASE(8)
 
- 
+        WRITE(6,*) " THE METHOD ",EL%P%METHOD," IS NOT SUPPORTED in intr_he"
+
      stop 888
 
 
@@ -20775,7 +20770,7 @@ butcher(8,5)*g(j)+butcher(8,6)*o(j)+butcher(8,7)*p(j))
 !!! newyoshida
     CASE(8)
 
- 
+       WRITE(6,*) " THE METHOD ",EL%P%METHOD," IS NOT SUPPORTED in intp_he"
      stop 888
 
     CASE DEFAULT
@@ -22163,8 +22158,8 @@ call kill(vm,phi,z)
 
        ! multipole * cos(omega t+ phi)/p0c
 
-       B(2)=B(2)+EL%F(KO)*BBYTW/EL%P%P0C*cos(ko*O*x(6)+EL%PHAS+EL%phase0)
-       B(1)=B(1)+EL%F(KO)*BBXTW/EL%P%P0C*cos(ko*O*x(6)+EL%PHAS+EL%phase0)
+       B(2)=B(2)+EL%F(KO)*BBYTW/EL%P%P0C*cos(ko*O*x(6)+EL%PHAS)
+       B(1)=B(1)+EL%F(KO)*BBXTW/EL%P%P0C*cos(ko*O*x(6)+EL%PHAS)
 
        IF(EL%P%NMUL>=1) THEN
           BBYTW=-EL%BN(EL%P%NMUL)/EL%P%NMUL
@@ -22184,7 +22179,7 @@ call kill(vm,phi,z)
           BBXTW=0.0_dp
        ENDIF
 
-       E(3)=E(3)+EL%F(KO)*ko*O*BBYTW/EL%P%P0C*sin(ko*O*x(6)+EL%PHAS+EL%phase0)
+       E(3)=E(3)+EL%F(KO)*ko*O*BBYTW/EL%P%P0C*sin(ko*O*x(6)+EL%PHAS)
     enddo
 
     call b0_cav(EL,x,BBXTW,BBYTW)
@@ -22264,8 +22259,8 @@ call kill(vm,phi,z)
 
        ! multipole * cos(omega t+ phi)/p0c
 
-       B(2)=B(2)+EL%F(KO)*BBYTW/EL%P%P0C*cos(ko*O*x(6)+EL%PHAS+EL%phase0)
-       B(1)=B(1)+EL%F(KO)*BBXTW/EL%P%P0C*cos(ko*O*x(6)+EL%PHAS+EL%phase0)
+       B(2)=B(2)+EL%F(KO)*BBYTW/EL%P%P0C*cos(ko*O*x(6)+EL%PHAS)
+       B(1)=B(1)+EL%F(KO)*BBXTW/EL%P%P0C*cos(ko*O*x(6)+EL%PHAS)
 
        IF(EL%P%NMUL>=1) THEN
           BBYTW=-EL%BN(EL%P%NMUL)/EL%P%NMUL
@@ -22285,7 +22280,7 @@ call kill(vm,phi,z)
           BBXTW=0.0_dp
        ENDIF
 
-       E(3)=E(3)+EL%F(KO)*ko*O*BBYTW/EL%P%P0C*sin(ko*O*x(6)+EL%PHAS+EL%phase0)
+       E(3)=E(3)+EL%F(KO)*ko*O*BBYTW/EL%P%P0C*sin(ko*O*x(6)+EL%PHAS)
     enddo
 
     call b0_cav(EL,x,BBXTW,BBYTW)
