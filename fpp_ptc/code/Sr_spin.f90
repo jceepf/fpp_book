@@ -1678,40 +1678,41 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     type(INTEGRATION_NODE), pointer :: C
     type(probe), INTENT(INOUT) :: xs
     TYPE(INTERNAL_STATE) K
-    
-if(C%parent_fibre%mag%name=="MAP1") then
-   if(c%cas==case_map) call track_mapr1(C,XS,1.0_dp,1,K)
-return
-endif
-if(C%parent_fibre%mag%name=="MAP2") then
-   if(c%cas==case_map) call track_mapr1(C,XS,1.0_dp,2,K)
-return
-endif
-if(C%parent_fibre%mag%name=="MAP2ND") then
-   if(c%cas==case_map) call track_mapr2nd(c,xs,1.0_dp,K)
-return
-endif
-if(C%parent_fibre%mag%name=="MAP4TH") then
-   if(c%cas==case_map) call track_mapr4th(c,xs,K)
-return
-endif
-if(C%parent_fibre%mag%name=="MAP6TH") then
-   if(c%cas==case_map) call track_mapr6th(c,xs,K)
-return
-endif
-if(C%parent_fibre%mag%name=="MAP6THS") then
-   if(c%cas==case_map) call track_mapr6ths(c,xs,K)
-return
-endif
-if(C%parent_fibre%mag%name=="MAP8TH") then
-   if(c%cas==case_map) call track_mapr8th(c,xs,K)
-return
-endif
-if(C%parent_fibre%mag%name=="MAP8THS") then
-   if(c%cas==case_map) call track_mapr8ths(c,xs,K)
-return
-endif 
- 
+
+if(C%parent_fibre%mag%name(1:3)=="MAP") then
+ if(C%parent_fibre%mag%name=="MAP1") then
+    if(c%cas==case_map) call track_mapr1(C,XS,1.0_dp,1,K)
+ return
+ endif
+ if(C%parent_fibre%mag%name=="MAP2") then
+    if(c%cas==case_map) call track_mapr1(C,XS,1.0_dp,2,K)
+ return
+ endif
+ if(C%parent_fibre%mag%name=="MAP2ND") then
+    if(c%cas==case_map) call track_mapr2nd(c,xs,1.0_dp,K)
+ return
+ endif
+ if(C%parent_fibre%mag%name=="MAP4TH") then
+    if(c%cas==case_map) call track_mapr4th(c,xs,K)
+ return
+ endif
+ if(C%parent_fibre%mag%name=="MAP6TH") then
+    if(c%cas==case_map) call track_mapr6th(c,xs,K)
+ return
+ endif
+ if(C%parent_fibre%mag%name=="MAP6THS") then
+    if(c%cas==case_map) call track_mapr6ths(c,xs,K)
+ return
+ endif
+ if(C%parent_fibre%mag%name=="MAP8TH") then
+    if(c%cas==case_map) call track_mapr8th(c,xs,K)
+ return
+ endif
+ if(C%parent_fibre%mag%name=="MAP8THS") then
+    if(c%cas==case_map) call track_mapr8ths(c,xs,K)
+ return
+ endif 
+ else
     if(2*old_integrator+c%parent_fibre%mag%old_integrator>0) then
      call TRACK_NODE_FLAG_probe_R(C,XS,K)
     else
@@ -1727,50 +1728,48 @@ CASE(KIND0,KIND1,KIND3,kind6,KIND8,KIND9,KIND11:KIND14,KIND15,kind17,KIND18,KIND
      end select
 
     endif
-
+endif  ! map
     end SUBROUTINE TRACK_NODE_FLAG_probe_wrap_R
 
   SUBROUTINE TRACK_NODE_FLAG_probe_wrap_p(C,XS,K)
     type(INTEGRATION_NODE), pointer :: C
     type(probe_8), INTENT(INOUT) :: xs
     TYPE(INTERNAL_STATE) K
-if(C%parent_fibre%magp%name=="MAP1") then
-   if(c%cas==case_map) then
-    call track_mapp1(C,XS,1.0_dp,1,k)
-   endif
-return
-endif
-if(C%parent_fibre%magp%name=="MAP2") then
-   if(c%cas==case_map) then
-    call track_mapp1(C,XS,1.0_dp,2,k)
-  endif
-return
-endif
-if(C%parent_fibre%mag%name=="MAP2ND") then
-   if(c%cas==case_map) call track_mapp2nd(c,xs,1.0_dp,K)
-return
-endif
-if(C%parent_fibre%mag%name=="MAP4TH") then
-   if(c%cas==case_map) call track_mapp4th(c,xs,K)
 
-return
-endif
-if(C%parent_fibre%mag%name=="MAP6TH") then
-   if(c%cas==case_map) call track_mapp6th(c,xs,K)
-return
-endif
-if(C%parent_fibre%mag%name=="MAP6THS") then
-   if(c%cas==case_map) call track_mapp6ths(c,xs,K)
-return
-endif
-if(C%parent_fibre%mag%name=="MAP8TH") then
-   if(c%cas==case_map) call track_mapp8th(c,xs,K)
-return
-endif
-if(C%parent_fibre%mag%name=="MAP8THS") then
-   if(c%cas==case_map) call track_mapp8ths(c,xs,K)
-return
-endif
+if(C%parent_fibre%magp%name(1:3)=="MAP") then
+ if(C%parent_fibre%magp%name=="MAP1") then
+    if(c%cas==case_map) call track_mapp1(C,XS,1.0_dp,1,K)
+ return
+ endif
+ if(C%parent_fibre%magp%name=="MAP2") then
+    if(c%cas==case_map) call track_mapp1(C,XS,1.0_dp,2,K)
+ return
+ endif
+ if(C%parent_fibre%magp%name=="MAP2ND") then
+    if(c%cas==case_map) call track_mapp2nd(c,xs,1.0_dp,K)
+ return
+ endif
+ if(C%parent_fibre%magp%name=="MAP4TH") then
+    if(c%cas==case_map) call track_mapp4th(c,xs,K)
+ return
+ endif
+ if(C%parent_fibre%magp%name=="MAP6TH") then
+    if(c%cas==case_map) call track_mapp6th(c,xs,K)
+ return
+ endif
+ if(C%parent_fibre%magp%name=="MAP6THS") then
+    if(c%cas==case_map) call track_mapp6ths(c,xs,K)
+ return
+ endif
+ if(C%parent_fibre%magp%name=="MAP8TH") then
+    if(c%cas==case_map) call track_mapp8th(c,xs,K)
+ return
+ endif
+ if(C%parent_fibre%magp%name=="MAP8THS") then
+    if(c%cas==case_map) call track_mapp8ths(c,xs,K)
+ return
+ endif 
+ else
     if(compute_stoch_kick) then
       c%delta_rad_in=0
       c%delta_rad_out=0 
@@ -1799,6 +1798,7 @@ CASE(KIND0,KIND1,KIND3,kind6,KIND8,KIND9,KIND11:KIND14,KIND15,kind17,KIND18,KIND
      end select
 
     endif
+endif ! map
     end SUBROUTINE TRACK_NODE_FLAG_probe_wrap_p
 
   
