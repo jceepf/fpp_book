@@ -25041,10 +25041,14 @@ subroutine rk6_sagan_probep(ti,p,k,ct,h)   ! (ti,h,GR,y,k)
 
     CALL Abmad_TRANS(D,Z0,X,k,A,AD,b,e)
     call b0_cav(D,x,BBXTW,BBYTW)
+ 
+
 !write(n_wedge,"(11(1x,g16.9,1x))") z0+hhh, b,scaleb*b,qi%x(0:3)
 !eeeeeeeeeeeeeeeeeeeeeeeee
     X(2)=X(2)-A(1)
     X(4)=X(4)-A(2)
+  
+
 
     IF(D%P%EXACT) THEN
        if(k%TIME) then
@@ -25067,10 +25071,10 @@ subroutine rk6_sagan_probep(ti,p,k,ct,h)   ! (ti,h,GR,y,k)
     ELSE
        if(k%TIME) then
           PZ=ROOT(1.0_dp+2.0_dp*X(5)/D%P%BETA0+x(5)**2)
-          F(1)=X(2)/PZ-BBYTW 
-          F(3)=X(4)/PZ+BBXTW
-          F(2)=F(1)*AD(1)
-          F(4)=F(3)*AD(1)
+          F(1)=X(2)/PZ
+          F(3)=X(4)/PZ
+          F(2)=F(1)*AD(1)-BBYTW 
+          F(4)=F(3)*AD(1)+BBXTW
           F(5)=-(F(1)*X(1)+F(3)*X(3))*AD(2)+A(3)
           F(6)=((X(2)*X(2)+X(4)*X(4))/2.0_dp/pz**2+1.0_dp)*(1.0_dp/D%P%BETA0+x(5))/pz
           F(6)=F(6)-(1-k%TOTALPATH)/D%P%BETA0
@@ -25083,7 +25087,7 @@ subroutine rk6_sagan_probep(ti,p,k,ct,h)   ! (ti,h,GR,y,k)
           F(6)=(1.0_dp/(1.0_dp+X(5)))*(X(2)*X(2)+X(4)*X(4))/2.0_dp/(1.0_dp+X(5))+k%TOTALPATH
        endif
     ENDIF
-
+ 
     X(2)=X(2)+A(1)
     X(4)=X(4)+A(2)
 
@@ -26228,9 +26232,10 @@ subroutine rk6bmad_cav_trav_probep(ti,p,k,ct,h)   ! (ti,h,GR,y,k)
 !    ad=0
     CALL Abmad_TRANS(D,Z0,X,k,A,AD)
     call b0_cav(D,x,BBXTW,BBYTW)
+ 
     X(2)=X(2)-A(1)
     X(4)=X(4)-A(2)
-
+ 
     IF(D%P%EXACT) THEN
        if(k%TIME) then
           PZ=sqrt(1.0_dp+2.0_dp*X(5)/D%P%BETA0+x(5)**2-X(2)**2-X(4)**2)
@@ -26268,7 +26273,7 @@ subroutine rk6bmad_cav_trav_probep(ti,p,k,ct,h)   ! (ti,h,GR,y,k)
           F(6)=(1.0_dp/(1.0_dp+X(5)))*(X(2)*X(2)+X(4)*X(4))/2.0_dp/(1.0_dp+X(5))+k%TOTALPATH
        endif
     ENDIF
-
+ 
     X(2)=X(2)+A(1)
     X(4)=X(4)+A(2)
 !  
