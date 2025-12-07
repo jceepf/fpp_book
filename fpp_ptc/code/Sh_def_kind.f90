@@ -209,8 +209,11 @@ type(work) w_bks
  logical :: gaussian_stoch=.false.
  private  feval_sagan_prober,feval_sagan_probep
 private rk2_sagan_prober,rk2_sagan_probep,rk4_sagan_prober,rk4_sagan_probep, rk6_sagan_prober,rk6_sagan_probep
-
-
+  real(dp) myL1(2,2),myL2(2,2),mylatf(3)   ! for kobayashi
+type(fibre), pointer :: fk_ye
+integer :: j_ye=2, first_ye=-1
+real(dp) invbest_ye
+type(c_universal_taylor) invtpsa_ye
 real(dp) scalee,scaleb,hhh
 !type(real_8) radcoe
 
@@ -4556,6 +4559,116 @@ X(6)=X(6)+((X(2)*X(2)+X(4)*X(4))/2.0_dp/pz**2)*(1.0_dp/b+x(5))*L/pz + x(5)*L/pz 
 
   END SUBROUTINE DRIFTP
 
+
+subroutine  locate_on_invh(x,u)
+implicit none
+
+real(dp) x(:),xn(6)
+real(dp)  invbest1,invbest2,invbest,dpx,didp,dpxb
+integer j,i,k
+logical u
+
+k=0
+1 continue
+u=.false.
+j=j_ye
+invbest=invbest_ye
+
+dpxb=1.e38_dp
+do i=1,100
+ xn=x
+ if(xn(1)<xn(2)) then
+xn(2)=xn(2)+1.d-6
+ call compute_invh(x,j,invbest1)
+ call compute_invh(xn,j,invbest2)
+ 
+didp= (invbest2-invbest1)/1.d-6
+dpx=(invbest-invbest1)/didp
+ x(2)=x(2)+dpx
+else
+xn(1)=xn(1)+1.d-6
+ call compute_invh(x,j,invbest1)
+ call compute_invh(xn,j,invbest2)
+ 
+didp= (invbest2-invbest1)/1.d-6
+dpx=(invbest-invbest1)/didp
+ x(1)=x(1)+dpx
+endif
+if(i>5) then
+ if(abs(dpxb)<=abs(dpx)) then
+  exit
+ endif
+endif
+dpxb=dpx
+enddo
+  
+if(i>=100) then
+ if(k<=10) then
+x(1)=0.9_dp*x(1)
+k=1+k
+write(6,*) " k ",k
+goto 1
+endif
+  u=.true.
+endif
+ 
+
+end subroutine  locate_on_invh
+
+subroutine compute_invh(x,j,inv)
+implicit none
+real(dp) x(:)
+real(dp) b_sol,bf1(3),bf2(3),y(6),inv,invk,invbest
+real(dp) de,dex,dep,V1,V2,cs,w1,w2
+real(dp) ls
+integer j
+type(c_ray) cray
+
+
+if(j==-1) then   !  tpsa
+cray%x=0
+cray%x(1:2)=x(1:2)
+inv=invtpsa_ye.o.cray
+else
+inv=0
+ ls=fk_ye%mag%L
+if(associated(fk_ye%mag%k3)) ls=fk_ye%mag%k3%ls
+
+y=0
+y(1)=myl1(1,1)*x(1)+myl1(1,2)*x(2)
+ call GETNEWB(fk_ye%mag,b_sol,Bf1,Y,V1)
+ inv=inv+V1*ls
+y=0
+y(1)=myl2(1,1)*x(1)+myl2(1,2)*x(2)
+ call GETNEWB(fk_ye%mag,b_sol,Bf2,Y,V2)
+ inv=inv+V2*ls
+
+invbest=ls**2*Bf1(2)*Bf2(2)*(myl1(1,1)*myl2(1,2)-myl1(1,2)*myl2(1,1))/2.0_dp
+
+
+
+ 
+cs=(2*mylatf(1)*x(1)*x(2)+mylatf(2)*x(2)*x(2)+mylatf(3)*x(1)*x(1))
+
+
+ inv=inv+cs
+ invk=inv
+ 
+ 
+dex=2*(mylatf(1)*x(2)+mylatf(3)*x(1))
+dep=2*(mylatf(1)*x(1)+mylatf(2)*x(2))
+
+w1=bf1(2)*(dex*myl1(1,2)-dep*myl1(1,1))/2.0_dp
+
+ 
+w2=bf2(2)*(dex*myl2(1,2)-dep*myl2(1,1))/2.0_dp
+if(j==1) inv=invk+w1*ls+w2*ls
+
+if(j==2) inv=invbest+invk+w1*ls+w2*ls
+endif
+end subroutine  compute_invh
+
+!!!!!!!!!!
   SUBROUTINE KICKTR(EL,X,k)
     IMPLICIT NONE
     real(dp),INTENT(INOUT):: X(6)
@@ -4564,7 +4677,7 @@ X(6)=X(6)+((X(2)*X(2)+X(4)*X(4))/2.0_dp/pz**2)*(1.0_dp/b+x(5))*L/pz + x(5)*L/pz 
     real(dp) X1,X3,BBYTW,BBXTW,BBYTWT,pz,alfh
     INTEGER J,I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
-    real(dp) myCOS,mySIN,ANG,XT(6)
+    real(dp) myCOS,mySIN,ANG,XT(6),th
 
     x(1)=x(1)-el%dx   ! sadistic stuff
     x(3)=x(3)-el%dy
@@ -4586,78 +4699,63 @@ X(6)=X(6)+((X(2)*X(2)+X(4)*X(4))/2.0_dp/pz**2)*(1.0_dp/b+x(5))*L/pz + x(5)*L/pz 
        BBYTW=0.0_dp
        BBXTW=0.0_dp
     ENDIF
-    if(el%patch) then
-       alfh=-EL%thin_h_angle/2.0_dp
-       call ROT_XZ(alfh,X,EL%P%BETA0,EL%P%exact.or.c_%ALWAYS_EXACT_PATCHING,k%TIME)
-    endif
- 
-       if(k%TIME) then
-          PZ=SQRT(1.0_dp+2.0_dp*X(5)/EL%P%BETA0+x(5)**2)
-          X(2)=X(2)+(-EL%thin_h_foc+EL%hf)*x1+EL%P%DIR*EL%P%CHARGE*EL%thin_h_angle*(PZ-1.0_dp)  ! highly illegal additions by frs
-          X(4)=X(4)+(-EL%thin_v_foc+EL%vf)*x3+EL%P%DIR*EL%P%CHARGE*EL%thin_v_angle*(PZ-1.0_dp)  ! highly illegal additions by frs
-          X(6)=X(6)+EL%P%DIR*EL%P%CHARGE*(EL%thin_h_angle*x1+EL%thin_v_angle*x3)*(1.0_dp/EL%P%BETA0+x(5))/pz
-       else
-          X(2)=X(2)+(-EL%thin_h_foc+EL%hf)*x1+EL%P%DIR*EL%P%CHARGE*EL%thin_h_angle*x(5)  ! highly illegal additions by frs
-          X(4)=X(4)+(-EL%thin_v_foc+EL%vf)*x3+EL%P%DIR*EL%P%CHARGE*EL%thin_v_angle*x(5)  ! highly illegal additions by frs
-          X(6)=X(6)+EL%P%DIR*EL%P%CHARGE*(EL%thin_h_angle*x1+EL%thin_v_angle*x3)
-       endif
 
+ 
+ 
+ 
+if(el%use_anti/=0) then
+if(el%use_anti==1)  then
+   if(el%e*x(1)>0) then
+     ! th=sinh(el%e*x(1))/cosh(el%e*x(1))
+      th=(1.0_dp-exp(-2.0_dp*el%e*x(1)))/(1.0_dp+exp(-2.0_dp*el%e*x(1)))
+    else
+      th=(-1.0_dp+exp(2.0_dp*el%e*x(1)))/(1.0_dp+exp(2.0_dp*el%e*x(1)))
+
+   endif
+else
+write(6,*) " here "
+  th=x(1)/abs(x(1))
+endif
+       X(2)=X(2)-th*EL%P%DIR*EL%P%CHARGE*BBYTW
+       X(4)=X(4)+th*EL%P%DIR*EL%P%CHARGE*BBXTW
+
+
+!!!!!!!
+IF(EL%P%NMUL>=1) THEN
+       BBYTW=EL%BN(EL%P%NMUL)/EL%P%NMUL
+       BBXTW=EL%AN(EL%P%NMUL)/EL%P%NMUL
+
+
+       DO  J=EL%P%NMUL-1,1,-1
+          BBYTWT=X1*BBYTW-X3*BBXTW+EL%BN(J)/J
+          BBXTW=X3*BBYTW+X1*BBXTW+EL%AN(J)/J
+          BBYTW=BBYTWT
+       ENDDO
+          BBYTWT=X1*BBYTW-X3*BBXTW 
+          BBXTW=X3*BBYTW+X1*BBXTW 
+          BBYTW=BBYTWT
+
+    ELSE
+       BBYTW=0.0_dp
+       BBXTW=0.0_dp
+    ENDIF
+
+X(2)=X(2)-el%e*(1.0_dp-th**2)*EL%P%DIR*EL%P%CHARGE*BBYTW   
+
+
+else  ! use_ye
        X(2)=X(2)-EL%P%DIR*EL%P%CHARGE*BBYTW     ! BACKWARDS
        X(4)=X(4)+EL%P%DIR*EL%P%CHARGE*BBXTW     ! BACKWARDS
-     
+endif     
 
 !!!!!!!!!!!   solenoid
 
-    if(k%TIME) then   ! bug 2006.1.8
-       ANG=EL%B_SOL*EL%P%CHARGE/2.0_dp/root(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)*el%ls
-       !       ANG=YL*EL%B_SOL*EL%P%dir*EL%P%CHARGE/two/root(one+two*X(5)/EL%P%beta0+x(5)**2) ! bug_intentional
-    else
-       ANG=EL%B_SOL*EL%P%CHARGE/2.0_dp/(1.0_dp+X(5))*el%ls
-       !       ANG=YL*EL%B_SOL*EL%P%dir*EL%P%CHARGE/two/(one+X(5))   ! bug_intentional
-    endif
-    myCOS=COS(ANG)
-    mySIN=SIN(ANG)
-    ! NO EXACT EL%EXACT
-
-    XT(1)=myCOS*X(1)+mySIN*X(3)
-    XT(2)=myCOS*X(2)+mySIN*X(4)
-    XT(3)=myCOS*X(3)-mySIN*X(1)
-    XT(4)=myCOS*X(4)-mySIN*X(2)
-
-    if(k%TIME) then
-       X(6)=X(6)+ANG*(1.0_dp/EL%P%beta0+x(5))*(X(3)*X(2)-X(1)*X(4))/(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)
-    else
-       X(6)=X(6)+ANG*(X(3)*X(2)-X(1)*X(4))/(1.0_dp+X(5))
-    endif
-    DO I=1,4
-       X(I)=XT(I)
-    ENDDO
-
-
-    myCOS=(EL%B_SOL*EL%P%CHARGE)**2*el%ls
-
-    if(k%TIME) then
-       mySIN=ROOT(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)
-       X(2)=X(2)-(myCOS)*X(1)/4.0_dp/mySIN
-       X(4)=X(4)-(myCOS)*X(3)/4.0_dp/mySIN
-       X(6)=X(6)+(1.0_dp/EL%P%beta0+x(5))*(myCOS)*(X(1)**2+X(3)**2)/8.0_dp/mySIN**3
-    else
-       X(2)=X(2)-(myCOS)*X(1)/4.0_dp/(1.0_dp+X(5))
-       X(4)=X(4)-(myCOS)*X(3)/4.0_dp/(1.0_dp+X(5))
-       X(6)=X(6)+(myCOS)*(X(1)**2+X(3)**2)/8.0_dp/(1.0_dp+X(5))**2
-    endif
+ 
 
 
     !  end of solenoid
 
-
-
-
-
-    if(el%patch) then
-       alfh=-EL%thin_h_angle/2.0_dp
-       call ROT_XZ(alfh,X,EL%P%BETA0,EL%P%exact.or.c_%ALWAYS_EXACT_PATCHING,k%TIME)
-    endif
+ 
 
 
     x(1)=x(1)+el%dx
@@ -4673,7 +4771,7 @@ X(6)=X(6)+((X(2)*X(2)+X(4)*X(4))/2.0_dp/pz**2)*(1.0_dp/b+x(5))*L/pz + x(5)*L/pz 
     ! TYPE(WORM_8),OPTIONAL,INTENT(INOUT):: MID
     TYPE(KICKT3P),INTENT(IN):: EL
     TYPE(REAL_8) X1,X3,BBYTW,BBXTW,BBYTWT
-    TYPE(REAL_8) pz
+    TYPE(REAL_8) pz,th
     INTEGER J,i
     real(dp) alfh
     TYPE(REAL_8) myCOS,mySIN,ANG,XT(6)
@@ -4713,76 +4811,45 @@ X(6)=X(6)+((X(2)*X(2)+X(4)*X(4))/2.0_dp/pz**2)*(1.0_dp/b+x(5))*L/pz + x(5)*L/pz 
        BBXTW=0.0_dp
     ENDIF
 
-    if(el%patch) then
-       alfh=-EL%thin_h_angle/2.0_dp
-       call ROT_XZ(alfh,X,EL%P%BETA0,EL%P%exact.or.c_%ALWAYS_EXACT_PATCHING,k%TIME)
-    endif
+  
+if((el%use_anti/=0)) then
+    CALL ALLOC(th)
+      th=sinh(el%e*x(1))/cosh(el%e*x(1))
+       X(2)=X(2)-th*EL%P%DIR*EL%P%CHARGE*BBYTW
+       X(4)=X(4)+th*EL%P%DIR*EL%P%CHARGE*BBXTW
 
-    if(k%TIME) then
-       call alloc(pz)
-       PZ=SQRT(1.0_dp+2.0_dp*X(5)/EL%P%BETA0+x(5)**2)
-       X(2)=X(2)+(-EL%thin_h_foc+EL%hf)*x1+EL%P%DIR*EL%P%CHARGE*EL%thin_h_angle*(PZ-1.0_dp)  ! highly illegal additions by frs
-       X(4)=X(4)+(-EL%thin_v_foc+EL%vf)*x3+EL%P%DIR*EL%P%CHARGE*EL%thin_v_angle*(PZ-1.0_dp)  ! highly illegal additions by frs
-       X(6)=X(6)+EL%P%DIR*EL%P%CHARGE*(EL%thin_h_angle*x1+EL%thin_v_angle*x3)*(1.0_dp/EL%P%BETA0+x(5))/pz
-       call kill(pz)
-    else
-       X(2)=X(2)+(-EL%thin_h_foc+EL%hf)*x1+EL%P%DIR*EL%P%CHARGE*EL%thin_h_angle*x(5)  ! highly illegal additions by frs
-       X(4)=X(4)+(-EL%thin_v_foc+EL%vf)*x3+EL%P%DIR*EL%P%CHARGE*EL%thin_v_angle*x(5)  ! highly illegal additions by frs
-       X(6)=X(6)+EL%P%DIR*EL%P%CHARGE*(EL%thin_h_angle*x1+EL%thin_v_angle*x3)
-    endif
 
-    X(2)=X(2)-EL%P%DIR*EL%P%CHARGE*BBYTW     ! BACKWARDS
-    X(4)=X(4)+EL%P%DIR*EL%P%CHARGE*BBXTW     ! BACKWARDS
-    !    ENDIF
+!!!!!!!
+!!!!!!!
+IF(EL%P%NMUL>=1) THEN
+       BBYTW=EL%BN(EL%P%NMUL)/EL%P%NMUL
+       BBXTW=EL%AN(EL%P%NMUL)/EL%P%NMUL
+
+
+       DO  J=EL%P%NMUL-1,1,-1
+          BBYTWT=X1*BBYTW-X3*BBXTW+EL%BN(J)/J
+          BBXTW=X3*BBYTW+X1*BBXTW+EL%AN(J)/J
+          BBYTW=BBYTWT
+       ENDDO
+          BBYTWT=X1*BBYTW-X3*BBXTW 
+          BBXTW=X3*BBYTW+X1*BBXTW 
+          BBYTW=BBYTWT
+
+    ELSE
+       BBYTW=0.0_dp
+       BBXTW=0.0_dp
+    ENDIF
+X(2)=X(2)-el%e*(1.0_dp-th**2)*EL%P%DIR*EL%P%CHARGE*BBYTW   
+    CALL KILL(th)
+else  ! use_ye
+       X(2)=X(2)-EL%P%DIR*EL%P%CHARGE*BBYTW     ! BACKWARDS
+       X(4)=X(4)+EL%P%DIR*EL%P%CHARGE*BBXTW     ! BACKWARDS
+endif     
 
 !!!!!!!!!!!   solenoid
 
-    if(k%TIME) then   ! bug 2006.1.8
-       ANG=EL%B_SOL*EL%P%CHARGE/2.0_dp/sqrt(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)*el%ls
-       !       ANG=YL*EL%B_SOL*EL%P%dir*EL%P%CHARGE/two/root(one+two*X(5)/EL%P%beta0+x(5)**2) ! bug_intentional
-    else
-       ANG=EL%B_SOL*EL%P%CHARGE/2.0_dp/(1.0_dp+X(5))*el%ls
-       !       ANG=YL*EL%B_SOL*EL%P%dir*EL%P%CHARGE/two/(one+X(5))   ! bug_intentional
-    endif
-    myCOS=COS(ANG)
-    mySIN=SIN(ANG)
-    ! NO EXACT EL%EXACT
-
-    XT(1)=myCOS*X(1)+mySIN*X(3)
-    XT(2)=myCOS*X(2)+mySIN*X(4)
-    XT(3)=myCOS*X(3)-mySIN*X(1)
-    XT(4)=myCOS*X(4)-mySIN*X(2)
-
-    if(k%TIME) then
-       X(6)=X(6)+ANG*(1.0_dp/EL%P%beta0+x(5))*(X(3)*X(2)-X(1)*X(4))/(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)
-    else
-       X(6)=X(6)+ANG*(X(3)*X(2)-X(1)*X(4))/(1.0_dp+X(5))
-    endif
-    DO I=1,4
-       X(I)=XT(I)
-    ENDDO
-
-
-    myCOS=(EL%B_SOL*EL%P%CHARGE)**2*el%ls
-
-    if(k%TIME) then
-       mySIN=sqrt(1.0_dp+2.0_dp*X(5)/EL%P%beta0+x(5)**2)
-       X(2)=X(2)-(myCOS)*X(1)/4.0_dp/mySIN
-       X(4)=X(4)-(myCOS)*X(3)/4.0_dp/mySIN
-       X(6)=X(6)+(1.0_dp/EL%P%beta0+x(5))*(myCOS)*(X(1)**2+X(3)**2)/8.0_dp/mySIN**3
-    else
-       X(2)=X(2)-(myCOS)*X(1)/4.0_dp/(1.0_dp+X(5))
-       X(4)=X(4)-(myCOS)*X(3)/4.0_dp/(1.0_dp+X(5))
-       X(6)=X(6)+(myCOS)*(X(1)**2+X(3)**2)/8.0_dp/(1.0_dp+X(5))**2
-    endif
-
-    !  end of solenoid
-
-    if(el%patch) then
-       alfh=-EL%thin_h_angle/2.0_dp
-       call ROT_XZ(alfh,X,EL%P%BETA0,EL%P%exact.or.c_%ALWAYS_EXACT_PATCHING,k%TIME)
-    endif
-
+ 
+ 
 
     x(1)=x(1)+el%dx
     x(3)=x(3)+el%dy
@@ -4790,6 +4857,7 @@ X(6)=X(6)+((X(2)*X(2)+X(4)*X(4))/2.0_dp/pz**2)*(1.0_dp/b+x(5))*L/pz + x(5)*L/pz 
 
     CALL KILL(myCOS,mySIN,ANG)
     CALL KILL(XT)
+
     CALL KILL(X1)
     CALL KILL(X3)
     CALL KILL(BBYTW)
@@ -5801,8 +5869,7 @@ integer :: kkk=0
     real(dp) X1,X3,X5,BBYTW,BBXTW,BBYTWT
     INTEGER J
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
-    real(dp) dir
-
+    real(dp) dir,th
 
     DIR=EL%P%DIR*EL%P%CHARGE
 
@@ -5830,7 +5897,65 @@ integer :: kkk=0
        BBXTW=0.0_dp
     ENDIF
 
+if(el%use_anti/=0) then
+      th=sinh(el%e*x(1))/cosh(el%e*x(1))
+    IF(EL%P%EXACT) THEN
+       X(2)=X(2)-th*YL*DIR*BBYTW
+       X(4)=X(4)+th*YL*DIR*BBXTW
+    ELSE
+       !  for sixtrack comparison
+       !          X(2)=X(2)-EL%thin_h_foc*x1*HALF +EL%P%DIR*EL%P%CHARGE*EL%thin_h_angle*(PZ-one)*HALF  ! highly illegal additions by frs
+       !          X(4)=X(4)-EL%thin_v_foc*x3*HALF +EL%P%DIR*EL%P%CHARGE*EL%thin_v_angle*(PZ-one)*HALF  ! highly illegal additions by frs
+       !          X(6)=X(6)+EL%P%DIR*EL%P%CHARGE*(EL%thin_h_angle*x1+EL%thin_v_angle*x3)*(one/EL%P%BETA0+x(5))/pz*HALF
+       X(2)=X(2)-YL*(DIR*th*BBYTW-EL%P%B0-(X5-X1*DIR*th*EL%BN(1))*EL%P%B0)
+       X(4)=X(4)+YL* DIR*th*BBXTW
 
+       if(k%TIME) then
+          X(6)=X(6)+YL*EL%P%B0*X1*(1.0_dp/EL%P%beta0+x(5))/(1.0_dp+X5)
+       else
+          X(6)=X(6)+YL*EL%P%B0*X1
+       endif
+    ENDIF
+
+!!!!!!!
+IF(EL%P%NMUL>=1) THEN
+       BBYTW=EL%BN(EL%P%NMUL)/EL%P%NMUL
+       BBXTW=EL%AN(EL%P%NMUL)/EL%P%NMUL
+
+
+       DO  J=EL%P%NMUL-1,1,-1
+          BBYTWT=X1*BBYTW-X3*BBXTW+EL%BN(J)/J
+          BBXTW=X3*BBYTW+X1*BBXTW+EL%AN(J)/J
+          BBYTW=BBYTWT
+       ENDDO
+    ELSE
+       BBYTW=0.0_dp
+       BBXTW=0.0_dp
+    ENDIF
+    IF(EL%P%EXACT) THEN
+          BBYTW=X1*BBYTW-X3*BBXTW 
+
+       X(2)=X(2)-el%e*(1.0_dp-th**2)*YL*DIR*BBYTW
+
+    ELSE
+       !  for sixtrack comparison
+       !          X(2)=X(2)-EL%thin_h_foc*x1*HALF +EL%P%DIR*EL%P%CHARGE*EL%thin_h_angle*(PZ-one)*HALF  ! highly illegal additions by frs
+       !          X(4)=X(4)-EL%thin_v_foc*x3*HALF +EL%P%DIR*EL%P%CHARGE*EL%thin_v_angle*(PZ-one)*HALF  ! highly illegal additions by frs
+       !          X(6)=X(6)+EL%P%DIR*EL%P%CHARGE*(EL%thin_h_angle*x1+EL%thin_v_angle*x3)*(one/EL%P%BETA0+x(5))/pz*HALF
+          BBYTW=X1*BBYTW-X3*BBXTW 
+ 
+
+       X(2)=X(2)-YL*(DIR*el%e*(1.0_dp-th**2)*BBYTW-(-X1*DIR*el%e*(1.0_dp-th**2)*EL%BN(1))*EL%P%B0)
+
+
+       if(k%TIME) then
+          X(6)=X(6)+YL*EL%P%B0*X1*(1.0_dp/EL%P%beta0+x(5))/(1.0_dp+X5)
+       else
+          X(6)=X(6)+YL*EL%P%B0*X1
+       endif
+    ENDIF
+
+else  ! use_ye
     IF(EL%P%EXACT) THEN
        X(2)=X(2)-YL*DIR*BBYTW
        X(4)=X(4)+YL*DIR*BBXTW
@@ -5848,7 +5973,7 @@ integer :: kkk=0
           X(6)=X(6)+YL*EL%P%B0*X1
        endif
     ENDIF
-
+endif
     !outvalishev    if(valishev.and.ABS(el%VS)>eps)   then  !valishev
     !outvalishev     call elliptical_b(el%VA,el%VS,x,BBXTW,BBYTW) !valishev
     !outvalishev       X(2)=X(2)-YL*DIR*BBYTW !valishev
@@ -5862,7 +5987,7 @@ integer :: kkk=0
     TYPE(REAL_8),INTENT(INOUT):: X(6)
     TYPE(DKD2P),INTENT(IN):: EL
     TYPE(REAL_8),INTENT(IN):: YL
-    TYPE(REAL_8) X1,X3,X5,BBYTW,BBXTW,BBYTWT
+    TYPE(REAL_8) X1,X3,X5,BBYTW,BBXTW,BBYTWT,th
     INTEGER J,DIR
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
@@ -5904,20 +6029,81 @@ integer :: kkk=0
        BBXTW=0.0_dp
     ENDIF
 
-
+if((el%use_anti/=0)) then
+   CALL alloc(th)
+      th=sinh(el%e*x(1))/cosh(el%e*x(1))
     IF(EL%P%EXACT) THEN
-       X(2)=X(2)-YL*DIR*BBYTW
-       X(4)=X(4)+YL*DIR*BBXTW
-    ELSE 
-       X(2)=X(2)-YL*(DIR*BBYTW-EL%P%B0-(X5-X1*DIR*EL%BN(1))*EL%P%B0)
-       X(4)=X(4)+YL* DIR*BBXTW
- 
+       X(2)=X(2)-th*YL*DIR*BBYTW
+       X(4)=X(4)+th*YL*DIR*BBXTW
+    ELSE
+       !  for sixtrack comparison
+       !          X(2)=X(2)-EL%thin_h_foc*x1*HALF +EL%P%DIR*EL%P%CHARGE*EL%thin_h_angle*(PZ-one)*HALF  ! highly illegal additions by frs
+       !          X(4)=X(4)-EL%thin_v_foc*x3*HALF +EL%P%DIR*EL%P%CHARGE*EL%thin_v_angle*(PZ-one)*HALF  ! highly illegal additions by frs
+       !          X(6)=X(6)+EL%P%DIR*EL%P%CHARGE*(EL%thin_h_angle*x1+EL%thin_v_angle*x3)*(one/EL%P%BETA0+x(5))/pz*HALF
+       X(2)=X(2)-YL*(DIR*th*BBYTW-EL%P%B0*th-(X5-X1*DIR*th*EL%BN(1))*EL%P%B0)
+       X(4)=X(4)+YL* DIR*th*BBXTW
+
        if(k%TIME) then
           X(6)=X(6)+YL*EL%P%B0*X1*(1.0_dp/EL%P%beta0+x(5))/(1.0_dp+X5)
        else
           X(6)=X(6)+YL*EL%P%B0*X1
        endif
     ENDIF
+
+!!!!!!!
+IF(EL%P%NMUL>=1) THEN
+       BBYTW=EL%BN(EL%P%NMUL)/EL%P%NMUL
+       BBXTW=EL%AN(EL%P%NMUL)/EL%P%NMUL
+
+
+       DO  J=EL%P%NMUL-1,1,-1
+          BBYTWT=X1*BBYTW-X3*BBXTW+EL%BN(J)/J
+          BBXTW=X3*BBYTW+X1*BBXTW+EL%AN(J)/J
+          BBYTW=BBYTWT
+       ENDDO
+    ELSE
+       BBYTW=0.0_dp
+       BBXTW=0.0_dp
+    ENDIF
+    IF(EL%P%EXACT) THEN
+       BBYTW = X1*BBYTW-X3*BBXTW
+       X(2)=X(2)-el%e*(1.0_dp-th**2)*YL*DIR*BBYTW
+    ELSE
+       !  for sixtrack comparison
+       !          X(2)=X(2)-EL%thin_h_foc*x1*HALF +EL%P%DIR*EL%P%CHARGE*EL%thin_h_angle*(PZ-one)*HALF  ! highly illegal additions by frs
+       !          X(4)=X(4)-EL%thin_v_foc*x3*HALF +EL%P%DIR*EL%P%CHARGE*EL%thin_v_angle*(PZ-one)*HALF  ! highly illegal additions by frs
+       !          X(6)=X(6)+EL%P%DIR*EL%P%CHARGE*(EL%thin_h_angle*x1+EL%thin_v_angle*x3)*(one/EL%P%BETA0+x(5))/pz*HALF
+       BBYTW = X1*BBYTW-X3*BBXTW
+ 
+       X(2)=X(2)-YL*(DIR*el%e*(1.0_dp-th**2)*BBYTW-(-X1*DIR*el%e*(1.0_dp-th**2)*EL%BN(1))*EL%P%B0)
+
+       if(k%TIME) then
+          X(6)=X(6)+YL*EL%P%B0*X1*(1.0_dp/EL%P%beta0+x(5))/(1.0_dp+X5)
+       else
+          X(6)=X(6)+YL*EL%P%B0*X1
+       endif
+    ENDIF
+   CALL KILL(th)
+else  ! use_ye
+    IF(EL%P%EXACT) THEN
+       X(2)=X(2)-YL*DIR*BBYTW
+       X(4)=X(4)+YL*DIR*BBXTW
+    ELSE
+       !  for sixtrack comparison
+       !          X(2)=X(2)-EL%thin_h_foc*x1*HALF +EL%P%DIR*EL%P%CHARGE*EL%thin_h_angle*(PZ-one)*HALF  ! highly illegal additions by frs
+       !          X(4)=X(4)-EL%thin_v_foc*x3*HALF +EL%P%DIR*EL%P%CHARGE*EL%thin_v_angle*(PZ-one)*HALF  ! highly illegal additions by frs
+       !          X(6)=X(6)+EL%P%DIR*EL%P%CHARGE*(EL%thin_h_angle*x1+EL%thin_v_angle*x3)*(one/EL%P%BETA0+x(5))/pz*HALF
+       X(2)=X(2)-YL*(DIR*BBYTW-EL%P%B0-(X5-X1*DIR*EL%BN(1))*EL%P%B0)
+       X(4)=X(4)+YL* DIR*BBXTW
+
+       if(k%TIME) then
+          X(6)=X(6)+YL*EL%P%B0*X1*(1.0_dp/EL%P%beta0+x(5))/(1.0_dp+X5)
+       else
+          X(6)=X(6)+YL*EL%P%B0*X1
+       endif
+    ENDIF
+endif
+
 
     !outvalishev    if(valishev.and.ABS(el%VS)>eps)   then  !valishev
     !outvalishev     call elliptical_b(el%VA,el%VS,x,BBXTW,BBYTW) !valishev
@@ -6482,12 +6668,13 @@ integer :: kkk=0
 
   END SUBROUTINE KICK_SOLP
 
-  SUBROUTINE GETNEWBR(el,b_sol,B,X)
+  SUBROUTINE GETNEWBR(el,b_sol,B,X,V)
     IMPLICIT NONE
     real(dp),INTENT(INOUT):: X(6),B(3)
     type(element), intent(in) :: el
     real(dp),INTENT(IN):: b_sol
-    real(dp) X1,X3,BBYTW,BBXTW,BBYTWT
+    real(dp) X1,X3,BBYTW,BBXTW,BBYTWT,th
+    real(dp),optional :: V
     INTEGER J
 
     X1=X(1)
@@ -6508,14 +6695,93 @@ integer :: kkk=0
     ENDIF
     B(1)=BBXTW;B(2)=BBYTW;B(3)=B_SOL;
 
+    if(associated(el%k16)) then
+    if(el%k16%use_anti/=0) then
+     if(el%k16%DRIFTKICK) then
+      th=sinh(el%k16%e*x(1))/cosh(el%k16%e*x(1))
+  !   B(1)=th*BBXTW;B(2)=th*BBYTW;   hacking below because of linear part
+     B(1)=th*BBXTW;B(2)=th*BBYTW; 
+
+!!!!!!!!!!!!!
+    IF(EL%P%NMUL>=1) THEN
+       BBYTW=EL%BN(EL%P%NMUL)/EL%P%NMUL
+       BBXTW=EL%AN(EL%P%NMUL)/EL%P%NMUL
+
+
+       DO  J=EL%P%NMUL-1,1,-1
+          BBYTWT=X1*BBYTW-X3*BBXTW+EL%BN(J)/J
+          BBXTW=X3*BBYTW+X1*BBXTW+EL%AN(J)/J
+          BBYTW=BBYTWT
+       ENDDO
+          BBYTWT=X1*BBYTW-X3*BBXTW 
+          BBXTW=X3*BBYTW+X1*BBXTW 
+          BBYTW=BBYTWT
+
+    ELSE
+       BBYTW=0.0_dp
+       BBXTW=0.0_dp
+    ENDIF
+
+      b(2)=b(2)+el%k16%e*(1.0_dp-th**2)*BBYTW ;!!!!!!!!!!!!!
+      if(present(V)) then
+        V=th*BBYTW 
+      endif
+     else 
+      write(6,*) "use_ye must be driftkick in KICKEXR"
+      stop 222
+    endif
+
+
+
+    endif
+    endif
+
+
+    if(associated(el%k3)) then  ! 1
+
+    if(el%k3%use_anti/=0) then  ! 2
+      th=sinh(el%k3%e*x(1))/cosh(el%k3%e*x(1))
+     B(1)=th*BBXTW;B(2)=th*BBYTW; 
+
+!!!!!!!!!!!!!
+    IF(EL%P%NMUL>=1) THEN
+       BBYTW=EL%BN(EL%P%NMUL)/EL%P%NMUL
+       BBXTW=EL%AN(EL%P%NMUL)/EL%P%NMUL
+
+
+       DO  J=EL%P%NMUL-1,1,-1
+          BBYTWT=X1*BBYTW-X3*BBXTW+EL%BN(J)/J
+          BBXTW=X3*BBYTW+X1*BBXTW+EL%AN(J)/J
+          BBYTW=BBYTWT
+       ENDDO
+          BBYTWT=X1*BBYTW-X3*BBXTW 
+          BBXTW=X3*BBYTW+X1*BBXTW 
+          BBYTW=BBYTWT
+
+    ELSE
+       BBYTW=0.0_dp
+       BBXTW=0.0_dp
+    ENDIF
+
+      b(2)=b(2)+el%k3%e*(1.0_dp-th**2)*BBYTW!!!!!!!!!!!!!
+      if(present(V)) then
+        V=th*BBYTW/el%k3%ls
+      endif
+      b(1)=b(1)/el%k3%ls
+      b(2)=b(2)/el%k3%ls
+      b(3)=b(3)/el%k3%ls
+    endif  ! 3
+    endif  ! 1
+
   END SUBROUTINE GETNEWBR
 
-  SUBROUTINE GETNEWBP(el,b_sol,B,X)
+  SUBROUTINE GETNEWBP(el,b_sol,B,X,V)
     IMPLICIT NONE
     type(elementp), intent(in) :: el
     type(REAL_8),INTENT(INOUT):: X(6),B(3)
     type(REAL_8),INTENT(IN):: b_sol
-    type(REAL_8) X1,X3,BBYTW,BBXTW,BBYTWT
+    type(REAL_8) X1,X3,BBYTW,BBXTW,BBYTWT,th
+    type(real_8), optional :: V
     INTEGER J
 
     call PRTP("GETNEWB:0", X)
@@ -6538,7 +6804,82 @@ integer :: kkk=0
        BBXTW=0.0_dp
     ENDIF
     B(1)=BBXTW;B(2)=BBYTW;B(3)=B_SOL;
+    if(associated(el%k16)) then
+    if(el%k16%use_anti/=0) then
+     call alloc(th)
+     if(el%k16%DRIFTKICK) then
+      th=sinh(el%k16%e*x(1))/cosh(el%k16%e*x(1))
+     B(1)=th*BBXTW;B(2)=th*BBYTW; 
 
+!!!!!!!!!!!!!
+    IF(EL%P%NMUL>=1) THEN
+       BBYTW=EL%BN(EL%P%NMUL)/EL%P%NMUL
+       BBXTW=EL%AN(EL%P%NMUL)/EL%P%NMUL
+       BBYTWT = X1*BBYTW-X3*BBXTW
+       BBXTW = X3*BBYTW+X1*BBXTW
+          BBYTW=BBYTWT
+
+       DO  J=EL%P%NMUL-1,1,-1
+          BBYTWT=X1*BBYTW-X3*BBXTW+EL%BN(J)/J
+          BBXTW=X3*BBYTW+X1*BBXTW+EL%AN(J)/J
+          BBYTW=BBYTWT
+       ENDDO
+    ELSE
+       BBYTW=0.0_dp
+       BBXTW=0.0_dp
+    ENDIF
+ 
+      b(2)=b(2)+el%k16%e*(1.0_dp-th**2)*BBYTW!!!!!!!!!!!!!
+      if(present(V)) then
+        V=th*BBYTW
+      endif
+     else 
+      write(6,*) "use_ye must be driftkick in KICKEXR"
+      stop 223
+    endif
+
+     call kill(th)
+
+    endif
+    endif
+
+    if(associated(el%k3)) then  ! 1
+
+    if(el%k3%use_anti==1) then  ! 2
+     call alloc(th)
+      th=sinh(el%k3%e*x(1))/cosh(el%k3%e*x(1))
+     B(1)=th*BBXTW;B(2)=th*BBYTW; 
+
+!!!!!!!!!!!!!
+    IF(EL%P%NMUL>=1) THEN
+       BBYTW=EL%BN(EL%P%NMUL)/EL%P%NMUL
+       BBXTW=EL%AN(EL%P%NMUL)/EL%P%NMUL
+
+
+       DO  J=EL%P%NMUL-1,1,-1
+          BBYTWT=X1*BBYTW-X3*BBXTW+EL%BN(J)/J
+          BBXTW=X3*BBYTW+X1*BBXTW+EL%AN(J)/J
+          BBYTW=BBYTWT
+       ENDDO
+          BBYTWT=X1*BBYTW-X3*BBXTW 
+          BBXTW=X3*BBYTW+X1*BBXTW 
+          BBYTW=BBYTWT
+
+    ELSE
+       BBYTW=0.0_dp
+       BBXTW=0.0_dp
+    ENDIF
+
+      b(2)=b(2)+el%k3%e*(1.0_dp-th**2)*BBYTW!!!!!!!!!!!!!
+      if(present(V)) then
+        V=th*BBYTW/el%k3%ls
+      endif
+      b(1)=b(1)/el%k3%ls
+      b(2)=b(2)/el%k3%ls
+      b(3)=b(3)/el%k3%ls
+     call kill(th)
+    endif  ! 3
+    endif  ! 1
     CALL kill(X1,X3,BBYTW,BBXTW,BBYTWT)
 
     call PRTP("GETNEWB:1", X)
@@ -14285,7 +14626,7 @@ end subroutine set_f_in_k16
     integer, optional :: pos
     INTEGER J
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
-    real(dp) dir
+    real(dp) dir,th
 
      DIR=EL%P%DIR*EL%P%CHARGE
 
@@ -14312,6 +14653,42 @@ end subroutine set_f_in_k16
        BBYTW=0.0_dp
        BBXTW=0.0_dp
     ENDIF
+
+    if(el%use_anti/=0) then
+     if(EL%DRIFTKICK) then
+      th=sinh(el%e*x(1))/cosh(el%e*x(1))
+      X(2)=X(2)-YL*DIR*th*BBYTW
+      X(4)=X(4)+YL*DIR*th*BBXTW
+!!!!!!!!!!!!!
+
+    IF(EL%P%NMUL>=1) THEN
+       BBYTW=EL%BN(EL%P%NMUL)/EL%P%NMUL
+       BBXTW=EL%AN(EL%P%NMUL)/EL%P%NMUL
+
+
+       DO  J=EL%P%NMUL-1,1,-1
+          BBYTWT=X1*BBYTW-X3*BBXTW+EL%BN(J)/J
+          BBXTW=X3*BBYTW+X1*BBXTW+EL%AN(J)/J
+          BBYTW=BBYTWT
+       ENDDO
+          BBYTWT=X1*BBYTW-X3*BBXTW 
+          BBXTW=X3*BBYTW+X1*BBXTW 
+          BBYTW=BBYTWT
+    ELSE
+       BBYTW=0.0_dp
+       BBXTW=0.0_dp
+    ENDIF
+      X(2)=X(2)-YL*DIR*el%e*(1.0_dp-th**2)*BBYTW
+ 
+
+!!!!!!!!!!!!!
+     else 
+      write(6,*) "use_ye must be driftkick in KICKEXR"
+      stop 111
+    endif
+
+
+    else
      if(EL%DRIFTKICK) then
       BBYTW= f_prof(el%f,pos,EL%P%DIR)*BBYTW
       BBXTW= f_prof(el%f,pos,EL%P%DIR)*BBXTW
@@ -14323,6 +14700,7 @@ end subroutine set_f_in_k16
      X(2)=X(2)+YL*DIR*EL%BN(1)
     endif
 
+    endif
   
     !outvalishev    if(valishev.and.ABS(el%VS)>eps)   then  !valishev
     !outvalishev     call elliptical_b(el%VA,el%VS,x,BBXTW,BBYTW) !valishev
@@ -14337,7 +14715,7 @@ end subroutine set_f_in_k16
     TYPE(REAL_8),INTENT(INOUT):: X(6)
     TYPE(STREXP),INTENT(IN):: EL
     TYPE(REAL_8),INTENT(IN):: YL
-    TYPE(REAL_8) X1,X3,BBYTW,BBXTW,BBYTWT !5
+    TYPE(REAL_8) X1,X3,BBYTW,BBXTW,BBYTWT,th !5
     INTEGER J
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     real(dp) dir
@@ -14379,6 +14757,45 @@ end subroutine set_f_in_k16
        BBXTW=0.0_dp
     ENDIF
 
+
+    if(el%use_anti/=0) then
+    CALL ALLOC(th)
+
+     if(EL%DRIFTKICK) then
+      th=sinh(el%e*x(1))/cosh(el%e*x(1))
+      X(2)=X(2)-YL*DIR*th*BBYTW
+      X(4)=X(4)+YL*DIR*th*BBXTW
+!!!!!!!!!!!!!
+    IF(EL%P%NMUL>=1) THEN
+       BBYTW=EL%BN(EL%P%NMUL)/EL%P%NMUL
+       BBXTW=EL%AN(EL%P%NMUL)/EL%P%NMUL
+
+
+       DO  J=EL%P%NMUL-1,1,-1
+          BBYTWT=X1*BBYTW-X3*BBXTW+EL%BN(J)/J
+          BBXTW=X3*BBYTW+X1*BBXTW+EL%AN(J)/J
+          BBYTW=BBYTWT
+       ENDDO
+          BBYTWT=X1*BBYTW-X3*BBXTW 
+          BBXTW=X3*BBYTW+X1*BBXTW 
+          BBYTW=BBYTWT
+    ELSE
+       BBYTW=0.0_dp
+       BBXTW=0.0_dp
+    ENDIF
+      X(2)=X(2)-YL*DIR*el%e*(1.0_dp-th**2)*BBYTW
+ 
+ 
+    CALL KILL(th)
+
+!!!!!!!!!!!!!
+     else 
+      write(6,*) "use_ye must be driftkick in KICKEXR"
+      stop 111
+    endif
+
+
+    else
      if(EL%DRIFTKICK) then
       BBYTW= f_prof(el%f,pos,EL%P%DIR)*BBYTW
       BBXTW= f_prof(el%f,pos,EL%P%DIR)*BBXTW
@@ -14390,7 +14807,8 @@ end subroutine set_f_in_k16
      X(2)=X(2)+YL*DIR*EL%BN(1)
     endif
 
- 
+    endif
+  
     !outvalishev    if(valishev.and.ABS(el%VS)>eps)   then  !valishev
     !outvalishev     call elliptical_b(el%VA,el%VS,x,BBXTW,BBYTW) !valishev
     !outvalishev       X(2)=X(2)-YL*DIR*BBYTW !valishev
@@ -16176,8 +16594,11 @@ endif
     !integer k
     IF(I==-1) THEN
        if(ASSOCIATED(EL%F)) deallocate(EL%F)
+       if(ASSOCIATED(EL%e)) deallocate(EL%e)
+       if(ASSOCIATED(EL%use_anti)) deallocate(EL%use_anti)
+
     elseif(i==0)       then          ! nullifies
-       NULLIFY(EL%F)
+       NULLIFY(EL%F,EL%e,EL%use_anti)
     endif
 
   END SUBROUTINE ZEROr_DKD2
@@ -16190,8 +16611,11 @@ endif
 
     IF(I==-1) THEN
        if(ASSOCIATED(EL%F)) deallocate(EL%F)
+       if(ASSOCIATED(EL%e)) deallocate(EL%e)
+       if(ASSOCIATED(EL%use_anti)) deallocate(EL%use_anti)
+
     elseif(i==0)       then          ! nullifies
-       NULLIFY(EL%F)
+       NULLIFY(EL%F,EL%e,EL%use_anti)
     endif
   END SUBROUTINE ZEROp_DKD2
 
@@ -17502,6 +17926,8 @@ endif
        if(ASSOCIATED(EL%pitch_x)) deallocate(EL%pitch_x)
        if(ASSOCIATED(EL%pitch_y)) deallocate(EL%pitch_y)
        endif
+       if(ASSOCIATED(EL%e))deallocate(EL%e)
+       if(ASSOCIATED(EL%use_anti))deallocate(EL%use_anti)
     elseif(i==0)       then          ! nullifies
 
        NULLIFY(EL%hf)
@@ -17512,7 +17938,7 @@ endif
        NULLIFY(EL%ls)
        NULLIFY(EL%thin_v_angle)
        NULLIFY(EL%patch)
-       NULLIFY(EL%dx,EL%dy,EL%pitch_x,EL%pitch_y)
+       NULLIFY(EL%dx,EL%dy,EL%pitch_x,EL%pitch_y,el%e,el%use_anti)
     endif
 
   END SUBROUTINE ZEROR_KICKT3
@@ -17544,6 +17970,8 @@ endif
        if(ASSOCIATED(EL%pitch_x)) deallocate(EL%pitch_x)
        if(ASSOCIATED(EL%pitch_y)) deallocate(EL%pitch_y)
        endif
+       if(ASSOCIATED(EL%e))deallocate(EL%e)
+       if(ASSOCIATED(EL%use_anti))deallocate(EL%use_anti)
     elseif(i==0)       then          ! nullifies
 
        NULLIFY(EL%hf)
@@ -17554,7 +17982,7 @@ endif
        NULLIFY(EL%thin_v_angle)
        NULLIFY(EL%patch)
        NULLIFY(EL%ls)
-       NULLIFY(EL%dx,EL%dy,EL%pitch_x,EL%pitch_y)
+       NULLIFY(EL%dx,EL%dy,EL%pitch_x,EL%pitch_y,el%e,el%use_anti)
     endif
 
   END SUBROUTINE ZEROP_KICKT3
@@ -17569,6 +17997,12 @@ endif
        if(ASSOCIATED(EL%DRIFTKICK)) then
           deallocate(EL%DRIFTKICK)
        endif
+       if(ASSOCIATED(EL%use_anti)) then
+          deallocate(EL%use_anti)
+       endif
+       if(ASSOCIATED(EL%e)) then
+          deallocate(EL%e)
+       endif
 !       if(ASSOCIATED(EL%LIKEMAD)) then
 !          deallocate(EL%LIKEMAD)
 !       endif
@@ -17577,6 +18011,8 @@ endif
 
        NULLIFY(EL%F)
        NULLIFY(EL%DRIFTKICK)
+       NULLIFY(EL%e) 
+       NULLIFY(EL%use_anti)
 !       NULLIFY(EL%LIKEMAD)
     endif
 
@@ -17591,6 +18027,9 @@ endif
        if(ASSOCIATED(EL%DRIFTKICK)) then
           deallocate(EL%DRIFTKICK)
        endif
+       if(ASSOCIATED(EL%use_anti)) then
+          deallocate(EL%use_anti)
+       endif
 !       if(ASSOCIATED(EL%LIKEMAD)) then
 !          deallocate(EL%LIKEMAD)
 !       endif
@@ -17600,6 +18039,8 @@ endif
 
        NULLIFY(EL%F)
        NULLIFY(EL%DRIFTKICK)
+       NULLIFY(EL%e)
+       NULLIFY(EL%use_anti)
     endif
 
   END SUBROUTINE ZEROP_STREX

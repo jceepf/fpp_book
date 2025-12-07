@@ -13412,8 +13412,9 @@ alpha=2*atan2(q0%x(2),q0%x(0))
    m1%e_ij= n%s_ijr  !using m1 to transform equilibrium beam sizes
    ri=from_phasor()
    ri=c_simil(ri,m1,1)
+ 
    m1=c_simil(n%a_t,ri,1)
-   
+ 
    n%s_ij0=m1%e_ij
 
 !   if(use_quaternion.and.(.false.)) then
@@ -22121,6 +22122,78 @@ nomax=0
     if (.not. nice_taylor_print) write(iunit0,'(A)') '                                      '
 
   end subroutine c_printunitaylor_old
+
+  subroutine c_print_universal_taylor(ut,iunit )
+    implicit none
+    type(c_universal_taylor) :: ut
+    integer, optional :: iunit
+    integer   i,ii
+
+ 
+    integer iunit0
+
+      complex(dp) v
+    iunit0=6
+ 
+    if(present(iunit)) iunit0=iunit
+ 
+ write(iunit,*) ut%n, ut%nd2, ut%nv
+ 
+   
+    do i = 1,ut%n
+          write(iunit, '(2(1x,g23.16),1x,100(2x,i2))')   ut%c(i), (ut%j(i,ii),ii=1,ut%nv)
+       enddo
+
+ 
+  end subroutine c_print_universal_taylor
+
+
+  subroutine c_read_universal_taylor(ut,iunit )
+    implicit none
+    type(c_universal_taylor) :: ut
+    integer, optional :: iunit
+    integer   i,ii
+    integer iunit0,N,NV,nd2
+    real(dp) r,v
+
+    iunit0=6
+ 
+    if(present(iunit)) iunit0=iunit
+   
+    if(associated(ut%n)) call kill(ut)
+
+    read(iunit,*) N,NV,nd2
+    call alloc(ut,N,NV,nd2)
+
+    do i = 1,ut%n
+          read(iunit,*)   r,v, (ut%j(i,ii),ii=1,ut%nv)
+        ut%c(i)=r+i_*v
+       enddo
+
+ 
+  end subroutine c_read_universal_taylor
+
+  subroutine c_read_simple(t,filename)
+    implicit none
+    type(c_taylor) :: t
+    integer   i,ii,n,nv
+    character(*) filename
+    integer mf
+    integer,allocatable:: J(:)
+    complex(dp) v
+ 
+   call kanalnummer(mf,filename)
+   read(mf,*) n,nv
+   allocate(J(nv))
+     t=0.0_dp
+    do i = 1,n
+          read(mf, *)   v,j
+       t=t+(v.cmono.j)
+       enddo
+
+  close(mf)
+  deallocate(J)
+  end subroutine c_read_simple
 
 subroutine r_field_for_demin(f,ut)
 implicit none
