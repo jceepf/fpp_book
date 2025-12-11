@@ -89,7 +89,7 @@ TYPE KICKT3P
    TYPE(REAL_8), POINTER ::B_SOL => null()
    real(dp),   POINTER::  ls => null()
    real(dp),   POINTER:: dx => null(),dy => null(),pitch_x => null(),pitch_y => null()   ! SADISTIC
-   real(dp), pointer :: e=> null()
+   type(real_8), pointer :: e=> null()
     integer , pointer :: use_anti=> null()
 END  TYPE KICKT3P
 

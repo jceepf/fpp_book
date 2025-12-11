@@ -22137,11 +22137,11 @@ nomax=0
  
     if(present(iunit)) iunit0=iunit
  
- write(iunit,*) ut%n, ut%nd2, ut%nv
+ write(iunit,'(3(1x,i4),1x,a9)') ut%n, ut%nd2, ut%nv," n,nd2,nv"
  
    
     do i = 1,ut%n
-          write(iunit, '(2(1x,g23.16),1x,100(2x,i2))')   ut%c(i), (ut%j(i,ii),ii=1,ut%nv)
+          write(iunit, '(2(1x,g23.16),i4,1x,100(2x,i2))')   ut%c(i), sum(ut%j(i,:)),(ut%j(i,ii),ii=1,ut%nv)
        enddo
 
  
@@ -22152,7 +22152,7 @@ nomax=0
     implicit none
     type(c_universal_taylor) :: ut
     integer, optional :: iunit
-    integer   i,ii
+    integer   i,ii,ij
     integer iunit0,N,NV,nd2
     real(dp) r,v
 
@@ -22166,7 +22166,7 @@ nomax=0
     call alloc(ut,N,NV,nd2)
 
     do i = 1,ut%n
-          read(iunit,*)   r,v, (ut%j(i,ii),ii=1,ut%nv)
+          read(iunit,*)   r,v,ij, (ut%j(i,ii),ii=1,ut%nv)
         ut%c(i)=r+i_*v
        enddo
 

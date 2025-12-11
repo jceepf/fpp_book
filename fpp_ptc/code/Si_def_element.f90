@@ -1576,7 +1576,7 @@ CONTAINS
        NULLIFY(EL%k3%pitch_x);ALLOCATE(EL%k3%pitch_x);EL%k3%pitch_x=0.d0;
        NULLIFY(EL%k3%pitch_y);ALLOCATE(EL%k3%pitch_y);EL%k3%pitch_y=0.d0;
        NULLIFY(EL%k3%use_anti);ALLOCATE(EL%k3%use_anti);EL%k3%use_anti=0;
-       NULLIFY(EL%k3%e);ALLOCATE(EL%k3%e);EL%k3%e=0.0_dp
+       NULLIFY(EL%k3%e);ALLOCATE(EL%k3%e);call alloc(EL%k3%e);EL%k3%e=0.0_dp
     CASE(kindsuperdrift)
        if(.not.ASSOCIATED(EL%sdr)) THEN
           ALLOCATE(EL%sdr)

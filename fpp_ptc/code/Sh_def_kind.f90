@@ -17970,7 +17970,10 @@ endif
        if(ASSOCIATED(EL%pitch_x)) deallocate(EL%pitch_x)
        if(ASSOCIATED(EL%pitch_y)) deallocate(EL%pitch_y)
        endif
-       if(ASSOCIATED(EL%e))deallocate(EL%e)
+       if(ASSOCIATED(EL%e))then 
+         call kill(el%e)
+        deallocate(EL%e)
+        endif
        if(ASSOCIATED(EL%use_anti))deallocate(EL%use_anti)
     elseif(i==0)       then          ! nullifies
 
