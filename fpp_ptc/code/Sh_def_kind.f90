@@ -214,8 +214,25 @@ type(fibre), pointer :: fk_ye
 integer :: j_ye=2, first_ye=-1
 real(dp) invbest_ye
 type(c_universal_taylor) invtpsa_ye
+type(c_taylor) c_invtpsa_ye
 real(dp) scalee,scaleb,hhh
 !type(real_8) radcoe
+logical :: sylee_fringe = .false.
+real(dp) :: hwang_lee_scale =1.0_dp
+TYPE Lie_ye
+     type(c_taylor), allocatable ::  th(:,:)
+     INTEGER n_ye,nres
+     real(dp), allocatable :: e(:)
+     type(c_taylor), allocatable :: f(:)
+     type(c_taylor), allocatable :: V(:)
+     type(c_damap), allocatable ::  L(:)
+     type(c_taylor) e_x,e_y
+     real(dp),allocatable :: M(:,:,:)
+     real(dp) latfx(3),latfy(3),inv
+     type(c_taylor), allocatable ::  tinv(:,:)
+END TYPE Lie_ye
+type(Lie_ye) y_best1
+
 
  
   INTERFACE b0_cav
@@ -1234,6 +1251,220 @@ real(dp) scalee,scaleb,hhh
 
 CONTAINS !----------------------------------------------------------------------
 
+
+subroutine compute_lie_ye(y,x,inv)
+implicit none 
+integer nres,i,j,alf,bet
+TYPE(Lie_ye) y
+real(dp)  x(6)
+TYPE(c_ray) r
+real(dp)inv,th,xx,inv0,invt
+
+real(dp) invy
+ 
+r=x
+!inv= -(2*y%latfx(1)*x(1)*x(2)+y%latfx(2)*x(2)*x(2)+y%latfx(3)*x(1)*x(1))
+
+!
+!invy=-(2*y%latfy(1)*x(3)*x(4)+y%latfy(2)*x(4)*x(4)+y%latfy(3)*x(3)*x(3))
+inv=0.0_dp
+ 
+inv0=(y%tinv(0,0).o.r)
+  inv=inv+inv0
+
+do i=1,size(y%e)
+ xx=y%e(i)*(y%m(i,1,1)*x(1)+y%m(i,1,2)*x(2))
+ th=sinh(xx)/cosh(xx)  
+
+ 
+  do j=1,2 !uBOUND(y%th,1)
+   inv0=(y%th(j,i).o.r)
+   inv0=inv0*th**j
+  inv=inv+inv0
+  enddo
+!   inv0=((y%e_x.pb.y%th(0,i)).o.r)/2.0_dp 
+!   inv=inv+inv0
+   inv0=((y%e_x.pb.y%th(1,i)).o.r)*th/2.0_dp 
+   inv=inv+inv0
+    invt=y%e(i)*(y%th(1,i).o.r)*(1.0_dp-th**2)/2.0_dp
+    inv0=(y%e_x.pb.y%L(i)%v(1)).o.r
+   inv=inv+invt*inv0
+
+
+enddo
+
+
+
+
+
+end subroutine compute_lie_ye
+
+
+subroutine adjust_lie_ye(y,nres)
+implicit none 
+integer nres,i,j,alf,bet
+TYPE(Lie_ye) y
+TYPE(c_vector_field) f
+TYPE(c_damap) m
+TYPE(c_taylor) h
+TYPE(c_normal_form) n
+type(c_universal_taylor), allocatable :: U(:,:) 
+complex(dp) v 
+ y%th(2,nres)= Y%e(nres)*(Y%f(nres).d.2)*y%v(nres)/2.0_dp
+! y%th(0,nres)=Y%f(nres)-y%th(2,nres)
+ y%th(0,nres)=-y%th(2,nres)
+ y%th(1,nres)= Y%v(nres) + (Y%f(nres).pb.y%v(nres))/2.0_dp 
+
+ if(nres>1) y%L(nres)=y%L(nres)*y%L(nres-1)
+
+  do i=0,2  
+   y%th(i,nres)=y%th(i,nres)*y%L(nres)
+   y%f(nres)=y%f(nres)*y%L(nres)
+  enddo
+
+
+  y%m(nres,:,:)=y%L(nres)
+
+Y%latfx(1)=(y%e_x.sub.'11')/2.d0
+Y%latfx(2)=y%e_x.sub.'02'
+Y%latfx(3)=y%e_x.sub.'20'
+Y%latfy(1)=(y%e_y.sub.'0011')/2.d0
+Y%latfy(2)=y%e_y.sub.'0002'
+Y%latfy(3)=y%e_y.sub.'0020'
+
+
+!  ici etienne
+if(nres== size(y%e)) then
+allocate(U(0:2,nres))
+
+
+do alf=1,nres 
+do bet=alf+1,nres 
+ y%tinv(0,0)=(y%th(0,alf).pb.y%th(0,bet))/2.0_dp + y%tinv(0,0)
+ y%tinv(0,1)=(y%th(0,alf).pb.y%th(1,bet))/2.0_dp + y%tinv(0,1)
+ y%tinv(1,0)=(y%th(1,alf).pb.y%th(0,bet))/2.0_dp + y%tinv(1,0)
+enddo
+enddo
+
+if(c_%nd>1) then  !!!
+call alloc(f)
+call alloc(m)
+call alloc(n)
+call alloc(h)
+h=y%e_x+y%e_y
+f=getvectorfield(h)
+m=exp(f)
+n%positive=.false.
+call c_normal(m,n)
+ 
+
+ 
+
+do alf=1,nres
+do i=0,2
+ if(i==0) then
+ !  call  zassen(y%th(i,alf),n%atot,n%tune,i)
+ else
+   call  zassen(y%th(i,alf),n%atot,n%tune,i)
+ endif
+enddo
+enddo
+
+ y%tinv(0,0) = (y%th(0,2).pb.y%th(0,3))/2.0_dp  
+  y%tinv(0,0)= (y%th(0,1).pb.y%th(0,3))/2.0_dp+y%tinv(0,0)
+  y%tinv(0,0)= (y%th(0,1).pb.y%th(0,2))/2.0_dp+y%tinv(0,0)
+
+call  zassen(y%th(0,3),n%atot,n%tune,0)
+call  zassen(y%th(0,2),n%atot,n%tune,0)
+call  zassen(y%th(0,1),n%atot,n%tune,0)
+call  zassen(y%tinv(0,0),n%atot,n%tune,0)
+ 
+ y%tinv(0,0)=y%tinv(0,0)+y%th(0,1)+y%th(0,2)+y%th(0,3)
+ y%tinv(0,0)=y%tinv(0,0)+y%f(1)+y%f(2)+y%f(3)
+
+
+call kill(h)
+call kill(f)
+call kill(m)
+call kill(n)
+endif !!!!
+
+endif
+
+
+end subroutine adjust_lie_ye
+
+subroutine zassen(y,a,tune,i)
+implicit none 
+integer j,i
+TYPE(c_taylor) y
+type(c_damap) a
+type(c_universal_taylor) u
+real(dp) tune(:)
+complex(dp) v
+ y=y*a
+ y=y*c_phasor()
+ u=y 
+do j=1,u%n
+if(i==0) then
+ if(iabs(u%J(j,1)-u%J(j,2))+iabs(u%J(j,3)-u%J(j,4))/=0) then
+  v=(i_* tune(2)*twopi*(u%J(j,3)-u%J(j,4)))
+  v=v+(i_* tune(1)*twopi*(u%J(j,1)-u%J(j,2)))
+    u%c(j)=u%c(j)*v*exp(v)/(exp(v)-1.0_dp)
+ endif
+else
+ if( iabs(u%J(j,3)-u%J(j,4))/=0) then
+  v=(i_* tune(2)*twopi*(u%J(j,3)-u%J(j,4)))
+    u%c(j)=u%c(j)*v*exp(v)/(exp(v)-1.0_dp)
+ endif
+endif
+enddo 
+
+
+ y=u 
+ y=y*ci_phasor()
+ y=y*a**(-1)
+
+call kill(u)
+
+end subroutine zassen
+
+subroutine alloc_lie_ye(y,n,nres)
+implicit none 
+integer n,nres,i,j,k
+TYPE(Lie_ye) y
+allocate(y%th(0:n,nres))
+allocate(y%e(nres))
+allocate(y%tinv(0:n,0:n))
+ 
+
+do j=0,n
+do k=0,n
+ call alloc(y%tinv(j,k))
+enddo
+enddo
+
+
+do i=0,n
+do j=1,nres
+ call alloc(y%th(i,j))
+enddo
+enddo
+allocate(y%V(nres))
+  call alloc(y%V)
+
+allocate(y%L(nres))
+ call alloc(y%L)
+allocate(y%f(nres))
+  call alloc(y%f)
+y%e=33.0_dp*100
+ call alloc(y%e_x)
+ call alloc(y%e_y)
+allocate(y%M(nres,6,6))
+y%M=0
+end subroutine alloc_lie_ye
+
+!__________________________________________________________________________
   SUBROUTINE PATCH_driftR(C,X,k,exact,dir)
     implicit none
     ! MISALIGNS REAL FIBRES IN PTC ORDER FOR FORWARD AND BACKWARD FIBRES
@@ -1515,6 +1746,7 @@ CONTAINS !----------------------------------------------------------------------
 
        if(J==1) then
           if(EL%P%DIR==1) THEN
+!eeeeeeeeeeeeeeeeeeeeeeeeeee
              CALL EDGE(EL%P,EL%BN,EL%H1,EL%H2,EL%FINT,EL%HGAP,1,X,k)
              IF(k%FRINGE.or.el%p%permfringe==1.or.el%p%permfringe==3) CALL MULTIPOLE_FRINGE(EL%P,EL%AN,EL%BN,1,X,k)
              IF(el%p%permfringe==2.or.el%p%permfringe==3) &
@@ -4572,6 +4804,7 @@ k=0
 1 continue
 u=.false.
 j=j_ye
+ 
 invbest=invbest_ye
 
 dpxb=1.e38_dp
@@ -4629,6 +4862,8 @@ if(j==-1) then   !  tpsa
 cray%x=0
 cray%x(1:2)=x(1:2)
 inv=invtpsa_ye.o.cray
+elseif(j==-2) then
+ call compute_lie_ye(y_best1,x,inv)
 else
 inv=0
  ls=fk_ye%mag%L
@@ -4648,15 +4883,15 @@ invbest=ls**2*Bf1(2)*Bf2(2)*(myl1(1,1)*myl2(1,2)-myl1(1,2)*myl2(1,1))/2.0_dp
 
 
  
-cs=(2*mylatf(1)*x(1)*x(2)+mylatf(2)*x(2)*x(2)+mylatf(3)*x(1)*x(1))
+cs=-(2*mylatf(1)*x(1)*x(2)+mylatf(2)*x(2)*x(2)+mylatf(3)*x(1)*x(1))
 
 
  inv=inv+cs
  invk=inv
  
  
-dex=2*(mylatf(1)*x(2)+mylatf(3)*x(1))
-dep=2*(mylatf(1)*x(1)+mylatf(2)*x(2))
+dex=-2*(mylatf(1)*x(2)+mylatf(3)*x(1))
+dep=-2*(mylatf(1)*x(1)+mylatf(2)*x(2))
 
 w1=bf1(2)*(dex*myl1(1,2)-dep*myl1(1,1))/2.0_dp
 
@@ -5671,9 +5906,37 @@ endif
     INTEGER, INTENT(IN) :: I
     real(dp) c3,fsad
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+    real(dp) e_factor,g_tot,k1,fint_gap,e,dx,dy,dz,dpx,dpy,v(6) ,cos_e,sin_e,tan_e
+    real(dp) sec_e,gt,gt2,gs2,k1_tane,fg_factor
 
     IF(i==1.AND.EL%KILL_ENT_FRINGE) RETURN    ! put because SAD test 2021-05-16
     IF(i==2.AND.EL%KILL_EXI_FRINGE) RETURN
+
+if(sylee_fringe) then
+  e_factor = 1.0_dp / (1 + x(5))
+  g_tot = bn(1)
+  k1 = bn(2)
+  fint_gap = fint(i) * hgap(i)
+  if(i==1) then
+    e=el%edge(1)
+  else
+    e=el%edge(2)
+  endif
+
+cos_e = cos(e); sin_e = sin(e); tan_e = sin_e / cos_e; sec_e = 1 / cos_e
+gt = g_tot * tan_e
+gt2 = g_tot * tan_e**2
+gs2 = g_tot * sec_e**2
+k1_tane = k1 * tan_e  
+fg_factor = 2 * fint_gap * gs2 * g_tot * sec_e * (1 + sin_e**2)
+
+endif
+
+
+
+
+ 
+
 
     IF(EL%EXACT) THEN
        IF(EL%DIR==1) THEN
@@ -5711,7 +5974,7 @@ endif
        ENDIF
 
        if(el%b0/=0.0_dp) then
-
+     if(.not.sylee_fringe) then
           X(2)=X(2)+TAN(EL%EDGE(I))*EL%DIR*EL%CHARGE*BN(1)*X(1)   ! SECTOR WEDGE
 
           IF(EL%BEND_FRINGE.and.(.NOT.((I==1.AND.EL%KILL_ENT_FRINGE).OR.(I==2.AND.EL%KILL_EXI_FRINGE)))) THEN
@@ -5729,6 +5992,45 @@ endif
                  x(4)=x(4)-4*c3*x(3)**3
 
           ENDIF
+       else
+       if(i==1) then
+v = x
+ 
+  dx  = (-gt2 * v(1)**2 + gs2 * v(3)**2) * e_factor / 2
+  dpx = (gt * g_tot * (1 + 2 * tan_e**2) * v(3)**2 / 2 + gt2 * (v(1) * v(2) - v(3) * v(4)) + k1_tane * (v(1)**2 - v(3)**2)) * e_factor
+  dy  = gt2 * v(1) * v(3) * e_factor
+  dpy = (fg_factor * v(3) - gt2 * v(1) * v(4) - (g_tot + gt2) * v(2) * v(3) - 2 * k1_tane * v(1) * v(3)) * e_factor
+  dz = e_factor**2 * 0.5_dp * (v(3)**2 * fg_factor &
+            + v(1)**3 * (4.0_dp * k1_tane - gt * gt2) / 6.0_dp + 0.5_dp * v(1)*v(3)**2 * (-4.0_dp * k1_tane + gt * gs2) &
+            + (v(1)**2*v(2) - 2.0_dp * v(1)*v(3)*v(4)) * gt2 - v(2)*v(3)**2 * gs2)
+!w = v
+
+!ffffffffffffffffffffffffffffffffff
+  x(1) = v(1) +  hwang_lee_scale*dx
+  x(2) = v(2) +  (hwang_lee_scale*dpx + gt * v(1))
+  x(3) = v(3) +  hwang_lee_scale*dy
+  x(4) = v(4) +  (hwang_lee_scale*dpy - gt * v(3))
+  x(6) = v(6) -  hwang_lee_scale*dz
+else
+ v = x
+  dx  = (gt2 * v(1)**2 - gs2 * v(3)**2) * e_factor / 2
+  dpx = (gt2 * (v(3) * v(4) - v(1) * v(2)) + k1_tane * (v(1)**2 - v(3)**2) - gt * gt2 * (v(1)**2 + v(3)**2) / 2) * e_factor
+  dy  = -gt2 * v(1) * v(3) * e_factor
+  dpy = (fg_factor * v(3) + gt2 * v(1) * v(4) + (g_tot + gt2) * v(2) * v(3) + (gt * gs2 - 2 * k1_tane) * v(1) * v(3)) * e_factor
+  dz = e_factor**2 * 0.5_dp * (v(3)**2 * fg_factor &
+            + v(1)**3 * (4.0_dp * k1_tane - gt * gt2) / 6.0_dp + 0.5_dp * v(1)*v(3)**2 * (-4.0_dp * k1_tane + gt * gs2) &
+            - (v(1)**2*v(2) - 2.0_dp * v(1)*v(3)*v(4)) * gt2 + v(2)*v(3)**2 * gs2)
+
+!  w = v
+
+  x(1) = v(1) +  hwang_lee_scale*dx
+  x(2) = v(2) +  (hwang_lee_scale*dpx + gt * v(1))
+  x(3) = v(3) +  hwang_lee_scale*dy
+  x(4) = v(4) +  (hwang_lee_scale*dpy - gt * v(3))
+  x(6) = v(6) -  hwang_lee_scale*dz
+
+endif
+    endif  ! sylee
 
        else
           IF(EL%BEND_FRINGE.and.(.NOT.((I==1.AND.EL%KILL_ENT_FRINGE).OR.(I==2.AND.EL%KILL_EXI_FRINGE)))) THEN
@@ -5754,6 +6056,8 @@ endif
           ENDIF
 
     ENDIF
+ 
+
 
   END SUBROUTINE EDGER
 
@@ -5766,12 +6070,35 @@ endif
     INTEGER, INTENT(IN) :: I
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
     TYPE(REAL_8) fsad,c3
-integer :: kkk=0
+integer :: kkk=0,kk
+    type(real_8) e_factor,g_tot,k1,fint_gap,e,dx,dy,dz,dpx,dpy,v(6) ,cos_e,sin_e,tan_e
+    type(real_8) sec_e,gt,gt2,gs2,k1_tane,fg_factor
 
 
     IF(i==1.AND.EL%KILL_ENT_FRINGE) RETURN    ! put because SAD test 2021-05-16
     IF(i==2.AND.EL%KILL_EXI_FRINGE) RETURN
+if(sylee_fringe) then
+call alloc(sec_e,gt,gt2,gs2,k1_tane,fg_factor,cos_e,sin_e,tan_e)
+call alloc(e_factor,g_tot,k1,fint_gap,e,dx,dy,dz,dpx,dpy )
+call alloc(v)
+  e_factor = 1.0_dp / (1.0_dp + x(5))
+  g_tot = bn(1)
+  k1 = bn(2)
+  fint_gap = fint(i) * hgap(i)
+  if(i==1) then
+    e=el%edge(1)
+  else
+    e=el%edge(2)
+  endif
 
+cos_e = cos(e); sin_e = sin(e); tan_e = sin_e / cos_e; sec_e = 1 / cos_e
+gt = g_tot * tan_e
+gt2 = g_tot * tan_e**2
+gs2 = g_tot * sec_e**2
+k1_tane = k1 * tan_e  
+fg_factor = 2 * fint_gap * gs2 * g_tot * sec_e * (1 + sin_e**2)
+
+endif
 
     call PRTP("EDGE:0", X)
 
@@ -5811,6 +6138,7 @@ integer :: kkk=0
        ENDIF
 
        if(el%b0/=0.0_dp) then
+     if(.not.sylee_fringe) then
           X(2)=X(2)+TAN(EL%EDGE(I))*EL%DIR*EL%CHARGE*BN(1)*X(1)   ! SECTOR WEDGE
 
           IF(EL%BEND_FRINGE.and.(.NOT.((I==1.AND.EL%KILL_ENT_FRINGE).OR.(I==2.AND.EL%KILL_EXI_FRINGE)))) THEN
@@ -5828,6 +6156,53 @@ integer :: kkk=0
                  x(4)=x(4)-4*c3*x(3)**3
             call kill(fsad,c3)
           ENDIF
+       else
+       if(i==1) then
+ do kk=1,6
+  v(kk) = x(kk)
+ enddo
+  dx  = (-gt2 * v(1)**2 + gs2 * v(3)**2) * e_factor / 2
+  dpx = (gt * g_tot * (1 + 2 * tan_e**2) * v(3)**2 / 2 + gt2 * (v(1) * v(2) - v(3) * v(4)) + k1_tane * (v(1)**2 - v(3)**2)) * e_factor
+  dy  = gt2 * v(1) * v(3) * e_factor
+  dpy = (fg_factor * v(3) - gt2 * v(1) * v(4) - (g_tot + gt2) * v(2) * v(3) - 2 * k1_tane * v(1) * v(3)) * e_factor
+  dz = e_factor**2 * 0.5_dp * (v(3)**2 * fg_factor &
+            + v(1)**3 * (4.0_dp * k1_tane - gt * gt2) / 6.0_dp + 0.5_dp * v(1)*v(3)**2 * (-4.0_dp * k1_tane + gt * gs2) &
+            + (v(1)**2*v(2) - 2.0_dp * v(1)*v(3)*v(4)) * gt2 - v(2)*v(3)**2 * gs2)
+!w = v
+
+!ffffffffffffffffffffffffffffffffff
+  x(1) = v(1) +  hwang_lee_scale*dx
+  x(2) = v(2) +  (hwang_lee_scale*dpx + gt * v(1))
+  x(3) = v(3) +  hwang_lee_scale*dy
+  x(4) = v(4) +  (hwang_lee_scale*dpy - gt * v(3))
+  x(6) = v(6) -  hwang_lee_scale*dz
+call kill(sec_e,gt,gt2,gs2,k1_tane,fg_factor,cos_e,sin_e,tan_e)
+call kill(e_factor,g_tot,k1,fint_gap,e,dx,dy,dz,dpx,dpy )
+call kill(v)
+else
+ do kk=1,6
+  v(kk) = x(kk)
+ enddo
+  dx  = (gt2 * v(1)**2 - gs2 * v(3)**2) * e_factor / 2
+  dpx = (gt2 * (v(3) * v(4) - v(1) * v(2)) + k1_tane * (v(1)**2 - v(3)**2) - gt * gt2 * (v(1)**2 + v(3)**2) / 2) * e_factor
+  dy  = -gt2 * v(1) * v(3) * e_factor
+  dpy = (fg_factor * v(3) + gt2 * v(1) * v(4) + (g_tot + gt2) * v(2) * v(3) + (gt * gs2 - 2 * k1_tane) * v(1) * v(3)) * e_factor
+  dz = e_factor**2 * 0.5_dp * (v(3)**2 * fg_factor &
+            + v(1)**3 * (4.0_dp * k1_tane - gt * gt2) / 6.0_dp + 0.5_dp * v(1)*v(3)**2 * (-4.0_dp * k1_tane + gt * gs2) &
+            - (v(1)**2*v(2) - 2.0_dp * v(1)*v(3)*v(4)) * gt2 + v(2)*v(3)**2 * gs2)
+
+!  w = v
+
+  x(1) = v(1) +  hwang_lee_scale*dx
+  x(2) = v(2) +  (hwang_lee_scale*dpx + gt * v(1))
+  x(3) = v(3) +  hwang_lee_scale*dy
+  x(4) = v(4) +  (hwang_lee_scale*dpy - gt * v(3))
+  x(6) = v(6) -  hwang_lee_scale*dz
+call kill(sec_e,gt,gt2,gs2,k1_tane,fg_factor,cos_e,sin_e,tan_e)
+call kill(e_factor,g_tot,k1,fint_gap,e,dx,dy,dz,dpx,dpy )
+call kill(v)
+endif
+    endif  ! sylee
 
        else
           IF(EL%BEND_FRINGE.and.(.NOT.((I==1.AND.EL%KILL_ENT_FRINGE).OR.(I==2.AND.EL%KILL_EXI_FRINGE)))) THEN
@@ -6884,6 +7259,86 @@ endif
 
     call PRTP("GETNEWB:1", X)
   END SUBROUTINE GETNEWBP
+
+  SUBROUTINE GETonlyLV(el,X,W)
+    IMPLICIT NONE
+    type(elementp), intent(in) :: el
+    type(REAL_8),INTENT(INOUT):: X(6),W
+    type(REAL_8) X1,X3,BBYTW,BBXTW,BBYTWT 
+ 
+    INTEGER J
+ 
+    CALL ALLOC(X1,X3,BBYTW,BBXTW,BBYTWT)
+    X1=X(1)
+    X3=X(3)
+
+ 
+     if(associated(el%k16)) then
+    if(el%k16%use_anti/=0) then
+      if(el%k16%DRIFTKICK) then
+ 
+!!!!!!!!!!!!!
+    IF(EL%P%NMUL>=1) THEN
+       BBYTW=EL%BN(EL%P%NMUL)/EL%P%NMUL
+       BBXTW=EL%AN(EL%P%NMUL)/EL%P%NMUL
+       BBYTWT = X1*BBYTW-X3*BBXTW
+       BBXTW = X3*BBYTW+X1*BBXTW
+          BBYTW=BBYTWT
+
+       DO  J=EL%P%NMUL-1,1,-1
+          BBYTWT=X1*BBYTW-X3*BBXTW+EL%BN(J)/J
+          BBXTW=X3*BBYTW+X1*BBXTW+EL%AN(J)/J
+          BBYTW=BBYTWT
+       ENDDO
+    ELSE
+       BBYTW=0.0_dp
+       BBXTW=0.0_dp
+    ENDIF
+ 
+          W=BBYTW
+      else 
+      write(6,*) "use_ye must be driftkick in KICKEXR"
+      stop 223
+    endif
+
+ 
+    endif
+    endif
+
+    if(associated(el%k3)) then  ! 1
+
+    if(el%k3%use_anti==1) then  ! 2
+  
+!!!!!!!!!!!!!
+    IF(EL%P%NMUL>=1) THEN
+       BBYTW=EL%BN(EL%P%NMUL)/EL%P%NMUL
+       BBXTW=EL%AN(EL%P%NMUL)/EL%P%NMUL
+
+
+       DO  J=EL%P%NMUL-1,1,-1
+          BBYTWT=X1*BBYTW-X3*BBXTW+EL%BN(J)/J
+          BBXTW=X3*BBYTW+X1*BBXTW+EL%AN(J)/J
+          BBYTW=BBYTWT
+       ENDDO
+          BBYTWT=X1*BBYTW-X3*BBXTW 
+          BBXTW=X3*BBYTW+X1*BBXTW 
+          BBYTW=BBYTWT
+
+    ELSE
+       BBYTW=0.0_dp
+       BBXTW=0.0_dp
+    ENDIF
+
+  
+        w=BBYTW 
+ 
+ 
+    endif  ! 3
+    endif  ! 1
+    CALL kill(X1,X3,BBYTW,BBXTW,BBYTWT)
+ 
+ 
+  END SUBROUTINE GETonlyLV
 
   SUBROUTINE GETMULB_SOLR(EL,B,X,k)
     IMPLICIT NONE

@@ -2332,9 +2332,9 @@ endif
  
  if(first_ye==-1) then
    first_ye=0
-write(6,*) fk_ye%mag%bn(1:5)
-write(6,*) fk_ye%mag%k3%use_anti
-write(6,*) fk_ye%mag%k3%e
+!write(6,*) fk_ye%mag%bn(1:size(fk_ye%mag%bn))
+!write(6,*) fk_ye%mag%k3%use_anti
+!write(6,*) fk_ye%mag%k3%e
  write(6,*)  " give j_ye 0,1,2 "
   read(5,*) j_ye
   call compute_invh(xs%x,j_ye,invbest_ye)

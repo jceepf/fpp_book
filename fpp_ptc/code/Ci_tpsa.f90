@@ -1019,6 +1019,49 @@ endif
 
 end subroutine c_get_indices
 
+subroutine c_get_param(nd1,ndt1,nd21,nd2t1,ndharm1,nd2harm1,ndpt1,ndptb1,ndct1,ndc2t1,nv1,rf1,np1)
+implicit none
+integer nd1,ndt1,nd21,nd2t1,ndharm1,nd2harm1,ndpt1,ndptb1,ndct1,ndc2t1,nv1,rf1,np1
+
+
+nd1=nd
+ndt1=ndt
+nd21=nd2
+nd2t1=nd2t
+ndharm1=ndharm
+nd2harm1=nd2harm
+ndpt1=ndpt
+ndptb1=ndptb
+ndct1=ndct
+ndc2t1=ndc2t
+nv1=nv
+rf1=rf
+np1=np
+
+end subroutine c_get_param
+
+subroutine c_set_param(nd1,ndt1,nd21,nd2t1,ndharm1,nd2harm1,ndpt1,ndptb1,ndct1,ndc2t1,nv1,rf1,np1)
+implicit none
+integer nd1,ndt1,nd21,nd2t1,ndharm1,nd2harm1,ndpt1,ndptb1,ndct1,ndc2t1,nv1,rf1,np1
+
+nd=nd1
+ndt=ndt1
+nd2=nd21 
+nd2t=nd2t1
+ndharm=ndharm1
+nd2harm=nd2harm1
+ndpt=ndpt1
+ndptb=ndptb1
+ndct=ndct1
+ndc2t=ndc2t1
+nv=nv1
+rf=rf1
+np=np1
+
+end subroutine c_set_param
+
+
+
   subroutine locally_set_da_pointers()
     use da_arrays,only : c_
     implicit none
@@ -25030,4 +25073,240 @@ real(dp) max
 	enddo
 	return
 end function
+
+
+subroutine  c_average_6d(m,n,disp,uph,dospin,uspin)
+implicit none
+type(c_normal_form) n
+type(c_damap) m,ai,aia,rot,aiat
+type(c_universal_taylor) disp(4),um(6),uph(3),qu(0:4)  
+type(c_universal_taylor), optional :: uspin
+logical, optional :: dospin
+logical dos
+type(c_taylor) phase(3),nu_spin
+type(internal_state) state
+integer i,j,k,nt,npt,no,np,l
+integer nd1,ndt1,nd21,nd2t1,ndharm1,nd2harm1,ndpt1,ndptb1,ndct1,ndc2t1,nv1,rf1,np1
+integer ndt1n,nd2t1n,ndharm1n,nd2harm1n,ndpt1n,ndptb1n,ndct1n,ndc2t1n,jj(lnv)
+type(c_damap) L_r , N_r , L_s, N_s
+     !  use_bmad_units=.true.
+     ! ndpt_bmad=1
+ 
+     !  use_bmad_units=.false.
+    !  ndpt_bmad=0
+
+if(ndpt_bmad==0) then
+ npt=5
+ nt=6
+else
+ npt=6
+ nt=5
+endif
+
+no=c_%no
+np=0
+dos=.false.
+if(present(dospin)) dos=dospin
+ call alloc(ai,rot,aia,aiat,L_r , N_r , L_s, N_s)
+  call alloc(phase)
+  call alloc(nu_spin)
+call c_normal(m,n)
+
+ai=n%atot**(-1)
+
+do i=1,4
+ ai%v(i)=0.0_dp
+enddo
+ 
+aia= n%atot*ai
+ 
+rot=1
+do i=1,4
+ rot%v(i)=0.0_dp
+enddo
+aia=aia*rot
+ 
+rot=1
+rot%v(5)=aia%v(5)
+rot%v(6)=aia%v(6)
+ rot=rot**(-1)
+ 
+ 
+aia=aia *rot
+ 
+
+
+
+do i=1,4
+ disp(i)=aia%v(i)
+enddo
+
+do i=1,4 
+do j=1,disp(i)%n
+k=0
+do l=1,4
+ k=iabs(disp(i)%J(j,l))  + k
+enddo
+if(k/=0) disp(i)%c(j)=0
+enddo
+ aia%v(i)= disp(i) 
+ disp(i)=aia%v(i)
+enddo  
+ 
+ 
+
+!!! remove xi function completely 
+
+rot=1
+rot%v(nt)=0.0_dp
+ 
+aia=aia*rot
+
+
+
+ aia%v(nt)=(-1)**npt*((aia%v(1).d.npt)*(1.0_dp.cmono.2)-(aia%v(2).d.npt)*(1.0_dp.cmono.1) &
+  +(aia%v(3).d.npt)*(1.0_dp.cmono.4)-(aia%v(4).d.npt)*(1.0_dp.cmono.3))
+
+ aia%v(npt)=(-1)**nt*((aia%v(1).d.nt)*(1.0_dp.cmono.2)-(aia%v(2).d.nt)*(1.0_dp.cmono.1) &
+  +(aia%v(3).d.nt)*(1.0_dp.cmono.4)-(aia%v(4).d.nt)*(1.0_dp.cmono.3))
+
+
+do i=1,6
+aia%v(i)=aia%v(i)+(1.0_dp.cmono.i)
+enddo
+
+aia%v(npt)=(1.0_dp.cmono.npt)
+
+
+call c_get_param(nd1,ndt1,nd21,nd2t1,ndharm1,nd2harm1,ndpt1,ndptb1,ndct1,ndc2t1,nv1,rf1,np1)
+
+!write(6,"(13(1x,i2))")nd1,ndt1,nd21,nd2t1,ndharm1,nd2harm1,ndpt1,ndptb1,ndct1,ndc2t1,nv1,rf1,np1
+!                     3    3    6     6     3      6        0     0      0     0      6    0  0
+!                     3    2    6     4     2      4        6     5      1     2      6    0  0
+ndt1n=2
+nd2t1n=4
+ndharm1n=2
+nd2harm1n=4
+ndpt1n=5+ndpt_bmad
+ndptb1n=6-ndpt_bmad
+ndct1n=1
+ndc2t1n=2
+
+call c_set_param(nd1,ndt1n,nd21,nd2t1n,ndharm1n,nd2harm1n,ndpt1n,ndptb1n,ndct1n,ndc2t1n,nv1,rf1,np1)
+
+ 
+ m=aia**(-1)*m*aia
+m%v(npt)=1.0_dp.cmono.npt
+
+ do i=1,6
+ um(i) =m%v(i)
+enddo
+
+if(dos) then
+ do i=0,3
+ qu(i) =m%q%x(i)
+ enddo
+endif
+
+do i=1,6
+do j=1,um(i)%n
+k=0
+
+ k=iabs(um(i)%J(j,nt))  
+
+if(k/=0) um(i)%c(j)=0
+enddo
+ m%v(i)= um(i) 
+ um(i)=m%v(i)
+enddo  
+
+if(dos) then
+do i=0,3
+do j=1,qu(i)%n
+k=0
+
+ k=iabs(qu(i)%J(j,nt))  
+
+if(k/=0) qu(i)%c(j)=0
+enddo
+ m%q%x(i)= qu(i) 
+ qu(i)= m%q%x(i)
+enddo  
+endif
+
+m%v(nt)=m%v(nt)+(1.0_dp.cmono.nt)
+
+if(dos) then
+rot%q=m%q
+rot%v(1)=sqrt(rot%q%x(0)**2+rot%q%x(1)**2+rot%q%x(2)**2+rot%q%x(3)**2)
+
+do i=0,3
+ rot%q%x(i)=rot%q%x(i)/rot%v(1)
+enddo
+endif
+
+ do i=1,6
+ um(i) =m%v(i)
+enddo
+
+do i=1,4
+do j=1,um(i)%n
+
+k=0
+do l=1,4
+ k=iabs(um(i)%J(j,l))  + k
+enddo
+if(k==0.and.um(i)%J(j,npt)/=0) um(i)%c(j)=0
+enddo
+ m%v(i)= um(i) 
+ um(i)= m%v(i)
+enddo  
+ 
+
+call symplectify_for_zhe(m,L_r , N_r , L_s, N_s )
+m=L_s * N_s
+m%q=rot%q
+  
+  
+ 
+! m = L_r o N_r o L_s o N_s
+! d= = L_r o N_r
+! ms= L_s o N_s
+
+ 
+
+ 
+if(dos) then
+ call c_normal(m,n,phase=phase,dospin=dos,nu_spin=nu_spin)
+  else
+ call c_normal(m,n,phase=phase,dospin=dos)
+endif
+
+if(dos) then
+ uspin=nu_spin
+endif
+do i=1,3
+uph(i)=phase(i)
+enddo
+
+do i=1,3
+do j=1,uph(i)%n
+ k=iabs(uph(i)%J(j,2)-uph(i)%J(j,1))+iabs(uph(i)%J(j,4)-uph(i)%J(j,3))
+ if(k/=0) uph(i)%c(j)=0.0_dp
+enddo
+ phase(i)=uph(i)
+ uph(i)=phase(i)
+enddo
+
+call c_set_param(nd1,ndt1,nd21,nd2t1,ndharm1,nd2harm1,ndpt1,ndptb1,ndct1,ndc2t1,nv1,rf1,np1)
+
+ 
+ call kill(um)
+ call kill(phase)
+  call kill(nu_spin)
+call kill(ai,rot,aia,aiat,L_r , N_r , L_s, N_s)
+
+end subroutine  c_average_6d
+
+
   END MODULE  c_tpsa
