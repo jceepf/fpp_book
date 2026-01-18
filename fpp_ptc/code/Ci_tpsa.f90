@@ -25075,10 +25075,12 @@ real(dp) max
 end function
 
 
-subroutine  c_average_6d(m,n,disp,uph,dospin,uspin)
+
+
+subroutine  c_average_6d(m_in,n,disp,uph,dospin,uspin)
 implicit none
 type(c_normal_form) n
-type(c_damap) m,ai,aia,rot,aiat
+type(c_damap) m,ai,aia,rot,aiat,m_in
 type(c_universal_taylor) disp(4),um(6),uph(3),qu(0:4)  
 type(c_universal_taylor), optional :: uspin
 logical, optional :: dospin
@@ -25094,6 +25096,8 @@ type(c_damap) L_r , N_r , L_s, N_s
  
      !  use_bmad_units=.false.
     !  ndpt_bmad=0
+call alloc(m)
+m=m_in
 
 if(ndpt_bmad==0) then
  npt=5
@@ -25126,6 +25130,7 @@ do i=1,4
 enddo
 aia=aia*rot
  
+!!!!   redefining dispersion and xi around the average of delta and ct
 rot=1
 rot%v(5)=aia%v(5)
 rot%v(6)=aia%v(6)
@@ -25162,7 +25167,7 @@ rot%v(nt)=0.0_dp
  
 aia=aia*rot
 
-
+! make aia symplectic, important for phase slip
 
  aia%v(nt)=(-1)**npt*((aia%v(1).d.npt)*(1.0_dp.cmono.2)-(aia%v(2).d.npt)*(1.0_dp.cmono.1) &
   +(aia%v(3).d.npt)*(1.0_dp.cmono.4)-(aia%v(4).d.npt)*(1.0_dp.cmono.3))
@@ -25305,8 +25310,7 @@ call c_set_param(nd1,ndt1,nd21,nd2t1,ndharm1,nd2harm1,ndpt1,ndptb1,ndct1,ndc2t1,
  call kill(phase)
   call kill(nu_spin)
 call kill(ai,rot,aia,aiat,L_r , N_r , L_s, N_s)
-
+call kill(m)
 end subroutine  c_average_6d
-
 
   END MODULE  c_tpsa
