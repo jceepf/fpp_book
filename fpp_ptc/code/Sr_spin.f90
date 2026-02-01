@@ -749,6 +749,8 @@ revert_to_ptc=.false.
  revert_to_ptc=.true.
 
       beta=C%PARENT_FIBRE%beta0
+      if(c%PARENT_FIBRE%PATCH%ENERGY==4.and.c%cas==-1) beta=c%PARENT_FIBRE%PATCH%b0b
+
       call convert_bmad_to_ptc(xs,beta,k%time)
      convert_to_bmad=.false.
     endif
@@ -766,6 +768,8 @@ revert_to_ptc=.false.
      endif
     if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
       beta=C%PARENT_FIBRE%beta0
+      if(c%PARENT_FIBRE%PATCH%ENERGY==5.and.c%cas==-2) beta=c%PARENT_FIBRE%PATCH%b0b
+
       call convert_ptc_to_bmad(xs,beta,k%time)
      convert_to_bmad=.true.
    endif
@@ -863,6 +867,10 @@ revert_to_ptc=.false.
  revert_to_ptc=.true.
 
       beta=C%PARENT_FIBRE%beta0
+! etienne       if(T%PARENT_FIBRE%PATCH%ENERGY==5.and.t%cas==-2) beta=T%PARENT_FIBRE%PATCH%b0b
+
+      if(c%PARENT_FIBRE%PATCH%ENERGY==4.and.c%cas==-1) beta=c%PARENT_FIBRE%PATCH%b0b
+
       call convert_bmad_to_ptc(xs,beta,k%time)
      convert_to_bmad=.false.
     endif
@@ -878,6 +886,8 @@ revert_to_ptc=.false.
      endif
     if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
       beta=C%PARENT_FIBRE%beta0
+      if(c%PARENT_FIBRE%PATCH%ENERGY==5.and.c%cas==-2) beta=c%PARENT_FIBRE%PATCH%b0b
+
       call convert_ptc_to_bmad(xs,beta,k%time)
      convert_to_bmad=.true.
    endif
