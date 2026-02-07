@@ -2524,6 +2524,7 @@ n=nint(C%PARENT_FIBRE%MAG%bn(3))
      xs%x(2)=exp(-C%PARENT_FIBRE%MAG%bn(1))*xs%x(2)
 
     xs%x(2)=xs%x(2)-b4*(xs%x(1)**n+xs%x(1)**(n+1)+xs%x(1)**(n+2)+xs%x(1)**(n+3))
+    xs%x(1)=xs%x(1)-C%PARENT_FIBRE%MAG%bn(1)*b4*(xs%x(1)**n+xs%x(1)**(n+1)+xs%x(1)**(n+2)+xs%x(1)**(n+3))
 
 !call add(m1,2,0,beta)
 !call add(m1,4,0,1.d0)   ! multipole strength
@@ -2565,7 +2566,7 @@ use gauss_dis
  !xs0_zhe%x=xs%x
 
      ! call track_TREE_probe_complex_zhe(t_mapexam_map(1:3),xs0_zhe,spin=.false.,rad=.false.,stoch=.false.)  !stoch=state%stochastic)
-      call track_TREE_probe_simple_zher_8(t_mapexam_map8(1:3),xs,spin=.false.,rad=.false.,stoch=.false.)  !stoch=state%stochastic)
+      call track_TREE_probe_simple_zher_8(t_mapexam_map8(1:3),xs,spin=k%spin,rad=k%radiation,stoch=k%stochastic)  !stoch=state%stochastic)
 !xs%u=xs0_zhe%u
 !xs%x=xs0_zhe%x
  
@@ -2591,7 +2592,7 @@ use gauss_dis
  !xs0_zhe%x=xs%x
 
      ! call track_TREE_probe_complex_zhe(t_mapexam_map(1:3),xs0_zhe,spin=.false.,rad=.false.,stoch=.false.)  !stoch=state%stochastic)
-      call track_TREE_probe_simple_zhep_8(t_mapexam_map8(1:3),xs,spin=.false.,rad=.false.)  !stoch=state%stochastic)
+      call track_TREE_probe_simple_zhep_8(t_mapexam_map8(1:3),xs,spin=k%spin,rad=k%radiation)  !stoch=state%stochastic)
 !xs%u=xs0_zhe%u
 !xs%x=xs0_zhe%x
  
@@ -2630,6 +2631,7 @@ n=nint(C%PARENT_FIBRE%MAG%bn(3))
      xs%x(2)=exp(-C%PARENT_FIBRE%MAG%bn(1))*xs%x(2)
 
     xs%x(2)=xs%x(2)-b4*(xs%x(1)**n+xs%x(1)**(n+1)+xs%x(1)**(n+2)+xs%x(1)**(n+3))
+    xs%x(1)=xs%x(1)-C%PARENT_FIBRE%MAGp%bn(1)*b4*(xs%x(1)**n+xs%x(1)**(n+1)+xs%x(1)**(n+2)+xs%x(1)**(n+3))
 
     xs%E_ij(2,2)=C%PARENT_FIBRE%MAG%an(3)**2
 
