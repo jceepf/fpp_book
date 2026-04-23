@@ -117,7 +117,7 @@ MODULE S_DEF_KIND
   INTEGER, PRIVATE :: TOTALPATH_FLAG
   !  private DRIFT_pancaker,DRIFT_pancakep,KICKPATH_pancaker,KICKPATH_pancakep
   ! using x and x'
-  private fxr,fxp,fx,pxcr,pxcp,fxc
+  private fxr,fxp,fx,fxc
 !  PRIVATE feval       !,rk4_m
   !  FOR CAV_TRAV
   PRIVATE A_TRANSR,A_TRANSP,A_TRANSL
@@ -19195,7 +19195,7 @@ subroutine track_map_pancake1str(ti,c,xs,fac,K)   !electric teapot s
     if(k%radiation.or.k%spin.or.k%envelope) then
        call alloc(d)
        d=fac*c%parent_fibre%mag%L/c%parent_fibre%mag%p%nst 
-       call RAD_SPIN_qua_PROBE(c,xs,k,d)
+       call RAD_SPIN_qua_PROBE(c,xs,k,d,iw=ti)
        call kill(d)
 
     endif
@@ -19217,12 +19217,12 @@ subroutine track_map_pancake1str(ti,c,xs,fac,K)   !electric teapot s
  
     if(k%radiation.or.k%spin.or.k%envelope) then
        d=fac*c%parent_fibre%mag%L/c%parent_fibre%mag%p%nst/2
-       call RAD_SPIN_qua_PROBE(c,xs,k,d)
+       call RAD_SPIN_qua_PROBE(c,xs,k,d,iw=ti)
     endif
      call track_map_pancaker1(ti,C,XS,fac*0.5_dp,1,K)
      call track_map_pancaker1(ti,C,XS,fac*0.5_dp,2,K)
     if(k%radiation.or.k%spin.or.k%envelope) then
-       call RAD_SPIN_qua_PROBE(c,xs,k,d)
+       call RAD_SPIN_qua_PROBE(c,xs,k,d,iw=ti)
     endif
   end subroutine track_map_pancake2ndr
 
@@ -19238,12 +19238,12 @@ subroutine track_map_pancake1str(ti,c,xs,fac,K)   !electric teapot s
     if(k%radiation.or.k%spin.or.k%envelope) then
        call alloc(d)
        d=fac*c%parent_fibre%mag%L/c%parent_fibre%mag%p%nst/2
-       call RAD_SPIN_qua_PROBE(c,xs,k,d)
+       call RAD_SPIN_qua_PROBE(c,xs,k,d,iw=ti)
     endif
      call track_map_pancakep1(ti,C,XS,fac*0.5_dp  ,1,K)
      call track_map_pancakep1(ti,C,XS,fac*0.5_dp  ,2,K)
      if(k%radiation.or.k%spin.or.k%envelope) then
-       call RAD_SPIN_qua_PROBE(c,xs,k,d)
+       call RAD_SPIN_qua_PROBE(c,xs,k,d,iw=ti)
        call kill(d)
 
     endif
@@ -19278,11 +19278,17 @@ subroutine track_map_pancake1str(ti,c,xs,fac,K)   !electric teapot s
     integer ti,pos
     real(dp) fac
  
-    pos=3*ti-2
+     pos=3*ti-2
+write(6,*) pos, size(c%parent_fibre%mag%pa%b)
+
       call track_map_pancake2ndp(pos,c,xs,yx0*fac,K)
     pos=pos+1
+write(6,*) pos 
+
       call track_map_pancake2ndp(pos,c,xs,yx1*fac,K)
     pos=pos+1
+write(6,*) pos 
+
       call track_map_pancake2ndp(pos,c,xs,yx0*fac,K)
 
 
@@ -34398,12 +34404,13 @@ endif
   end subroutine track_map_pancakep1
 
 
-SUBROUTINE RAD_SPIN_qua_PROBER(c,p,k,ds,zw)
+SUBROUTINE RAD_SPIN_qua_PROBER(c,p,k,ds,zw,iw)
     type(probe), INTENT(INOUT) :: p
     TYPE(fibre),pointer ::  f
     TYPE(integration_node),pointer :: c
     real(dp), intent(inout) ::ds
     real(dp), optional , intent(in) ::zw
+    integer, optional , intent(in) :: iw
     REAL(DP)  B(3),XP(2),XPA(2),ed(3)
     REAL(DP) om(3),b2,dlds,FAC
      TYPE(INTERNAL_STATE) k 
@@ -34413,7 +34420,7 @@ SUBROUTINE RAD_SPIN_qua_PROBER(c,p,k,ds,zw)
      f=> c%parent_fibre
      pos=C%POS_IN_FIBRE-2     !  unknown.... to be checked later
      before=.true.
-
+     if(present(iw)) pos=iw
     if((k%radiation.or.k%envelope)) then
     CALL get_omega_spin(c,OM,B2,dlds,XP,P%X,pos,k,Ed,B,zw)
 
@@ -34441,7 +34448,7 @@ SUBROUTINE RAD_SPIN_qua_PROBER(c,p,k,ds,zw)
 
 
 
-SUBROUTINE RAD_SPIN_qua_PROBEP(c,p,k,ds,zw)
+SUBROUTINE RAD_SPIN_qua_PROBEP(c,p,k,ds,zw,iw)
     type(probe_8), INTENT(INOUT) :: p
     TYPE(fibre),pointer ::  f
     TYPE(integration_node),pointer :: c
@@ -34452,7 +34459,9 @@ SUBROUTINE RAD_SPIN_qua_PROBEP(c,p,k,ds,zw)
    !   logical before
      integer i,pos
     real(dp), optional , intent(in) ::zw
+    integer, optional , intent(in) :: iw
      pos=C%POS_IN_FIBRE-2     !  unknown.... to be checked later
+     if(present(iw)) pos=iw
 
      FAC=0.5_dp
      f=> c%parent_fibre
