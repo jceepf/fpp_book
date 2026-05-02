@@ -223,6 +223,7 @@ real(dp) scalee,scaleb,hhh
 logical :: sylee_fringe = .false.
 real(dp) :: hwang_lee_scale =1.0_dp
 integer :: ntest =0
+
 TYPE Lie_ye
      type(c_taylor), allocatable ::  th(:,:)
      INTEGER n_ye,nres
@@ -18637,7 +18638,7 @@ call  kill(del,pz,h)
 
 
 !!!!!!!!!!!!!! Pancake starts here !!!!!!!!!!!!!!!
- subroutine fxcr(f,x,k,b,p,hc,g,h)
+ subroutine fxcr(f,x,k,b,p,hc) !,g,h)
     implicit none
 
     real(dp)  d(4),BETA0,hc
@@ -18645,7 +18646,7 @@ call  kill(del,pz,h)
     type(MAGNET_CHART), pointer:: p
     real(dp) ,intent(inout) :: x(6)
     real(dp), intent(out):: f(6)
-    real(dp),optional, intent(out):: g(2,2),h(2,2)
+   ! real(dp),optional, intent(out):: g(2,2),h(2,2)
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
     if(k%time) then
@@ -18667,21 +18668,10 @@ call  kill(del,pz,h)
     f(4)=        d(1)*d(2)*b(6)/d(3)+d(1)*d(4)*b(9)/d(3)+d(1)*b(12) 
     f(5)=0.0_dp
     f(6)=d(1)*(x(5)+1.0_dp/beta0)/d(3)
-    if(present(g)) then
-     g(1,1)= (-hc*d(2)/d(3)+d(1)*b(7)*(1.0_dp/d(3)+d(2)**2/d(3)**3))
-     g(1,2)= (-hc*x(4)/d(3)+d(1)*b(7)*(x(4)*d(2)/d(3)**3))
-     g(2,1)= (d(1)*b(8)*(1.0_dp/d(3)+d(2)**2/d(3)**3))
-     g(2,2)=  d(1)*b(8)*(x(4)*d(2)/d(3)**3)
-    endif
-    if(present(h)) then
-     h(1,1)=  (hc*d(2)/d(3)-d(1)*b(7)*(1.0_dp/d(3)+d(2)**2/d(3)**3))
-     h(2,1)=  -(-hc*x(4)/d(3)+d(1)*b(7)*(x(4)*d(2)/d(3)**3))
-     h(1,2)=  -(d(1)*b(8)*(1.0_dp/d(3)+d(2)**2/d(3)**3))
-     h(2,2)=  -d(1)*b(8)*(x(4)*d(2)/d(3)**3)
-    endif
+ 
   end subroutine fxcr 
 
- subroutine fxcp(f,x,k,b,p,hc,g,h)
+ subroutine fxcp(f,x,k,b,p,hc)  !,g,h)
     implicit none
 
     type(real_8)  d(4)
@@ -18689,7 +18679,7 @@ call  kill(del,pz,h)
     type(real_8) ,intent(in) :: b(nbe)
     real(dp)   BETA0,hc
     type(real_8), intent(out):: f(6)
-    type(real_8),optional, intent(out):: g(2,2) ,h(2,2)
+  !  type(real_8),optional, intent(out):: g(2,2) ,h(2,2)
     type(MAGNET_CHART), pointer:: p
     TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
 
@@ -18715,18 +18705,7 @@ call  kill(del,pz,h)
     f(4)=        d(1)*d(2)*b(6)/d(3)+d(1)*d(4)*b(9)/d(3)+d(1)*b(12) 
     f(5)=0.0_dp
     f(6)=d(1)*(x(5)+1.0_dp/beta0)/d(3)
-    if(present(g)) then
-     g(1,1)= (-hc*d(2)/d(3)+d(1)*b(7)*(1.0_dp/d(3)+d(2)**2/d(3)**3))
-     g(1,2)= (-hc*x(4)/d(3)+d(1)*b(7)*(x(4)*d(2)/d(3)**3))
-     g(2,1)= (d(1)*b(8)*(1.0_dp/d(3)+d(2)**2/d(3)**3))
-     g(2,2)=  d(1)*b(8)*(x(4)*d(2)/d(3)**3)
-    endif
-    if(present(h)) then
-     h(1,1)=  (hc*d(2)/d(3)-d(1)*b(7)*(1.0_dp/d(3)+d(2)**2/d(3)**3))
-     h(2,1)=  -(-hc*x(4)/d(3)+d(1)*b(7)*(x(4)*d(2)/d(3)**3))
-     h(1,2)=  -(d(1)*b(8)*(1.0_dp/d(3)+d(2)**2/d(3)**3))
-     h(2,2)=  -d(1)*b(8)*(x(4)*d(2)/d(3)**3)
-    endif
+ 
     call kill(d)
 
   end subroutine fxcp
@@ -19173,7 +19152,7 @@ subroutine track_map_pancake1str(ti,c,xs,fac,K)   !electric teapot s
     TYPE(INTERNAL_STATE) K
     integer ti
     real(dp) fac,d
-    if(k%radiation.or.k%spin.or.k%envelope) then
+    if((k%radiation.or.k%spin).and.(ntest==0)) then
        d=fac*c%parent_fibre%mag%L/c%parent_fibre%mag%p%nst 
        call RAD_SPIN_qua_PROBE(c,xs,k,d)
     endif
@@ -19192,7 +19171,7 @@ subroutine track_map_pancake1str(ti,c,xs,fac,K)   !electric teapot s
     integer ti
     real(dp) fac
     type(real_8) d
-    if(k%radiation.or.k%spin.or.k%envelope) then
+    if((k%radiation.or.k%spin.or.k%envelope).and.(ntest==0)) then
        call alloc(d)
        d=fac*c%parent_fibre%mag%L/c%parent_fibre%mag%p%nst 
        call RAD_SPIN_qua_PROBE(c,xs,k,d,iw=ti)
@@ -19215,13 +19194,13 @@ subroutine track_map_pancake1str(ti,c,xs,fac,K)   !electric teapot s
     integer ti
     real(dp) fac,d
  
-    if(k%radiation.or.k%spin.or.k%envelope) then
+    if((k%radiation.or.k%spin.or.k%envelope).and.(ntest==0)) then
        d=fac*c%parent_fibre%mag%L/c%parent_fibre%mag%p%nst/2
        call RAD_SPIN_qua_PROBE(c,xs,k,d,iw=ti)
     endif
      call track_map_pancaker1(ti,C,XS,fac*0.5_dp,1,K)
      call track_map_pancaker1(ti,C,XS,fac*0.5_dp,2,K)
-    if(k%radiation.or.k%spin.or.k%envelope) then
+    if((k%radiation.or.k%spin.or.k%envelope).and.(ntest==0)) then
        call RAD_SPIN_qua_PROBE(c,xs,k,d,iw=ti)
     endif
   end subroutine track_map_pancake2ndr
@@ -19235,14 +19214,14 @@ subroutine track_map_pancake1str(ti,c,xs,fac,K)   !electric teapot s
     real(dp) fac 
      type(real_8) d
 
-    if(k%radiation.or.k%spin.or.k%envelope) then
+    if((k%radiation.or.k%spin.or.k%envelope).and.(ntest==0)) then
        call alloc(d)
        d=fac*c%parent_fibre%mag%L/c%parent_fibre%mag%p%nst/2
        call RAD_SPIN_qua_PROBE(c,xs,k,d,iw=ti)
     endif
      call track_map_pancakep1(ti,C,XS,fac*0.5_dp  ,1,K)
      call track_map_pancakep1(ti,C,XS,fac*0.5_dp  ,2,K)
-     if(k%radiation.or.k%spin.or.k%envelope) then
+    if((k%radiation.or.k%spin.or.k%envelope).and.(ntest==0)) then
        call RAD_SPIN_qua_PROBE(c,xs,k,d,iw=ti)
        call kill(d)
 
@@ -19265,8 +19244,6 @@ subroutine track_map_pancake1str(ti,c,xs,fac,K)   !electric teapot s
     pos=pos+1
       call track_map_pancake2ndr(pos,c,xs,yx0*fac,K)
 
-  
-    ! call track_map_pancaker1(C,XS,fac*1.0_dp,1,K)
   end subroutine track_map_pancake4thr
 
 
@@ -19279,29 +19256,82 @@ subroutine track_map_pancake1str(ti,c,xs,fac,K)   !electric teapot s
     real(dp) fac
  
      pos=3*ti-2
-write(6,*) pos, size(c%parent_fibre%mag%pa%b)
+!write(6,*) pos, size(c%parent_fibre%mag%pa%b)
 
       call track_map_pancake2ndp(pos,c,xs,yx0*fac,K)
     pos=pos+1
-write(6,*) pos 
+!write(6,*) pos 
 
       call track_map_pancake2ndp(pos,c,xs,yx1*fac,K)
     pos=pos+1
-write(6,*) pos 
+!write(6,*) pos 
 
       call track_map_pancake2ndp(pos,c,xs,yx0*fac,K)
 
 
   end subroutine track_map_pancake4thp
 
+  subroutine track_map_pancake6thr(ti,c,xs,fac,K)   !electric teapot s
+    IMPLICIT NONE
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    type(probe), INTENT(INout) :: xs
+    TYPE(INTERNAL_STATE) K
+    integer ti,pos,i
+    real(dp) fac,yo(7)
+
+yo(1)=yosk(4)
+yo(2)=yosk(3)
+yo(3)=yosk(2)
+yo(4)=yosk(1)
+yo(5)=yosk(2)
+yo(6)=yosk(3)
+yo(7)=yosk(4)
+
+    pos=7*ti-7
+do i=4,1,-1
+    pos=pos+1
+      call track_map_pancake2ndr(pos,c,xs,yosk(i)*fac,K)
+enddo
+do i=2,4
+    pos=pos+1
+      call track_map_pancake2ndr(pos,c,xs,yosk(i)*fac,K)
+enddo
+  end subroutine track_map_pancake6thr
   
+  subroutine track_map_pancake6thp(ti,c,xs,fac,K)   !electric teapot s
+    IMPLICIT NONE
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    type(probe_8), INTENT(INout) :: xs
+    TYPE(INTERNAL_STATE) K
+    integer ti,pos,i
+    real(dp) fac,yo(7)
+
+yo(1)=yosk(4)
+yo(2)=yosk(3)
+yo(3)=yosk(2)
+yo(4)=yosk(1)
+yo(5)=yosk(2)
+yo(6)=yosk(3)
+yo(7)=yosk(4)
+
+    pos=7*ti-7
+do i=4,1,-1
+    pos=pos+1
+      call track_map_pancake2ndp(pos,c,xs,yosk(i)*fac,K)
+enddo
+do i=2,4
+    pos=pos+1
+      call track_map_pancake2ndp(pos,c,xs,yosk(i)*fac,K)
+enddo
+  end subroutine track_map_pancake6thp
+
   subroutine track_map_pancaker1(ti,c,xs,fac,pos,K)   ! 
     IMPLICIT NONE
     TYPE(integration_node),pointer, INTENT(IN):: c
     type(probe), INTENT(INout) :: xs
     TYPE(INTERNAL_STATE) K
     integer i,n ,nz,e(2),pos,ti
-    real(dp) x(6),dl,q0(3),qf(3),pf0(3),pf(3),pfi(3),dpfi(3),fac
+    real(dp) x(6),dl,q0(3),qf(3),pf0(3),pf(3),pfi(3),dpfi(3),fac,om(3)
     real(dp) :: eps=1.d-7, norm,normold
     C%PARENT_FIBRE%MAG%P%DIR    => C%PARENT_FIBRE%DIR
     C%PARENT_FIBRE%MAG%P%beta0  => C%PARENT_FIBRE%beta0
@@ -19332,7 +19362,7 @@ e(pos)=1
    pfi=1.d38
    normold=1.d38
    do i=1,1000
-    call newton_search_pancaker(ti,c,q0,qf,pf0,pf,xs%q,e,dl,k)
+    call newton_search_pancaker(ti,c,q0,qf,pf0,pf,xs%q,e,dl,k,om)
   !  call newton_searchr(c,q0,qf,pf0,pf,dl,k)
     dpfi=e(2)*(pf-pfi)+e(1)*(qf-pfi)
     norm=abs(dpfi(1))+abs(dpfi(2))+abs(dpfi(3))
@@ -19358,15 +19388,16 @@ e(pos)=1
     xs%x(2)=pf(1)  ! initial guess pf=pi
     xs%x(4)=pf(2)
     xs%x(6)=pf(3)
- 
+    if(k%spin.and.ntest==1) call push_quaternion(xs,om)
+
   end subroutine track_map_pancaker1
 
 
-subroutine newton_search_pancaker(ti,c,q0,qf,p0,pf,q,e,dl,k)
+subroutine newton_search_pancaker(ti,c,q0,qf,p0,pf,q,e,dl,k,om)
     TYPE(integration_node),pointer, INTENT(IN):: c
     TYPE(INTERNAL_STATE) K 
     type(quaternion), INTENT(INout) ::q
-    real(dp), INTENT(INout) :: q0(3),p0(3),qf(3),pf(3),dl
+    real(dp), INTENT(INout) :: q0(3),p0(3),qf(3),pf(3),dl,om(3)
     real(dp)   xft(6),fm(6),fp(6),mat(3,3),dv(3)
     real(dp):: eps =1d-4
     integer i ,j,nmat,ier,e(2),ti
@@ -19381,13 +19412,13 @@ subroutine newton_search_pancaker(ti,c,q0,qf,p0,pf,q,e,dl,k)
        xft(2*i)= e(1)*p0(i)+e(2)*pf(i)+e(2)*eps  
 
  
-    call newton_eval_pancaker(ti,c,xft,fp,dl,k)    
+    call newton_eval_pancaker(ti,c,xft,fp,dl,k,om)    
 
        
        xft(2*i-1)= e(2)*q0(i)+e(1)*qf(i)-e(1)*eps  
        xft(2*i)= e(1)*p0(i)+e(2)*pf(i)-e(2)*eps  
       
-    call newton_eval_pancaker(ti,c,xft,fm,dl,k)  
+    call newton_eval_pancaker(ti,c,xft,fm,dl,k,om)  
 
 
 dv=0
@@ -19413,7 +19444,7 @@ enddo
        xft(2*i)  = e(1)*p0(i)+e(2)*pf(i)  
       enddo
 
-    call newton_eval_pancaker(ti,c,xft,fp,dl,k) 
+    call newton_eval_pancaker(ti,c,xft,fp,dl,k,om) 
        do i=1,3
        xft(2*i-1)=  q0(i)+ fp(2*i-1)
        xft(2*i)  =  p0(i)  + fp(2*i)  
@@ -19447,15 +19478,15 @@ if(ier/=0) then
 !pause 1111
  end subroutine newton_search_pancaker
 
- subroutine newton_eval_pancaker(pos,c,x,f,dl,k)  
-    TYPE(integration_node),pointer, INTENT(IN):: c
+ subroutine newton_eval_pancaker(pos,c,x,f,dl,k,om)  
+    TYPE(integration_node),pointer :: c
     real(dp), INTENT(INout) :: f(6),x(6)
     TYPE(INTERNAL_STATE) K  
     real(dp) dir  
     TYPE(pancake),pointer :: EL
     real(dp) b(3) ,be(nbe),dl
     integer i,pos
-
+    real(dp) om(3)
     el=>c%parent_fibre%mag%pa
    ! POS=C%POS_IN_FIBRE-2
 
@@ -19483,12 +19514,16 @@ if(ier/=0) then
  
        CALL fxc(f,X,k,be,EL%p,el%hc)
 
-!if(k%radiation.or.k%spin) call RAD_SPIN_force_PROBE(c,X,q%x(1:3),k,f,pos)  !,z)
- 
-
+if((k%radiation.or.k%spin).and.(ntest==1)) then
+  call RAD_SPIN_force_PROBE(c,X,om,k,f,pos)  !,z)
+       do i=1,3
+       om(i)=dl*om(i) 
+      enddo
+ endif
       do i=1,6
        f(i)=dl*f(i) 
       enddo
+
 if(.not.check_stable) return
 
 !!! Evaluation of the map of the generating function
@@ -19496,20 +19531,24 @@ if(.not.check_stable) return
  
   end subroutine newton_eval_pancaker
 
-subroutine newton_eval_pancakep(pos,c,x,f,dl,k)  
-    TYPE(integration_node),pointer, INTENT(IN):: c
+subroutine newton_eval_pancakep(pos,c,x,f,dl,k,omega,denf0,de_ij0)  
+    TYPE(integration_node),pointer :: c
     type(real_8), INTENT(INout) :: f(6),x(6),dl
     TYPE(INTERNAL_STATE) K  
-    real(dp) dir  
+    real(dp) dir,de_ij(6,6),denf,ds,zw
     TYPE(pancakep),pointer :: EL
-    type(real_8) b(3) ,be(nbe) 
+    type(real_8) b(3) ,be(nbe) ,om(3)
+   type(real_8), optional :: omega(3)
     integer i,pos
-
+    real(dp), optional :: denf0,de_ij0(6,6)
+ 
     el=>c%parent_fibre%magp%pa
    ! POS=C%POS_IN_FIBRE-2
     call alloc(be)
     call alloc(b)
- 
+    call alloc(om)
+    ds=dl
+
  !  be=0.0_dp
     Be(1)= X(1);
     Be(2)= X(3);
@@ -19535,6 +19574,15 @@ subroutine newton_eval_pancakep(pos,c,x,f,dl,k)
  
        CALL fxc(f,X,k,be,EL%p,el%hc)
 
+!if(k%radiation.or.k%spin.and.(ntest==1)) call RAD_SPIN_force_PROBE(c,X,om,k,f,pos)  !,z)
+if((k%radiation.or.k%spin).and.((ntest==1).and.present(omega))) then 
+ call RAD_SPIN_force_PROBE(c,x,om,k,f,pos,zw  ,de_ij,denf,1.0_dp,ds)  !  
+      do i=1,3
+        omega(i)=dl*om(i) 
+      enddo
+       denf0=denf
+       de_ij0=de_ij
+endif                   !(c,x,q%x(1:3),k,f,pos,zw,e_ij,denf,fac,ds))
 
       do i=1,6
        f(i)=dl*f(i) 
@@ -19542,6 +19590,7 @@ subroutine newton_eval_pancakep(pos,c,x,f,dl,k)
 
     call kill(be)
     call kill(b)
+    call kill(om)
 
 
 if(.not.check_stable) return
@@ -25620,7 +25669,7 @@ endif
      global_e= DEL*el%p%p0c
 
 !  
-!
+! 55555555555555555
    zw=z
     pos=0                                         
 if(k%radiation.or.k%spin) call RAD_SPIN_force_PROBE(c,x,q%x(1:3),k,f,pos,zw,e_ij,denf,fac,ds)  !                    (c,x,q%x(1:3),k,f,pos,zw,e_ij,denf,fac,ds))
@@ -29749,6 +29798,17 @@ enddo
        !   call track_map_pancake2ndr(is,ct,p,1.0_dp,K)
        ENDIF
 
+    CASE(6)
+       IF(EL%P%DIR==1) THEN
+           IS= pos
+      !    IS=-1+2*POS    ! POS=3 BEGINNING
+          call track_map_pancake6thr(is,ct,p,1.0_dp,K)
+
+       else
+
+          IS=2*el%p%NST+3-2*pos
+       !   call track_map_pancake2ndr(is,ct,p,1.0_dp,K)
+       ENDIF
 
 
  
@@ -29872,6 +29932,18 @@ endif
        !   call track_map_pancake2ndr(is,ct,p,1.0_dp,K)
        ENDIF
 
+
+    CASE(6)
+       IF(EL%P%DIR==1) THEN
+           IS= pos
+      !    IS=-1+2*POS    ! POS=3 BEGINNING
+          call track_map_pancake6thp(is,ct,p,1.0_dp,K)
+
+       else
+
+          IS=2*el%p%NST+3-2*pos
+       !   call track_map_pancake2ndr(is,ct,p,1.0_dp,K)
+       ENDIF
 
 
  
@@ -30256,6 +30328,7 @@ endif
     
 !write(6,*) "pancake  in",ti
     call feval_pancake_probe(tI,y,qy,k,f,q,ct)
+ 
     do  j=1,ne
        a(j)=h*f(j)
     enddo
@@ -34186,7 +34259,7 @@ SUBROUTINE RAD_SPIN_force_PROBER(c,x,om,k,fo,pos,zw)
 
     TYPE(INTERNAL_STATE) K
     integer i,j(6),dir,pos ,ti
-    type(real_8)  x(6),dl,q0(3),qf(3),p0(3),pf(3),pz,divr(3) 
+    type(real_8)  x(6),dl,q0(3),qf(3),p0(3),pf(3),pz,divr(3),om(3)
     type(c_damap) id
     type(damap) idp,id0
 !    real(dp) x0(6)
@@ -34194,7 +34267,7 @@ SUBROUTINE RAD_SPIN_force_PROBER(c,x,om,k,fo,pos,zw)
     TYPE(pancakep),pointer :: EL
     logical(lp) CHECK_KNOB
     integer(2), pointer,dimension(:)::AN,BN
-    real(dp) fac
+    real(dp) fac,denf0,de_ij(6,6) 
 
 
     mag=>c%parent_fibre%magp
@@ -34382,6 +34455,13 @@ endif
      xs%x(i)=xs1%x(i)
     enddo
 
+if(k%spin.and.ntest==1) then
+call alloc(om)
+        call newton_eval_pancakep(ti,c,xs%x,f,dl,k,om,denf0,de_ij)  
+       call push_quaternion(xs,om)
+call kill(om)
+
+endif
 
     call kill(dl)
     call kill(x)

@@ -158,7 +158,7 @@ module precision_constants
   real(dp),parameter::c_0_7=0.7e0_dp,c_1_2d_5=1.2e-5_dp,c_1d7=1e7_dp
   real(dp),parameter:: suntao=1.6021766208e-19_dp/299792458.0_dp/9.10938356e-31_dp
   ! Constant Symplectic integrator schemes
-  real(dp) YOSK(0:4), YOSD(4),  butcher(8,8)    ! FIRST 6TH ORDER OF YOSHIDA
+  real(dp) YOSK(0:4), YOSD(4),  butcher(8,8),tyo(8)    ! FIRST 6TH ORDER OF YOSHIDA
   real(dp) wyosh(0:7),wyoshid(0:15),wyoshik(15)    ! FIRST 8TH ORDER OF YOSHIDA
   real(dp) ck8(11),bk8(11),ak8(11,11),yx0,yx1,wy1,wy2,wy3,wy0
   real(dp)wy0s,wy1s,wy2s,wy3s,wy4s,wy5s,wy6s,yosks(0:6)
@@ -441,7 +441,7 @@ contains
   SUBROUTINE MAKE_YOSHIDA
     IMPLICIT NONE
     integer i ,id ,ntl
-    real(dp) a,b,b8,s21,ak
+    real(dp) a,b,b8,s21,ak,yo(7)
 !!!! For implicit testing
     yx0=1.0_dp/(2.0_dp-2.0_dp**(1.0_dp/3))
     yx1=-2.0_dp**(1.0_dp/3)*yx0
@@ -468,6 +468,19 @@ wy3=YOSK(3)
     do i=3,0,-1
        YOSK(i+1)=YOSK(I)
     enddo
+
+yo(1)=yosk(4)
+yo(2)=yosk(3)
+yo(3)=yosk(2)
+yo(4)=yosk(1)
+yo(5)=yosk(2)
+yo(6)=yosk(3)
+yo(7)=yosk(4)
+tyo(1)=yo(1)/2
+do i=1,6
+tyo(i+1)=tyo(i)+yo(i)/2+yo(i+1)/2
+enddo
+tyo(8)=tyo(7)+yo(7)/2
 
 ! 6th order
   YOSKs(6)= 0.13861930854051695245808013042625e0_dp

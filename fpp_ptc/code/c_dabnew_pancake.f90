@@ -204,7 +204,7 @@ end subroutine dapri_pancake
        endif
        return
     endif
-    last_tpsa=2
+  !!!!!  last_tpsa=2
     if(nv.eq.0) return
     call alloc_all(no,nv)
     ndamaxi=0
