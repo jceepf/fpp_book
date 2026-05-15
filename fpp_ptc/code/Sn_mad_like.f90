@@ -2968,6 +2968,7 @@ lag1=lag1+phase0
        s2%pa%xprime=s1%xprime  !xprime_pancake
        s2%pa%symplectic=s1%symplectic   !  symplectic_pancake
        s2%vorname=filec
+       s2%old_integrator=-15
        deallocate(t_em)
         else  ! abell
        CALL SETFAMILY(S2)  !,T_ax=T_ax,T_ay=T_ay)
