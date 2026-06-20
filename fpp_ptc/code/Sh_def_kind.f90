@@ -216,7 +216,10 @@ private conv_to_pxp, conv_to_pxpabell ,conv_to_xprabell,conv_to_xppabell,conv_to
 type(fibre), pointer :: fk_ye
 integer :: j_ye=2, first_ye=-1
 real(dp) invbest_ye
-type(c_universal_taylor) invtpsa_ye
+type(c_universal_taylor) invtpsa_ye,invtpsa_ye1,invtpsa_ye2
+type(c_universal_taylor) invtpsa(1:10),invtpsa1(1:10),invtpsa2(1:10)
+character(255) :: name_invtpsa(1:10)=' '
+integer :: invtpsa_used=1
 type(c_taylor) c_invtpsa_ye
 real(dp) scalee,scaleb,hhh
 !type(real_8) radcoe
@@ -2066,6 +2069,7 @@ end subroutine alloc_lie_ye
          call gen_conv_to_xp(X,a,ve,EL%P%EXACT,EL%P%beta0,hcurv)
        endif
        IF(EL%THIN) THEN
+          X(5)=X(5)+el%ekick
           CALL CAVITY(EL,X,k)
           EL%DELTA_E=(X(5)-EL%DELTA_E)*EL%P%P0C
           RETURN
@@ -2113,6 +2117,8 @@ end subroutine alloc_lie_ye
        IF(k%NOCAVITY.and.(.not.EL%always_on)) RETURN
 
        IF(EL%THIN) THEN
+          X(5)=X(5)+el%ekick
+
           CALL CAVITY(EL,X,k)
           EL%DELTA_E=(X(5)-EL%DELTA_E)*EL%P%P0C
           RETURN
@@ -17489,6 +17495,9 @@ SUBROUTINE ZEROr_teapot(EL,I)
        if(ASSOCIATED(EL%t)) then
           deallocate(EL%t)
        endif
+       if(ASSOCIATED(EL%ekick)) then
+          deallocate(EL%ekick)
+       endif
        if(ASSOCIATED(EL%NF)) then
           deallocate(EL%NF)
        endif
@@ -17529,6 +17538,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
 
        NULLIFY(EL%CAVITY_TOTALPATH)
        NULLIFY(EL%N_BESSEL)
+       NULLIFY(EL%ekick)
        NULLIFY(EL%H1)
        NULLIFY(EL%H2)
        NULLIFY(EL%NF)
@@ -17568,15 +17578,19 @@ SUBROUTINE ZEROr_teapot(EL,I)
        endif
 
        if(ASSOCIATED(EL%F)) then
-          CALL KILL(EL%F,EL%NF)
+          CALL KILL(EL%F)
           deallocate(EL%F)
+       endif
+       if(ASSOCIATED(EL%ekick)) then
+          CALL KILL(EL%ekick)
+          deallocate(EL%ekick)
        endif
        if(ASSOCIATED(EL%AN0)) then
           deallocate(EL%AN0)
           deallocate(EL%BN0)
        endif
        if(ASSOCIATED(EL%PH)) then
-          CALL KILL(EL%PH,EL%NF)
+          CALL KILL(EL%PH)
           deallocate(EL%PH)
        endif
        if(ASSOCIATED(EL%R)) then
@@ -17611,6 +17625,7 @@ SUBROUTINE ZEROr_teapot(EL,I)
        NULLIFY(EL%H1)
        NULLIFY(EL%H2)
        NULLIFY(EL%NF)
+       NULLIFY(EL%ekick)
        NULLIFY(EL%F)
        NULLIFY(EL%AN0)
        NULLIFY(EL%BN0)

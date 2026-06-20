@@ -1826,6 +1826,12 @@ if(C%parent_fibre%mag%name(1:3)=="MAP") then
  return
  endif
 
+if(C%parent_fibre%mag%name(1:3)=="MAP") then
+ if(C%parent_fibre%mag%name=="MAP_INVARIANT") then
+    if(c%cas==case_map) call rk6_invtpsa_yer(XS,K)
+ return
+ endif
+ endif
  
  if(C%parent_fibre%mag%name=="MAPZHE") then
     if(c%cas==case_map) call track_zher(C,XS,K)
@@ -1924,6 +1930,13 @@ revert_to_ptc=.false.
     endif
 
 if(C%parent_fibre%magp%name(1:3)=="MAP") then
+
+if(C%parent_fibre%magp%name(1:3)=="MAP") then
+ if(C%parent_fibre%magp%name=="MAP_INVARIANT") then
+  !  if(c%cas==case_map) call rk6_invtpsa_yep(XS,K)
+ return
+ endif
+ endif
 
  if(C%parent_fibre%mag%name=="MAPZHE") then
     if(c%cas==case_map) call track_zhep(C,XS,K)
@@ -2372,6 +2385,128 @@ first_ye=first_ye+1
   end subroutine track_ye_invr
 
 
+ subroutine feval_invtpsa_yer(y,f)   !electric teapot s
+ 
+    IMPLICIT NONE
+!    TYPE(integration_node),pointer, INTENT(IN):: c
+    real(dp), intent(inout) :: y(6),f(6)
+ !   TYPE(INTERNAL_STATE) K
+    type(c_ray) cray
+
+
+ 
+cray%x=0
+cray%x(1:2)=y(1:2)
+ 
+ 
+           F(1)= invtpsa1(invtpsa_used).o.cray
+           F(2)= invtpsa2(invtpsa_used).o.cray
+           F(3)=0
+           F(4)=0
+           F(5)=0.0_dp
+           F(6)=0  !! ld=L in sector bend
+    
+   END subroutine feval_invtpsa_yer
+
+  subroutine rk6_invtpsa_yer(xs,K)
+    IMPLICIT none
+    !  Written by Rob Ryne, Spring 1986, based on a routine of
+    !c  J. Milutinovic.
+    !c  For a reference, see page 76 of F. Ceschino and J Kuntzmann,
+    !c  Numerical Solution of Initial Value Problems, Prentice Hall 1966.
+    !c  This integration routine makes local truncation errors at each
+    !c  step of order h**7.
+    !c  That is, it is locally correct through terms of order h**6.
+    !c  Each step requires 8 function evaluations.
+
+    integer ne
+    parameter (ne=6)
+    type(probe), INTENT(INOUT)::  xs
+    real(dp)  y(ne),yt(ne),f(ne),a(ne),b(ne),c(ne),d(ne),e(ne),g(ne),o(ne),p(ne)
+    integer j
+    real(dp)  h
+    TYPE(INTERNAL_STATE) k !,OPTIONAL :: K
+ 
+ 
+     y=xs%x
+     h=1.0d0
+    call feval_invtpsa_yer(y,f)
+ 
+
+    do  j=1,ne
+       a(j)=h*f(j)
+    enddo
+    do  j=1,ne
+       yt(j)=y(j)+a(j)/9.0_dp
+    enddo
+
+    call feval_invtpsa_yer(yt,f)
+    do  j=1,ne
+       b(j)=h*f(j)
+    enddo
+    do   j=1,ne
+       yt(j)=y(j) + (a(j) + 3.0_dp*b(j))/24.0_dp
+    enddo
+
+    call feval_invtpsa_yer(yt,f)
+    do  j=1,ne
+       c(j)=h*f(j)
+    enddo
+
+    do  j=1,ne
+       yt(j)=y(j)+(a(j)-3.0_dp*b(j)+4.0_dp*c(j))/6.0_dp
+    enddo
+
+    call feval_invtpsa_yer(yt,f)
+    do  j=1,ne
+       d(j)=h*f(j)
+    enddo
+
+    do  j=1,ne
+       yt(j)=y(j) + (-5.0_dp*a(j) + 27.0_dp*b(j) - 24.0_dp*c(j) + 6.0_dp*d(j))/8.0_dp
+    enddo
+
+    call feval_invtpsa_yer(yt,f)
+    do  j=1,ne
+       e(j)=h*f(j)
+    enddo
+
+    do  j=1,ne
+       yt(j)=y(j) + (221.0_dp*a(j) - 981.0_dp*b(j) + 867.0_dp*c(j)- 102.0_dp*d(j) + e(j))/9.0_dp
+    enddo
+
+    call feval_invtpsa_yer(yt,f)
+    do   j=1,ne
+       g(j)=h*f(j)
+    enddo
+    do  j=1,ne
+       yt(j) = y(j)+(-183.0_dp*a(j)+678.0_dp*b(j)-472.0_dp*c(j)-66.0_dp*d(j)+80.0_dp*e(j) + 3.0_dp*g(j))/48.0_dp
+    enddo
+
+    call feval_invtpsa_yer(yt,f)
+    do  j=1,ne
+       o(j)=h*f(j)
+    enddo
+    do  j=1,ne
+       yt(j) = y(j)+(716.0_dp*a(j)-2079.0_dp*b(j)+1002.0_dp*c(j)+834.0_dp*d(j)-454.0_dp*e(j)-9.0_dp*g(j)+72.0_dp*o(j))/82.0_dp
+    enddo
+
+
+    call feval_invtpsa_yer(yt,f)
+    do  j=1,ne
+       p(j)=h*f(j)
+    enddo
+
+    do  j=1,ne
+       y(j) = y(j)+(41.0_dp*a(j)+216.0_dp*c(j)+27.0_dp*d(j)+272.0_dp*e(j)+27.0_dp*g(j)+216.0_dp*o(j)+41.0_dp*p(j))/840.0_dp
+    enddo
+
+     xs%x=y
+
+    return
+  end  subroutine rk6_invtpsa_yer
+
+
   subroutine track_yer(c,xs,K)   !electric teapot s
  
     IMPLICIT NONE
@@ -2493,14 +2628,13 @@ th=(sinh(xs%x(1)*C%PARENT_FIBRE%MAGp%bn(8)))/(cosh(xs%x(1)*C%PARENT_FIBRE%MAGp%b
 call kill(x)
   end subroutine track_yep
 
-
   subroutine track_examr(c,xs,K)   !electric teapot s
 use gauss_dis
     IMPLICIT NONE
     TYPE(integration_node),pointer, INTENT(IN):: c
     type(probe), INTENT(INout) :: xs
     TYPE(INTERNAL_STATE) K
-    real(dp) mu ,x,beta,gamma,alpha,b4
+    real(dp) mu ,x,beta,gamma,alpha,b4,b5
     integer n
     C%PARENT_FIBRE%MAG%P%DIR    => C%PARENT_FIBRE%DIR
     C%PARENT_FIBRE%MAG%P%beta0  => C%PARENT_FIBRE%beta0
@@ -2515,11 +2649,15 @@ beta=C%PARENT_FIBRE%MAG%bn(2)   !2.d0
 alpha=C%PARENT_FIBRE%MAG%an(2)  !1.5d0
 gamma=(1.0_dp+alpha**2)/beta
 b4=C%PARENT_FIBRE%MAG%bn(4)  !1.0_dp
+b5=C%PARENT_FIBRE%MAG%bn(5)  !1.0_dp
 n=nint(C%PARENT_FIBRE%MAG%bn(3))
 
     x=(cos(mu)+alpha*sin(mu))*xs%x(1)+beta*sin(mu)*xs%x(2)
     xs%x(2)=(cos(mu)-alpha*sin(mu))*xs%x(2)-gamma*sin(mu)*xs%x(1)
     xs%x(1)=x
+    xs%x(2)=xs%x(2)+ b4*xs%x(1)**n + b5*xs%x(1)**3
+
+return
      xs%x(1)=exp(-C%PARENT_FIBRE%MAG%bn(1))*xs%x(1)
      xs%x(2)=exp(-C%PARENT_FIBRE%MAG%bn(1))*xs%x(2)
 
@@ -2549,6 +2687,7 @@ mu=1.5_dp*mu
     xs%x(5)=x
 
   end subroutine track_examr
+
 
   subroutine track_zher(c,xs,K)   !electric teapot s
 use gauss_dis
@@ -2609,7 +2748,7 @@ use gauss_dis
     TYPE(integration_node),pointer, INTENT(IN):: c
     type(probe_8), INTENT(INout) :: xs
     TYPE(INTERNAL_STATE) K
-    real(dp) mu ,beta,gamma,alpha,b4
+    real(dp) mu ,beta,gamma,alpha,b4,b5 
     type(real_8)  x
     integer n
     C%PARENT_FIBRE%MAGp%P%DIR    => C%PARENT_FIBRE%DIR
@@ -2625,11 +2764,18 @@ beta=C%PARENT_FIBRE%MAG%bn(2)   !2.d0
 alpha=C%PARENT_FIBRE%MAG%an(2)  !1.5d0
 gamma=(1.0_dp+alpha**2)/beta
 b4=C%PARENT_FIBRE%MAG%bn(4)  !1.0_dp
+b5=C%PARENT_FIBRE%MAG%bn(5)  !1.0_dp
 n=nint(C%PARENT_FIBRE%MAG%bn(3))
 
     x=(cos(mu)+alpha*sin(mu))*xs%x(1)+beta*sin(mu)*xs%x(2)
     xs%x(2)=(cos(mu)-alpha*sin(mu))*xs%x(2)-gamma*sin(mu)*xs%x(1)
     xs%x(1)=x
+    xs%x(2)=xs%x(2)+ b4*xs%x(1)**n + b5*xs%x(1)**3
+
+
+call kill(x)
+
+return
      xs%x(1)=exp(-C%PARENT_FIBRE%MAG%bn(1))*xs%x(1)
      xs%x(2)=exp(-C%PARENT_FIBRE%MAG%bn(1))*xs%x(2)
 
@@ -2651,6 +2797,7 @@ mu=1.5_dp*mu
 
 call kill(x)
   end subroutine track_examp
+
 
 
   subroutine track_mapr1(c,xs,fac,pos,K)   !electric teapot s

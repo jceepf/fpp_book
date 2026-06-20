@@ -158,7 +158,6 @@ private  EQUAL_arraytaylor_arrayreal,EQUAL_arraytaylor_arraycomplex
 private quaternion_to_spinmatrix,makeso3_equal
 logical :: correct_quaternion_field=.true.
  logical,private :: unstable(NDIM2t/2) !,hyperbolic
-
 !  These routines computes lattice functions a la Ripken-Forest-Wolski
 !type c_lattice_function
 ! real(dp) :: E(3,6,6) =0 ,K(3,6,6) =0 ! E : moments, K : Invariants
@@ -19611,23 +19610,28 @@ END FUNCTION FindDet
 
 !    np=ma%n+18
     if(ma%n/=6) then
-     write(6,*) " you need a 6-d map in SET_TREE_G_complex for PTC "
-     stop
+     write(6,*) " you needed a 6-d map in SET_TREE_G_complex for PTC "
+    ! stop
     endif
-    np=size_tree
+  !  np=size_tree
+size_treefill=nd2fill+ndfill**2
+    np=size_treefill
 ! initialized in ptc ini
- !   ind_spin(1,1)=1+ma%n;ind_spin(1,2)=2+ma%n;ind_spin(1,3)=3+ma%n;
- !   ind_spin(2,1)=4+ma%n;ind_spin(2,2)=5+ma%n;ind_spin(2,3)=6+ma%n;
- !   ind_spin(3,1)=7+ma%n;ind_spin(3,2)=8+ma%n;ind_spin(3,3)=9+ma%n;
- !   k1_spin(1)=1;k2_spin(1)=1;
- !   k1_spin(2)=1;k2_spin(2)=2;
- !   k1_spin(3)=1;k2_spin(3)=3;
- !   k1_spin(4)=2;k2_spin(4)=1;
- !   k1_spin(5)=2;k2_spin(5)=2;
- !   k1_spin(6)=2;k2_spin(6)=3;
- !   k1_spin(7)=3;k2_spin(7)=1;
- !   k1_spin(8)=3;k2_spin(8)=2;
- !   k1_spin(9)=3;k2_spin(9)=3;
+    ind_spin(1,1)=1+nd2fill;ind_spin(1,2)=2+nd2fill;ind_spin(1,3)=5+nd2fill;
+    ind_spin(2,1)=3+nd2fill;ind_spin(2,2)=4+nd2fill;ind_spin(2,3)=7+nd2fill;
+    ind_spin(3,1)=6+nd2fill;ind_spin(3,2)=8+nd2fill;ind_spin(3,3)=9+nd2fill;    
+    ind_spin0(1,1)=1;ind_spin0(1,2)=2;ind_spin0(1,3)=3;
+    ind_spin0(2,1)=4;ind_spin0(2,2)=5;ind_spin0(2,3)=6;
+    ind_spin0(3,1)=7;ind_spin0(3,2)=8;ind_spin0(3,3)=9;    
+    k1_spin(1)=1;k2_spin(1)=1;
+    k1_spin(2)=1;k2_spin(2)=2;
+    k1_spin(3)=2;k2_spin(3)=1;
+    k1_spin(4)=2;k2_spin(4)=2;
+    k1_spin(5)=1;k2_spin(5)=3;
+    k1_spin(6)=3;k2_spin(6)=1;
+    k1_spin(7)=2;k2_spin(7)=3;
+    k1_spin(8)=3;k2_spin(8)=2;
+    k1_spin(9)=3;k2_spin(9)=3;
 
 
     ALLOCATE(M(NP))
@@ -19660,7 +19664,7 @@ else
 
 endif
 
-
+ 
 if(use_quaternion) then
     call c_full_norm_quaternion(Ma%q,kq,norm)
     if(kq==-1) then
@@ -19669,7 +19673,7 @@ if(use_quaternion) then
       enddo
     elseif(kq/=-1) then
       m(ind_spin(1,1))=1.0_dp
-      do i=ind_spin(1,1)+1,size_tree
+      do i=ind_spin(1,1)+1,size_treefill
         m(i)=0.0_dp
       enddo
     endif
@@ -19677,13 +19681,13 @@ else
     call c_full_norm_spin(Ma%s,k,norm)
 
     if(k==-1) then
-      do i=1,3
-      do j=1,3
+      do i=1,ndfill
+      do j=1,ndfill
         m(ind_spin(i,j))=ma%s%s(i,j)
       enddo
       enddo
     else
-      do i=1,3
+      do i=1,ndfill
         m(ind_spin(i,i))=1.0e0_dp
       enddo
     endif
@@ -19706,32 +19710,32 @@ endif
 
 
 
-     ms=ms**js
+     ms=ms**js(1:nd2fill)
 !     do i=1,3
 !      mg(i)=ms%v(2*i-1)   !  q_i(q_f,p_i)
 !      mg(3+i)=ms%v(2*i)   !  p_f(q_f,p_i)
 !     enddo
-     do i=1,6
+     do i=1,nd2fill
       mg(i)=ms%v(i)
      enddo
-     do i=1,3
-     do j=1,3
+     do i=1,ndfill
+     do j=1,ndfill
        mg(ind_spin(i,j))=ms%v(2*i-1).d.(2*j-1)  !   Jacobian for Newton search
      enddo
      enddo
      call kill(ms)  
 
-     call SET_TREE_g(T(1),m(1:6))
+     call SET_TREE_g(T(1),m(1:nd2fill))
  !    do i=1,ma%n
  !     m(i)=1.0_dp.cmono.i
  !    enddo 
  !    do i=ma%n+1,6
  !     m(i)=0.0_dp
  !    enddo
-     call SET_TREE_g(T(2),m(7:15))
+     call SET_TREE_g(T(2),m(nd2fill+1:size_treefill))
  
  !    call SET_TREE_g(T(2),m(1:size_tree))
-     call SET_TREE_g(T(3),mg(1:size_tree))
+     call SET_TREE_g(T(3),mg(1:size_treefill))
 
 
 
@@ -19926,7 +19930,7 @@ if(present(fix0)) f0=fix0
  
 m=minput  
 
-do i=1,6
+do i=1,nd2fill
  m%v(i)=m%v(i)-(m%v(i).sub.0)
 enddo
 
