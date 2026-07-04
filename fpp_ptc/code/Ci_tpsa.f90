@@ -9543,19 +9543,35 @@ c_%np=c_%nv-c_%nd2harm-c_%ndc2t
 !    nd2harm=nd2t+2*rf  !!!!  total dimension of harmonic phase space
 !    ndharm=ndt+rf  !!!! total number of harmonic planes
 !
-    ind_spin(1,1)=1+6;ind_spin(1,2)=2+6;ind_spin(1,3)=3+6;
-    ind_spin(2,1)=4+6;ind_spin(2,2)=5+6;ind_spin(2,3)=6+6;
-    ind_spin(3,1)=7+6;ind_spin(3,2)=8+6;ind_spin(3,3)=9+6;    
+  !  ind_spin(1,1)=1+6;ind_spin(1,2)=2+6;ind_spin(1,3)=3+6;
+  !  ind_spin(2,1)=4+6;ind_spin(2,2)=5+6;ind_spin(2,3)=6+6;
+  !  ind_spin(3,1)=7+6;ind_spin(3,2)=8+6;ind_spin(3,3)=9+6;    
+  !  ind_spin0(1,1)=1;ind_spin0(1,2)=2;ind_spin0(1,3)=3;
+  !  ind_spin0(2,1)=4;ind_spin0(2,2)=5;ind_spin0(2,3)=6;
+  !  ind_spin0(3,1)=7;ind_spin0(3,2)=8;ind_spin0(3,3)=9;    
+  !  k1_spin(1)=1;k2_spin(1)=1;
+  !  k1_spin(2)=1;k2_spin(2)=2;
+  !  k1_spin(3)=1;k2_spin(3)=3;
+  !  k1_spin(4)=2;k2_spin(4)=1;
+  !  k1_spin(5)=2;k2_spin(5)=2;
+  !  k1_spin(6)=2;k2_spin(6)=3;
+ !   k1_spin(7)=3;k2_spin(7)=1;
+ !   k1_spin(8)=3;k2_spin(8)=2;
+ !   k1_spin(9)=3;k2_spin(9)=3;
+
+    ind_spin(1,1)=1+nd2fill;ind_spin(1,2)=2+nd2fill;ind_spin(1,3)=5+nd2fill;
+    ind_spin(2,1)=3+nd2fill;ind_spin(2,2)=4+nd2fill;ind_spin(2,3)=7+nd2fill;
+    ind_spin(3,1)=6+nd2fill;ind_spin(3,2)=8+nd2fill;ind_spin(3,3)=9+nd2fill;    
     ind_spin0(1,1)=1;ind_spin0(1,2)=2;ind_spin0(1,3)=3;
     ind_spin0(2,1)=4;ind_spin0(2,2)=5;ind_spin0(2,3)=6;
     ind_spin0(3,1)=7;ind_spin0(3,2)=8;ind_spin0(3,3)=9;    
     k1_spin(1)=1;k2_spin(1)=1;
     k1_spin(2)=1;k2_spin(2)=2;
-    k1_spin(3)=1;k2_spin(3)=3;
-    k1_spin(4)=2;k2_spin(4)=1;
-    k1_spin(5)=2;k2_spin(5)=2;
-    k1_spin(6)=2;k2_spin(6)=3;
-    k1_spin(7)=3;k2_spin(7)=1;
+    k1_spin(3)=2;k2_spin(3)=1;
+    k1_spin(4)=2;k2_spin(4)=2;
+    k1_spin(5)=1;k2_spin(5)=3;
+    k1_spin(6)=3;k2_spin(6)=1;
+    k1_spin(7)=2;k2_spin(7)=3;
     k1_spin(8)=3;k2_spin(8)=2;
     k1_spin(9)=3;k2_spin(9)=3;
 
@@ -9622,16 +9638,32 @@ c_%ndptb=>ndptb
 c_%nv=>nv
 !c_%ndpt=>ndpt
 
-    ind_spin(1,1)=1+6;ind_spin(1,2)=2+6;ind_spin(1,3)=3+6;
-    ind_spin(2,1)=4+6;ind_spin(2,2)=5+6;ind_spin(2,3)=6+6;
-    ind_spin(3,1)=7+6;ind_spin(3,2)=8+6;ind_spin(3,3)=9+6;    
+  !  ind_spin(1,1)=1+6;ind_spin(1,2)=2+6;ind_spin(1,3)=3+6;
+  !  ind_spin(2,1)=4+6;ind_spin(2,2)=5+6;ind_spin(2,3)=6+6;
+  !  ind_spin(3,1)=7+6;ind_spin(3,2)=8+6;ind_spin(3,3)=9+6;    
+  !  k1_spin(1)=1;k2_spin(1)=1;
+  !  k1_spin(2)=1;k2_spin(2)=2;
+  !  k1_spin(3)=1;k2_spin(3)=3;
+  !  k1_spin(4)=2;k2_spin(4)=1;
+  !  k1_spin(5)=2;k2_spin(5)=2;
+  !  k1_spin(6)=2;k2_spin(6)=3;
+  !  k1_spin(7)=3;k2_spin(7)=1;
+  !  k1_spin(8)=3;k2_spin(8)=2;
+  !  k1_spin(9)=3;k2_spin(9)=3;
+
+    ind_spin(1,1)=1+nd2fill;ind_spin(1,2)=2+nd2fill;ind_spin(1,3)=5+nd2fill;
+    ind_spin(2,1)=3+nd2fill;ind_spin(2,2)=4+nd2fill;ind_spin(2,3)=7+nd2fill;
+    ind_spin(3,1)=6+nd2fill;ind_spin(3,2)=8+nd2fill;ind_spin(3,3)=9+nd2fill;    
+    ind_spin0(1,1)=1;ind_spin0(1,2)=2;ind_spin0(1,3)=3;
+    ind_spin0(2,1)=4;ind_spin0(2,2)=5;ind_spin0(2,3)=6;
+    ind_spin0(3,1)=7;ind_spin0(3,2)=8;ind_spin0(3,3)=9;    
     k1_spin(1)=1;k2_spin(1)=1;
     k1_spin(2)=1;k2_spin(2)=2;
-    k1_spin(3)=1;k2_spin(3)=3;
-    k1_spin(4)=2;k2_spin(4)=1;
-    k1_spin(5)=2;k2_spin(5)=2;
-    k1_spin(6)=2;k2_spin(6)=3;
-    k1_spin(7)=3;k2_spin(7)=1;
+    k1_spin(3)=2;k2_spin(3)=1;
+    k1_spin(4)=2;k2_spin(4)=2;
+    k1_spin(5)=1;k2_spin(5)=3;
+    k1_spin(6)=3;k2_spin(6)=1;
+    k1_spin(7)=2;k2_spin(7)=3;
     k1_spin(8)=3;k2_spin(8)=2;
     k1_spin(9)=3;k2_spin(9)=3;
  end   subroutine c_init_all
@@ -11364,7 +11396,8 @@ stop 2353
     s11%n=s1%n
  
     call alloc(s11)
-
+    
+ !   IF(R2>0) THEN
 
     do i=1,s1%n
       s11%v(i)=(1.0_dp.cmono.i) + s1%x0(i)
@@ -11381,10 +11414,9 @@ stop 2353
        s11=s1.o.s11
  
    ENDDO
-       IF(R2.LT.0) THEN
- 
 
-
+!else
+      IF(R2.LT.0) THEN
  
      v=0
 x0=s11%x0
@@ -11394,9 +11426,9 @@ s11%x0=0
        v(i)=s11%v(i).sub.'0'
        s11%v(i)=s11%v(i)-v(i)  ! making it DA
      enddo
- 
+      s11=s11**(-1)
  !     CALL c_etinv1(S11%v%i,S11%v%i,s11%n)
-        CALL c_etinv(S11,S11)
+    !    CALL c_etinv(S11,S11)
 !!!! exchange roles of x0 and constant part of TPSA
         do i=1,s11%n
            s11%v(i)=s11%v(i)+x0(i)
@@ -11407,7 +11439,7 @@ s11%x0=0
     ENDIF
 
 
-
+666 continue
     pow_tpsaMAP=s11
          if(complex_extra_order==1.and.special_extra_order_1) pow_tpsaMAP=pow_tpsaMAP.cut.no
 
@@ -19986,46 +20018,336 @@ endif
 !close(mberz)
 end subroutine fill_tree_element_line_zhe_outside_map
 
-  subroutine compute_lie_map_matrix_complex(T)  !,spin
-    implicit none
-    integer NO1,ND11,i
-    type(c_damap) mtotal,T
-     no1=c_%no
-     nd11=c_%nd
+  
+ subroutine print_lie_map_vector(mm,mf,prec)  !,equilibrium_moments)   ! fix0 is the initial condition for the maps
+implicit none
+real(dpn)  mm(:) 
+integer, optional :: mf
+integer mfi,i 
+real(dp), optional :: prec  
+real(dp) preci
+preci=0
 
-     if(c_%nd>3) stop 100
-     call init_moment_map(NO1,nd11)
- 
-     call create_moment_map_one_complex(T,nd11)
-     t%cm=transpose(T%cm)
-     
- 
-  end subroutine compute_lie_map_matrix_complex
+ mfi=6
+if(present(mf)) mfi=mf
+if(present(prec)) preci=prec
 
-  subroutine compute_lie_map_matrix(T)  !,spin
-    implicit none
-    integer NO1,ND11,i
-    type(c_damap) mtotal,T
-      real(dp) sig(6,6)
-     no1=c_%no
-     nd11=c_%nd
-      sig=0
-     if(c_%nd>3) stop 100
-     call init_moment_map(NO1,nd11)
-    call alloc(mtotal)
-    allocate(mtotal%m(nmono_from_moment,nmono_from_moment))
-    mtotal=0
-    do i=1,nmono_from_moment
-     mtotal%m(i,i)=1
-    enddo
-     call create_moment_map_one(mtotal,T,sig,nd11,fin=.false.)
-     allocate(t%m(nmono_from_moment,nmono_from_moment))
-     t%m=transpose(mtotal%m)
-     
-    call kill(mtotal)
- 
-  end subroutine compute_lie_map_matrix
+do i=1,size(mm,1)
+if(abs(mm(i))>prec) then
 
+ if(c_%nd==1) then
+  write(mfi,"(2(i2,1x), 1(g23.16,1x))") in1(i),in2(i), mm(i)
+ elseif(c_%nd==2) then
+  write(mfi,"(4(i2,1x), 1(g23.16,1x))") in1(i),in2(i),in3(i),in4(i),mm(i)
+
+ else
+  write(mfi,"(6(i2,1x),1(g23.16,1x))") in1(i),in2(i),in3(i),in4(i),in5(i),in6(i), mm(i)
+
+ endif
+
+endif
+enddo
+
+end subroutine print_lie_map_vector
+
+
+  
+ subroutine print_lie_map_vector_complex(mm,mf,prec)  !,equilibrium_moments)   ! fix0 is the initial condition for the maps
+implicit none
+complex(dpn)  mm(:) 
+integer, optional :: mf
+integer mfi,i 
+real(dp), optional :: prec  
+real(dp) preci
+preci=0
+
+ mfi=6
+if(present(mf)) mfi=mf
+if(present(prec)) preci=prec
+
+do i=1,size(mm,1)
+if(abs(mm(i))>prec) then
+
+ if(c_%nd==1) then
+  write(mfi,"(2(i2,1x), 2(g23.16,1x))") in1(i),in2(i), mm(i)
+ elseif(c_%nd==2) then
+  write(mfi,"(4(i2,1x), 2(g23.16,1x))") in1(i),in2(i),in3(i),in4(i),mm(i)
+
+ else
+  write(mfi,"(6(i2,1x),2(g23.16,1x))") in1(i),in2(i),in3(i),in4(i),in5(i),in6(i), mm(i)
+
+ endif
+
+endif
+enddo
+
+end subroutine print_lie_map_vector_complex
+
+ 
+subroutine print_lie_map_matrix(mm,mf,prec)  !,equilibrium_moments)   ! fix0 is the initial condition for the maps
+implicit none
+real(dpn)  mm(:,:) 
+integer, optional :: mf
+integer mfi,i,j
+real(dp), optional :: prec  
+real(dp) preci
+preci=0
+
+ mfi=6
+if(present(mf)) mfi=mf
+if(present(prec)) preci=prec
+
+do i=1,size(mm,1)
+do j=1,size(mm,1)
+if(abs(mm(i,j))>prec) then
+
+ if(c_%nd==1) then
+  write(mfi,"(2(i2,1x),a1,2(i2,1x),1(g23.16,1x))") in1(i),in2(i),"|",in1(j),in2(j),mm(i,j)
+ elseif(c_%nd==2) then
+  write(mfi,"(4(i2,1x),a1,4(i2,1x),1(g23.16,1x))") in1(i),in2(i),in3(i),in4(i),"|", &
+   in1(j),in2(j),in3(j),in4(j),mm(i,j)
+
+ else
+  write(mfi,"(6(i2,1x),a1,6(i2,1x),1(g23.16,1x))") in1(i),in2(i),in3(i),in4(i),in5(i),in6(i),"|", &
+   in1(j),in2(j),in3(j),in4(j),in5(j),in6(j),mm(i,j)
+
+ endif
+
+endif
+enddo
+enddo
+
+end subroutine print_lie_map_matrix
+
+subroutine print_lie_map_matrix_complex(mm,mf,prec)  !,equilibrium_moments)   ! fix0 is the initial condition for the maps
+implicit none
+complex(dpn)  mm(:,:) 
+integer, optional :: mf
+integer mfi,i,j
+real(dp), optional :: prec  
+real(dp) preci
+preci=0
+
+ mfi=6
+if(present(mf)) mfi=mf
+if(present(prec)) preci=prec
+
+do i=1,size(mm,1)
+do j=1,size(mm,1)
+if(abs(mm(i,j))>prec) then
+
+ if(c_%nd==1) then
+  write(mfi,"(2(i2,1x),a1,2(i2,1x),2(g23.16,1x))") in1(i),in2(i),"|",in1(j),in2(j),mm(i,j)
+ elseif(c_%nd==2) then
+  write(mfi,"(4(i2,1x),a1,4(i2,1x),2(g23.16,1x))") in1(i),in2(i),in3(i),in4(i),"|", &
+   in1(j),in2(j),in3(j),in4(j),mm(i,j)
+
+ else
+  write(mfi,"(6(i2,1x),a1,6(i2,1x),2(g23.16,1x))") in1(i),in2(i),in3(i),in4(i),in5(i),in6(i),"|", &
+   in1(j),in2(j),in3(j),in4(j),in5(j),in6(j),mm(i,j)
+
+ endif
+
+endif
+enddo
+enddo
+
+end subroutine print_lie_map_matrix_complex
+
+
+subroutine create_lie_map_matrix(mtotal,mm)  !,equilibrium_moments)   ! fix0 is the initial condition for the maps
+implicit none
+ 
+complex(dp)v
+integer i1,i2,i3,i4,i5,i6,no1,je(6),k !,noo
+ 
+real(dpn),optional :: mm(:,:) 
+
+
+real(dpn),  allocatable :: mi(:,:) 
+type(c_damap) m,mtotal
+type(c_taylor) t
+integer  i,j,nd1
+ 
+ 
+
+  nd1=c_%nd
+ 
+ call alloc(m); 
+ call alloc(t); 
+if(.not.associated(in1)) call init_moment_map(c_%no,c_%nd)
+
+allocate(mi(size(in1),size(in1)))
+mi=0
+
+
+sigdis0=0
+
+
+m=mtotal 
+do i=1,c_%nd2
+m%v(i)=m%v(i)-(m%v(i).sub.0)
+enddo
+   do i=1,size(in1)
+    
+     t=  m%v(1)**in1(i)
+     t=t*m%v(2)**in2(i)
+   if(nd1>1) then
+     t=t*m%v(3)**in3(i)
+     t=t*m%v(4)**in4(i)
+   endif
+   if(nd1>2) then
+
+     t=t*m%v(5)**in5(i)
+     t=t*m%v(6)**in6(i)
+   endif
+       j=1
+
+        do while(.true.)
+
+          call  c_cycle(t,j,v ,je); if(j==0) exit;
+            k=hash(je(1),je(2),je(3),je(4),je(5),je(6))
+           ! minput%m(k,i)=v
+            mi(k,i)=v
+        enddo
+   enddo
+
+
+if(.not.present(mm)) then
+ if(associated(mtotal%m)) deallocate(mtotal%m)
+ allocate(mtotal%m(size(in1),size(in1)))
+ mtotal%m=mi
+else
+ mm=mi
+endif
+
+deallocate(mi)
+
+call kill(t)
+ call kill(m) 
+
+end subroutine create_lie_map_matrix
+
+subroutine create_lie_map_matrix_complex(mtotal,mm)  !,equilibrium_moments)   ! fix0 is the initial condition for the maps
+implicit none
+ 
+ 
+complex(dp)v
+integer i1,i2,i3,i4,i5,i6,no1,je(6),k !,noo
+ 
+complex(dpn),optional  :: mm(:,:) 
+complex(dpn),  allocatable :: mi(:,:) 
+type(c_damap) m,mtotal
+type(c_taylor) t
+integer  i,j,nd1
+ 
+ 
+
+  nd1=c_%nd
+ 
+ call alloc(m); 
+ call alloc(t); 
+if(.not.associated(in1)) call init_moment_map(c_%no,c_%nd)
+
+allocate(mi(size(in1),size(in1)))
+mi=0
+
+
+sigdis0=0
+
+
+m=mtotal 
+do i=1,c_%nd2
+m%v(i)=m%v(i)-(m%v(i).sub.0)
+enddo
+   do i=1,size(in1)
+    
+     t=  m%v(1)**in1(i)
+     t=t*m%v(2)**in2(i)
+   if(nd1>1) then
+     t=t*m%v(3)**in3(i)
+     t=t*m%v(4)**in4(i)
+   endif
+   if(nd1>2) then
+
+     t=t*m%v(5)**in5(i)
+     t=t*m%v(6)**in6(i)
+   endif
+       j=1
+
+        do while(.true.)
+
+          call  c_cycle(t,j,v ,je); if(j==0) exit;
+            k=hash(je(1),je(2),je(3),je(4),je(5),je(6))
+           ! minput%m(k,i)=v
+            mi(k,i)=v
+        enddo
+   enddo
+
+
+if(.not.present(mm)) then
+ if(associated(mtotal%cm)) deallocate(mtotal%cm)
+ allocate(mtotal%cm(size(in1),size(in1)))
+ mtotal%cm=mi
+else
+ mm=mi
+endif
+
+deallocate(mi)
+
+call kill(t)
+ call kill(m) 
+
+end subroutine create_lie_map_matrix_complex
+
+
+subroutine create_damap_from_matrix(mm,mtotal)  !,equilibrium_moments)   ! fix0 is the initial condition for the maps
+implicit none
+real(dpn)  mm(:,:) 
+real(dpn), allocatable ::  v0(:) 
+integer  je(6),k ,i 
+type(c_damap) mtotal
+ 
+allocate(v0(size(mm,1)))
+v0=0
+
+do i=1,c_%nd2
+je=0
+je(i)=1
+v0=0
+k=hash(je(1),je(2),je(3),je(4),je(5),je(6))
+v0(k)=1
+ v0=matmul(mm,v0)
+ call create_vector_taylor(v=v0,w=mtotal%v(i))
+enddo
+ 
+deallocate(v0)
+ 
+end subroutine create_damap_from_matrix
+
+subroutine create_damap_from_matrix_complex(mm,mtotal)  !,equilibrium_moments)   ! fix0 is the initial condition for the maps
+implicit none
+complex(dpn)  mm(:,:) 
+complex(dpn), allocatable ::  v0(:) 
+integer  je(6),k ,i 
+type(c_damap) mtotal
+ 
+allocate(v0(size(mm,1)))
+v0=0
+
+do i=1,c_%nd2
+je=0
+je(i)=1
+v0=0
+k=hash(je(1),je(2),je(3),je(4),je(5),je(6))
+v0(k)=1
+ v0=matmul(mm,v0)
+ call create_vector_taylor(vc=v0,w=mtotal%v(i))
+enddo
+ 
+deallocate(v0)
+ 
+end subroutine create_damap_from_matrix_complex
 
 subroutine create_taylor_vector(t,v,vc)   ! fix0 is the initial condition for the maps
 implicit none

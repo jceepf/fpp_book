@@ -6966,10 +6966,14 @@ x0_begin=0.0_dp
 
       x0(1:6)=x(1:6)
       x(7:12)=x(1:6)
+y=x(1:6)
 if(no1>1.and.(.not.as_is0)) then
 if(call_gen) then
-y=x(1:6)
+!y=x(1:6)
+
 call track_TREE_probe_gen_only(T,y)
+ 
+
  goto 1000
 endif
      do i=1,3
@@ -7057,12 +7061,19 @@ enddo  ! is
  endif
 
 elseif(.not.as_is0) then
+ 
+
        x(1:6)=matmul(t(3)%rad,x(1:6))
-!!!    
+ 
+!!!    write(
  endif  ! no > 1
 
 1000 continue
-if(call_gen) x(1:6)=matmul(t(3)%rad,y)
+if(call_gen.and.no1>1.and.(.not.as_is0)) then
+ 
+x(1:6)=matmul(t(3)%rad,y)
+ 
+endif
 
 !if(jumpnot) then
     if(spin0) then  ! spin
@@ -7113,7 +7124,7 @@ if(as_is0) then
        x(1:6)=matmul(t(3)%rad,x(1:6))
  endif
 else
-  if(rad0)   call track_TREE_G_complex(T(1),X(1:6))
+!!!!  if(rad0)   call track_TREE_G_complex(T(1),X(1:6))      !  not needed 7/1/2026
 endif
 
  norm=0
@@ -7128,18 +7139,18 @@ enddo
   return
  endif
 
-if(doit) then
+!if(doit) then
 
  
-         do i=1,6
-           x(i)=x(i)+t(1)%fix(i)
-         enddo
-else
+ !        do i=1,6
+!           x(i)=x(i)+t(1)%fix(i)   ! wrong if entrance and exit are different
+!         enddo
+!else
  
          do i=1,6
            x(i)=x(i)+t(3)%fix(i)
          enddo
-endif
+!endif
 
 
 
