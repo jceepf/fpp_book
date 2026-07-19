@@ -63,7 +63,8 @@ TYPE INTERNAL_STATE
    LOGICAL(LP) SPIN  ! Spin is tracked
    LOGICAL(LP) MODULATION !  One modulated family tracked by probe
    LOGICAL(LP) ONLY_2D  !  REAL_8 Taylor in (x,p_x)
-   LOGICAL(LP) FULL_WAY  ! 
+   INTEGER DCCAV   ! total time or path length is used
+!   LOGICAL(LP) FULL_WAY  ! 
 END TYPE INTERNAL_STATE
 
 
@@ -112,19 +113,20 @@ END TYPE INTERNAL_STATE
 
   LOGICAL(lp),PRIVATE,PARAMETER::T=.TRUE.,F=.FALSE.
 
-  TYPE(INTERNAL_STATE),PARAMETER::DEFAULT0=INTERNAL_STATE   (0,f,f,f,f,f,f,f,f,f,f,f,f,F)
-  TYPE(INTERNAL_STATE),PARAMETER::TOTALPATH0=INTERNAL_STATE (1,f,f,f,f,f,f,f,f,f,f,f,f,F)
-  TYPE(INTERNAL_STATE),PARAMETER::TIME0=INTERNAL_STATE      (0,t,f,f,f,f,f,f,f,f,f,f,f,F)
-  TYPE(INTERNAL_STATE),PARAMETER::RADIATION0=INTERNAL_STATE (0,f,t,f,f,f,f,f,f,f,f,f,f,t)
-  TYPE(INTERNAL_STATE),PARAMETER::NOCAVITY0=INTERNAL_STATE  (0,f,f,t,f,f,f,f,f,f,f,f,f,t)
-  TYPE(INTERNAL_STATE),PARAMETER::FRINGE0=INTERNAL_STATE    (0,f,f,f,t,f,f,f,f,f,f,f,f,t)
-  TYPE(INTERNAL_STATE),PARAMETER::STOCHASTIC0=INTERNAL_STATE(0,f,f,f,f,t,f,f,f,f,f,f,f,F)
-  TYPE(INTERNAL_STATE),PARAMETER::ENVELOPE0=INTERNAL_STATE  (0,f,f,f,f,f,t,f,f,f,f,f,f,F)
-  TYPE(INTERNAL_STATE),PARAMETER::ONLY_4d0=INTERNAL_STATE   (0,f,f,t,f,f,f,f,t,f,f,f,f,t)
-  TYPE(INTERNAL_STATE),PARAMETER::DELTA0=INTERNAL_STATE     (0,f,f,t,f,f,f,f,t,t,f,f,f,t)
-  TYPE(INTERNAL_STATE),PARAMETER::SPIN0=INTERNAL_STATE      (0,f,f,f,f,f,f,f,f,f,t,f,f,F)
-  TYPE(INTERNAL_STATE),PARAMETER::MODULATION0=INTERNAL_STATE(0,f,f,f,f,f,f,f,f,f,f,t,f,F)
-  TYPE(INTERNAL_STATE),PARAMETER::only_2d0   =INTERNAL_STATE(0,f,f,t,f,f,f,f,f,f,f,f,t,t)
+  TYPE(INTERNAL_STATE),PARAMETER::DEFAULT0=INTERNAL_STATE   (0,f,f,f,f,f,f,f,f,f,f,f,f,0) !F)
+  TYPE(INTERNAL_STATE),PARAMETER::TOTALPATH0=INTERNAL_STATE (1,f,f,f,f,f,f,f,f,f,f,f,f,0) !F)
+  TYPE(INTERNAL_STATE),PARAMETER::TIME0=INTERNAL_STATE      (0,t,f,f,f,f,f,f,f,f,f,f,f,0) !F)
+  TYPE(INTERNAL_STATE),PARAMETER::RADIATION0=INTERNAL_STATE (0,f,t,f,f,f,f,f,f,f,f,f,f,0) !t)
+  TYPE(INTERNAL_STATE),PARAMETER::NOCAVITY0=INTERNAL_STATE  (0,f,f,t,f,f,f,f,f,f,f,f,f,0) !t)
+  TYPE(INTERNAL_STATE),PARAMETER::FRINGE0=INTERNAL_STATE    (0,f,f,f,t,f,f,f,f,f,f,f,f,0) !t)
+  TYPE(INTERNAL_STATE),PARAMETER::STOCHASTIC0=INTERNAL_STATE(0,f,f,f,f,t,f,f,f,f,f,f,f,0) !F)
+  TYPE(INTERNAL_STATE),PARAMETER::ENVELOPE0=INTERNAL_STATE  (0,f,f,f,f,f,t,f,f,f,f,f,f,0) !F)
+  TYPE(INTERNAL_STATE),PARAMETER::ONLY_4d0=INTERNAL_STATE   (0,f,f,t,f,f,f,f,t,f,f,f,f,0) !t)
+  TYPE(INTERNAL_STATE),PARAMETER::DELTA0=INTERNAL_STATE     (0,f,f,t,f,f,f,f,t,t,f,f,f,0) !t)
+  TYPE(INTERNAL_STATE),PARAMETER::SPIN0=INTERNAL_STATE      (0,f,f,f,f,f,f,f,f,f,t,f,f,0) !F)
+  TYPE(INTERNAL_STATE),PARAMETER::MODULATION0=INTERNAL_STATE(0,f,f,f,f,f,f,f,f,f,f,t,f,0) !F)
+  TYPE(INTERNAL_STATE),PARAMETER::only_2d0   =INTERNAL_STATE(0,f,f,t,f,f,f,f,f,f,f,f,t,0) !t)
+  TYPE(INTERNAL_STATE),PARAMETER::DCCAV0   =INTERNAL_STATE     (0,f,f,t,f,f,f,f,f,f,f,f,f,1) !t)
 
 
 
@@ -424,7 +426,7 @@ else
     S2%DELTA=       S1%DELTA
     S2%SPIN=       S1%SPIN
     S2%MODULATION=       S1%MODULATION
-    S2%FULL_WAY=       S1%FULL_WAY
+!    S2%FULL_WAY=       S1%FULL_WAY
     !    S2%spin_dim=       S1%spin_dim
   END SUBROUTINE EQUALt_zhe
 
@@ -546,7 +548,7 @@ else
     add_zhe%MODULATION  =       S1%MODULATION.OR.S2%MODULATION
     add_zhe%PARA_IN  =       S1%PARA_IN.OR.S2%PARA_IN
 
-    add_zhe%FULL_WAY=add_zhe%RADIATION.OR.add_zhe%stochastic.OR.add_zhe%ENVELOPE.OR.add_zhe%SPIN.OR.add_zhe%MODULATION
+ !   add_zhe%FULL_WAY=add_zhe%RADIATION.OR.add_zhe%stochastic.OR.add_zhe%ENVELOPE.OR.add_zhe%SPIN.OR.add_zhe%MODULATION
   END FUNCTION add_zhe
 
   FUNCTION sub_zhe( S1, S2 )
@@ -620,7 +622,7 @@ else
        sub_zhe%NOCAVITY =  T
        sub_zhe%stochastic   =  F
     ENDIF
-    sub_zhe%FULL_WAY=sub_zhe%RADIATION.OR.sub_zhe%stochastic.OR.sub_zhe%ENVELOPE.OR.sub_zhe%SPIN.OR.sub_zhe%MODULATION
+!    sub_zhe%FULL_WAY=sub_zhe%RADIATION.OR.sub_zhe%stochastic.OR.sub_zhe%ENVELOPE.OR.sub_zhe%SPIN.OR.sub_zhe%MODULATION
   END FUNCTION sub_zhe
 
   FUNCTION PARA_REMA_zhe(S1)   ! UNARY +
