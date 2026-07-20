@@ -141,7 +141,7 @@ integer i_alloc
 integer, private :: nmono
 integer  nmono_from_moment
 real(dp), private  :: tiny =1e-20_dp
-    logical :: sagan_gen =.false.,symplectify_map=.false.
+    logical :: sagan_gen =.true.,symplectify_map=.false.
 integer mf_,n1_,n2_
 logical :: do_damping=.false.,do_spin=.false.,use_radiation_inverse = .true.
 logical :: force_spin_input_normal=.false.

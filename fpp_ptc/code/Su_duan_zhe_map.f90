@@ -6,7 +6,7 @@ implicit none
   public DEFAULT0,TOTALPATH0 ,TIME0,ONLY_4d0,DELTA0,SPIN0,MODULATION0,only_2d0   ,nrmax_zhe
   public RADIATION0, NOCAVITY0, FRINGE0 ,STOCHASTIC0,ENVELOPE0,gaussian_seed_zhe,nrmax_used_zhe,alloc_bunch,kill_bunch
  public file_zhe,number_zhe_maps,get_seed,set_seed,ALLOC_TREE,track_TREE_probe_complex_zhe_no_orbital,track_miyajima_zhe
-public track_TREE_probe_complex_zhe_no_orbital_quaternion,GRNF_zhe
+public track_TREE_probe_complex_zhe_no_orbital_quaternion,GRNF_zhe,track_TREE_probe_simple_zher_8_zhe
 public ndfill,nd2fill,size_treefill
 integer :: ndfill=3,nd2fill=6,size_treefill=15
 
@@ -1077,6 +1077,464 @@ endif ! jumpnot
   end SUBROUTINE orthonormalise
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   new zhe tracking   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+SUBROUTINE track_TREE_probe_simple_zher_8_zhe(T,xs,spin,rad,stoch,linear)
+    use gauss_dis
+    IMPLICIT NONE
+    integer, parameter :: size_tree=15
+    TYPE(TREE_ELEMENT),target, INTENT(INout) :: T(3)
+ 
+    type(probe) xs
+    real(dp) x(size_tree),x0(size_tree),s0(3,3),r(3,3),dx6,beta,q(3),p(3),qg(3),qf(3)
+    real(dp) normb,norm,x0_begin(size_tree),xr(6),normbb,ranx,cut,y(6)
+    integer i,j,k,ier,is
+    logical, optional  :: spin,stoch,rad,linear
+    logical  spin0,stoch0,rad0,doit,as_is0,call_gen
+    integer no1,nrmax_used,nd,nd2,ntree
+    type(quaternion) qu
+    as_is0=t(1)%usenonsymp
+    spin0=.true.
+    stoch0=.true.
+    rad0=.true.
+    no1=t(1)%no
+    cut=6
+call_gen=.true.
+ nd2=t(1)%np
+ nd=t(1)%np/2
+ntree=nd2+nd**2
+    if(present(linear)) then
+     if(linear) no1=1
+    endif
+    if(present(spin)) spin0=spin
+    if(present(stoch)) stoch0=stoch
+    if(present(rad)) rad0=rad
+
+    if(as_is0) rad0=.true.
+    doit=rad0.or.stoch0
+    x=0
+    x0=0
+!    nrmax=1000
+   check_stable_zhe=.true.
+       xs%u=.false.
+!!!! put stochastic kick in front per Sagan
+ if(stoch0) then 
+
+    do i=1,nd2
+      x(i)=xs%x(i)-t(1)%fix0(i)
+    enddo
+
+ 
+
+    xr=0.0_dp
+   do i=1,nd2
+    call GRNF(ranx,cut)
+     xr(i)=ranx*t(2)%fix0(i)  
+   enddo
+ 
+    xr =matmul(t(2)%rad,xr)
+
+    x(1:nd2)=x(1:nd2)+xr 
+
+    do i=1,nd2
+      xs%x(i)=x(i)+t(1)%fix0(i)
+    enddo
+ endif
+!!!!!!!!!!!!!!!!!!!
+    x=0.e0_dp
+    x0=0.e0_dp
+x0_begin=0.0_dp
+    do i=1,nd2
+      x(i)=xs%x(i)
+      x0(i)=xs%x(i)
+      x0_begin(i)=xs%x(i)
+    enddo
+!      x0(1:6)=x(1:6)
+   !   x(7:12)=x(1:6)  remove4/9/2018
+
+
+!if(doit) then
+
+     do i=1,nd2
+      x(i)=x(i)-t(1)%fix0(i)
+      x0(i)=x0(i)-t(1)%fix0(i)
+      x0_begin(i)=x0_begin(i)-t(1)%fix0(i)
+     enddo
+!else
+!     do i=1,6
+!      x(i)=x(i)-t(3)%fix0(i)
+!      x0(i)=x0(i)-t(3)%fix0(i)
+!      x0_begin(i)=x0_begin(i)-t(3)%fix0(i)
+!     enddo
+!endif
+      x(nd2+1:2*nd2)=x(1:nd2)
+      x0_begin(nd2+1:2*nd2)= x0_begin(1:nd2)
+
+
+!  if(rad0)   call track_TREE_G_complex(T(1),X(1:6))
+
+
+      x0(1:nd2)=x(1:nd2)
+      x(nd2+1:2*nd2)=x(1:nd2)
+y(1:nd2)=x(1:nd2)
+if(no1>1.and.(.not.as_is0)) then
+if(call_gen) then
+!y=x(1:6)
+call track_TREE_probe_gen_only(T,y)
+ 
+
+ goto 1000
+endif
+     do i=1,nd
+     q(i)=x(2*i-1)
+     p(i)=x(2*i)
+    enddo
+
+ !else
+    do i=1,nd
+     x(2*i-1)=0.0_dp   ! use non symplectic as approximation
+    enddo
+ ! endif
+!!! symplectic here!! symplectic here
+! if(t(3)%symptrack) then
+   do i=1,nd
+     qf(i)=x(2*i-1)   ! use non symplectic as approximation
+    enddo
+normb=1.d38
+do is=1,nrmax
+   do i=1,nd
+     x0(2*i)=p(i)
+     x0(2*i-1)=qf(i)  
+     qg(i)=0
+    enddo
+
+    call track_TREE_G_complex(T(3),X0(1:ntree))
+ 
+    do i=1,nd
+    do j=1,nd
+     r(i,j)=x0(ind_spin(i,j))
+    enddo
+    enddo
+    call matinv(r(1:nd,1:nd),r,nd,nd,ier)
+    if(ier/=0) then
+     write(6,*) "matinv failed in track_TREE_probe_complex_zhe"
+       check_stable_zhe=.false.
+       xs%u=.true.
+      return
+     stop
+    endif
+    do i=1,nd
+    do j=1,nd
+      qg(i)=r(i,j)*(q(j)-x0(2*j-1)) + qg(i)
+    enddo
+    enddo
+    do i=1,nd
+     qf(i) = qf(i) + qg(i)
+    enddo
+   norm=0
+   do i=1,nd
+   norm=abs(qg(i))+norm
+   enddo
+!write(6,*) is,normb,norm
+   if(norm>t(3)%eps) then
+      normbb=normb  ! saving for debugging
+     normb=norm
+   else
+   normbb=0
+   do i=1,nd
+   normbb=abs(qf(i))+normbb
+   enddo
+       
+     if(normb<=norm) then 
+      do i=1,nd
+       x(2*i-1)=qf(i)
+      enddo
+      do i=1,nd
+       x(2*i)=x0(2*i)
+      enddo
+       
+
+       x(1:nd2)=matmul(t(3)%rad(1:nd2,1:nd2),x(1:nd2))
+
+       exit
+     endif
+ 
+     normb=norm
+   endif
+write(6,*) " full routine ", is
+
+       nrmax_used=is
+
+enddo  ! is 
+
+ if(is>nrmax-10) then
+   if(c_verbose_zhe) write(6,*) " Too many iterations ",normbb,norm,t(3)%eps
+   xs%u=.true.
+   check_stable_zhe=.false.
+  return
+ endif
+
+elseif(.not.as_is0) then
+ 
+
+       x(1:nd2)=matmul(t(3)%rad(1:nd2,1:nd2),x(1:nd2))
+ 
+!!!    write(
+ endif  ! no > 1
+
+1000 continue
+if(call_gen.and.no1>1.and.(.not.as_is0)) then
+ 
+       x(1:nd2)=matmul(t(3)%rad(1:nd2,1:nd2),y(1:nd2))
+ 
+endif
+
+!if(jumpnot) then
+    if(spin0) then  ! spin
+
+     if(xs%use_q) then
+    call track_TREE_G_complex(T(2),x0_begin(nd2+1:ntree))
+
+       do k=0,3
+         qu%x(k)=x0_begin(nd2+1+k)
+       enddo 
+ 
+       xs%q=qu*xs%q
+       xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
+     else
+    call track_TREE_G_complex(T(2),x0_begin(nd2+1:ntree))
+
+    s0=0.0e0_dp
+ 
+    do i=1,3
+    do j=1,3
+     r(i,j)=x0_begin(ind_spin(i,j))
+    enddo
+    enddo
+
+    call orthonormaliser(r)
+    
+    do k=1,3
+     s0(k,1:3)=0.0e0_dp
+     do i=1,3
+     do j=1,3
+        s0(k,i)=r(i,j)*xs%s(k)%x(j)+s0(k,i)
+     enddo
+    enddo
+    enddo
+
+    do k=1,3
+     do j=1,3
+       xs%s(k)%x(j)=s0(k,j)
+     enddo
+    enddo 
+     endif  
+    endif ! spin
+   
+if(as_is0) then 
+ if(no1>1) then
+  call track_TREE_G_complex(T(1),X(1:nd2))
+ else
+       x(1:nd2)=matmul(t(3)%rad(1:nd2,1:nd2),x(1:nd2))
+ endif
+else
+!!!!  if(rad0)   call track_TREE_G_complex(T(1),X(1:6))      !  not needed 7/1/2026
+endif
+
+ norm=0
+do i=1,min(nd2,4)    !!!  changed from 6 2022.06.08
+ norm=norm+abs(x(i))
+enddo
+
+ if(norm>norm_zhe) then
+   if(c_verbose_zhe) write(6,*) " unstable " 
+   xs%u=.true.
+   check_stable_zhe=.false.
+  return
+ endif
+
+!if(doit) then
+
+ 
+ !        do i=1,6
+!           x(i)=x(i)+t(1)%fix(i)   ! wrong if entrance and exit are different
+!         enddo
+!else
+ 
+         do i=1,nd2
+           x(i)=x(i)+t(3)%fix(i)
+         enddo
+!endif
+
+
+
+
+    do i=1,nd2
+      xs%x(i)=x(i)
+    enddo
+
+  end SUBROUTINE track_TREE_probe_simple_zher_8_zhe
+
+SUBROUTINE track_TREE_probe_gen_only(T,y)
+    IMPLICIT NONE
+    integer, parameter :: size_tree=15
+    TYPE(TREE_ELEMENT),target, INTENT(INout) :: T(3)
+    real(dp) y(6)
+   ! type(probe) xs
+    real(dp) x(size_tree),x0(size_tree),s0(3,3),r(3,3),dx6,beta,q(3),p(3),qg(3),qf(3)
+    real(dp) normb,norm,x0_begin(size_tree),xr(6),normbb,ranx,cut
+    integer i,j,k,ier,is
+   ! logical  spin0,stoch0,rad0,doit 
+    integer no1,nrmax_used,nd,nd2,ntree
+    type(quaternion) qu
+ 
+ !   spin0=.true.
+ !   stoch0=.true.
+ !   rad0=.true.
+
+!xs=y
+nd2=t(1)%np
+nd=nd2/2
+ntree=nd**2+nd2
+    no1=t(1)%no
+    cut=6
+
+
+    x=0
+    x0=0
+!    nrmax=1000
+   check_stable_zhe=.true.
+!       xs%u=.false.
+!!!! put stochastic kick in front per Sagan
+
+
+
+!!!!!!!!!!!!!!!!!!!
+    x=0.e0_dp
+    x0=0.e0_dp
+x0_begin=0.0_dp
+    do i=1,nd2
+      x(i)=y(i)
+      x0(i)=y(i)
+      x0_begin(i)=y(i)
+    enddo
+ 
+
+      x(nd2+1:2*nd2)=x(1:nd2)
+      x0_begin(nd2+1:2*nd2)= x0_begin(1:nd2)
+
+
+      x0(1:nd2)=x(1:nd2)
+      x(nd2+1:2*nd2)=x(1:nd2)
+
+    do i=1,nd
+     q(i)=x(2*i-1)
+     p(i)=x(2*i)
+    enddo
+
+ !else
+    do i=1,nd
+     x(2*i-1)=0.0_dp   ! use non symplectic as approximation
+    enddo
+ ! endif
+!!! symplectic here!! symplectic here
+! if(t(3)%symptrack) then
+   do i=1,nd
+     qf(i)=x(2*i-1)   ! use non symplectic as approximation
+    enddo
+normb=1.d38
+do is=1,nrmax
+   do i=1,nd
+     x0(2*i)=p(i)
+     x0(2*i-1)=qf(i)  
+     qg(i)=0
+    enddo
+
+    call track_TREE_G_complex(T(3),X0(1:ntree))
+ 
+    do i=1,nd
+    do j=1,nd
+     r(i,j)=x0(ind_spin(i,j))
+    enddo
+    enddo
+    call matinv(r(1:nd,1:nd),r(1:nd,1:nd),nd,nd,ier)
+    if(ier/=0) then
+     write(6,*) "matinv failed in track_TREE_probe_complex_zhe"
+ 
+     stop
+    endif
+    do i=1,nd
+    do j=1,nd
+      qg(i)=r(i,j)*(q(j)-x0(2*j-1)) + qg(i)
+    enddo
+    enddo
+    do i=1,nd
+     qf(i) = qf(i) + qg(i)
+    enddo
+norm=0
+    do i=1,nd
+     norm= norm + abs(qg(i))
+    enddo
+ !write(6,*) is,normb,norm
+   if(norm>t(3)%eps) then
+      normbb=normb  ! saving for debugging
+     normb=norm
+   else
+
+normbb=0
+    do i=1,nd
+     normbb= normbb + abs(qf(i))
+    enddo
+      
+     if(normb<=norm) then 
+     do i=1,nd
+       x(2*i-1)=qf(i)
+       x(2*i)=x0(2*i)
+     enddo
+ 
+       exit
+     endif
+!write(6,*) norm,normb,t(3)%eps
+
+     normb=norm
+   endif
+ 
+       nrmax_used=is
+
+enddo  ! is 
+ if(is>nrmax-10) then
+   if(c_verbose_zhe) write(6,*) " Too many iterations ",normbb,norm,t(3)%eps
+
+ endif
+
+
+
+
+
+   ! call track_TREE_G_complex(T(1),X(1:6))
+ 
+
+ norm=0
+do i=1,min(4,nd2)    !!!  changed from 6 2022.06.08
+ norm=norm+abs(x(i))
+enddo
+
+ if(norm>norm_zhe) then
+   if(c_verbose_zhe) write(6,*) " unstable " 
+  ! xs%u=.true.
+   check_stable_zhe=.false.
+  return
+ endif
+
+ 
+
+
+
+    do i=1,nd2
+    y(i) = x(i)
+    enddo
+   end SUBROUTINE track_TREE_probe_gen_only
+
+
 
   SUBROUTINE track_TREE_probe_complex_zhe(T,xs,spin,rad,stoch,linear,slim,flucfac)
 !    use da_arrays
@@ -2382,9 +2840,23 @@ implicit none
 logical , optional ::use_q 
 integer i,j,k
 if(Present(use_q) )use_quaternion=use_q
-    ind_spin(1,1)=1+nd2fill;ind_spin(1,2)=2+nd2fill;ind_spin(1,3)=3+nd2fill;
-    ind_spin(2,1)=4+nd2fill;ind_spin(2,2)=5+nd2fill;ind_spin(2,3)=6+nd2fill;
-    ind_spin(3,1)=7+nd2fill;ind_spin(3,2)=8+nd2fill;ind_spin(3,3)=9+nd2fill;       
+ !  ind_spin(1,1)=1+nd2fill;ind_spin(1,2)=2+nd2fill;ind_spin(1,3)=3+nd2fill;
+ !   ind_spin(2,1)=4+nd2fill;ind_spin(2,2)=5+nd2fill;ind_spin(2,3)=6+nd2fill;
+ !   ind_spin(3,1)=7+nd2fill;ind_spin(3,2)=8+nd2fill;ind_spin(3,3)=9+nd2fill;       
+ !   k1_spin(1)=1;k2_spin(1)=1;
+ !   k1_spin(2)=1;k2_spin(2)=2;
+ !   k1_spin(3)=2;k2_spin(3)=1;
+ !   k1_spin(4)=2;k2_spin(4)=2;
+ !   k1_spin(5)=1;k2_spin(5)=3;
+ !   k1_spin(6)=3;k2_spin(6)=1;
+ !   k1_spin(7)=2;k2_spin(7)=3;
+ !   k1_spin(8)=3;k2_spin(8)=2;
+ !   k1_spin(9)=3;k2_spin(9)=3;
+ 
+    ind_spin(1,1)=1+nd2fill;ind_spin(1,2)=2+nd2fill;ind_spin(1,3)=5+nd2fill;
+    ind_spin(2,1)=3+nd2fill;ind_spin(2,2)=4+nd2fill;ind_spin(2,3)=7+nd2fill;
+    ind_spin(3,1)=6+nd2fill;ind_spin(3,2)=8+nd2fill;ind_spin(3,3)=9+nd2fill;    
+ 
     k1_spin(1)=1;k2_spin(1)=1;
     k1_spin(2)=1;k2_spin(2)=2;
     k1_spin(3)=2;k2_spin(3)=1;
@@ -2394,7 +2866,8 @@ if(Present(use_q) )use_quaternion=use_q
     k1_spin(7)=2;k2_spin(7)=3;
     k1_spin(8)=3;k2_spin(8)=2;
     k1_spin(9)=3;k2_spin(9)=3;
- 
+
+
 end subroutine zhe_ini
 
 
