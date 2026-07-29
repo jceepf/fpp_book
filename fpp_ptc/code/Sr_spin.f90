@@ -2637,67 +2637,6 @@ th=(sinh(xs%x(1)*C%PARENT_FIBRE%MAGp%bn(8)))/(cosh(xs%x(1)*C%PARENT_FIBRE%MAGp%b
 call kill(x)
   end subroutine track_yep
 
-  subroutine track_examr(c,xs,K)   !electric teapot s
-use gauss_dis
-    IMPLICIT NONE
-    TYPE(integration_node),pointer, INTENT(IN):: c
-    type(probe), INTENT(INout) :: xs
-    TYPE(INTERNAL_STATE) K
-    real(dp) mu ,x,beta,gamma,alpha,b4,b5
-    integer n
-    C%PARENT_FIBRE%MAG%P%DIR    => C%PARENT_FIBRE%DIR
-    C%PARENT_FIBRE%MAG%P%beta0  => C%PARENT_FIBRE%beta0
-    C%PARENT_FIBRE%MAG%P%GAMMA0I=> C%PARENT_FIBRE%GAMMA0I
-    C%PARENT_FIBRE%MAG%P%GAMBET => C%PARENT_FIBRE%GAMBET
-    C%PARENT_FIBRE%MAG%P%MASS => C%PARENT_FIBRE%MASS
-    C%PARENT_FIBRE%MAG%P%ag => C%PARENT_FIBRE%ag
-    C%PARENT_FIBRE%MAG%P%CHARGE=>C%PARENT_FIBRE%CHARGE
-
-    mu=C%PARENT_FIBRE%MAG%an(1)  !0.2501d0*twopi 
-beta=C%PARENT_FIBRE%MAG%bn(2)   !2.d0
-alpha=C%PARENT_FIBRE%MAG%an(2)  !1.5d0
-gamma=(1.0_dp+alpha**2)/beta
-b4=C%PARENT_FIBRE%MAG%bn(4)  !1.0_dp
-b5=C%PARENT_FIBRE%MAG%bn(5)  !1.0_dp
-n=nint(C%PARENT_FIBRE%MAG%bn(3))
-
-    x=(cos(mu)+alpha*sin(mu))*xs%x(1)+beta*sin(mu)*xs%x(2)
-    xs%x(2)=(cos(mu)-alpha*sin(mu))*xs%x(2)-gamma*sin(mu)*xs%x(1)
-    xs%x(1)=x
-    xs%x(2)=xs%x(2)+ b4*xs%x(1)**n + b5*xs%x(1)**3
-
-return
-     xs%x(1)=exp(-C%PARENT_FIBRE%MAG%bn(1))*xs%x(1)
-     xs%x(2)=exp(-C%PARENT_FIBRE%MAG%bn(1))*xs%x(2)
-
-   ! xs%x(2)=xs%x(2)-b4*(xs%x(1)**n+xs%x(1)**(n+1)+xs%x(1)**(n+2)+xs%x(1)**(n+3))
-    xs%x(2)=xs%x(2)-b4*sin(xs%x(1)**n+xs%x(1)**(n+1)+xs%x(1)**(n+2)+xs%x(1)**(n+3))
-
-
-    xs%x(1)=xs%x(1)-C%PARENT_FIBRE%MAG%bn(1)*b4*(xs%x(1)**n+xs%x(1)**(n+1)+xs%x(1)**(n+2)+xs%x(1)**(n+3))
-
-!call add(m1,2,0,beta)
-!call add(m1,4,0,1.d0)   ! multipole strength
-!call add(m1,-1,0,(1.d0/(power+1.d0)+del/twopi/(power+1.d0))*twopi )   ! tune
-!call add(m1,1,0,0.d0 )   ! damping
-!call add(m1,-3,0,0.d0 )   ! delta stochastic
-!call add(m1,-2,0,alf ) 
-!call add(m1,3,0,power )  ! multipole order
- call GRNF(b4,10.0_dp)
-    xs%x(2)=xs%x(2)+C%PARENT_FIBRE%MAG%an(3)*b4 
-
-mu=1.5_dp*mu
-    x=(cos(mu)+alpha*sin(mu))*xs%x(3)+beta*sin(mu)*xs%x(4)
-    xs%x(4)=(cos(mu)-alpha*sin(mu))*xs%x(4)-gamma*sin(mu)*xs%x(3)
-    xs%x(3)=x
- mu=1.5_dp*mu
-    x=(cos(mu)+alpha*sin(mu))*xs%x(5)+beta*sin(mu)*xs%x(6)
-    xs%x(6)=(cos(mu)-alpha*sin(mu))*xs%x(6)-gamma*sin(mu)*xs%x(5)
-    xs%x(5)=x
-
-  end subroutine track_examr
-
-
   subroutine track_zher(c,xs,K)   !electric teapot s
 use gauss_dis
     IMPLICIT NONE
@@ -2760,6 +2699,69 @@ endif
 
 
 
+
+  subroutine track_examr(c,xs,K)   !electric teapot s
+use gauss_dis
+    IMPLICIT NONE
+    TYPE(integration_node),pointer, INTENT(IN):: c
+    type(probe), INTENT(INout) :: xs
+    TYPE(INTERNAL_STATE) K
+    real(dp) mu ,x,beta,gamma,alpha,b4,b5
+    integer n
+    C%PARENT_FIBRE%MAG%P%DIR    => C%PARENT_FIBRE%DIR
+    C%PARENT_FIBRE%MAG%P%beta0  => C%PARENT_FIBRE%beta0
+    C%PARENT_FIBRE%MAG%P%GAMMA0I=> C%PARENT_FIBRE%GAMMA0I
+    C%PARENT_FIBRE%MAG%P%GAMBET => C%PARENT_FIBRE%GAMBET
+    C%PARENT_FIBRE%MAG%P%MASS => C%PARENT_FIBRE%MASS
+    C%PARENT_FIBRE%MAG%P%ag => C%PARENT_FIBRE%ag
+    C%PARENT_FIBRE%MAG%P%CHARGE=>C%PARENT_FIBRE%CHARGE
+
+    mu=C%PARENT_FIBRE%MAG%an(1)  !0.2501d0*twopi 
+beta=C%PARENT_FIBRE%MAG%bn(2)   !2.d0
+alpha=C%PARENT_FIBRE%MAG%an(2)  !1.5d0
+gamma=(1.0_dp+alpha**2)/beta
+b4=C%PARENT_FIBRE%MAG%bn(4)  !1.0_dp
+b5=C%PARENT_FIBRE%MAG%bn(5)  !1.0_dp
+n=nint(C%PARENT_FIBRE%MAG%bn(3))
+
+    x=(cos(mu)+alpha*sin(mu))*xs%x(1)+beta*sin(mu)*xs%x(2)
+    xs%x(2)=(cos(mu)-alpha*sin(mu))*xs%x(2)-gamma*(1.0_dp+C%PARENT_FIBRE%MAG%an(3) ) *sin(mu)*xs%x(1)
+    xs%x(1)=x+C%PARENT_FIBRE%MAG%an(4)*b5*xs%x(1)**3
+    xs%x(2)=xs%x(2)+ b4*xs%x(1)**n +b5*xs%x(1)**3 
+
+return
+     xs%x(1)=exp(-C%PARENT_FIBRE%MAG%bn(1))*xs%x(1)
+     xs%x(2)=exp(-C%PARENT_FIBRE%MAG%bn(1))*xs%x(2)
+
+   ! xs%x(2)=xs%x(2)-b4*(xs%x(1)**n+xs%x(1)**(n+1)+xs%x(1)**(n+2)+xs%x(1)**(n+3))
+    xs%x(2)=xs%x(2)-b4*sin(xs%x(1)**n+xs%x(1)**(n+1)+xs%x(1)**(n+2)+xs%x(1)**(n+3))
+
+
+    xs%x(1)=xs%x(1)-C%PARENT_FIBRE%MAG%bn(1)*b4*(xs%x(1)**n+xs%x(1)**(n+1)+xs%x(1)**(n+2)+xs%x(1)**(n+3))
+
+!call add(m1,2,0,beta)
+!call add(m1,4,0,1.d0)   ! multipole strength
+!call add(m1,-1,0,(1.d0/(power+1.d0)+del/twopi/(power+1.d0))*twopi )   ! tune
+!call add(m1,1,0,0.d0 )   ! damping
+!call add(m1,-3,0,0.d0 )   ! delta stochastic
+!call add(m1,-2,0,alf ) 
+!call add(m1,3,0,power )  ! multipole order
+ call GRNF(b4,10.0_dp)
+    xs%x(2)=xs%x(2)+C%PARENT_FIBRE%MAG%an(3)*b4 
+
+mu=1.5_dp*mu
+    x=(cos(mu)+alpha*sin(mu))*xs%x(3)+beta*sin(mu)*xs%x(4)
+    xs%x(4)=(cos(mu)-alpha*sin(mu))*xs%x(4)-gamma*sin(mu)*xs%x(3)
+    xs%x(3)=x
+ mu=1.5_dp*mu
+    x=(cos(mu)+alpha*sin(mu))*xs%x(5)+beta*sin(mu)*xs%x(6)
+    xs%x(6)=(cos(mu)-alpha*sin(mu))*xs%x(6)-gamma*sin(mu)*xs%x(5)
+    xs%x(5)=x
+
+  end subroutine track_examr
+
+
+
   subroutine track_examp(c,xs,K)   !electric teapot s
     IMPLICIT NONE
     TYPE(integration_node),pointer, INTENT(IN):: c
@@ -2785,9 +2787,10 @@ b5=C%PARENT_FIBRE%MAG%bn(5)  !1.0_dp
 n=nint(C%PARENT_FIBRE%MAG%bn(3))
 
     x=(cos(mu)+alpha*sin(mu))*xs%x(1)+beta*sin(mu)*xs%x(2)
-    xs%x(2)=(cos(mu)-alpha*sin(mu))*xs%x(2)-gamma*sin(mu)*xs%x(1)
-    xs%x(1)=x
-    xs%x(2)=xs%x(2)+ b4*xs%x(1)**n + b5*xs%x(1)**3
+    xs%x(2)=(cos(mu)-alpha*sin(mu))*xs%x(2)-gamma*(1.0_dp+C%PARENT_FIBRE%MAG%an(3) ) *sin(mu)*xs%x(1)
+    xs%x(1)=x+C%PARENT_FIBRE%MAG%an(4)*b5*xs%x(1)**3
+    xs%x(2)=xs%x(2)+ b4*xs%x(1)**n +b5*xs%x(1)**3 
+
 
 
 call kill(x)
@@ -6866,7 +6869,7 @@ normbb=0
 enddo  ! is 
  if(is>nrmax-10) then
    if(c_verbose_zhe) write(6,*) " Too many iterations ",normbb,norm,t(3)%eps
-
+      check_stable_zhe=.false.
  endif
 
 
@@ -6933,8 +6936,9 @@ ntree=nd2+nd**2
     x=0
     x0=0
 !    nrmax=1000
+if(.not.check_stable) return
    check_stable_zhe=.true.
-       xs%u=.false.
+   !    xs%u=.false.
 !!!! put stochastic kick in front per Sagan
  if(stoch0) then 
 
@@ -7002,8 +7006,11 @@ if(call_gen) then
 
 call track_TREE_probe_gen_only(T,y)
 
- 
-
+ if(.not.check_stable_zhe) then
+   xs%u=.true.
+check_stable=.false.
+return
+endif 
  goto 1000
 endif
      do i=1,nd
@@ -7040,6 +7047,8 @@ do is=1,nrmax
     if(ier/=0) then
      write(6,*) "matinv failed in track_TREE_probe_complex_zhe"
        check_stable_zhe=.false.
+check_stable=.false.
+
        xs%u=.true.
       return
      stop
@@ -7092,6 +7101,8 @@ enddo  ! is
    if(c_verbose_zhe) write(6,*) " Too many iterations ",normbb,norm,t(3)%eps
    xs%u=.true.
    check_stable_zhe=.false.
+check_stable=.false.
+
   return
  endif
 
@@ -7171,6 +7182,8 @@ enddo
    if(c_verbose_zhe) write(6,*) " unstable " 
    xs%u=.true.
    check_stable_zhe=.false.
+check_stable=.false.
+
   return
  endif
 
@@ -7193,7 +7206,7 @@ enddo
     do i=1,nd2
       xs%x(i)=x(i)
     enddo
-
+if(.not.check_stable_zhe) xs%u=.true.
   end SUBROUTINE track_TREE_probe_simple_zher_8
 
 

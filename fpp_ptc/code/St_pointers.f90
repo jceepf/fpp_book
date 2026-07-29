@@ -2965,7 +2965,8 @@ do k=1,nbunch
  if( bunch_zhe%stable(k)) then
   
 !!! one-turn map
-    call track_TREE_probe_complex_zhe(t_olek_map(1:3),bunch_zhe%xs(k),spin=.true.,rad=.true.,stoch=.true.)  !stoch=state%stochastic)
+!    call track_TREE_probe_complex_zhe(t_olek_map(1:3),bunch_zhe%xs(k),spin=.true.,rad=.true.,stoch=.true.)  !stoch=state%stochastic)
+stop 864
   if(bunch_zhe%xs(k)%u) exit
 
      if(bunch_zhe%xs(k)%u) then

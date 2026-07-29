@@ -43,7 +43,7 @@ module definition
   !  private xintex,dsta,sta,angle,rad,ps,rads,mx
   ! numerical differentiation by knobs
   logical(lp) :: knob_numerical=.false.
-  real(dp) ::  knob_eps(lnv)=1e-6_dp,eps_ndc=1.d-15
+  real(dp) ::  knob_eps(lnv)=1e-6_dp,eps_ndc=0
   integer ::  knob_i =0
   INTEGER,PARAMETER::NMAX=22
   integer,private,parameter::n_max=10   ! sagan stuff
