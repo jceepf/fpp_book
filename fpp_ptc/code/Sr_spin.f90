@@ -1499,7 +1499,7 @@ revert_to_ptc=.false.
     TYPE(INTERNAL_STATE) K
     REAL(DP) FAC,DS,beta
     logical useptc,dofix0,dofix,doonemap
-    type(tree_element), pointer :: arbre(:)
+!    type(tree_element), pointer :: arbre(:)
 !    logical(lp) bmad
     logical(lp) revert_to_ptc
     IF(.NOT.CHECK_STABLE) then
@@ -1530,21 +1530,11 @@ revert_to_ptc=.false.
 
      
   !  if(.not.(k%nocavity.and.(C%PARENT_FIBRE%MAG%kind==kind4.or.C%PARENT_FIBRE%MAG%kind==kind21))) then
-     if(C%PARENT_FIBRE%dir==1) then
-       if(C%PARENT_FIBRE%MAG%skip_ptc_f==1) return
-       if(associated(C%PARENT_FIBRE%MAG%forward)) then
-         if(C%PARENT_FIBRE%MAG%usef) useptc=.false.
-          arbre=>C%PARENT_FIBRE%MAG%forward
-          doonemap=C%PARENT_FIBRE%MAG%do1mapf
-       endif
-     else
-       if(C%PARENT_FIBRE%MAG%skip_ptc_b==1) return
-       if(associated(C%PARENT_FIBRE%MAG%backward)) then
-         if(C%PARENT_FIBRE%MAG%useb) useptc=.false.
-          arbre=>C%PARENT_FIBRE%MAG%backward
-          doonemap=C%PARENT_FIBRE%MAG%do1mapb
-       endif
-     endif
+  !   if(C%PARENT_FIBRE%dir==1) then
+  !     if(C%PARENT_FIBRE%MAG%skip_ptc_f==1) return
+  !   else
+  !     if(C%PARENT_FIBRE%MAG%skip_ptc_b==1) return
+  !   endif
  !   endif ! cavity
  
 
@@ -1562,22 +1552,22 @@ revert_to_ptc=.false.
 
 
     if(c%cas==0) then
-       if(useptc) then
+    !  if(useptc) then
 
         CALL TRACK_NODE_SINGLE_qua(C,XS,K)  !,CHARGE
 
-       elseif(doonemap) then
- 
-          if(C%POS_IN_FIBRE-2==1) then 
-             dofix0=.true.;dofix=.true.
-             call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)
-          endif
-       else
-          dofix0=.false.;dofix=.false.
-          if(C%POS_IN_FIBRE-2==1) dofix0=.true.
-          if(C%POS_IN_FIBRE-C%PARENT_FIBRE%MAG%p%nst==2) dofix=.true.
-        call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)
-       endif
+    !   elseif(doonemap) then
+    !
+    !      if(C%POS_IN_FIBRE-2==1) then 
+    !         dofix0=.true.;dofix=.true.
+    !         call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)
+    !      endif
+    !   else
+    !      dofix0=.false.;dofix=.false.
+    !      if(C%POS_IN_FIBRE-2==1) dofix0=.true.
+    !      if(C%POS_IN_FIBRE-C%PARENT_FIBRE%MAG%p%nst==2) dofix=.true.
+    !    call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)
+    !   endif
     elseIF(c%cas==case1.and.useptc) then
        CALL TRACK_FRINGE_spin(C,XS,K)
        CALL TRACK_NODE_SINGLE_qua(C,XS,K)  !,CHARGE
@@ -1646,7 +1636,7 @@ revert_to_ptc=.false.
     integer(2), pointer,dimension(:)::AN,BN
     integer ki
     logical useptc,dofix0,dofix,doonemap,revert_to_ptc
-    type(tree_element), pointer :: arbre(:)
+!    type(tree_element), pointer :: arbre(:)
 !    logical(lp) bmad
     !   if(xs%u) return
 
@@ -1674,21 +1664,11 @@ revert_to_ptc=.false.
 
      useptc=.true.
 !    if(.not.(k%nocavity.and.(ki==kind4.or.ki==kind21))) then
-     if(C%PARENT_FIBRE%dir==1) then
-       if(C%PARENT_FIBRE%MAGp%skip_ptc_f==1) return
-       if(associated(C%PARENT_FIBRE%MAGP%forward)) then
-         if(C%PARENT_FIBRE%MAGP%usef) useptc=.false.
-          arbre=>C%PARENT_FIBRE%MAGP%forward
-          doonemap=C%PARENT_FIBRE%MAGp%do1mapf
-       endif
-     else
-       if(C%PARENT_FIBRE%MAGp%skip_ptc_b==1) return
-       if(associated(C%PARENT_FIBRE%MAGP%backward)) then
-         if(C%PARENT_FIBRE%MAGP%useb) useptc=.false.
-          arbre=>C%PARENT_FIBRE%MAGP%backward
-          doonemap=C%PARENT_FIBRE%MAGp%do1mapb
-       endif
-     endif
+!     if(C%PARENT_FIBRE%dir==1) then
+!       if(C%PARENT_FIBRE%MAGp%skip_ptc_f==1) return
+!     else
+!       if(C%PARENT_FIBRE%MAGp%skip_ptc_b==1) return
+!     endif
 !    endif
  
  
@@ -1714,24 +1694,24 @@ revert_to_ptc=.false.
     !      if(associated(c%bb)) call BBKICK(c%BB,XS%X)
 
     if(c%cas==0) then
-       if(useptc) then
+   !    if(useptc) then
 
         CALL TRACK_NODE_SINGLE_qua(C,XS,K)  !,CHARGE
 
-       elseif(doonemap) then
-
-          if(C%POS_IN_FIBRE-2==1) then
-                     dofix0=.true.;dofix=.true.
- 
-           call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)  
- 
-          endif
-       else
-          dofix0=.false.;dofix=.false.
-          if(C%POS_IN_FIBRE-2==1) dofix0=.true.
-          if(C%POS_IN_FIBRE-C%PARENT_FIBRE%MAGp%p%nst==2) dofix=.true.
-        call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)
-       endif
+  !     elseif(doonemap) then
+  !
+  !        if(C%POS_IN_FIBRE-2==1) then
+  !                   dofix0=.true.;dofix=.true.
+  !
+  !         call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)  
+  !
+  !        endif
+  !     else
+  !        dofix0=.false.;dofix=.false.
+  !        if(C%POS_IN_FIBRE-2==1) dofix0=.true.
+  !        if(C%POS_IN_FIBRE-C%PARENT_FIBRE%MAGp%p%nst==2) dofix=.true.
+  !      call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)
+  !     endif
     elseIF(c%cas==case1.and.useptc) then
 if(ki==kind10)CALL MAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
        CALL TRACK_FRINGE_spin(C,XS,K)
@@ -2726,7 +2706,7 @@ n=nint(C%PARENT_FIBRE%MAG%bn(3))
 
     x=(cos(mu)+alpha*sin(mu))*xs%x(1)+beta*sin(mu)*xs%x(2)
     xs%x(2)=(cos(mu)-alpha*sin(mu))*xs%x(2)-gamma*(1.0_dp+C%PARENT_FIBRE%MAG%an(3) ) *sin(mu)*xs%x(1)
-    xs%x(1)=x+C%PARENT_FIBRE%MAG%an(4)*b5*xs%x(1)**3
+    xs%x(1)=x+C%PARENT_FIBRE%MAG%an(4)*xs%x(1)**3+C%PARENT_FIBRE%MAG%an(5)*xs%x(1)**5
     xs%x(2)=xs%x(2)+ b4*xs%x(1)**n +b5*xs%x(1)**3 
 
 return
@@ -2788,7 +2768,7 @@ n=nint(C%PARENT_FIBRE%MAG%bn(3))
 
     x=(cos(mu)+alpha*sin(mu))*xs%x(1)+beta*sin(mu)*xs%x(2)
     xs%x(2)=(cos(mu)-alpha*sin(mu))*xs%x(2)-gamma*(1.0_dp+C%PARENT_FIBRE%MAG%an(3) ) *sin(mu)*xs%x(1)
-    xs%x(1)=x+C%PARENT_FIBRE%MAG%an(4)*b5*xs%x(1)**3
+    xs%x(1)=x+C%PARENT_FIBRE%MAG%an(4)*xs%x(1)**3+C%PARENT_FIBRE%MAG%an(5)*xs%x(1)**5
     xs%x(2)=xs%x(2)+ b4*xs%x(1)**n +b5*xs%x(1)**3 
 
 
@@ -3408,7 +3388,7 @@ call kill(dl,k,rhoi,z)
     TYPE(INTERNAL_STATE) K
     REAL(DP) FAC,DS,beta,x(6)
     logical useptc,dofix0,dofix,doonemap
-    type(tree_element), pointer :: arbre(:)
+!    type(tree_element), pointer :: arbre(:)
 !    logical(lp) bmad
     logical revert_to_ptc
 
@@ -3442,21 +3422,13 @@ revert_to_ptc=.false.
 
      
   !  if(.not.(k%nocavity.and.(C%PARENT_FIBRE%MAG%kind==kind4.or.C%PARENT_FIBRE%MAG%kind==kind21))) then
-     if(C%PARENT_FIBRE%dir==1) then
-       if(C%PARENT_FIBRE%MAG%skip_ptc_f==1) return
-       if(associated(C%PARENT_FIBRE%MAG%forward)) then
-         if(C%PARENT_FIBRE%MAG%usef) useptc=.false.
-          arbre=>C%PARENT_FIBRE%MAG%forward
-          doonemap=C%PARENT_FIBRE%MAG%do1mapf
-       endif
-     else
-       if(C%PARENT_FIBRE%MAG%skip_ptc_b==1) return
-       if(associated(C%PARENT_FIBRE%MAG%backward)) then
-         if(C%PARENT_FIBRE%MAG%useb) useptc=.false.
-          arbre=>C%PARENT_FIBRE%MAG%backward
-          doonemap=C%PARENT_FIBRE%MAG%do1mapb
-       endif
-     endif
+ !    if(C%PARENT_FIBRE%dir==1) then
+!       if(C%PARENT_FIBRE%MAG%skip_ptc_f==1) return
+
+ !    else
+ !      if(C%PARENT_FIBRE%MAG%skip_ptc_b==1) return
+
+ !    endif
  !   endif ! cavity
  
 
@@ -3469,25 +3441,25 @@ revert_to_ptc=.false.
 
 
     if(c%cas==0) then
-       if(useptc) then
+    !   if(useptc) then
        ds=c%parent_fibre%MAG%L/c%parent_fibre%MAG%p%nst
        fac=0.5_dp
         call PUSH_SPIN(c,ds,FAC,XS,my_true,k,C%POS_IN_FIBRE-2)   ! -3 before....
         CALL TRACK_NODE_SINGLE(C,XS,K)  !,CHARGE
  !       call PUSH_SPIN(c,ds,FAC,XS,my_false,k,C%POS_IN_FIBRE-2)
         call PUSH_SPIN(c,ds,FAC,XS,my_false,k,C%POS_IN_FIBRE-1)
-       elseif(doonemap) then
+  !     elseif(doonemap) then
  
-          if(C%POS_IN_FIBRE-2==1) then 
-             dofix0=.true.;dofix=.true.
-             call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)
-          endif
-       else
-          dofix0=.false.;dofix=.false.
-          if(C%POS_IN_FIBRE-2==1) dofix0=.true.
-          if(C%POS_IN_FIBRE-C%PARENT_FIBRE%MAG%p%nst==2) dofix=.true.
-        call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)
-       endif
+  !        if(C%POS_IN_FIBRE-2==1) then 
+  !           dofix0=.true.;dofix=.true.
+ !            call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)
+  !        endif
+  !     else
+   !       dofix0=.false.;dofix=.false.
+  !        if(C%POS_IN_FIBRE-2==1) dofix0=.true.
+  !       if(C%POS_IN_FIBRE-C%PARENT_FIBRE%MAG%p%nst==2) dofix=.true.
+   !     call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)
+   !    endif
     elseIF(c%cas==case1.and.useptc) then
        CALL TRACK_FRINGE_spin(C,XS,K)
        CALL TRACK_NODE_SINGLE(C,XS,K)  !,CHARGE
@@ -3579,7 +3551,7 @@ revert_to_ptc=.false.
     integer(2), pointer,dimension(:)::AN,BN
     integer ki
     logical useptc,dofix0,dofix,doonemap
-    type(tree_element), pointer :: arbre(:)
+!    type(tree_element), pointer :: arbre(:)
      logical revert_to_ptc
 !    logical(lp) bmad
     !   if(xs%u) return
@@ -3610,21 +3582,11 @@ revert_to_ptc=.false.
 !    if(full_way.or.k%full_way) then
     useptc=.true.
 !    if(.not.(k%nocavity.and.(ki==kind4.or.ki==kind21))) then
-     if(C%PARENT_FIBRE%dir==1) then
-       if(C%PARENT_FIBRE%MAGp%skip_ptc_f==1) return
-       if(associated(C%PARENT_FIBRE%MAGP%forward)) then
-         if(C%PARENT_FIBRE%MAGP%usef) useptc=.false.
-          arbre=>C%PARENT_FIBRE%MAGP%forward
-          doonemap=C%PARENT_FIBRE%MAGp%do1mapf
-       endif
-     else
-       if(C%PARENT_FIBRE%MAGp%skip_ptc_b==1) return
-       if(associated(C%PARENT_FIBRE%MAGP%backward)) then
-         if(C%PARENT_FIBRE%MAGP%useb) useptc=.false.
-          arbre=>C%PARENT_FIBRE%MAGP%backward
-          doonemap=C%PARENT_FIBRE%MAGp%do1mapb
-       endif
-     endif
+ !    if(C%PARENT_FIBRE%dir==1) then
+ !      if(C%PARENT_FIBRE%MAGp%skip_ptc_f==1) return
+ !    else
+ !      if(C%PARENT_FIBRE%MAGp%skip_ptc_b==1) return
+ !    endif
 !    endif
  
  
@@ -3647,7 +3609,7 @@ revert_to_ptc=.false.
     !      if(associated(c%bb)) call BBKICK(c%BB,XS%X)
 
     if(c%cas==0) then
-       if(useptc) then
+   !    if(useptc) then
        ds=c%parent_fibre%MAGp%L/c%parent_fibre%MAG%p%nst
        fac=0.5_dp
         if(ki==kind10)CALL MAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,K)
@@ -3658,20 +3620,20 @@ revert_to_ptc=.false.
   !      call PUSH_SPIN(c,ds,FAC,XS,my_false,k,C%POS_IN_FIBRE-2)
         call PUSH_SPIN(c,ds,FAC,XS,my_false,k,C%POS_IN_FIBRE-1)
          if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
-       elseif(doonemap) then
+   !    elseif(doonemap) then
 
-          if(C%POS_IN_FIBRE-2==1) then
-                     dofix0=.true.;dofix=.true.
+   !       if(C%POS_IN_FIBRE-2==1) then
+   !                  dofix0=.true.;dofix=.true.
  
-           call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)  
+    !       call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)  
  
-          endif
-       else
-          dofix0=.false.;dofix=.false.
-          if(C%POS_IN_FIBRE-2==1) dofix0=.true.
-          if(C%POS_IN_FIBRE-C%PARENT_FIBRE%MAGp%p%nst==2) dofix=.true.
-        call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)
-       endif
+     !     endif
+    !   else
+    !      dofix0=.false.;dofix=.false.
+    !      if(C%POS_IN_FIBRE-2==1) dofix0=.true.
+    !      if(C%POS_IN_FIBRE-C%PARENT_FIBRE%MAGp%p%nst==2) dofix=.true.
+    !    call track_TREE_probe_complex(arbre,xs,dofix0,dofix,k)
+    !   endif
     elseIF(c%cas==case1.and.useptc) then
 if(ki==kind10)CALL MAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
        CALL TRACK_FRINGE_spin(C,XS,K)
@@ -5524,467 +5486,7 @@ end subroutine equal_temporal
 
 
 
-subroutine fill_tree_element(f,no,fix0,onemap,factor,file)   ! fix0 is the initial condition for the maps
-implicit none
-type(fibre), target :: f
-type(layout), pointer :: r
-TYPE(INTEGRATION_NODE),POINTER:: t1c,t2c
-TYPE (NODE_LAYOUT), POINTER :: t
-TYPE (tree_element), POINTER :: arbre(:)
-type(internal_state) state
-real(dp) fixr(6),fixs(6),fix(6),fix0(6),mat(6,6),e_ij(6,6),xn
-type(probe) xs0
-type(probe_8) xs
-type(c_damap) m,mr
-logical :: onemap,fact
-logical,optional :: factor
-integer no,i,mf
-character(*), optional :: file 
 
-fact=.false.
-
-if(present(factor)) fact=factor
-
-
-if(.not.associated(f%parent_layout)) then
- write(6,*) " parent layout not associated "
- stop
-else
- r=>f%parent_layout
-endif
-
-if(.not.associated(f%parent_layout%t)) then
- write(6,*) " parent node layout not associated "
- stop
-else
- t=>f%parent_layout%t
- t1c=>f%t1%next
- t2c=>f%t2   !%next
-endif
-
-! Classical radiation with stochastic envelope
-
-state=radiation0+envelope0+time0
-
-call init_all(state,1,0)
-
-call alloc(xs);call alloc(m,mr)
-
-
-! radiation
-
-xs0=fix0
-mr=1
-xs=xs0+mr
-call propagate(xs,state,node1=t1c,node2=t2c)
-
-
-! For David
-!!  mr: linear map with radiation would be read here instead of being computed,
-!! and must be stored in fixr
-
-fixr=xs%x    ! <---
-mr=xs   ! <---
-
-do i=1,6
- mr%v(i)=mr%v(i)-(mr%v(i).sub.0)
-enddo
-
-! For David
-!!  The stochastic kicks are stored at e_ij
-
-e_ij=xs%e_ij         ! <---
-! no radiation
-
-
-state=time0
-xs0=fix0
-m=1
-xs=xs0+m
-!write(6,*) t1c%parent_fibre%mag%name,t1c%parent_fibre%mag%p%nst
-call propagate(xs,state,node1=t1c,node2=t2c)
-fix=xs%x
-! For David
-!!  The same linear map is computed WITHOUT radiation : result put into m, the constant part is removed
-!!
-m=xs   ! <---
-do i=1,6
- m%v(i)=m%v(i)-(m%v(i).sub.0)
-enddo
-
-m=m**(-1)*mr
-
-if(.not.onemap) then
- call  nth_root(m,m,f%mag%p%nst)
-endif
-
-mat=m
-
-
-call kill(xs);call kill(m);call kill(mr)
-
-state=spin0+time0
-call init_all(state,no,0)
-call alloc(xs);call alloc(m)
-
-
-
-xs0=fix0
- 
-m=1
-xs=xs0+m
- 
-
-call propagate(xs,state,node1=t1c,node2=t2c)
-
-
-! For David
-!!  The full nonlinear map m is computed and the final orbit
-!!
-fix=xs%x  ! <---
-m=xs  ! <---
-
-m%e_ij=e_ij
-do i=1,6
- m%v(i)=m%v(i)-(m%v(i).sub.0)
-enddo
-
-
-if(.not.onemap) then
- call  nth_root(m,m,f%mag%p%nst)
-endif
-
-
-if(f%dir==1) then
- if(.not.associated(f%mag%forward)) then
-  allocate(f%mag%forward(3))
- ! allocate(f%mag%usef)
- else
-  call KILL(f%mag%forward)
- endif
- 
-call SET_TREE_G_complex(f%mag%forward,m,fact)
- f%mag%do1mapf=onemap
- f%mag%usef=.true.
- arbre=>f%mag%forward
-else
- if(.not.associated(f%mag%backward)) then
-  allocate(f%mag%backward(3))
- ! allocate(f%mag%useb)
- else
-  call KILL(f%mag%backward)
- endif
- call SET_TREE_G_complex(f%mag%backward,m,fact)
- f%mag%do1mapb=onemap
- f%mag%useb=.true.
- arbre=>f%mag%backward
-endif
-
-arbre(1)%rad=mat
-arbre(1)%fix0(1:6)=fix0
-arbre(1)%fixr(1:6)=fixr
-arbre(1)%fix(1:6)=fix
-if(onemap) then
- arbre(1)%ds=f%mag%p%ld
-else
- arbre(1)%ds=f%mag%p%ld/f%mag%p%nst
-endif
-arbre(1)%beta0=f%beta0
-
-if(f%dir==1) then
- if(.not.associated(f%magp%forward)) then
-  allocate(f%magp%forward(3))
-!  allocate(f%magp%usef)
- else
-  call KILL(f%magp%forward)
- endif
- !call SET_TREE_G_complex(f%magp%forward,m)
-do i=1,3
- call alloc_tree(f%magp%forward(i),f%mag%forward(i)%n,f%mag%forward(i)%np)
- call copy_tree(f%mag%forward(i),f%magp%forward(i))
-enddo
- f%magp%do1mapf=onemap
- f%magp%usef=.true.
- arbre=>f%magp%forward
-else
-
- if(.not.associated(f%magp%backward)) then
-  allocate(f%magp%backward(3))
- ! allocate(f%magp%useb)
- else
-  call KILL(f%magp%backward)
- endif
- !call SET_TREE_G_complex(f%magp%backward,m)
-do i=1,3
- call alloc_tree(f%magp%backward(i),f%mag%backward(i)%n,f%mag%backward(i)%np)
- call copy_tree(f%mag%backward(i),f%magp%backward(i))
-enddo
- f%magp%do1mapb=onemap
- f%magp%useb=.true.
- arbre=>f%magp%backward
-endif
-
-arbre(1)%rad=mat
-arbre(1)%fix0(1:6)=fix0
-arbre(1)%fixr(1:6)=fixr
-arbre(1)%fix(1:6)=fix
-if(onemap) then
- arbre(1)%ds=f%mag%p%ld
-else
- arbre(1)%ds=f%mag%p%ld/f%mag%p%nst
-endif
-arbre(1)%beta0=f%beta0
-
-call kill(xs);call kill(m)
- 
- if(present(file)) then
-  call kanalnummer(mf,file)
-   call print_tree_elements(arbre,mf)
-  close(mf)
- endif
-
-
-end subroutine fill_tree_element
-
-subroutine fill_tree_element_line(f1,f2,f,no,fix0,factor,nocav,file)   ! fix0 is the initial condition for the maps
-implicit none
-type(fibre), target :: f1,f2,f
-type(layout), pointer :: r
-TYPE(INTEGRATION_NODE),POINTER:: t1c,t2c
-TYPE (NODE_LAYOUT), POINTER :: t
-TYPE (tree_element), POINTER :: arbre(:)
-type(internal_state) state
-real(dp) fixr(6),fixs(6),fix(6),fix0(6),mat(6,6),e_ij(6,6),xn
-type(probe) xs0
-type(probe_8) xs
-type(c_damap) m,mr
-logical :: fact,noca
-logical,optional :: factor,nocav
-integer no,i,mf
-type(fibre), pointer :: p
-character(*), optional :: file 
-
-fact=.false.
-noca=.false.
-
-if(present(factor)) fact=factor
-if(present(factor)) noca=nocav
-
-if(.not.associated(f1%parent_layout)) then
- write(6,*) " parent layout not associated "
- stop
-else
- r=>f1%parent_layout
-endif
-
-if(.not.associated(f%parent_layout%t)) then
- write(6,*) " parent node layout not associated "
- stop
-else
- t=>f1%parent_layout%t
- t1c=>f1%t1 !%next
- t2c=>f2%t1
-endif
-
-! Classical radiation with stochastic envelope
-
-state=radiation0+envelope0+time0
-state%NOCAVITY=noca
-
-call init_all(state,1,0)
-
-call alloc(xs);call alloc(m,mr)
-
-
-! radiation
-
-xs0=fix0
-mr=1
-xs=xs0+mr
-if(associated(t1c,t2c)) then
- call propagate(xs,state,node1=t1c)
-else
- call propagate(xs,state,node1=t1c,node2=t2c)
-endif
-
-! For David
-!!  mr: linear map with radiation would be read here instead of being computed,
-!! and must be stored in fixr
-
-fixr=xs%x    ! <---
-mr=xs   ! <---
-
-do i=1,6
- mr%v(i)=mr%v(i)-(mr%v(i).sub.0)
-enddo
-
-! For David
-!!  The stochastic kicks are stored at e_ij
-
-e_ij=xs%e_ij         ! <---
-! no radiation
-
-
-state=time0
-state%NOCAVITY=noca
-xs0=fix0
-m=1
-
-if(associated(t1c,t2c)) then
- call propagate(xs,state,node1=t1c)
-else
- call propagate(xs,state,node1=t1c,node2=t2c)
-endif
-
-fix=xs%x
-! For David
-!!  The same linear map is computed WITHOUT radiation : result put into m, the constant part is removed
-!!
-m=xs   ! <---
-do i=1,6
- m%v(i)=m%v(i)-(m%v(i).sub.0)
-enddo
-
-m=m**(-1)*mr
-
-
-
-mat=m
-
-
-call kill(xs);call kill(m);call kill(mr)
-
-state=spin0+time0
-state%NOCAVITY=noca
-call init_all(state,no,0)
-call alloc(xs);call alloc(m)
-
-
-
-xs0=fix0
-m=1
-xs=xs0+m
-if(associated(t1c,t2c)) then
- call propagate(xs,state,node1=t1c)
-else
- call propagate(xs,state,node1=t1c,node2=t2c)
-endif
-
-
-! For David
-!!  The full nonlinear map m is computed and the final orbit
-!!
-fix=xs%x  ! <---
-m=xs  ! <---
-
-m%e_ij=e_ij
-do i=1,6
- m%v(i)=m%v(i)-(m%v(i).sub.0)
-enddo
-
-
-
-
-if(f%dir==1) then
- if(.not.associated(f%mag%forward)) then
-  allocate(f%mag%forward(3))
- ! allocate(f%mag%usef)
- else
-  call KILL(f%mag%forward)
- endif
-
-call SET_TREE_G_complex(f%mag%forward,m,fact)
- f%mag%do1mapf=.false.
- f%mag%usef=.true.
- arbre=>f%mag%forward
-
-else
- if(.not.associated(f%mag%backward)) then
-  allocate(f%mag%backward(3))
- ! allocate(f%mag%useb)
- else
-  call KILL(f%mag%backward)
- endif
- call SET_TREE_G_complex(f%mag%backward,m,fact)
- f%mag%do1mapb=.false.
- f%mag%useb=.true.
- arbre=>f%mag%backward
-endif
-
-arbre(1)%rad=mat
-arbre(1)%fix0(1:6)=fix0
-arbre(1)%fixr(1:6)=fixr
-arbre(1)%fix(1:6)=fix
-
- arbre(1)%ds=0.0_dp
- p=>f1
- do while(.not.associated(p,f2))
-  arbre(1)%ds=p%mag%p%ld +arbre(1)%ds
-  p=>p%next
- enddo
-
-arbre(1)%beta0=f1%beta0
-
-
-
-
-if(f%dir==1) then
- if(.not.associated(f%magp%forward)) then
-  allocate(f%magp%forward(3))
-!  allocate(f%magp%usef)
- else
-  call KILL(f%magp%forward)
- endif
- !call SET_TREE_G_complex(f%magp%forward,m)
-do i=1,3
- call alloc_tree(f%magp%forward(i),f%mag%forward(i)%n,f%mag%forward(i)%np)
- call copy_tree(f%mag%forward(i),f%magp%forward(i))
-enddo
- f%magp%do1mapf=.false.
- f%magp%usef=.true.
- arbre=>f%magp%forward
-
-else
-
- if(.not.associated(f%magp%backward)) then
-  allocate(f%magp%backward(3))
- ! allocate(f%magp%useb)
- else
-  call KILL(f%magp%backward)
- endif
- !call SET_TREE_G_complex(f%magp%backward,m)
-do i=1,3
- call alloc_tree(f%magp%backward(i),f%mag%backward(i)%n,f%mag%backward(i)%np)
- call copy_tree(f%mag%backward(i),f%magp%backward(i))
-enddo
- f%magp%do1mapb=.false.
- f%magp%useb=.true.
- arbre=>f%magp%backward
-endif
-
-arbre(1)%rad=mat
-arbre(1)%fix0(1:6)=fix0
-arbre(1)%fixr(1:6)=fixr
-arbre(1)%fix(1:6)=fix
- arbre(1)%ds=0.0_dp
- p=>f1
- do while(.not.associated(p,f2))
-  arbre(1)%ds=p%mag%p%ld +arbre(1)%ds
-  p=>p%next
- enddo
-arbre(1)%beta0=f1%beta0
-
-call kill(xs);call kill(m)
- 
-
- if(present(file)) then
-  call kanalnummer(mf,file)
-   call print_tree_elements(arbre,mf)
-  close(mf)
- endif
-
-
-end subroutine fill_tree_element_line
 
 !!!!!!!!!!!!!!!!!!!!   stuff for Zhe  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine fill_tree_element_line_zhe0(state_0,state,f1,f2,no,fix0_0,fix0,filef,stochprec,sagan_tree)   ! fix0 is the initial condition for the maps
