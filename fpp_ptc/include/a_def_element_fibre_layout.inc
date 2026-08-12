@@ -410,6 +410,9 @@ TYPE FIBRE
    TYPE (FIBRE),POINTER :: P => null()   ! tying them in the so-called database universe M_u
    TYPE (FIBRE),POINTER :: N => null()
    INTEGER,POINTER :: loc => null()
+   type(tree_element), pointer :: taylormap(:)=> null()  ! Taylor tracking on a fibre
+   integer, pointer :: usetaylormap=> null() 
+
 
 END TYPE FIBRE
 

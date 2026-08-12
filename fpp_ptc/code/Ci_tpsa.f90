@@ -19759,7 +19759,7 @@ endif
   END SUBROUTINE SET_TREE_G_complex_zhe_as_is
 
 
-subroutine fill_tree_element_line_zhe_outside_map(minput ,filef,fix0,as_is,stochprec,tree_zhe)   ! fix0 is the initial condition for the maps
+subroutine fill_tree_element_line_zhe_outside_map(minput ,filef,fix0,as_is,stochprec,tree_zhe,TREE_ON_FIBRE)   ! fix0 is the initial condition for the maps
 implicit none
 logical, optional :: as_is
 real(dp), optional :: fix0(6),stochprec
@@ -19774,20 +19774,30 @@ type(c_damap) m,minput
 type(c_taylor) t
 integer  i,inf,j !,mberz
 type(tree_element_zhe), optional :: tree_zhe(:)
+type(tree_element),  optional, target :: TREE_ON_FIBRE(:) 
 
+LOGICAL :: TREE_ON,tree_off
 character(255)  file_berz
 
 type(tree_element), pointer :: forward(:) =>null()
 character(*),optional :: filef
- 
+ TREE_ON=.FALSE.
+ TREE_off=.true.
+ if(present(TREE_ON_FIBRE)) then
+    TREE_ON=.true.
+    TREE_off=.FALSE.
+ endif
   as_is0=.false.
 !file_berz="zhe1_berz"
 ! call kanalnummer(mberz,file_berz)
 
 if(present(as_is)) as_is0=as_is
   
+if(tree_off) then
   allocate(forward(3))
- 
+ else
+  forward=>TREE_ON_FIBRE
+endif
 allocate(fix(c_%nd2),mat(c_%nd2,c_%nd2) ,f0(c_%nd2) )
 
 mat=0
@@ -19840,7 +19850,7 @@ forward(3)%fixr(1:c_%nd2)=fix
 forward(3)%fix(1:c_%nd2)=fix    ! exit
 
  forward(1)%ds=0.0_dp
- 
+ forward(1)%mati(1:c_%nd2,1:c_%nd2)=(minput.sub.1)**(-1)  
  
   forward(1)%ds=0
  
@@ -19858,10 +19868,11 @@ endif
   call kanalnummer(inf,filef)
     call print_tree_elements(forward,inf)
    close(inf)
-  call KILL(forward)
-  deallocate(forward)
-endif
-
+ endif
+ if(tree_off) then
+    call KILL(forward)
+    deallocate(forward)
+  endif
 !call print(minput)
  call kill(m) 
 !close(mberz)
@@ -23509,9 +23520,9 @@ endif
               if(coast(l).and.c_%ndc==0) cycle 
               lam=lam*eg(l)**je(l)
             enddo
-            if(c_%ndc/=0) then
-             lam=lam*eg(l)**je(l)
-            endif
+ !           if(c_%ndc/=0) then     ! error 2026.8.11
+ !           lam=lam*eg(l)**je(l)
+ !           endif
             if(lielib_print(13)/=0) then
                  write(mdis,*) k
                  write(mdis,'(6(1x,i4))') je(1:nd2)

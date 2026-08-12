@@ -309,6 +309,7 @@ END TYPE quaternion_8
      INTEGER,POINTER :: N,NP,no
      real(dp), pointer :: e_ij(:,:)
      real(dp), pointer :: rad(:,:)
+     real(dp), pointer :: mati(:,:)
      real(dp), pointer :: ds,beta0,eps
      logical, pointer :: symptrack,usenonsymp,factored
   end  type tree_element

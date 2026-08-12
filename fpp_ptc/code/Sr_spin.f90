@@ -40,7 +40,7 @@ module ptc_spin
   !REAL(DP) :: AG=A_ELECTRON
   REAL(DP) :: bran_init=pi  
   logical :: locate_with_no_cavity = .false.   !,full_way=.true.
-  integer  :: item_min=3,mfdebug
+  integer  :: item_min=3,mfdebug=0
   integer  :: case_map=case1,i11min=6776, i22max=8055
  ! logical :: excludedelta=.false.
   type(tree_element_zhe), pointer :: t_mapexam_map(:)=> null();
@@ -1789,7 +1789,23 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     logical revert_to_ptc
     real(dp) beta
 
-
+  
+if(C%parent_fibre%usetaylormap>0) then
+  if(C%parent_fibre%usetaylormap==2) return
+   if(c%cas==casep1)  then
+   ! if(use_bmad_units) then 
+   !   beta=C%PARENT_FIBRE%beta0
+   !   call convert_ptc_to_bmad(xs,beta,k%time)
+   ! endif
+      call track_TREE_probe_simple_zher_8(C%parent_fibre%taylormap(1:3),xs,k) 
+  ! if(use_bmad_units) then 
+   !   beta=C%PARENT_FIBRE%beta0
+  !    call convert_bmad_to_ptc(xs,beta,k%time)
+  !  endif
+   endif
+return
+endif
+ 
 
 if(C%parent_fibre%mag%name(1:3)=="MAP") then
  if(C%parent_fibre%mag%name=="MAPEXAM") then
@@ -1904,6 +1920,23 @@ endif  ! map
     real(dp) beta
 
 
+if(C%parent_fibre%usetaylormap>0) then
+  if(C%parent_fibre%usetaylormap==2) return
+   if(c%cas==casep1)  then
+    !if(use_bmad_units) then 
+   !   beta=C%PARENT_FIBRE%beta0
+   !   call convert_ptc_to_bmad(xs,beta,k%time)
+   ! endif
+      call  track_TREE_probe_simple_zhep_8(C%parent_fibre%taylormap(1:3),xs,k)  
+  ! if(use_bmad_units) then 
+  !    beta=C%PARENT_FIBRE%beta0
+  !    call convert_bmad_to_ptc(xs,beta,k%time)
+!    endif
+      return
+   endif
+  return
+endif
+
 
 if(C%parent_fibre%magp%name(1:3)=="MAP") then
 
@@ -2017,7 +2050,47 @@ endif ! map
  endif
     end SUBROUTINE TRACK_NODE_FLAG_probe_wrap_p
 
+  subroutine flip_taylormaps(R)
+  implicit none   
+  type(layout), target:: R
+  type(fibre), pointer ::p
+  integer i,j 
+
+  p=>r%start
+  j=0
+ 
+  do i=1,r%n
+
+   p%usetaylormap=-p%usetaylormap
+    if(p%usetaylormap/=0) then
+     if(iabs(p%usetaylormap)==1) j=p%usetaylormap +j
+    endif
+   p=>p%next
+  enddo
+    if(j<0 ) write(6,'((i4,a26))') -j, " Taylor maps were removed "
+    if(j>0 ) write(6,'((i4,a26))') j, " Taylor maps were put back"
+    if(j==0 ) write(6,*) "This lattice had no Taylor maps "
+  end subroutine flip_taylormaps
+
+  subroutine kill_taylormaps(R)
+  implicit none   
+  type(layout), target:: R
+  type(fibre), pointer ::p
+  integer i
+
+  p=>r%start
   
+  do i=1,r%n
+          IF(ASSOCIATED(p%taylormap)) then
+           call KILL(p%taylormap)
+           deallocate(p%taylormap)
+         endif
+       p%usetaylormap=0
+   p=>p%next
+  enddo
+    
+  end subroutine kill_taylormaps
+
   subroutine track_mapr2nd(c,xs,fac,K)   !electric teapot s
     IMPLICIT NONE
     TYPE(integration_node),pointer, INTENT(IN):: c
@@ -2637,9 +2710,9 @@ use gauss_dis
 
      ! call track_TREE_probe_complex_zhe(t_mapexam_map(1:3),xs0_zhe,spin=.false.,rad=.false.,stoch=.false.)  !stoch=state%stochastic)
  if(associated(t_mapexam_map8)) then
-      call track_TREE_probe_simple_zher_8(t_mapexam_map8(1:3),xs,spin=k%spin,rad=k%radiation,stoch=k%stochastic)  !stoch=state%stochastic)
+      call track_TREE_probe_simple_zher_8(t_mapexam_map8(1:3),xs,k)  !stoch=state%stochastic)
  else
-      call track_TREE_probe_simple_zher_8(t_map8(c%tree,1:3),xs,spin=k%spin,rad=k%radiation,stoch=k%stochastic)  !stoch=state%stochastic)
+      call track_TREE_probe_simple_zher_8(t_map8(c%tree,1:3),xs,k)  !stoch=state%stochastic)
 endif       
 !xs%x=xs0_zhe%x
  
@@ -2667,9 +2740,9 @@ use gauss_dis
      ! call track_TREE_probe_complex_zhe(t_mapexam_map(1:3),xs0_zhe,spin=.false.,rad=.false.,stoch=.false.)  !stoch=state%stochastic)
   !    call track_TREE_probe_simple_zhep_8(t_mapexam_map8(1:3),xs,spin=k%spin,rad=k%radiation)  !stoch=state%stochastic)
  if(associated(t_mapexam_map8)) then
-      call track_TREE_probe_simple_zhep_8(t_mapexam_map8(1:3),xs,spin=k%spin,rad=k%radiation)  !stoch=state%stochastic)
+      call track_TREE_probe_simple_zhep_8(t_mapexam_map8(1:3),xs,k)  !stoch=state%stochastic)
  else
-       call track_TREE_probe_simple_zhep_8(t_map8(c%tree,1:3),xs,spin=k%spin,rad=k%radiation)  !stoch=state%stochastic)
+       call track_TREE_probe_simple_zhep_8(t_map8(c%tree,1:3),xs,k)  !stoch=state%stochastic)
 endif 
 !xs%u=xs0_zhe%u
 !xs%x=xs0_zhe%x
@@ -6402,7 +6475,7 @@ enddo
     enddo
    end SUBROUTINE track_TREE_probe_gen_only
 
-SUBROUTINE track_TREE_probe_simple_zher_8(T,xs,spin,rad,stoch,linear)
+SUBROUTINE track_TREE_probe_simple_zher_8(T,xs,ks,linear)
     use gauss_dis
     IMPLICIT NONE
     integer, parameter :: size_tree=15
@@ -6412,10 +6485,11 @@ SUBROUTINE track_TREE_probe_simple_zher_8(T,xs,spin,rad,stoch,linear)
     real(dp) x(size_tree),x0(size_tree),s0(3,3),r(3,3),dx6,beta,q(3),p(3),qg(3),qf(3)
     real(dp) normb,norm,x0_begin(size_tree),xr(6),normbb,ranx,cut,y(6)
     integer i,j,k,ier,is
-    logical, optional  :: spin,stoch,rad,linear
+    logical, optional  ::  linear
     logical  spin0,stoch0,rad0,doit,as_is0,call_gen
     integer no1,nrmax_used,nd,nd2,ntree
     type(quaternion) qu
+    type(internal_state) ks
     as_is0=t(1)%usenonsymp
     spin0=.true.
     stoch0=.true.
@@ -6429,9 +6503,13 @@ ntree=nd2+nd**2
     if(present(linear)) then
      if(linear) no1=1
     endif
-    if(present(spin)) spin0=spin
-    if(present(stoch)) stoch0=stoch
-    if(present(rad)) rad0=rad
+ !   if(present(spin)) spin0=spin
+ !   if(present(stoch)) stoch0=stoch
+ !   if(present(rad)) rad0=rad
+    spin0=ks%spin
+    stoch0=ks%stochastic
+    rad0=ks%radiation
+ 
 
     if(as_is0) rad0=.true.
     doit=rad0.or.stoch0
@@ -6712,27 +6790,37 @@ if(.not.check_stable_zhe) xs%u=.true.
   end SUBROUTINE track_TREE_probe_simple_zher_8
 
 
-SUBROUTINE track_TREE_probe_simple_zhep_8(T,xs,spin,rad)
+SUBROUTINE track_TREE_probe_simple_zhep_8(T,xs,ks)
     use gauss_dis
     IMPLICIT NONE
     integer, parameter :: size_tree=15
     TYPE(TREE_ELEMENT),target, INTENT(INout) :: T(3)
  
     type(probe_8) xs
-    real(dp)  s0(3,3),r(3,3),dx6,beta,q(3),p(3),qg(3),qf(3),y0(6),y00(6)
+    real(dp)  s0(3,3),r(3,3),dx6,beta,q(3),p(3),qg(3),qf(3),y0(6),y00(6),bsig(6,6)
     type(real_8) x(size_tree),x0(size_tree),y(6),tn,x0_begin(size_tree)
     real(dp) normb,norm,xr(6),normbb,ranx,cut
     integer i,j,k,ier,is,jc(6)
-    logical, optional  :: spin,rad
-    logical  spin0,stoch0,rad0,doit,as_is0
+!    logical, optional  :: spin,rad
+    logical  spin0,stoch0,rad0,env0,doit,as_is0
     integer no1,nrmax_used,ntree, nd,nd2
     type(quaternion_8) qu
     type(damap) id
+    type(internal_state) ks
+
     as_is0=t(1)%usenonsymp
-    spin0=.true.
-    stoch0=.true.
-    rad0=.true.
+  !  spin0=.true.
+  !  stoch0=.true.
+  !  rad0=.true.
+    spin0=ks%spin
+    stoch0=ks%stochastic
+    rad0=ks%radiation
+    env0=ks%envelope
+
+
+
     no1=t(1)%no
+
     cut=6
     nd2=t(1)%np
     nd=nd2/2
@@ -6749,8 +6837,8 @@ SUBROUTINE track_TREE_probe_simple_zhep_8(T,xs,spin,rad)
        call alloc(tn)
 
  
-    if(present(spin)) spin0=spin
-    if(present(rad)) rad0=rad
+   ! if(present(spin)) spin0=spin
+   ! if(present(rad)) rad0=rad
 
     if(as_is0) rad0=.true.
   
@@ -6957,6 +7045,14 @@ endif
     do i=1,nd2
       xs%x(i)=x(i)
     enddo
+
+if(ks%envelope) then
+   bsig=matmul(t(1)%mati,t(1)%e_ij)
+   bsig=matmul(bsig,transpose(t(1)%mati))
+   xs%e_ij=xs%e_ij +bsig
+endif
+
+
     call kill(x)
     call kill(x0)
 

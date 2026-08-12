@@ -2993,10 +2993,19 @@ type(integration_node), pointer :: t
 type(probe) ray
 type(internal_state) state
 real(dp) ::  eps ,epsi =  1.d-10, normb,norm,xx,closed(6)
-real(dp) one_turn_map(5,5) 
+real(dp) one_turn_map(5,5) ,b1
 integer :: nrmax = 1000
 integer i,j,i1,i2,ier,nt,k
-logical watch_mode
+logical watch_mode,doit
+
+doit=.false.
+ if(use_bmad_units) then
+b1=t%parent_fibre%beta0
+ call convert_bmad_to_ptc(closed,b1,state%time)
+call in_ptc_units()
+doit=.true.
+
+endif
 
 normb=1.d38
 watch_mode=.true.
@@ -3070,6 +3079,12 @@ enddo
    endif
  
 closed=r1%x(1:6)
+
+ if(doit) then
+ call convert_ptc_to_bmad(closed,b1,state%time)
+call in_bmad_units()
+
+endif
 
   end subroutine find_fix_special_real
 
