@@ -55,7 +55,7 @@ INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
   integer, target :: NP,NO,ND,ND2,NV,NDPT,ndptb,rf,ndc
   private nd_used
   integer nd_used
-  logical(lp):: do_linear_ac_longitudinal=.true.
+  logical(lp):: do_linear_ac_longitudinal=.true.,clean_ndc=.true.
   private old
 !private map_mul_vec
   logical(lp) :: old  
@@ -161,6 +161,7 @@ logical :: correct_quaternion_field=.true.
  !logical,private :: unstable(NDIM2t/2) !,hyperbolic
  logical :: unstable_fpp(NDIM2t/2) !,hyperbolic
 logical :: lapack=.false.
+integer :: ci_debug=0
 !  These routines computes lattice functions a la Ripken-Forest-Wolski
 !type c_lattice_function
 ! real(dp) :: E(3,6,6) =0 ,K(3,6,6) =0 ! E : moments, K : Invariants
@@ -11626,7 +11627,7 @@ s11%x0=0
     implicit none
     type (c_damap),INTENT(inOUT)::S2
     type (c_damap),INTENT(IN)::S1
-    integer i
+    integer i,j
     IF(.NOT.C_STABLE_DA) RETURN
     
     call c_check_snake
@@ -11642,6 +11643,22 @@ s11%x0=0
     endif
      s2%e_ij=s1%e_ij
      s2%x0=s1%x0
+    if(c_%ndc>0.and.clean_ndc) then
+     if(ndpt_bmad==1) then
+      do i=1,6
+      do j=1,6
+       if(i==5.or.j==5) s2%e_ij(i,j)=0
+      enddo
+      enddo
+     else
+      do i=1,6
+      do j=1,6
+       if(i==6.or.j==6) s2%e_ij(i,j)=0
+      enddo
+      enddo
+
+     endif
+    endif
 !     s2%tpsa=s1%tpsa
    !  if(use_quaternion) then
 !       s2%sm=s1%sm
@@ -12207,8 +12224,7 @@ else
  endif
 endif
 
- 
-    if(.not.c_normal_auto) then
+     if(.not.c_normal_auto) then
 
 
       if(c_verbose) then
@@ -12226,8 +12242,10 @@ endif
 
 !###2   Trying to locate planes when almost mid-plane symmetric
  !if(ndc/=0) goto 1234
-if(ndc/=0)  then
+if(c_%ndc/=0)  then
+
       call c_locate_planes_ndc(vr,vi,reval,imval,a1)
+
 else
       call c_locate_planes(vr,vi,idef)
 endif
@@ -12257,7 +12275,8 @@ endif
 
 
 if(ndc/=0)  then
-      call c_locate_planes_ndc(vr,vi,reval,imval,a1)
+       call c_locate_planes_ndc(vr,vi,reval,imval,a1) 
+ 
 else
       call c_locate_planes(vr,vi,idef)
 endif
@@ -12358,7 +12377,7 @@ call alloc(s1)
  !!!!!  
 
     
-    if(ndpt/=0.and.c_%ndc==0) then
+    if(ndpt/=0.and.c_%ndc<=0) then
       fm=a1
       fm0(1:nd2,1:nd2)=matmul( fm(1:nd2,1:nd2),fmi(1:nd2,1:nd2))
       fm(1:nd2,1:nd2)=matmul( fmii(1:nd2,1:nd2),fm0(1:nd2,1:nd2))
@@ -12418,8 +12437,9 @@ vin=0
 revaln=0
 imvaln=0
 do i=1,nd2
-  if(imval(i)==0.0_dp) then
-     if(reval(i)==1.0_dp) then
+ 
+  if(abs(imval(i))<1.d-14) then
+     if(abs(reval(i)-1.0_dp)<1.d-14) then
        if(ndpt_bmad==1) idef2(i)=nd2-1
        if(ndpt_bmad==0) idef2(i)=nd2
        vrn(1:6,idef2(i))=vr( 1:6,I)
@@ -12434,8 +12454,8 @@ do i=1,nd2
      endif
   endif
 enddo
-!WRITE(6,*) idef2(1:6)
 
+ 
 
 
 do i=1,nd2
@@ -12489,13 +12509,16 @@ endif
 
 enddo
 
-!do k=1,nd2
-!write(6,*) " k " ,k
-! write(6,format2) revaln(k),imvaln(k)
-!write(6,*) " VVVVVVVVVVVVVVVVV"
-! write(6,format6) vrn(1:6,k)
-! write(6,format6) vin(1:6,k)
-!enddo
+if(.false.) then
+do k=1,nd2
+write(6,*) " k " ,k
+ write(6,format2) revaln(k),imvaln(k)
+write(6,*) " VVVVVVVVVVVVVVVVV"
+ write(6,format6) vrn(1:6,k)
+ write(6,format6) vin(1:6,k)
+enddo
+pause 4001
+endif
 
  reval(1:nd2)=revaln(1:nd2)
  imval(1:nd2)=imvaln(1:nd2)
@@ -13545,17 +13568,20 @@ alpha=2*atan2(q0%x(2),q0%x(0))
  
     n%s_ijr=0
     do i=1,c_%nd2 ; do j=1,c_%nd2;
+
+    ! if(eps_ndc==0.and.(i==c_%ndptb.and.j==c_%ndptb)) cycle
+
      n%s_ijr(i,j)= 1.0_dp/(1.0_dp- r(i,i)*r(j,j))*m1%e_ij(i,j)
     enddo ;enddo;
      do i=1,c_%nd
       n%emittance(i)=abs(n%s_ijr(2*i-1,2*i))/abs(n_cai)
      enddo
     else
-     r(c_%ndptb,c_%ndptb)=exp(-eps_ndc)*r(c_%ndptb,c_%ndptb)
 
     n%s_ijr=0
     do i=1,c_%nd2 ; do j=1,c_%nd2;
-     if(eps_ndc==0.and.(i==c_%ndptb.and.j==c_%ndptb)) cycle
+     if(i==c_%ndptb.or.j==c_%ndptb) cycle
+
      n%s_ijr(i,j)= 1.0_dp/(1.0_dp- r(i,i)*r(j,j))*m1%e_ij(i,j)
     enddo ;enddo;
         do i=1,c_%nd-1
@@ -13573,7 +13599,7 @@ alpha=2*atan2(q0%x(2),q0%x(0))
    n%s_ij0=m1%e_ij
      if(c_%ndc/=0) then
     do i=1,c_%nd2 ; do j=1,c_%nd2;
-     if(eps_ndc==0.and.(i==c_%ndptb.and.j==c_%ndptb)) n%s_ij0(i,j)=0
+     if(i==c_%ndptb.or.j==c_%ndptb) n%s_ij0(i,j)=0
          enddo ;enddo;
     endif
 
@@ -23425,7 +23451,7 @@ endif
     ! Does the the diagonalisation into a rotation
     call c_linear_a(m1,a2)  
  
-
+ 
     !!! Now the linear map is normalised
     m1=c_simil(a2,m1,-1)
   
@@ -23443,7 +23469,6 @@ endif
     ri%q=1.0_dp  ! make spin identity
  
  
-
     !!! The tunes are stored for the nonlinear normal form recursive algorithm
     do k=1,xy%n
       if(coast(k)) then
@@ -23457,7 +23482,7 @@ endif
          endif
        endif  
     enddo
- if(c_%ndc>0) then
+ if(c_%ndc/=0) then
         je=0
         je(c_%ndpt)=1
    eg(c_%ndpt)=ri%v(c_%ndpt).sub.je
@@ -23466,8 +23491,7 @@ endif
  !  write(6,*)  eg(k)
 ! enddo
  endif
- 
-    n%ker=0  ! In case reusing normal form
+     n%ker=0  ! In case reusing normal form
 
     do i=2,not
       if(lielib_print(13)/=0) then
@@ -23517,7 +23541,7 @@ endif
             lam=1.0_dp
             je(k)=je(k)-1
             do l=1,xy%n 
-              if(coast(l).and.c_%ndc==0) cycle 
+              if(coast(l).and.c_%ndc<=0) cycle 
               lam=lam*eg(l)**je(l)
             enddo
  !           if(c_%ndc/=0) then     ! error 2026.8.11
@@ -23613,7 +23637,7 @@ endif
         je(ndpt)=1
         lam=(ri%v(ndptb).sub.je) 
         n%ker%f(1)%v(ndptb)=n%ker%f(1)%v(ndptb)-(lam.cmono.je)
-         if(c_%ndc==0) then
+         if(c_%ndc<=0) then
             if(mod(ndpt,2)==0) then
               n%tune(ndpt/2)=-lam
             else
@@ -23960,7 +23984,7 @@ ENDIF  ! HYPERBOLIC
 enddo
 
 if(ncoast/=0) then
- if(c_%ndc==0) then
+ if(c_%ndc<=0) then
   n%H_l%v(c_%ndptb)=n%tune(c_%nd)*dz_c(c_%ndpt)
  else
    n%H_l%v(c_%ndpt)=-n%damping(c_%nd)*dz_c(c_%ndpt)

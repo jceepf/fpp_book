@@ -751,7 +751,7 @@ endif
 !     call TRACK(xs%x,K,fibre1,fibre2=fibre2)
  !   else
 revert_to_ptc=.false.
-    if(convert_to_bmad.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(convert_to_bmad.and.use_bmad_units) then 
  revert_to_ptc=.true.
 
       beta=C%PARENT_FIBRE%beta0
@@ -759,6 +759,8 @@ revert_to_ptc=.false.
 
       call convert_bmad_to_ptc(xs,beta,k%time)
      convert_to_bmad=.false.
+       nowbmad=.false.
+
     endif
  
 
@@ -772,12 +774,13 @@ revert_to_ptc=.false.
        CALL TRACK_NODE_PROBE(last,XS,K)
  
      endif
-    if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(revert_to_ptc.and.use_bmad_units) then 
       beta=C%PARENT_FIBRE%beta0
       if(c%PARENT_FIBRE%PATCH%ENERGY==5.and.c%cas==-2) beta=c%PARENT_FIBRE%PATCH%b0b
 
       call convert_ptc_to_bmad(xs,beta,k%time)
      convert_to_bmad=.true.
+       nowbmad=.true.
    endif
 !    endif
 
@@ -869,7 +872,7 @@ revert_to_ptc=.false.
 !     call TRACK(xs%x,K,fibre1,fibre2=fibre2)
  !   else
 revert_to_ptc=.false.
-    if(convert_to_bmad.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(convert_to_bmad.and.use_bmad_units) then 
  revert_to_ptc=.true.
 
       beta=C%PARENT_FIBRE%beta0
@@ -879,6 +882,8 @@ revert_to_ptc=.false.
 
       call convert_bmad_to_ptc(xs,beta,k%time)
      convert_to_bmad=.false.
+       nowbmad=.false.
+
     endif
      DO  WHILE(.not.ASSOCIATED(C,n2))
         CALL TRACK_NODE_PROBE(C,XS,K)
@@ -890,7 +895,7 @@ revert_to_ptc=.false.
        elem_name = C%PARENT_FIBRE%MAGP%name  ! LD: 22.03.2019
        CALL TRACK_NODE_PROBE(last,XS,K)
      endif
-    if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(revert_to_ptc.and.use_bmad_units) then 
       beta=C%PARENT_FIBRE%beta0
       if(c%PARENT_FIBRE%PATCH%ENERGY==5.and.c%cas==-2) beta=c%PARENT_FIBRE%PATCH%b0b
 
@@ -938,11 +943,13 @@ revert_to_ptc=.false.
 
     J=I1
 revert_to_ptc=.false.
-    if(convert_to_bmad.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(convert_to_bmad.and.use_bmad_units) then 
  revert_to_ptc=.true.
       beta=C%PARENT_FIBRE%beta0
       call convert_bmad_to_ptc(xs,beta,k%time)
     convert_to_bmad=.false.
+       nowbmad=.false.
+
     endif
 
     DO  WHILE(J<I22.AND.ASSOCIATED(C))
@@ -955,11 +962,11 @@ revert_to_ptc=.false.
        J=J+1
     ENDDO
 
-    if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(revert_to_ptc.and.use_bmad_units) then 
       beta=C%PARENT_FIBRE%beta0
       call convert_ptc_to_bmad(xs,beta,k%time)
     convert_to_bmad=.true.
-
+       nowbmad=.true.
     endif
 
     C_%STABLE_DA=.true.
@@ -998,12 +1005,14 @@ revert_to_ptc=.false.
     J=I1
 
 revert_to_ptc=.false.
-    if(convert_to_bmad.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(convert_to_bmad.and.use_bmad_units) then 
  revert_to_ptc=.true.
 
       beta=C%PARENT_FIBRE%beta0
       call convert_bmad_to_ptc(xs,beta,k%time)
      convert_to_bmad=.false.
+       nowbmad=.false.
+
     endif
 
     DO  WHILE(J<I22.AND.ASSOCIATED(C))
@@ -1015,10 +1024,11 @@ revert_to_ptc=.false.
        J=J+1
     ENDDO
 
-    if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(revert_to_ptc.and.use_bmad_units) then 
       beta=C%PARENT_FIBRE%beta0
       call convert_ptc_to_bmad(xs,beta,k%time)
      convert_to_bmad=.true.
+       nowbmad=.true.
     endif
 
     C_%STABLE_DA=.true.
@@ -1352,19 +1362,22 @@ revert_to_ptc=.false.
        reference_ray(3)=t%ref(2)
     endif
 revert_to_ptc=.false.
-    if(convert_to_bmad.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(convert_to_bmad.and.use_bmad_units) then 
  revert_to_ptc=.true.
 
       beta=t%PARENT_FIBRE%beta0
       call convert_bmad_to_ptc(xs,beta,k%time)
      convert_to_bmad=.false.
+       nowbmad=.false.
+
     endif
     CALL TRACK_NODE_PROBE(T,xs,K)  !,t%parent_fibre%CHARGE)
 
-   if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
+   if(revert_to_ptc.and.use_bmad_units) then 
       beta=t%PARENT_FIBRE%beta0
       call convert_ptc_to_bmad(xs,beta,k%time)
      convert_to_bmad=.true.
+       nowbmad=.true.
    endif
 
     if(.not.ref0.and.check_stable) CALL TRACK_NODE_PROBE(T,XS_REF,K)  !,t%parent_fibre%CHARGE)
@@ -1423,7 +1436,7 @@ revert_to_ptc=.false.
     XS=X
 
 revert_to_ptc=.false.
-    if(convert_to_bmad.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(convert_to_bmad.and.use_bmad_units) then 
  revert_to_ptc=.true.
 
       beta=T%PARENT_FIBRE%beta0
@@ -1431,15 +1444,18 @@ revert_to_ptc=.false.
 
       call convert_bmad_to_ptc(xs,beta,k%time)
      convert_to_bmad=.false.
+       nowbmad=.false.
+
     endif
     CALL TRACK_NODE_PROBE(T,xs,K)  !t%parent_fibre%CHARGE)
 
-    if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(revert_to_ptc.and.use_bmad_units) then 
       beta=T%PARENT_FIBRE%beta0
       if(T%PARENT_FIBRE%PATCH%ENERGY==5.and.T%cas==-2) beta=T%PARENT_FIBRE%PATCH%b0b
 
       call convert_ptc_to_bmad(xs,beta,k%time)
      convert_to_bmad=.true.
+       nowbmad=.true.
    endif
 
     X=XS%X
@@ -1461,7 +1477,7 @@ revert_to_ptc=.false.
     XS%x=X
 
 revert_to_ptc=.false.
-    if(convert_to_bmad.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(convert_to_bmad.and.use_bmad_units) then 
  revert_to_ptc=.true.
 
       beta=T%PARENT_FIBRE%beta0
@@ -1469,16 +1485,19 @@ revert_to_ptc=.false.
 
       call convert_bmad_to_ptc(xs,beta,k%time)
      convert_to_bmad=.false.
+       nowbmad=.false.
+
     endif
 
     CALL TRACK_NODE_PROBE(T,xs,K) !,t%parent_fibre%CHARGE)
 
-    if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(revert_to_ptc.and.use_bmad_units) then 
       beta=T%PARENT_FIBRE%beta0
       if(T%PARENT_FIBRE%PATCH%ENERGY==5.and.t%cas==-2) beta=T%PARENT_FIBRE%PATCH%b0b
 
       call convert_ptc_to_bmad(xs,beta,k%time)
      convert_to_bmad=.true.
+       nowbmad=.true.
    endif
 
     X=XS%X
@@ -1517,7 +1536,7 @@ revert_to_ptc=.false.
     C%PARENT_FIBRE%MAG%P%CHARGE=>C%PARENT_FIBRE%CHARGE
 
 revert_to_ptc=.false.
-    if(convert_to_bmad.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(convert_to_bmad.and.use_bmad_units) then 
  revert_to_ptc=.true.
 
       beta=C%PARENT_FIBRE%beta0
@@ -1617,11 +1636,12 @@ revert_to_ptc=.false.
        xs%last_node=>c
        xs%e=global_e
 
-    if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(revert_to_ptc.and.use_bmad_units) then 
       beta=C%PARENT_FIBRE%beta0
       if(C%PARENT_FIBRE%PATCH%ENERGY==5.and.c%cas==-2) beta=C%PARENT_FIBRE%PATCH%b0b
       call convert_ptc_to_bmad(xs,beta,k%time)
      convert_to_bmad=.true.
+       nowbmad=.true.
    endif
   END SUBROUTINE TRACK_NODE_FLAG_probe_quaR
 
@@ -1653,13 +1673,14 @@ revert_to_ptc=.false.
     C%PARENT_FIBRE%MAGp%P%CHARGE=>C%PARENT_FIBRE%CHARGE
 
 revert_to_ptc=.false.
-    if(convert_to_bmad.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(convert_to_bmad.and.use_bmad_units) then 
  revert_to_ptc=.true.
 
       beta=C%PARENT_FIBRE%beta0
       if(C%PARENT_FIBRE%PATCH%ENERGY==4.and.c%cas==-1) beta=C%PARENT_FIBRE%PATCH%b0b
       call convert_bmad_to_ptc(xs,beta,k%time)
      convert_to_bmad=.false.
+       nowbmad=.false.
     endif
 
      useptc=.true.
@@ -1775,10 +1796,11 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     endif
        xs%last_node=>c
        xs%e=global_e
-    if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(revert_to_ptc.and.use_bmad_units) then 
       beta=C%PARENT_FIBRE%beta0
       call convert_ptc_to_bmad(xs,beta,k%time)
      convert_to_bmad=.true.
+       nowbmad=.true.
    endif
   END SUBROUTINE TRACK_NODE_FLAG_probe_QUAP
 
@@ -1793,15 +1815,23 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
 if(C%parent_fibre%usetaylormap>0) then
   if(C%parent_fibre%usetaylormap==2) return
    if(c%cas==casep1)  then
-   ! if(use_bmad_units) then 
-   !   beta=C%PARENT_FIBRE%beta0
-   !   call convert_ptc_to_bmad(xs,beta,k%time)
-   ! endif
+    if(C%parent_fibre%usetaylormap==3.and.(.not.nowbmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      call convert_ptc_to_bmad(xs,beta,k%time)
+    endif
+    if(C%parent_fibre%usetaylormap==1.and.(nowbmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      call convert_bmad_to_ptc(xs,beta,k%time)
+    endif
       call track_TREE_probe_simple_zher_8(C%parent_fibre%taylormap(1:3),xs,k) 
-  ! if(use_bmad_units) then 
-   !   beta=C%PARENT_FIBRE%beta0
-  !    call convert_bmad_to_ptc(xs,beta,k%time)
-  !  endif
+   if(C%parent_fibre%usetaylormap==3.and.(.not.nowbmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      call convert_bmad_to_ptc(xs,beta,k%time)
+    endif
+   if(C%parent_fibre%usetaylormap==1.and.(nowbmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      call convert_ptc_to_bmad(xs,beta,k%time)
+    endif
    endif
 return
 endif
@@ -1875,13 +1905,14 @@ if(C%parent_fibre%mag%name(1:3)=="MAP") then
  endif
  else
 revert_to_ptc=.false.
-    if(convert_to_bmad.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(convert_to_bmad.and.use_bmad_units) then 
  revert_to_ptc=.true.
 
       beta=C%PARENT_FIBRE%beta0
       if(C%PARENT_FIBRE%PATCH%ENERGY==4.and.c%cas==-1) beta=C%PARENT_FIBRE%PATCH%b0b
       call convert_bmad_to_ptc(xs,beta,k%time)
      convert_to_bmad=.false.
+       nowbmad=.false.
     endif
     if(2*old_integrator+c%parent_fibre%mag%old_integrator>0) then
      call TRACK_NODE_FLAG_probe_R(C,XS,K)
@@ -1898,11 +1929,12 @@ CASE(KIND0,KIND1,KIND3,kind6,KIND8,KIND9,KIND11:KIND14,KIND15,kind17,KIND18,KIND
      end select
 
     endif
-    if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(revert_to_ptc.and.use_bmad_units) then 
       beta=C%PARENT_FIBRE%beta0
       if(C%PARENT_FIBRE%PATCH%ENERGY==5.and.c%cas==-2) beta=C%PARENT_FIBRE%PATCH%b0b
       call convert_ptc_to_bmad(xs,beta,k%time)
      convert_to_bmad=.true.
+       nowbmad=.true.
    endif
 endif  ! map
 
@@ -1923,19 +1955,27 @@ endif  ! map
 if(C%parent_fibre%usetaylormap>0) then
   if(C%parent_fibre%usetaylormap==2) return
    if(c%cas==casep1)  then
-    !if(use_bmad_units) then 
-   !   beta=C%PARENT_FIBRE%beta0
-   !   call convert_ptc_to_bmad(xs,beta,k%time)
-   ! endif
-      call  track_TREE_probe_simple_zhep_8(C%parent_fibre%taylormap(1:3),xs,k)  
-  ! if(use_bmad_units) then 
-  !    beta=C%PARENT_FIBRE%beta0
-  !    call convert_bmad_to_ptc(xs,beta,k%time)
-!    endif
-      return
+    if(C%parent_fibre%usetaylormap==3.and.(.not.nowbmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      call convert_ptc_to_bmad(xs,beta,k%time)
+    endif
+    if(C%parent_fibre%usetaylormap==1.and.(nowbmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      call convert_bmad_to_ptc(xs,beta,k%time)
+    endif
+      call track_TREE_probe_simple_zhep_8(C%parent_fibre%taylormap(1:3),xs,k) 
+   if(C%parent_fibre%usetaylormap==3.and.(.not.nowbmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      call convert_bmad_to_ptc(xs,beta,k%time)
+    endif
+   if(C%parent_fibre%usetaylormap==1.and.(nowbmad)) then 
+      beta=C%PARENT_FIBRE%beta0
+      call convert_ptc_to_bmad(xs,beta,k%time)
+    endif
    endif
-  return
+return
 endif
+ 
 
 
 if(C%parent_fibre%magp%name(1:3)=="MAP") then
@@ -2001,13 +2041,14 @@ if(C%parent_fibre%magp%name(1:3)=="MAP") then
  endif
  else   !map stuff
 revert_to_ptc=.false.
-    if(convert_to_bmad.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(convert_to_bmad.and.use_bmad_units) then 
  revert_to_ptc=.true.
 
       beta=C%PARENT_FIBRE%beta0
       if(C%PARENT_FIBRE%PATCH%ENERGY==4.and.c%cas==-1) beta=C%PARENT_FIBRE%PATCH%b0b
       call convert_bmad_to_ptc(xs,beta,k%time)
      convert_to_bmad=.false.
+       nowbmad=.false.
     endif
     if(compute_stoch_kick) then
       c%delta_rad_in=0
@@ -2037,11 +2078,12 @@ CASE(KIND0,KIND1,KIND3,kind6,KIND8,KIND9,KIND11:KIND14,KIND15,kind17,KIND18,KIND
      end select
 
     endif
-    if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(revert_to_ptc.and.use_bmad_units) then 
       beta=C%PARENT_FIBRE%beta0
       if(C%PARENT_FIBRE%PATCH%ENERGY==5.and.c%cas==-2) beta=C%PARENT_FIBRE%PATCH%b0b
       call convert_ptc_to_bmad(xs,beta,k%time)
      convert_to_bmad=.true.
+       nowbmad=.true.
    endif
 endif ! map
 
@@ -2054,22 +2096,29 @@ endif ! map
   implicit none   
   type(layout), target:: R
   type(fibre), pointer ::p
-  integer i,j 
+  integer i,j,no,nv
 
   p=>r%start
   j=0
- 
+  no=0
+  nv=0
   do i=1,r%n
 
    p%usetaylormap=-p%usetaylormap
     if(p%usetaylormap/=0) then
-     if(iabs(p%usetaylormap)==1) j=p%usetaylormap +j
+     if(iabs(p%usetaylormap)==1.or.iabs(p%usetaylormap)==3) then
+       j=p%usetaylormap +j
+        no=p%taylormap(1)%no
+        nv=p%taylormap(1)%np
+     endif
     endif
    p=>p%next
   enddo
     if(j<0 ) write(6,'((i4,a26))') -j, " Taylor maps were removed "
     if(j>0 ) write(6,'((i4,a26))') j, " Taylor maps were put back"
     if(j==0 ) write(6,*) "This lattice had no Taylor maps "
+    if(no/=0) write(6,'((a20,i2,a4,i2,a10))') "The maps have order ",no," in ",nv, " variables" 
+    
   end subroutine flip_taylormaps
 
   subroutine kill_taylormaps(R)
@@ -3480,13 +3529,14 @@ call kill(dl,k,rhoi,z)
 
  
 revert_to_ptc=.false.
-    if(convert_to_bmad.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(convert_to_bmad.and.use_bmad_units) then 
  revert_to_ptc=.true.
 
       beta=C%PARENT_FIBRE%beta0
       if(C%PARENT_FIBRE%PATCH%ENERGY==4.and.c%cas==-1) beta=C%PARENT_FIBRE%PATCH%b0b
       call convert_bmad_to_ptc(xs,beta,k%time)
      convert_to_bmad=.false.
+       nowbmad=.false.
     endif
 
 
@@ -3605,11 +3655,12 @@ revert_to_ptc=.false.
     endif
        xs%last_node=>c
        xs%e=global_e
-    if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(revert_to_ptc.and.use_bmad_units) then 
       beta=C%PARENT_FIBRE%beta0
       if(C%PARENT_FIBRE%PATCH%ENERGY==5.and.c%cas==-2) beta=C%PARENT_FIBRE%PATCH%b0b
       call convert_ptc_to_bmad(xs,beta,k%time)
      convert_to_bmad=.true.
+       nowbmad=.true.
    endif
   END SUBROUTINE TRACK_NODE_FLAG_probe_R
 
@@ -3643,13 +3694,14 @@ revert_to_ptc=.false.
 
 
 revert_to_ptc=.false.
-    if(convert_to_bmad.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(convert_to_bmad.and.use_bmad_units) then 
  revert_to_ptc=.true.
 
       beta=C%PARENT_FIBRE%beta0
       if(C%PARENT_FIBRE%PATCH%ENERGY==4.and.c%cas==-1) beta=C%PARENT_FIBRE%PATCH%b0b
       call convert_bmad_to_ptc(xs,beta,k%time)
      convert_to_bmad=.false.
+       nowbmad=.false.
     endif
 
 !    if(full_way.or.k%full_way) then
@@ -3789,11 +3841,12 @@ if(ki==kind10)CALL UNMAKEPOTKNOB(c%parent_fibre%MAGp%TP10,CHECK_KNOB,AN,BN,k)
     endif
        xs%last_node=>c
        xs%e=global_e
-    if(revert_to_ptc.and.use_bmad_units.and.(.not.inside_bmad)) then 
+    if(revert_to_ptc.and.use_bmad_units) then 
       beta=C%PARENT_FIBRE%beta0
       if(C%PARENT_FIBRE%PATCH%ENERGY==5.and.c%cas==-2) beta=C%PARENT_FIBRE%PATCH%b0b
       call convert_ptc_to_bmad(xs,beta,k%time)
      convert_to_bmad=.true.
+       nowbmad=.true.
    endif
   END SUBROUTINE TRACK_NODE_FLAG_probe_P
 

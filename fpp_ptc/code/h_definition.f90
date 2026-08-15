@@ -74,6 +74,7 @@ integer :: m6lim =10
 real(dp) :: faclim =1
 integer  :: old_integrator_init =1
 logical :: default_fractional_tune_positive=.true.,negative_synchrotron_tune=.true.
+logical :: nowbmad = .false.
 
 TYPE sub_taylor
      INTEGER j(lnv)
@@ -558,12 +559,15 @@ contains
      implicit none  
       use_bmad_units=.true.
       ndpt_bmad=1
+       nowbmad=.true.
      end subroutine in_bmad_units
 
      subroutine in_ptc_units
      implicit none  
       use_bmad_units=.false.
       ndpt_bmad=0
+       nowbmad=.false.
+
      end subroutine in_ptc_units
 
 

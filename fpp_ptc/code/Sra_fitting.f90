@@ -3000,11 +3000,11 @@ logical watch_mode,doit
 
 doit=.false.
  if(use_bmad_units) then
-b1=t%parent_fibre%beta0
+ b1=t%parent_fibre%beta0
  call convert_bmad_to_ptc(closed,b1,state%time)
+       nowbmad=.false.
 call in_ptc_units()
 doit=.true.
-
 endif
 
 normb=1.d38
@@ -3080,10 +3080,10 @@ enddo
  
 closed=r1%x(1:6)
 
- if(doit) then
+if(doit) then
  call convert_ptc_to_bmad(closed,b1,state%time)
-call in_bmad_units()
-
+ call in_bmad_units()
+       nowbmad=.true.
 endif
 
   end subroutine find_fix_special_real
@@ -3187,6 +3187,7 @@ endif
            beta1=node1%parent_fibre%mag%p%beta0
           endif
       call convert_bmad_to_ptc(fix,beta1,STATE%TIME)
+       nowbmad=.false.
     endif
 
     use_bmad_units=.false.
@@ -3435,6 +3436,8 @@ call kill(yy); call kill(id);
     if(use_bmad_units_temp) then 
  
       call convert_ptc_to_bmad(fix,beta1,STATE%TIME)
+       nowbmad=.true.
+
     endif
    use_bmad_units=use_bmad_units_temp
     !    FIX(6)=FIX(6)+freq*turns0
@@ -3564,6 +3567,8 @@ if(present(turns)) nt=turns
 
           endif
       call convert_bmad_to_ptc(fix,beta1,STATE%TIME)
+       nowbmad=.false.
+
     endif
     
     use_bmad_units=.false.
@@ -3912,6 +3917,8 @@ if(present(turns)) nt=turns
     if(use_bmad_units_temp) then 
  
       call convert_ptc_to_bmad(fix,beta1,STATE%TIME)
+       nowbmad=.true.
+
     endif
    use_bmad_units=use_bmad_units_temp
     !    FIX(6)=FIX(6)+freq*turns0
@@ -3988,6 +3995,8 @@ if(present(turns)) nt=turns
            beta1=node1%parent_fibre%mag%p%beta0
           endif
       call convert_bmad_to_ptc(fix,beta1,STATE%TIME)
+       nowbmad=.false.
+
     endif
     
     use_bmad_units=.false.
@@ -4283,6 +4292,8 @@ if(present(turns)) nt=turns
     if(use_bmad_units_temp) then 
  
       call convert_ptc_to_bmad(fix,beta1,STATE%TIME)
+       nowbmad=.true.
+
     endif
    use_bmad_units=use_bmad_units_temp
     !    FIX(6)=FIX(6)+freq*turns0
