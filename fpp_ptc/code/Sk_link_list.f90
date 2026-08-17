@@ -905,8 +905,9 @@ endif
     current%MASS=el%MASS
     current%AG=el%AG
     current%CHARGE=el%CHARGE
-
-
+     allocate(current%usetaylormap);
+     current%usetaylormap=0
+     nullify(Current%taylormap)
     ALLOCATE(Current%pos);
     current%pos=l%n
     !    current%P0C=el%P0C

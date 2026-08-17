@@ -7079,18 +7079,18 @@ enddo
   return
  endif
 
-if(doit) then
+!if(doit) then
 
  
-         do i=1,nd2
-           x(i)=x(i)+t(1)%fix(i)
-         enddo
-else
+!         do i=1,nd2
+!           x(i)=x(i)+t(1)%fix(i)
+!         enddo
+!else
  
          do i=1,nd2
            x(i)=x(i)+t(3)%fix(i)
          enddo
-endif
+!endif
 
 
 
