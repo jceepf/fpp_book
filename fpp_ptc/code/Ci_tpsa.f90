@@ -19490,7 +19490,6 @@ END FUNCTION FindDet
     integer js(6)
     type(c_damap) L_r , N_r , N_s , L_s
     real(dp), allocatable::mat(:,:)
-
  
     allocate(mat(c_%nd2,c_%nd2))
 mat=0
@@ -19508,14 +19507,14 @@ mat=0
 
 !    np=ma%n+18
     if(ma%n/=6) then
-     write(6,*) " you needed a 6-d map in SET_TREE_G_complex for PTC "
+    if(c_verbose)  write(6,*) " you needed a 6-d map in SET_TREE_G_complex for PTC "
     ! stop
     endif
   !  np=size_tree
 nd2fill=c_%nd2
 ndfill=c_%nd
 
-size_treefill=c_%nd2+c_%nd**2
+size_treefill=c_%nd2+c_%nd**2  
     np=size_treefill
 ! initialized in ptc ini
     ind_spin(1,1)=1+nd2fill;ind_spin(1,2)=2+nd2fill;ind_spin(1,3)=5+nd2fill;
@@ -19582,8 +19581,8 @@ else
     call c_full_norm_spin(Ma%s,k,norm)
 
     if(k==-1) then
-      do i=1,ndfill
-      do j=1,ndfill
+      do i=1,3  !ndfill
+      do j=1,3  !ndfill
         m(ind_spin(i,j))=ma%s%s(i,j)
       enddo
       enddo
@@ -19610,12 +19609,23 @@ endif
 
 
 
+if(c_verbose) then
 
-     ms=ms**js(1:nd2fill)
-!     do i=1,3
-!      mg(i)=ms%v(2*i-1)   !  q_i(q_f,p_i)
-!      mg(3+i)=ms%v(2*i)   !  p_f(q_f,p_i)
-!     enddo
+ write(6,*) "  Map in SET_TREE_G_complex_zhe" 
+ write(6,*) "  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  " 
+ call print(ms,6)
+endif
+
+ms=ms**js(1:nd2fill)
+ 
+if(c_verbose) then
+
+write(6,*) "  Partially inverted map in SET_TREE_G_complex_zhe" 
+call print(ms,6)
+write(6,*) "  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  " 
+endif
+
+
      do i=1,nd2fill
       mg(i)=ms%v(i)
      enddo
@@ -19624,6 +19634,7 @@ endif
        mg(ind_spin(i,j))=ms%v(2*i-1).d.(2*j-1)  !   Jacobian for Newton search
      enddo
      enddo
+
      call kill(ms)  
 
      call SET_TREE_g(T(1),m(1:nd2fill))
@@ -19682,115 +19693,12 @@ deallocate(mat)
   END SUBROUTINE SET_TREE_G_complex_zhe
 
 
-  SUBROUTINE SET_TREE_G_complex_zhe_as_is(T,Ma)
-    IMPLICIT NONE
-    TYPE(TREE_ELEMENT), INTENT(INOUT) :: T(:)
-    TYPE(c_damap), INTENT(INOUT) :: Ma
-    INTEGER N,NP,i,k,j,kq
- 
-    real(dp) norm,mat(6,6)
-    TYPE(taylor), ALLOCATABLE :: M(:), MG(:)
-    TYPE(damap) ms
-    integer js(6)
-    type(c_damap) L_ns , N_pure_ns , N_s , L_s
 
 
- 
-
-    call alloc(L_ns , N_pure_ns , N_s , L_s)
-    
-  !  call symplectify_for_zhe(ma,L_ns , N_pure_ns, L_s , N_s )
-
-!    np=ma%n+18
-    if(ma%n/=6) then
-     write(6,*) " you need a 6-d map in SET_TREE_G_complex for PTC "
-     stop
-    endif
-    np=size_tree
-
-
-    ALLOCATE(M(NP))
-    CALL ALLOC(M,NP)
-    ALLOCATE(Mg(NP))
-    CALL ALLOC(mg,NP)
-    do i=1,np
-     m(i)=0.e0_dp
-     mg(i)=0.e0_dp
-    enddo
-
-      
-      L_s=ma
-     do i=1,L_ns%n
-      m(i)=L_s%v(i)   ! orbital part full
-     enddo
-
-
-
-if(use_quaternion) then
-    call c_full_norm_quaternion(Ma%q,kq,norm)
-    if(kq==-1) then
-      do i=0,3
-        mg(ind_spin(1,1)+i)=ma%q%x(i)
-      enddo
-    elseif(kq/=-1) then
-      mg(ind_spin(1,1))=1.0_dp
-      do i=ind_spin(1,1)+1,size_tree
-        mg(i)=0.0_dp
-      enddo
-    endif
-else
-    call c_full_norm_spin(Ma%s,k,norm)
-    if(k==-1) then
-      do i=1,3
-      do j=1,3
-        mg(ind_spin(i,j))=ma%s%s(i,j)
-      enddo
-      enddo
-    else
-      do i=1,3
-        mg(ind_spin(i,i))=1.0e0_dp
-      enddo
-    endif
-endif
- 
-
-     call SET_TREE_g(T(1),m(1:6))
- !    do i=1,ma%n
- !     m(i)=1.0_dp.cmono.i
- !    enddo 
- !    do i=ma%n+1,6
- !     m(i)=0.0_dp
- !    enddo
-     call SET_TREE_g(T(2),mg(7:15))
- 
-    do i=1,np
-     mg(i)=0.e0_dp
-    enddo
-     call SET_TREE_g(T(3),mg(1:size_tree))
-
-!T(3)%ng=mul
-!     write(6,*) " mul ",mul
-      t(3)%rad=L_s   !linear
-
-
-       mat=ma**(-1)
-       t(1)%e_ij=ma%e_ij     !matmul(matmul(mat,ma%e_ij),transpose(mat))  not necessary I think
-
-  
-
-    call kill(m); call kill(mg);
-    deallocate(M);    deallocate(Mg);
-    call kill(L_ns , N_pure_ns , N_s , L_s)
-
-  END SUBROUTINE SET_TREE_G_complex_zhe_as_is
-
-
-subroutine fill_tree_element_line_zhe_outside_map(minput ,filef,fix0,as_is,stochprec,tree_zhe,TREE_ON_FIBRE)   ! fix0 is the initial condition for the maps
+subroutine fill_tree_element_line_zhe_outside_map(minput ,filef,fix0,stochprec,tree_zhe,TREE_ON_FIBRE)   ! fix0 is the initial condition for the maps
 implicit none
-logical, optional :: as_is
 real(dp), optional :: fix0(6),stochprec
 complex(dp)v
-logical  as_is0
 integer no1
  
 real(dp) stoch,r2,coe
@@ -19813,11 +19721,10 @@ character(*),optional :: filef
     TREE_ON=.true.
     TREE_off=.FALSE.
  endif
-  as_is0=.false.
+
 !file_berz="zhe1_berz"
 ! call kanalnummer(mberz,file_berz)
 
-if(present(as_is)) as_is0=as_is
   
 if(tree_off) then
   allocate(forward(3))
@@ -19851,13 +19758,9 @@ do i=1,c_%nd2
  m%v(i)=m%v(i)-(m%v(i).sub.0)
 enddo
 
- 
 
-if( as_is0)  then
- call SET_TREE_G_complex_zhe_as_is(forward,m)
-else
  call SET_TREE_G_complex_zhe(forward,m)
-endif
+
 
   stoch=-1.0_dp
 if(present(stochprec)) stoch=stochprec
@@ -19866,7 +19769,7 @@ if(stoch>=0) then
   call c_stochastic_kick(m,forward(2)%rad,forward(2)%fix0,stoch)
 endif
  
-forward(1)%usenonsymp=as_is0
+forward(1)%usenonsymp=.true.
 forward(1)%rad(1:c_%nd2,1:c_%nd2)=mat
 forward(1)%fix0(1:c_%nd2)=f0 ! entrance
 forward(1)%fixr(1:c_%nd2)=fix

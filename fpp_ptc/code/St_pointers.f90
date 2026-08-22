@@ -1499,106 +1499,6 @@ endif
       !       deallocate(n_co)
       !    endif
 
-       case('MAPSFORZHE')
-          READ(MF,*) i11,I22,number_zhe_maps_local ,hgap ! position  i1=i2 one turn map,  fact is precision of stochastic kick
-          READ(MF,*) MY_A_NO,do_state0   ! ORDER OF THE MAP  
-          READ(MF,*) filename
-          state0=my_estate-radiation0-envelope0
-          if(do_state0) then
-           do_state0=my_estate%radiation.or.my_estate%envelope
-          endif
-          if(.not.associated(my_ering%t)) call make_node_layout(my_ering)
-          if(i11==i22) i22=i11+my_ering%n
-          di12=float(i22-i11)/number_zhe_maps_local
-                        do k_zhe=1,number_zhe_maps_local
-                             write(name_zhe,*) k_zhe
-                           file_zher(1:len_trim(filename))=filename(1:len_trim(filename))
-                           file_zher(1+len_trim(filename):len_trim(filename)+len_trim(name_zhe))=name_zhe(1:len_trim(name_zhe))
-                           call context(file_zher)
-                          write(6,*) "out file ",file_zher(1:len_trim(file_zher))
-           
-          i1=i11+(k_zhe-1)*di12
-          i2=i1+di12
-          if(i2>i22.or.k_zhe==number_zhe_maps_local) i2=i22
-          write(6,*)" from to ", i1,i2,i22
-!pause 873
-           p=>my_ering%start
-           f1=>p          
-           do ii=2,i1
-            p=>p%next
-             f1=>p
-           enddo
-           if(I2==i1) then
-            f2=>f1
-           else
-            p=>my_ering%start
-            f2=>p 
-            do ii=2,i2
-              p=>p%next
-              f2=>p
-            enddo
-            endif
-             x_ref=0.0_dp
-
-
-if(.not.my_estate%envelope) hgap=-1
-            call FIND_ORBIT_x(x_ref,my_estate,1.e-7_dp,fibre1=f1)
- if(do_state0)            call FIND_ORBIT_x(x_ref0,state0,1.e-7_dp,fibre1=f1)
-
- if(do_state0)   then
-              call fill_tree_element_line_zhe0(state0,my_estate,f1,f2,MY_A_NO,x_ref0,x_ref,file_zher,stochprec=hgap) 
-
- else
-              call fill_tree_element_line_zhe(my_estate,f1,f2,MY_A_NO,x_ref,file_zher,stochprec=hgap) 
- endif
-
-write(6,*) " State used "
-          call print(my_estate,6)
-write(6,*) " closed orbit at position ",i1
-           write(6,*) x_ref(1:3)
-           write(6,*) x_ref(4:6)
-                  enddo
-
-       case('MAPFORZHE')
-          READ(MF,*) i1,I2,hgap  ! position  i1=i2 one turn map,  fact is precision of stochastic kick
-          READ(MF,*) MY_A_NO   ! ORDER OF THE MAP  
-          READ(MF,*) filename
-          if(.not.associated(my_ering%t)) call make_node_layout(my_ering)
-          
-           p=>my_ering%start
-           f1=>p          
-           do ii=2,i1
-            p=>p%next
-             f1=>p
-           enddo
-           if(I2==i1) then
-            f2=>f1
-           else
-            p=>my_ering%start
-            f2=>p 
-            do ii=2,i2
-              p=>p%next
-              f2=>p
-            enddo
-            endif
-             x_ref=0.0_dp
-
-
-if(.not.my_estate%envelope) hgap=-1
- if(my_a_no>0)            call FIND_ORBIT_x(x_ref,my_estate,1.e-7_dp,fibre1=f1)
-
-              call fill_tree_element_line_zhe(my_estate,f1,f2,iabs(MY_A_NO),x_ref,filename,stochprec=hgap) 
-
-
-write(6,*) " State used "
-          call print(my_estate,6)
-write(6,*) " closed orbit at position ",i1
-           write(6,*) x_ref(1:3)
-           write(6,*) x_ref(4:6)
- 
-
-
-    
 
        case('SETAPERTURE')
           READ(MF,*) KINDA,NAME
@@ -2658,7 +2558,7 @@ mapfile="olek"
 m%x0(1:6)=x
 call print(m)
 
-call fill_tree_element_line_zhe_outside_map(m ,mapfile,as_is=.false.,stochprec=1.e-8_dp) 
+call fill_tree_element_line_zhe_outside_map(m ,mapfile,stochprec=1.e-8_dp) 
  
  
 call read_tree_zhe(t_olek_map(1:3),mapfile)

@@ -5615,265 +5615,6 @@ end subroutine equal_temporal
 
 
 !!!!!!!!!!!!!!!!!!!!   stuff for Zhe  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine fill_tree_element_line_zhe0(state_0,state,f1,f2,no,fix0_0,fix0,filef,stochprec,sagan_tree)   ! fix0 is the initial condition for the maps
-implicit none
-type(fibre), target :: f1,f2 
-type(layout), pointer :: r
-TYPE(INTEGRATION_NODE),POINTER:: t1c,t2c
-TYPE (NODE_LAYOUT), POINTER :: t
-type(internal_state), intent(in):: state,state_0
-real(dp) fixr(6),fixs(6),fix(6),fix0(6),fix0_0(6),mat(6,6),xn,stoch,fix_0(6)
-real(dp), optional :: stochprec
- 
-type(probe) xs0,xs0_0
-type(probe_8) xs,xs_0
-type(c_damap) m,mr,m_0
-integer no,i,inf
-type(fibre), pointer :: p
-type(tree_element), pointer :: forward(:) =>null()
-character(*),optional :: filef
-type(tree_element),optional, target :: sagan_tree(3)
-
- 
-
-if(present(sagan_tree)) then
- forward=>sagan_tree
-else
-  allocate(forward(3))
-endif
-if(.not.associated(f1%parent_layout)) then
- write(6,*) " parent layout not associated "
- stop
-else
- r=>f1%parent_layout
-endif
-
- t=>f1%parent_layout%t
- t1c=>f1%t1 !%next
- t2c=>f2%t1
-
-
-mat=0
-do i=1,size(mat,1)
-mat(i,i)=1
-enddo
-
- 
-call init_all(state,no,0)
-call alloc(xs);call alloc(m,m_0);call alloc(mr)
- call alloc(xs_0);
-
-
-xs0=fix0
-m=1
-xs=xs0+m
-if(associated(t1c,t2c)) then
- call propagate(xs,state,node1=t1c)
-else
- call propagate(xs,state,node1=t1c,node2=t2c)
-endif
- 
-
-
-xs0_0=fix0_0
-m=1
-xs_0=xs0_0+m
-if(associated(t1c,t2c)) then
- call propagate(xs_0,state_0,node1=t1c)
-else
- call propagate(xs_0,state_0,node1=t1c,node2=t2c)
-endif
- 
-! For David
-!!  The full nonlinear map m is computed and the final orbit
-!!  
-fix=xs%x  ! <---   
-m=xs  ! <---   
- 
-do i=1,6
- m%v(i)=m%v(i)-(m%v(i).sub.0)
-enddo 
-
-fix_0=xs_0%x  ! <---   
-m_0=xs_0 ! <---   
- 
-do i=1,6
- m_0%v(i)=m_0%v(i)-(m_0%v(i).sub.0)
-enddo 
-
- 
-
- 
-call SET_TREE_G_complex_zhe0(forward,m,m_0)
-
-  stoch=-1.0_dp
-if(present(stochprec)) stoch=stochprec
-
-if(stoch>=0) then
-  call c_stochastic_kick(m,forward(2)%rad,forward(2)%fix0,stoch)  
-endif
-
- 
-forward(1)%rad=mat
-forward(1)%fix0(1:6)=fix0
-forward(1)%fixr(1:6)=fix
-forward(1)%fix(1:6)=fix    ! always same fixed point
- 
- 
-forward(3)%fix0(1:6)=fix0_0
-forward(3)%fixr(1:6)=fix_0
-forward(3)%fix(1:6)=fix_0    ! always same fixed point
-
-
- forward(1)%ds=0.0_dp
- p=>f1
- do while(.not.associated(p,f2))
-  forward(1)%ds=p%mag%p%ld +forward(1)%ds
-  p=>p%next
- enddo
-forward(1)%beta0=f1%beta0
-
- if(present(filef)) then
-  call kanalnummer(inf,filef)
-    call print_tree_elements(forward,inf)
-   close(inf)
-  call KILL(forward)
-  deallocate(forward)
-endif
-
-call kill(xs);call kill(m);call kill(mr)
- 
-end subroutine fill_tree_element_line_zhe0
-
-subroutine fill_tree_element_line_zhe0_node(state_0,state,t1,t2,no,fix0_0,fix0,filef,stochprec,sagan_tree)   ! fix0 is the initial condition for the maps
-implicit none
-TYPE(INTEGRATION_NODE), target :: t1,t2 
-type(layout), pointer :: r
-TYPE(INTEGRATION_NODE),POINTER:: t1c,t2c
-TYPE (NODE_LAYOUT), POINTER :: t
-type(internal_state), intent(in):: state,state_0
-real(dp) fixr(6),fixs(6),fix(6),fix0(6),fix0_0(6),mat(6,6),xn,stoch,fix_0(6)
-real(dp), optional :: stochprec
- 
-type(probe) xs0,xs0_0
-type(probe_8) xs,xs_0
-type(c_damap) m,mr,m_0
-integer no,i,inf
-type(fibre), pointer :: p
-type(tree_element), pointer :: forward(:) =>null()
-character(*),optional :: filef
-type(tree_element),optional, target :: sagan_tree(3)
-
- 
-
-if(present(sagan_tree)) then
- forward=>sagan_tree
-else
-  allocate(forward(3))
-endif
-if(.not.associated(t1%parent_fibre%parent_layout)) then
- write(6,*) " parent layout not associated "
- stop
-else
- r=>t1%parent_fibre%parent_layout
-endif
-
- t=>t1%parent_fibre%parent_layout%t
- t1c=>t1 !%next
- t2c=>t2
-
-
-mat=0
-do i=1,size(mat,1)
-mat(i,i)=1
-enddo
-
- 
-call init_all(state,no,0)
-call alloc(xs);call alloc(m,m_0);call alloc(mr)
- call alloc(xs_0);
-
-
-xs0=fix0
-m=1
-xs=xs0+m
-if(associated(t1c,t2c)) then
- call propagate(xs,state,node1=t1c)
-else
- call propagate(xs,state,node1=t1c,node2=t2c)
-endif
- 
-
-
-xs0_0=fix0_0
-m=1
-xs_0=xs0_0+m
-if(associated(t1c,t2c)) then
- call propagate(xs_0,state_0,node1=t1c)
-else
- call propagate(xs_0,state_0,node1=t1c,node2=t2c)
-endif
- 
-! For David
-!!  The full nonlinear map m is computed and the final orbit
-!!  
-fix=xs%x  ! <---   
-m=xs  ! <---   
- 
-do i=1,6
- m%v(i)=m%v(i)-(m%v(i).sub.0)
-enddo 
-
-fix_0=xs_0%x  ! <---   
-m_0=xs_0 ! <---   
- 
-do i=1,6
- m_0%v(i)=m_0%v(i)-(m_0%v(i).sub.0)
-enddo 
-
- 
-
- 
-call SET_TREE_G_complex_zhe0(forward,m,m_0)
-
-  stoch=-1.0_dp
-if(present(stochprec)) stoch=stochprec
-
-if(stoch>=0) then
-  call c_stochastic_kick(m,forward(2)%rad,forward(2)%fix0,stoch)  
-endif
-
- 
-forward(1)%rad=mat
-forward(1)%fix0(1:6)=fix0
-forward(1)%fixr(1:6)=fix
-forward(1)%fix(1:6)=fix    ! always same fixed point
- 
- 
-forward(3)%fix0(1:6)=fix0_0
-forward(3)%fixr(1:6)=fix_0
-forward(3)%fix(1:6)=fix_0    ! always same fixed point
-
-
- forward(1)%ds=0.0_dp
- p=>t1%parent_fibre
- do while(.not.associated(p,t2%parent_fibre))
-  forward(1)%ds=p%mag%p%ld +forward(1)%ds
-  p=>p%next
- enddo
-forward(1)%beta0=t1%parent_fibre%beta0
-
- if(present(filef)) then
-  call kanalnummer(inf,filef)
-    call print_tree_elements(forward,inf)
-   close(inf)
-  call KILL(forward)
-  deallocate(forward)
-endif
-
-call kill(xs);call kill(m);call kill(mr)
- 
-end subroutine fill_tree_element_line_zhe0_node
 
 subroutine fill_tree_element_line_zhe(state,f1,f2,no,fix0,filef,stochprec,as_is,sagan_tree)   ! fix0 is the initial condition for the maps
 implicit none
@@ -5949,12 +5690,9 @@ do i=1,6
 enddo
 
  
-
-if( as_is0)  then
- call SET_TREE_G_complex_zhe_as_is(forward,m)
-else
+ 
  call SET_TREE_G_complex_zhe(forward,m)
-endif
+ 
 
   stoch=-1.0_dp
 if(present(stochprec)) stoch=stochprec
@@ -6539,11 +6277,11 @@ SUBROUTINE track_TREE_probe_simple_zher_8(T,xs,ks,linear)
     real(dp) normb,norm,x0_begin(size_tree),xr(6),normbb,ranx,cut,y(6)
     integer i,j,k,ier,is
     logical, optional  ::  linear
-    logical  spin0,stoch0,rad0,doit,as_is0,call_gen
+    logical  spin0,stoch0,rad0,doit,call_gen
     integer no1,nrmax_used,nd,nd2,ntree
     type(quaternion) qu
     type(internal_state) ks
-    as_is0=t(1)%usenonsymp
+  !  as_is0=t(1)%usenonsymp
     spin0=.true.
     stoch0=.true.
     rad0=.true.
@@ -6564,7 +6302,7 @@ ntree=nd2+nd**2
     rad0=ks%radiation
  
 
-    if(as_is0) rad0=.true.
+   ! if(as_is0) rad0=.true.
     doit=rad0.or.stoch0
     x=0
     x0=0
@@ -6632,7 +6370,8 @@ x0_begin=0.0_dp
       x0(1:nd2)=x(1:nd2)
       x(nd2+1:2*nd2)=x(1:nd2)
 y(1:nd2)=x(1:nd2)
-if(no1>1.and.(.not.as_is0)) then
+!if(no1>1.and.(.not.as_is0)) then
+if(no1>1) then
 if(call_gen) then
 !y=x(1:6)
 
@@ -6739,7 +6478,8 @@ check_stable=.false.
   return
  endif
 
-elseif(.not.as_is0) then
+!elseif(.not.as_is0) then
+else
  
 
        x(1:nd2)=matmul(t(3)%rad(1:nd2,1:nd2),x(1:nd2))
@@ -6748,7 +6488,8 @@ elseif(.not.as_is0) then
  endif  ! no > 1
 
 1000 continue
-if(call_gen.and.no1>1.and.(.not.as_is0)) then
+!if(call_gen.and.no1>1.and.(.not.as_is0)) then
+if(call_gen.and.no1>1 ) then
  
        x(1:nd2)=matmul(t(3)%rad(1:nd2,1:nd2),y(1:nd2))
  
@@ -6796,15 +6537,15 @@ endif
      endif  
     endif ! spin
    
-if(as_is0) then 
- if(no1>1) then
-  call track_TREE_G_complex(T(1),X(1:nd2))
- else
-       x(1:nd2)=matmul(t(3)%rad(1:nd2,1:nd2),x(1:nd2))
- endif
-else
+!if(as_is0) then 
+! if(no1>1) then
+!  call track_TREE_G_complex(T(1),X(1:nd2))
+! else
+ !      x(1:nd2)=matmul(t(3)%rad(1:nd2,1:nd2),x(1:nd2))
+! endif
+!else
 !!!!  if(rad0)   call track_TREE_G_complex(T(1),X(1:6))      !  not needed 7/1/2026
-endif
+!endif
 
  norm=0
 do i=1,min(nd2,4)    !!!  changed from 6 2022.06.08
@@ -6855,13 +6596,13 @@ SUBROUTINE track_TREE_probe_simple_zhep_8(T,xs,ks)
     real(dp) normb,norm,xr(6),normbb,ranx,cut
     integer i,j,k,ier,is,jc(6)
 !    logical, optional  :: spin,rad
-    logical  spin0,stoch0,rad0,env0,doit,as_is0
+    logical  spin0,stoch0,rad0,env0,doit 
     integer no1,nrmax_used,ntree, nd,nd2
     type(quaternion_8) qu
     type(damap) id
     type(internal_state) ks
 
-    as_is0=t(1)%usenonsymp
+   ! as_is0=t(1)%usenonsymp
   !  spin0=.true.
   !  stoch0=.true.
   !  rad0=.true.
@@ -6893,7 +6634,7 @@ SUBROUTINE track_TREE_probe_simple_zhep_8(T,xs,ks)
    ! if(present(spin)) spin0=spin
    ! if(present(rad)) rad0=rad
 
-    if(as_is0) rad0=.true.
+  !  if(as_is0) rad0=.true.
   
   !  x=0
    ! x0=0
@@ -6934,7 +6675,8 @@ enddo
    !   x0(1:6)=x(1:6)
     !  x(7:12)=x(1:6)
 
-if(no1>1.and.(.not.as_is0)) then
+!if(no1>1.and.(.not.as_is0)) then
+if(no1>1) then
 
 do i=1,nd2
 y0(i)=x(i)
@@ -6982,7 +6724,8 @@ call kill(id)
 
  
 
-elseif(.not.as_is0) then
+!elseif(.not.as_is0) then
+else 
         call alloc(y)
 
         do i=1,nd2
@@ -7008,7 +6751,7 @@ elseif(.not.as_is0) then
     call track_TREE_G_complex(T(2),x0_begin(nd2+1:ntree))
 
        do k=0,3
-         qu%x(k)=x0_begin(nd2+k)
+         qu%x(k)=x0_begin(nd2+1+k)  ! bug +1 missing 2026.8.15
        enddo 
  
        xs%q=qu*xs%q
@@ -7046,26 +6789,26 @@ elseif(.not.as_is0) then
      endif  
     endif ! spin
    
-if(as_is0) then 
- if(no1>1) then
-  call track_TREE_G_complex(T(1),X(1:nd2))
- else
-        call alloc(y)
-        do i=1,nd2
-         do j=1,nd2
-        y(i)=t(3)%rad(i,j)*x(j)+y(i)
-       enddo
-       enddo
-       do i=1,nd2
-        x(i)=y(i)
-       enddo
-        call kill(y)
+!if(as_is0) then 
+! if(no1>1) then
+!  call track_TREE_G_complex(T(1),X(1:nd2))
+! else
+ !       call alloc(y)
+!        do i=1,nd2
+!         do j=1,nd2
+!        y(i)=t(3)%rad(i,j)*x(j)+y(i)
+!       enddo
+!       enddo
+!       do i=1,nd2
+!        x(i)=y(i)
+!       enddo
+!        call kill(y)
 
 !       x(1:6)=matmul(t(3)%rad,x(1:6))
- endif
-else
+! endif
+!else
   if(rad0)   call track_TREE_G_complex(T(1),X(1:nd2))
-endif
+!endif
 
  norm=0
 do i=1,min(nd2,4)    !!!  changed from 6 2022.06.08
