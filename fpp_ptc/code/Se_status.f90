@@ -132,7 +132,7 @@ module S_status
   !,NULL_p
   PRIVATE B2PERPR,B2PERPP !,S_init_berz0
   type(tilting) tilt
-  private minu
+  private minu,EQUALtZHE
   private chkAperPolygon
   real(dp) MADFAC(NMAX)
   CHARACTER(24) MYTYPE(-100:100)
@@ -164,6 +164,7 @@ module S_status
 
   INTERFACE assignment (=)
      MODULE PROCEDURE EQUALt
+     MODULE PROCEDURE EQUALtZHE
      MODULE PROCEDURE EQUALi
      MODULE PROCEDURE EQUALtilt
      MODULE PROCEDURE equal_p
@@ -1304,6 +1305,31 @@ CONTAINS
   !  S2%FULL_WAY=       S1%FULL_WAY
     !    S2%spin_dim=       S1%spin_dim
   END SUBROUTINE EQUALt
+
+  SUBROUTINE  EQUALtZHE(S2,S1)
+    implicit none
+    type (INTERNAL_STATE_zhe),INTENT(OUT)::S2
+    type (INTERNAL_STATE),INTENT(IN)::S1
+
+    S2%TOTALPATH=   S1%TOTALPATH
+    !   S2%EXACTMIS=       S1%EXACTMIS
+    S2%RADIATION=     S1%RADIATION
+    S2%NOCAVITY=    S1%NOCAVITY
+    S2%DCCAV=    S1%DCCAV
+    S2%TIME=        S1%TIME
+    S2%FRINGE=           S1%FRINGE
+    S2%stochastic=           S1%stochastic
+    S2%ENVELOPE=           S1%ENVELOPE
+    S2%PARA_IN=     S1%PARA_IN
+    S2%ONLY_2D=      S1%ONLY_2D
+    S2%ONLY_4D=      S1%ONLY_4D
+    S2%DELTA=       S1%DELTA
+    S2%SPIN=       S1%SPIN
+    S2%MODULATION=       S1%MODULATION
+    S2%dccav=       S1%dccav
+  !  S2%FULL_WAY=       S1%FULL_WAY
+    !    S2%spin_dim=       S1%spin_dim
+  END SUBROUTINE EQUALtZHE
 
 
 

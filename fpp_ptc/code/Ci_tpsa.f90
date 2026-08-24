@@ -19514,8 +19514,8 @@ mat=0
 nd2fill=c_%nd2
 ndfill=c_%nd
 
-size_treefill=c_%nd2+c_%nd**2  
-    np=size_treefill
+size_treefill=c_%nd2+c_%nd**2+3    
+    np=size_treefill ! 4 for spin 
 ! initialized in ptc ini
     ind_spin(1,1)=1+nd2fill;ind_spin(1,2)=2+nd2fill;ind_spin(1,3)=5+nd2fill;
     ind_spin(2,1)=3+nd2fill;ind_spin(2,2)=4+nd2fill;ind_spin(2,3)=7+nd2fill;
@@ -19561,23 +19561,45 @@ else
      do i=1,L_r%n   ! dimension of phase space
       m(i)= 1.0_dp.mono.i
      enddo
+     do i=1,L_r%n   ! dimension of phase space
+      m(i)= ma%v(i)
+  if(c_verbose) then
+   write(6,*) "M(i)"  , i
+  call print(m(i),6)
+ endif
+     enddo
 
 endif
 
  
 if(use_quaternion) then
     call c_full_norm_quaternion(Ma%q,kq,norm)
-    if(kq==-1) then
+  if(c_verbose) then
+   write(6,*) "Norm c_full_norm_quaternion",norm
+ endif
+norm=abs(norm-1.0_dp)+1.d-15
+  !  if(kq==-1) then
+    if(norm/=0) then
       do i=0,3
-        m(ind_spin(1,1)+i)=ma%q%x(i)
+          if(c_verbose) then
+           write(6,*) " ind_spin(1,1)+i <= size(m)"
+           write(6,*)ind_spin(1,1)+i,size(m)
+           if(ind_spin(1,1)+i>size(m)) stop 666
+
+          endif
+ !       m(ind_spin(1,1)+i)=ma%q%x(i)
+        m(nd2fill+1+i)=ma%q%x(i)
       enddo
     elseif(kq/=-1) then
-      m(ind_spin(1,1))=1.0_dp
-      do i=ind_spin(1,1)+1,size_treefill
-        m(i)=0.0_dp
+ !     m(ind_spin(1,1))=
+!      do i=ind_spin(1,1)+1,size_treefill
+       m(nd2fill+1)=1.0_dp
+      do i=1,3
+          m(nd2fill+1+i)=0.0_dp
       enddo
     endif
 else
+ stop 565
     call c_full_norm_spin(Ma%s,k,norm)
 
     if(k==-1) then
@@ -19644,9 +19666,10 @@ endif
  !    do i=ma%n+1,6
  !     m(i)=0.0_dp
  !    enddo
-     call SET_TREE_g(T(2),m(nd2fill+1:size_treefill))
+ !    call SET_TREE_g(T(2),m(nd2fill+1:size_treefill))
+     call SET_TREE_g(T(2),m(nd2fill+1:np))
  
- !    call SET_TREE_g(T(2),m(1:size_tree))
+ 
      call SET_TREE_g(T(3),mg(1:size_treefill))
 
 
@@ -19769,7 +19792,7 @@ if(stoch>=0) then
   call c_stochastic_kick(m,forward(2)%rad,forward(2)%fix0,stoch)
 endif
  
-forward(1)%usenonsymp=.true.
+forward(1)%usenonsymp=.false.
 forward(1)%rad(1:c_%nd2,1:c_%nd2)=mat
 forward(1)%fix0(1:c_%nd2)=f0 ! entrance
 forward(1)%fixr(1:c_%nd2)=fix

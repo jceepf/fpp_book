@@ -2114,11 +2114,13 @@ endif ! map
     endif
    p=>p%next
   enddo
+write(6,*) 
     if(j<0 ) write(6,'((i4,a26))') -j, " Taylor maps were removed "
     if(j>0 ) write(6,'((i4,a26))') j, " Taylor maps were put back"
     if(j==0 ) write(6,*) "This lattice had no Taylor maps "
     if(no/=0) write(6,'((a20,i2,a4,i2,a10))') "The maps have order ",no," in ",nv, " variables" 
-    
+ write(6,*) 
+   
   end subroutine flip_taylormaps
 
   subroutine kill_taylormaps(R)
@@ -6108,7 +6110,7 @@ end subroutine checksympglobal
  
 SUBROUTINE track_TREE_probe_gen_only(T,y)
     IMPLICIT NONE
-    integer, parameter :: size_tree=15
+    integer, parameter :: size_tree=15+3
     TYPE(TREE_ELEMENT),target, INTENT(INout) :: T(3)
     real(dp) y(6)
    ! type(probe) xs
@@ -6126,7 +6128,7 @@ SUBROUTINE track_TREE_probe_gen_only(T,y)
 !xs=y
 nd2=t(1)%np
 nd=nd2/2
-ntree=nd**2+nd2
+ntree=nd**2+nd2+3
     no1=t(1)%no
     cut=6
 
@@ -6269,7 +6271,7 @@ enddo
 SUBROUTINE track_TREE_probe_simple_zher_8(T,xs,ks,linear)
     use gauss_dis
     IMPLICIT NONE
-    integer, parameter :: size_tree=15
+    integer, parameter :: size_tree=15+3
     TYPE(TREE_ELEMENT),target, INTENT(INout) :: T(3)
  
     type(probe) xs
@@ -6342,210 +6344,70 @@ x0_begin=0.0_dp
       x0(i)=xs%x(i)
       x0_begin(i)=xs%x(i)
     enddo
-!      x0(1:6)=x(1:6)
-   !   x(7:12)=x(1:6)  remove4/9/2018
-
-
-!if(doit) then
+ 
 
      do i=1,nd2
       x(i)=x(i)-t(1)%fix0(i)
       x0(i)=x0(i)-t(1)%fix0(i)
       x0_begin(i)=x0_begin(i)-t(1)%fix0(i)
      enddo
-!else
-!     do i=1,6
-!      x(i)=x(i)-t(3)%fix0(i)
-!      x0(i)=x0(i)-t(3)%fix0(i)
-!      x0_begin(i)=x0_begin(i)-t(3)%fix0(i)
-!     enddo
-!endif
+ 
+ 
       x(nd2+1:2*nd2)=x(1:nd2)
       x0_begin(nd2+1:2*nd2)= x0_begin(1:nd2)
 
 
-!  if(rad0)   call track_TREE_G_complex(T(1),X(1:6))
-
+ 
 
       x0(1:nd2)=x(1:nd2)
       x(nd2+1:2*nd2)=x(1:nd2)
 y(1:nd2)=x(1:nd2)
 !if(no1>1.and.(.not.as_is0)) then
-if(no1>1) then
-if(call_gen) then
-!y=x(1:6)
 
+if(T(1)%usenonsymp) then
+    call track_TREE_G_complex(T(1),x(1:nd2))
+else
+ if(no1>1) then
+ 
 
 call track_TREE_probe_gen_only(T,y)
 
  if(.not.check_stable_zhe) then
    xs%u=.true.
-check_stable=.false.
-return
-endif 
- goto 1000
-endif
-     do i=1,nd
-     q(i)=x(2*i-1)
-     p(i)=x(2*i)
-    enddo
-
- !else
-    do i=1,nd
-     x(2*i-1)=0.0_dp   ! use non symplectic as approximation
-    enddo
- ! endif
-!!! symplectic here!! symplectic here
-! if(t(3)%symptrack) then
-   do i=1,nd
-     qf(i)=x(2*i-1)   ! use non symplectic as approximation
-    enddo
-normb=1.d38
-do is=1,nrmax
-   do i=1,nd
-     x0(2*i)=p(i)
-     x0(2*i-1)=qf(i)  
-     qg(i)=0
-    enddo
-
-    call track_TREE_G_complex(T(3),X0(1:ntree))
- 
-    do i=1,nd
-    do j=1,nd
-     r(i,j)=x0(ind_spin(i,j))
-    enddo
-    enddo
-    call matinv(r(1:nd,1:nd),r,nd,nd,ier)
-    if(ier/=0) then
-     write(6,*) "matinv failed in track_TREE_probe_complex_zhe"
-       check_stable_zhe=.false.
-check_stable=.false.
-
-       xs%u=.true.
-      return
-     stop
-    endif
-    do i=1,nd
-    do j=1,nd
-      qg(i)=r(i,j)*(q(j)-x0(2*j-1)) + qg(i)
-    enddo
-    enddo
-    do i=1,nd
-     qf(i) = qf(i) + qg(i)
-    enddo
-   norm=0
-   do i=1,nd
-   norm=abs(qg(i))+norm
-   enddo
-!write(6,*) is,normb,norm
-   if(norm>t(3)%eps) then
-      normbb=normb  ! saving for debugging
-     normb=norm
-   else
-   normbb=0
-   do i=1,nd
-   normbb=abs(qf(i))+normbb
-   enddo
-       
-     if(normb<=norm) then 
-      do i=1,nd
-       x(2*i-1)=qf(i)
-      enddo
-      do i=1,nd
-       x(2*i)=x0(2*i)
-      enddo
-       
-
-       x(1:nd2)=matmul(t(3)%rad(1:nd2,1:nd2),x(1:nd2))
-
-       exit
-     endif
- 
-     normb=norm
-   endif
-write(6,*) " full routine ", is
-
-       nrmax_used=is
-
-enddo  ! is 
-
- if(is>nrmax-10) then
-   if(c_verbose_zhe) write(6,*) " Too many iterations ",normbb,norm,t(3)%eps
-   xs%u=.true.
-   check_stable_zhe=.false.
-check_stable=.false.
-
-  return
+ check_stable=.false.
+ return
+ endif 
  endif
-
-!elseif(.not.as_is0) then
-else
- 
-
-       x(1:nd2)=matmul(t(3)%rad(1:nd2,1:nd2),x(1:nd2))
- 
-!!!    write(
- endif  ! no > 1
-
-1000 continue
-!if(call_gen.and.no1>1.and.(.not.as_is0)) then
-if(call_gen.and.no1>1 ) then
- 
        x(1:nd2)=matmul(t(3)%rad(1:nd2,1:nd2),y(1:nd2))
- 
+
 endif
+!if(call_gen.and.no1>1.and.(.not.as_is0)) then
+!if(call_gen.and.no1>1 ) then
+!if( no1>1 ) then
+ 
+ 
+!endif
 
 !if(jumpnot) then
     if(spin0) then  ! spin
 
      if(xs%use_q) then
-    call track_TREE_G_complex(T(2),x0_begin(nd2+1:ntree))
+!    call track_TREE_G_complex(T(2),x0_begin(nd2+1:ntree))
+    call track_TREE_G_complex(T(2),x0_begin(nd2+1:size_tree))
 
        do k=0,3
          qu%x(k)=x0_begin(nd2+1+k)
        enddo 
  
        xs%q=qu*xs%q
-       xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
+      if(.not.T(1)%usenonsymp) xs%q%x=xs%q%x/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
      else
-    call track_TREE_G_complex(T(2),x0_begin(nd2+1:ntree))
 
-    s0=0.0e0_dp
+stop 48169
  
-    do i=1,3
-    do j=1,3
-     r(i,j)=x0_begin(ind_spin(i,j))
-    enddo
-    enddo
-
-    call orthonormaliser(r)
-    
-    do k=1,3
-     s0(k,1:3)=0.0e0_dp
-     do i=1,3
-     do j=1,3
-        s0(k,i)=r(i,j)*xs%s(k)%x(j)+s0(k,i)
-     enddo
-    enddo
-    enddo
-
-    do k=1,3
-     do j=1,3
-       xs%s(k)%x(j)=s0(k,j)
-     enddo
-    enddo 
-     endif  
     endif ! spin
    
-!if(as_is0) then 
-! if(no1>1) then
-!  call track_TREE_G_complex(T(1),X(1:nd2))
-! else
- !      x(1:nd2)=matmul(t(3)%rad(1:nd2,1:nd2),x(1:nd2))
-! endif
-!else
-!!!!  if(rad0)   call track_TREE_G_complex(T(1),X(1:6))      !  not needed 7/1/2026
-!endif
+ endif
 
  norm=0
 do i=1,min(nd2,4)    !!!  changed from 6 2022.06.08
@@ -6561,18 +6423,10 @@ check_stable=.false.
   return
  endif
 
-!if(doit) then
-
- 
- !        do i=1,6
-!           x(i)=x(i)+t(1)%fix(i)   ! wrong if entrance and exit are different
-!         enddo
-!else
- 
-         do i=1,nd2
+          do i=1,nd2
            x(i)=x(i)+t(3)%fix(i)
          enddo
-!endif
+ 
 
 
 
@@ -6587,7 +6441,7 @@ if(.not.check_stable_zhe) xs%u=.true.
 SUBROUTINE track_TREE_probe_simple_zhep_8(T,xs,ks)
     use gauss_dis
     IMPLICIT NONE
-    integer, parameter :: size_tree=15
+    integer, parameter :: size_tree=15+3
     TYPE(TREE_ELEMENT),target, INTENT(INout) :: T(3)
  
     type(probe_8) xs
@@ -6599,7 +6453,7 @@ SUBROUTINE track_TREE_probe_simple_zhep_8(T,xs,ks)
     logical  spin0,stoch0,rad0,env0,doit 
     integer no1,nrmax_used,ntree, nd,nd2
     type(quaternion_8) qu
-    type(damap) id
+    type(damap) id, dm
     type(internal_state) ks
 
    ! as_is0=t(1)%usenonsymp
@@ -6618,7 +6472,7 @@ SUBROUTINE track_TREE_probe_simple_zhep_8(T,xs,ks)
     cut=6
     nd2=t(1)%np
     nd=nd2/2
-    ntree=nd**2+nd2
+    ntree=nd**2+nd2+3
     jc=0
     do i=1,3
      jc(2*i-1)=1
@@ -6629,7 +6483,7 @@ SUBROUTINE track_TREE_probe_simple_zhep_8(T,xs,ks)
 
        call alloc(qu)
        call alloc(tn)
-
+call alloc(id,dm)
  
    ! if(present(spin)) spin0=spin
    ! if(present(rad)) rad0=rad
@@ -6661,13 +6515,15 @@ enddo
  
 
      do i=1,nd2
+     dm%v(i)=x(i)
+     dm%v(i)=dm%v(i)-(dm%v(i).sub.'0')
       x(i)=x(i)-t(1)%fix0(i)
       x0(i)=x0(i)-t(1)%fix0(i)
       x0_begin(i)=x0_begin(i)-t(1)%fix0(i)
      enddo
       do i=1,nd2
-      x(6+i)=x(i)
-      x0_begin(6+i)= x0_begin(i)
+      x(nd2+i)=x(i)
+      x0_begin(nd2+i)= x0_begin(i)
       enddo
 
  
@@ -6676,6 +6532,10 @@ enddo
     !  x(7:12)=x(1:6)
 
 !if(no1>1.and.(.not.as_is0)) then
+
+if(T(1)%usenonsymp) then
+    call track_TREE_G_complex(T(1),x(1:nd2))
+else ! %usenonsymp
 if(no1>1) then
 
 do i=1,nd2
@@ -6685,7 +6545,7 @@ enddo
 call track_TREE_probe_gen_only(T,y0)
  
 
-call alloc(id)
+
 
 do i=1,nd
 x0(2*i-1)=y0(2*i-1)+(1.0_dp.mono.(2*i-1))
@@ -6701,13 +6561,13 @@ enddo
 
  id=id**jc(1:nd2)
  
+id=id*dm
  
       do i=1,nd2
        x(i)=id%v(i)+y0(i)
        enddo   
 
 
-call kill(id)
 
         call alloc(y)
 
@@ -6742,73 +6602,33 @@ else
 !!!    
  endif  ! no > 1
 
+endif ! %usenonsymp
 
-
-!if(jumpnot) then
     if(spin0) then  ! spin
 
      if(xs%use_q) then
     call track_TREE_G_complex(T(2),x0_begin(nd2+1:ntree))
 
+
        do k=0,3
          qu%x(k)=x0_begin(nd2+1+k)  ! bug +1 missing 2026.8.15
        enddo 
  
+
        xs%q=qu*xs%q
+      if(.not.T(1)%usenonsymp) then
        tn=1.0_dp/sqrt(xs%q%x(1)**2+xs%q%x(2)**2+xs%q%x(3)**2+xs%q%x(0)**2)
        do i=0,3
         xs%q%x(i)=xs%q%x(i)*tn
        enddo
+     endif
      else
-    call track_TREE_G_complex(T(2),x0_begin(nd2+1:ntree))
-
-    s0=0.0e0_dp
- 
-    do i=1,3
-    do j=1,3
-     r(i,j)=x0_begin(ind_spin(i,j))
-    enddo
-    enddo
-
-    call orthonormaliser(r)
-    
-    do k=1,3
-     s0(k,1:3)=0.0e0_dp
-     do i=1,3
-     do j=1,3
-        s0(k,i)=r(i,j)*xs%s(k)%x(j)+s0(k,i)
-     enddo
-    enddo
-    enddo
-
-    do k=1,3
-     do j=1,3
-       xs%s(k)%x(j)=s0(k,j)
-     enddo
-    enddo 
-     endif  
+stop 48170
+    endif
     endif ! spin
    
-!if(as_is0) then 
-! if(no1>1) then
-!  call track_TREE_G_complex(T(1),X(1:nd2))
-! else
- !       call alloc(y)
-!        do i=1,nd2
-!         do j=1,nd2
-!        y(i)=t(3)%rad(i,j)*x(j)+y(i)
-!       enddo
-!       enddo
-!       do i=1,nd2
-!        x(i)=y(i)
-!       enddo
-!        call kill(y)
 
-!       x(1:6)=matmul(t(3)%rad,x(1:6))
-! endif
-!else
-  if(rad0)   call track_TREE_G_complex(T(1),X(1:nd2))
-!endif
+ ! if(rad0)   call track_TREE_G_complex(T(1),X(1:nd2))     why ? Removed when as_is put back
 
  norm=0
 do i=1,min(nd2,4)    !!!  changed from 6 2022.06.08
@@ -6822,18 +6642,12 @@ enddo
   return
  endif
 
-!if(doit) then
 
- 
-!         do i=1,nd2
-!           x(i)=x(i)+t(1)%fix(i)
-!         enddo
-!else
  
          do i=1,nd2
            x(i)=x(i)+t(3)%fix(i)
          enddo
-!endif
+
 
 
 
@@ -6851,6 +6665,7 @@ endif
 
     call kill(x)
     call kill(x0)
+call kill(id,dm)
 
        call kill(qu)
        call kill(tn)
