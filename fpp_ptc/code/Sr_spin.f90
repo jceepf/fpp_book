@@ -2123,6 +2123,42 @@ write(6,*)
    
   end subroutine flip_taylormaps
 
+  subroutine flip_taylormaps_method(R)
+  implicit none   
+  type(layout), target:: R
+  type(fibre), pointer ::p
+  integer i,j,no,nv
+   logical symp
+  p=>r%start
+  j=0
+  no=0
+  nv=0
+  do i=1,r%n
+
+    if(p%usetaylormap/=0) then
+     if(iabs(p%usetaylormap)==1.or.iabs(p%usetaylormap)==3) then
+       j=p%usetaylormap +j/iabs(p%usetaylormap)
+        p%taylormap(1)%usenonsymp=.not.p%taylormap(1)%usenonsymp
+        symp=.not.p%taylormap(1)%usenonsymp
+        no=p%taylormap(1)%no
+        nv=p%taylormap(1)%np
+     endif
+    endif
+   p=>p%next
+  enddo
+write(6,*) 
+   if(no/=0) then
+      if(.not.symp)write(6,*) "The maps are now symplectic "
+      if(symp) write(6,*) "The maps are as is: non symplectic most likely "
+  endif
+    if(j<0 ) write(6,'((i4,a26))') -j, " Taylor maps were changed but not activated"
+    if(j>0 ) write(6,'((i4,a26))') j, " Taylor maps were changed and are active"
+    if(j==0 ) write(6,*) "This lattice had no Taylor maps "
+    if(no/=0) write(6,'((a20,i2,a4,i2,a10))') "The maps have order ",no," in ",nv, " variables" 
+ write(6,*) 
+   
+  end subroutine flip_taylormaps_method
+
   subroutine kill_taylormaps(R)
   implicit none   
   type(layout), target:: R
