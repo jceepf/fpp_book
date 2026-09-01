@@ -3,6 +3,12 @@
 
 module tree_element_MODULE
   USE polymorphic_complextaylor, mon1=>mon
+use duan_zhe_map, probe_zhe=>probe,tree_element_zhe=>tree_element,dp_zhe=>dp, &
+DEFAULT0_zhe=>DEFAULT0,TOTALPATH0_zhe=>TOTALPATH0,TIME0_zhe=>TIME0,ONLY_4d0_zhe=>ONLY_4d0,RADIATION0_zhe=>RADIATION0, &
+NOCAVITY0_zhe=>NOCAVITY0,FRINGE0_zhe=>FRINGE0,STOCHASTIC0_zhe=>STOCHASTIC0,ENVELOPE0_zhe=>ENVELOPE0, &
+DELTA0_zhe=>DELTA0,SPIN0_zhe=>SPIN0,MODULATION0_zhe=>MODULATION0,only_2d0_zhe=>only_2d0 , &
+INTERNAL_STATE_zhe=>INTERNAL_STATE,ALLOC_TREE_zhe=>ALLOC_TREE
+
   IMPLICIT NONE
   public
   integer,private,parameter::ndd=6
@@ -36,7 +42,7 @@ module tree_element_MODULE
 
   private EQUAL_RF8_RF8 !,extract_envelope_probe8
   PRIVATE EQUAL_RF8_RF,EQUAL_RF_RF8,print_rf_phasor_8,print_rf_phasor !,extract_envelope_damap
-  private EQUAL_DAMAP_RAY8,cross_spinor,cross_spinor8
+  private EQUAL_DAMAP_RAY8,cross_spinor,cross_spinor8,EQUAL_PROBEzhe_PROBE,EQUAL_PROBE_PROBEzhe
   private flip  ! flip in lielib
   integer, target :: spin_extra_tpsa = 0 ,n0_normal= 2
   logical(lp) :: force_positive=.false.
@@ -73,6 +79,8 @@ module tree_element_MODULE
      MODULE PROCEDURE     EQUAL_SPINOR_SPINOR8
      MODULE PROCEDURE     EQUAL_PROBE_PROBE8
      MODULE PROCEDURE     EQUAL_PROBE_PROBE
+     MODULE PROCEDURE     EQUAL_PROBEzhe_PROBE
+     MODULE PROCEDURE     EQUAL_PROBE_PROBEzhe
 
 
      MODULE PROCEDURE     EQUAL_RF8_RF8
@@ -964,6 +972,52 @@ CONTAINS
        P%ac(i)=P8%ac(i)
     enddo
   END subroutine EQUAL_PROBE_PROBE8
+
+
+  subroutine EQUAL_PROBEzhe_PROBE(P,P8)
+    implicit none
+    TYPE(PROBE_zhe), INTENT(INOUT) :: P
+    TYPE(PROBE), INTENT(IN) :: P8
+    INTEGER I
+    DO I=1,6
+       P%X(I)=P8%X(I)
+    ENDDO
+    !     P%S(0)=P8%S(0)
+   ! DO I=1,ISPIN1R
+   !    P%S(I)=P8%S(I)
+   ! ENDDO
+    P%u=P8%u
+    P%e=P8%e
+! quaternion
+do i=0,3
+    P%q%x(i)=P8%q%x(i)
+enddo
+    p%use_q=P8%use_q
+ 
+  END subroutine EQUAL_PROBEzhe_PROBE
+
+  subroutine EQUAL_PROBE_PROBEzhe(P,P8)
+    implicit none
+    TYPE(PROBE), INTENT(INOUT) :: P
+    TYPE(PROBE_zhe), INTENT(IN) :: P8
+    INTEGER I
+    DO I=1,6
+       P%X(I)=P8%X(I)
+    ENDDO
+    !     P%S(0)=P8%S(0)
+  !  DO I=1,ISPIN1R
+  !     P%S(I)=P8%S(I)
+  !  ENDDO
+    P%u=P8%u
+    P%e=P8%e
+! quaternion
+do i=0,3
+    P%q%x(i)=P8%q%x(i)
+enddo
+
+    p%use_q=P8%use_q
+ 
+  END subroutine EQUAL_PROBE_PROBEzhe
 
   subroutine EQUAL_PROBE_PROBE (P,P8)
     implicit none
