@@ -157,6 +157,7 @@ logical :: correct_quaternion_field=.true.
  logical :: unstable_fpp(NDIM2t/2) !,hyperbolic
 logical :: lapack=.false.
 integer :: ci_debug=0
+logical :: do_a2_tau=.false.
 !  These routines computes lattice functions a la Ripken-Forest-Wolski
 !type c_lattice_function
 ! real(dp) :: E(3,6,6) =0 ,K(3,6,6) =0 ! E : moments, K : Invariants
@@ -171,6 +172,10 @@ integer :: ci_debug=0
 !!!!  radiation quantity
 ! real(dp) :: sigmas(6,6)   !  Beam sizes can be put there if computed
 !end type c_lattice_function 
+ 
+ INTERFACE c_canonise_new
+     MODULE PROCEDURE c_factor_new  ! call compute_lattice_functions(ML,Lat)
+  END INTERFACE
 
  INTERFACE compute_lattice_functions
      MODULE PROCEDURE compute_lattice_functions_1  ! call compute_lattice_functions(ML,Lat)
@@ -4539,12 +4544,12 @@ endif
 
 ! computes Lie polynomial in relevant planes : s2=1 generating function, ss=0 potential
 ! Does not included the nonsymplectic modulated planes
-  FUNCTION getpb( S1,S1p, S2 )  
+  FUNCTION getpb( S1,S1p,gradient )  
     implicit none
     TYPE (c_taylor) getpb
     TYPE (c_vector_field),optional, INTENT (IN) :: S1
     TYPE (c_damap),optional, INTENT (IN) :: S1p
-    INTEGER,optional, INTENT (IN) ::  S2
+    INTEGER,optional, INTENT (IN) ::  gradient
     integer localmaster,n,i,j,l,fac,nd2here,ss
     type(c_taylor) t,x
     complex(dp) value
@@ -4558,7 +4563,7 @@ endif
 
     nd2here=nd2-2*rf
     ss=-1
-    if(present(s2)) ss=s2
+    if(present(gradient)) ss=gradient
     allocate(jc(c_%nv))
     jc=0
     !    call check(s1)
@@ -4571,7 +4576,7 @@ endif
      t=s1%v(j)
     elseif(present(s1p)) then
      t=s1p%v(j)
-     if(.not.present(s2))ss=1
+     if(.not.present(gradient))ss=1
      else
      write(6,*) " error in getpb "
      stop
@@ -9797,36 +9802,39 @@ endif
 
   end subroutine c_etinv
 
- subroutine c_etpin(x,y,jind)
-!*
-    implicit none
-    ! Y=X^-1
-    integer i,jind(:)
-    type(c_damap) ie1,ie2 
-    type(c_damap), intent(inout):: x,y
-    if(.not.c_stable_da) return
-    
-    ie1%n=nv;ie2%n=nv;
-    call alloc(ie1)
-    call alloc(ie2)
-      do i=1,x%n
-       ie1%v(i)=x%v(i)
-      enddo
-      do i=x%n+1,nv
-         ie1%v(i)=1.0_dp.cmono.i
-      enddo
  
-    call c_dapint(ie1%v(1:nv)%i,nv,ie2%v(1:nv)%i,nv,jind)
-       do i=1,x%n
-       y%v(i)=ie2%v(i)
-      enddo
+subroutine Partial_inverse(m,mi,je)
+implicit none
+type(c_damap), intent(in):: m
+type(c_damap), intent(inout):: mi
+integer, intent(in) :: je(:)
+integer i
+type(c_damap) mt
+ 
+call alloc(mt)
 
-    call kill(ie1)
+mt=m
+do i=1,c_%nd2
+if(je(i)==0) then
+ mt%v(i)=dz_c(i)
+endif
+enddo
 
-    call kill(ie2)
+mt=mt**(-1)
+ 
+mi=mt
+ 
 
-  end subroutine c_etpin
+do i=1,c_%nd2
+if(je(i)==0) then
+ mi%v(i)=m%v(i)*mt
+endif
+enddo
 
+
+
+call kill(mt)
+end subroutine Partial_inverse
 
 
  FUNCTION transform_vector_field_by_map(S1,S2)
@@ -11334,31 +11342,24 @@ FUNCTION c_real_spinmatrix(S1,S2) ! spin routine function
     TYPE (c_damap) POWMAP_INV
     TYPE (c_damap), INTENT (IN) :: S1
     INTEGER, INTENT (IN) :: R2(:)
-    TYPE (c_damap) S11,s10
-    INTEGER I,jn(lnv)
+    INTEGER I,jn(c_lnv)
     integer localmaster
     IF(.NOT.C_%STABLE_DA) RETURN
     localmaster=c_master
 
 
-    do i=1,lnv
+    do i=1,c_lnv
        jn(i)=0
     enddo
-    do i=1,nd2
+    do i=1,c_%nd2
        jn(i)=R2(I)
     enddo
-
+    POWMAP_INV%n=S1%n
     call c_assmap(POWMAP_INV)
 
-    call alloc(s11,s10)
-s10=s1
-    call c_etpin(S10,S11,jn)
-
-    POWMAP_INV=s11
-
-
-    ! powmap=junk
-    call kill(s11,s10)
+ 
+     call Partial_inverse(s1,POWMAP_INV,jn)
+  
 
     c_master=localmaster
 
@@ -14039,7 +14040,7 @@ endif
     implicit none
     TYPE (c_vector_field) c_logf_spin
     TYPE (c_vector_field) , optional :: h
-    TYPE (c_damap), INTENT (INOUT) :: S1
+    TYPE (c_damap), INTENT (IN) :: S1
      real(dp), optional :: epso
      integer, optional :: n
      logical, optional :: tpsa
@@ -21497,7 +21498,7 @@ real(dp),allocatable::   S(:,:),id(:,:)
 ! d= = L_r o N_r
 ! ms= L_s o N_s
 
-write(6,*) "in symplectify_for "
+!write(6,*) "in symplectify_for "
 allocate(S(m%n,m%n),id(m%n,m%n))
 
 call c_get_indices(n,0)
@@ -21862,11 +21863,19 @@ end subroutine cholesky_dt
     complex (dp)c_get_coeff
     INTEGER i,n,done
      
-     allocate(J(S1%NV))
-     J=0
-     j(1:size(JJ))=jj
 
      c_get_coeff=0
+
+     n=0
+     do i=c_%nv+1,size(jj)
+      n=n+jj(i)
+     enddo
+     if(n>0) return
+
+     allocate(J(S1%NV))
+     J=0
+     j(1:size(jj)) =jj
+
     do i=1,s1%n
         done=0
          DO N=1,S1%NV
@@ -23931,7 +23940,7 @@ n%H_l=c_phasor()*n%H_l
 n%H_nl=c_phasor()*n%H_nl
 
  n%H=n%H_l+n%H_nl
-   call kill(Nf,N_cut_2,N_nl )
+   call kill(N_cut_2,N_nl )
 !  endif
 
 if(.not.old_phase_calculation) then
@@ -23952,6 +23961,9 @@ if(present(phase)) then
 
  if(c_%ndptb/=0) then
    phase(c_%nd)=n%h%v(c_%ndptb)   ! overwrites if necessary
+write(6,*) " New way "
+   phase(c_%nd)=nf%v(c_%ndptb)-dz_c(c_%ndptb)   !  etienne correction 9/26/2026
+   phase(c_%nd)=phase(c_%nd)*c_phasor()   !  etienne correction 9/26/2026
  endif
 endif
 
@@ -23959,6 +23971,7 @@ if(present(nu_spin))  nu_spin=-spin_def_tune*n%h%q%x(2)/pi
  
 endif
 
+call kill(nf)
 
  end subroutine c_normal !_with_quaternion
 
@@ -24241,5 +24254,539 @@ call c_set_param(nd1,ndt1,nd21,nd2t1,ndharm1,nd2harm1,ndpt1,ndptb1,ndct1,ndc2t1,
 call kill(ai,rot,aia,aiat,L_r , N_r , L_s, N_s)
 call kill(m)
 end subroutine  c_average_6d
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!  c_factor_new
+
+subroutine c_canonise_as(a1,a1cc,rho,angle)
+implicit none
+type(c_damap)  a1c,a1,a1cc
+type(c_damap) rho,drho
+type(c_taylor) angle(:)
+type(taylor) a11r,a12r
+type(c_taylor) a11c
+integer i,j,k,ndh,ih
+type(c_universal_taylor) u
+
+
+
+call alloc(a11r,a12r)
+call alloc(a11c)
+call alloc(a1c)
+call alloc(drho)
+
+a1c=a1
+ndh=c_%nd
+if(c_%ndpt/=0) ndh=ndh-1
+rho=1
+
+do i=1,1   ! number of iterations
+drho=1
+a11r=a1c%q%x(2)
+a12r=a1c%q%x(0)
+ a11c=atan2(a11r,a12r)
+a11c=a11c*c_phasor()
+u=a11c
+ 
+do j=1,u%n
+ih=0
+ do k=1,ndh
+   ih=ih+iabs(u%j(j,2*k)-u%j(j,2*k-1))
+ enddo
+ if(ih/=0)  u%c(j)=0.0_dp
+enddo
+a11c=u
+ 
+
+!call print(a11c)
+!write(6,*) full_abs(a11c)
+ 
+a11c=a11c*ci_phasor()
+
+drho%q%x(0)=cos(a11c)
+drho%q%x(2)=sin(a11c)
+rho=rho*drho
+a1c=a1c*drho**(-1)
+  angle(C_%nd+1)=angle(C_%nd+1)-a11c/pi   ! changed 2018.11.01
+enddo
+
+a1cc=a1c
+ 
+call kill(a11r,a12r)
+call kill(a11c)
+call kill(a1c)
+call kill(drho)
+call kill(u)
+
+end subroutine c_canonise_as
+
+subroutine c_canonise_a0(a0,a0c,rho,angle)
+implicit none
+type(c_damap)  a0c,a0
+type(c_damap) rho
+type(c_taylor) angle(:)
+type(c_universal_taylor) u
+integer i,k,ndh,ih
+ 
+if(c_%ndpt==0) then
+ a0c=a0
+ rho=1
+  do i=1,c_%nd
+    angle(i)=0.0_dp
+  enddo
+ return
+endif
+
+
+rho=1
+ndh=c_%nd2-2
+  
+a0%v(c_%ndptb)=a0%v(c_%ndptb)-(a0%v(c_%ndptb).sub.'0')
+u=a0%v(c_%ndptb)
+do i=1,u%n
+ ih=0 
+ do k=1,ndh
+  ih=ih+u%J(i,k)
+  enddo
+! if(ih/=0.or.u%J(i,c_%ndpt)==0) u%c(i)=0
+ if(ih/=0) u%c(i)=0
+enddo
+ 
+rho%v(c_%ndptb)=u
+angle(c_%nd)=rho%v(c_%ndptb)-dz_c(c_%ndptb)
+ rho%v(c_%ndptb)= rho%v(c_%ndptb)
+ 
+
+a0c=a0*rho**(-1)
+ 
+
+call kill(u)
+ 
+end subroutine c_canonise_a0
+
+subroutine c_canonise_a1(a1,a1cc,rho,angle)
+implicit none
+type(c_damap)  a1c,a1,a1cc
+type(c_damap) rho
+type(c_taylor) angle(:)
+type(real_8) a11,a12
+type(taylor) a11r,a12r
+type(c_taylor) a11c,a12c
+integer i,j,k,it,ndh
+!real(dp) a120
+
+ 
+
+!call alloc(a11,a12)
+call alloc(a11r,a12r)
+call alloc(a11c,a12c)
+call alloc(a1c)
+
+!a1c=a1cc
+
+ndh=c_%nd2
+rho=1
+if(c_%ndpt/=0) ndh=ndh-2
+ 
+ do i=1,ndh/2
+    a11r=(a1%v(2*i-1).d.(2*i-1))
+    a12r=(a1%v(2*i-1).d.(2*i))
+    a11c=a11r
+    a12c=a12r
+    angle(i)=atan2(a12r,a11r)
+ !   a120=a12r
+    a12c=sin(angle(I))
+    a11c=cos(angle(I))
+    rho%v(2*i-1)=a11c*dz_c(2*i-1)+a12c*dz_c(2*i)
+    rho%v(2*i)  =a11c*dz_c(2*i) - a12c*dz_c(2*i-1)
+ enddo
+  if(ndh/=c_%nd2) then
+    do i=1,ndh/2
+     rho%v(c_%ndptb)=rho%v(c_%ndptb) + (-1)**c_%ndpt* (dz_c(2*i-1)**2+dz_c(2*i)**2)*(angle(i).d.c_%ndpt)/2.0_dp
+    enddo
+    angle(ndh/2+1)=rho%v(c_%ndptb)-(1.0_dp.cmono.c_%ndptb)
+  endif
+  
+ do i=1,ndh/2
+     angle(I)=angle(I)/twopi
+ enddo
+
+a1c=a1*rho**(-1)
+
+a1cc=a1c
+
+!call kill(a11,a12)
+call kill(a11r,a12r)
+call kill(a11c,a12c)
+call kill(a1c)
+
+end subroutine c_canonise_a1
+
+
+subroutine c_canonise_a2(a2,a2c,rho,angle)
+implicit none
+type(c_damap)  a2c,a2,id
+type(c_damap) rho
+type(c_taylor) angle(:),tau
+type(c_taylor) a11c 
+type(c_universal_taylor) u
+type(c_vector_field) f,fr,g
+integer i,j,k,it,ndh,ki,kit
+ 
+ 
+ 
+call alloc(a11c )
+call alloc(f)
+call alloc(fr)
+call alloc(g)
+call alloc(id)
+call alloc(tau)
+
+ndh=c_%nd2
+rho=1
+if(c_%ndpt/=0) ndh=ndh-2
+ 
+fr=0
+
+!do i=1,c_%nd
+! angle(i)=0
+!enddo
+
+do ki=1,c_%no/2+1
+  a2c=a2
+
+id=exp(-fr,a2c)
+fr=c_phasor()*fr
+
+f=ln(id,n=c_%no)
+f=c_phasor()*f
+
+ do i=1,ndh/2
+  u=f%v(2*i-1)
+   do j=1,u%n
+    it=0
+    do k=1,ndh/2
+      it=it+iabs(u%J(j,2*k) -u%J(j,2*k-1))
+    enddo
+     if(.not.(it==1.and.(u%J(j,2*i-1)-u%J(j,2*i)==1) )) u%c(j)=0
+   enddo
+   a11c=u 
+    fr%v(2*i-1)=fr%v(2*i-1)+a11c
+  
+  u=f%v(2*i)
+   do j=1,u%n
+    it=0
+    do k=1,ndh/2
+      it=it+iabs(u%J(j,2*k) -u%J(j,2*k-1))
+    enddo
+     if(.not.(it==1.and.(u%J(j,2*i)-u%J(j,2*i-1)==1) )) u%c(j)=0
+   enddo
+   a11c=u 
+    fr%v(2*i)=fr%v(2*i)+a11c
+ enddo
+
+ do k=1,ndh/2
+   angle(k)=(fr%v(2*k).k.(2*k))/twopi/i_
+  enddo
+
+
+
+fr=ci_phasor()*fr
+ 
+
+!!!!!!!!!!!!!!!!!
+   do k=1,ndh/2 
+    angle(k)=angle(k)*ci_phasor()
+   enddo
+
+enddo
+ 
+ 
+!!!!! tau  term found missing by AI Claude, overlooked by ET
+ if(c_%ndptb/=0) then
+g=fr
+tau=0.0_dp
+do i=1,ndh
+ g%v(i)=(-1)**c_%ndptb*(g%v(i).d.c_%ndpt)
+enddo
+
+id=0
+id%v(c_%ndpt)=dz_c(c_%ndpt)
+do i=1,ndh/2
+    k=2*i-1
+    kit=2*i
+    id%v(k)=dz_c(k)
+    g%v(kit)=g%v(kit)*id
+    g%v(kit)=g%v(kit).i.k
+    tau= tau + g%v(kit)
+    k=2*i
+    kit=2*i-1
+    id%v(k)=dz_c(k)
+    g%v(kit)=g%v(kit)*id
+    g%v(kit)=g%v(kit).i.k
+    tau= tau - g%v(kit)
+enddo
+fr%v(c_%ndptb)=tau 
+endif
+
+
+rho=exp(fr)
+
+
+ if(c_%ndptb/=0) angle(ndh/2+1)=rho%v(c_%ndptb)-dz_c(c_%ndptb)
+
+
+ 
+ 
+
+a2c=a2*rho**(-1)
+
+call kill(a11c)
+call kill(tau)
+call kill(id)
+call kill(f)
+call kill(fr)
+call kill(g)
+call kill(u)
+
+end subroutine c_canonise_a2
+
+subroutine c_factor_new(a,a0,a1,a2,as,a_cs,phase_advance,rotation,dospin, phasor)
+implicit none
+type(c_damap)  a,a0t,a1t,a2t,ast,rho
+type(c_damap), optional ::  a0,a1,a2,as
+type(c_damap) at,id  
+type(c_damap)  rhot
+type(c_damap) , optional :: a_cs,rotation
+type(c_taylor) , optional :: phase_advance(:)
+logical, optional :: dospin,phasor
+logical dos,phas,presentsome
+type(c_universal_taylor) u
+integer i,j,k,it,ndh
+real(dp) preci
+type(c_taylor) phaset(4),phase(4)
+
+
+presentsome=present(phase_advance).or.present(rotation).or.present(phasor)
+call alloc(a0t,a1t,a2t,ast)
+
+if(present(a0)) then
+ a0t=a0
+endif
+if(present(a1)) then
+ a1t=a1
+endif
+if(present(a2)) then
+ a2t=a2
+endif
+if(present(as)) then
+ ast=as
+endif
+ call alloc(rho,rhot)
+ call alloc(phase)
+!a=a0*a1*a2
+dos=.false.
+phas=.true.
+if(present(phasor)) phas=phasor
+if(present(dospin)) dos=dospin
+
+if(present(phase_advance)) then
+ do i=1,c_%nd+1
+   phase(i)=phase_advance(i) 
+ enddo
+endif
+
+if(present(rotation)) then
+ rho=rotation
+else 
+ rho=1
+endif
+
+if(phas) then
+ do i=1,c_%nd+1
+   phase(i)=phase(i)*ci_phasor()
+ enddo
+endif
+call alloc(phaset)
+call alloc(at,id)
+!   subroutine in_bmad_units
+ !    implicit none  
+ !     use_bmad_units=.true.
+ !     ndpt_bmad=1
+ !      nowbmad=.true.
+!write(6,*) c_%ndpt,use_bmad_units,nowbmad
+ 
+ 
+ast=1
+
+!!!! find fixed point as a function parameters and possibly delta
+id=0
+if(c_%ndpt/=0) then
+ id%v(c_%ndpt)=1.0_dp.cmono.c_%ndpt
+endif
+at=a*id
+ 
+if(c_%ndptb/=0) then
+ at%v(c_%ndpt)=0.0_dp
+endif
+id=1
+at=at+id
+ 
+if(c_%ndptb/=0) then
+ do i=1,c_%nd2-2  !c_%ndptb-1
+  j=mod(i,2)
+   if(j==0) then
+     j=i-1
+   else
+    j=i+1
+   endif
+  at%v(c_%ndptb)=at%v(c_%ndptb)+(-1)**(i+c_%ndptb)*(at%v(i).d.c_%ndpt)*(1.0_dp.cmono.j)
+ enddo 
+endif
+ 
+a0t=at
+
+if(presentsome) then
+
+
+ rhot=1
+
+ call c_canonise_a0(a0t,a0t,rhot,phaset)
+
+ do i=1,c_%nd
+  phase(i)=phaset(i)+ phase(i)
+ enddo
+ rho=rhot*rho
+endif
+
+at=a0t**(-1)*a
+if(presentsome) at=at*rhot**(-1)
+a1t=at
+
+ndh=c_%nd2
+
+if(c_%ndptb/=0) ndh=c_%nd2-2
+!!! Keeping  only linear terms in tranverse if no cavity
+!!! 
+do i=1,ndh
+ u=a1t%v(i)
+  do j=1,u%n
+    it=0
+    do k=1,ndh
+      it=it+u%j(j,k)
+    enddo
+     if(it/=1) then
+      u%c(j)=0
+     endif
+  enddo
+  a1t%v(i)=u
+enddo
+!!! Keeping  only quadratic terms in time if no cavity
+!!! 
+
+do i=ndh+1,c_%nd2
+ u=a1t%v(i)
+  do j=1,u%n
+    it=0
+    do k=1,ndh
+      it=it+u%j(j,k)
+    enddo
+     if(it>2) then
+      u%c(j)=0
+     endif
+  enddo
+  a1t%v(i)=u
+enddo
+ 
+ 
+ 
+if(presentsome) then
+
+ 
+call c_canonise_a1(a1t,a1t,rhot,phaset)
+ 
+do i=1,c_%nd
+ phase(i)=phase(i)+phaset(i)
+enddo
+ 
+rho=rhot*rho
+endif
+ 
+a1t%q=1.0_dp
+
+at=a1t**(-1)*at
+if(presentsome) at=at*rhot**(-1)
+a2t=at
+
+
+ a2t%q=1.0_dp 
+
+
+if(presentsome) then
+
+call c_canonise_a2(a2t,a2t,rhot,phaset)
+do i=1,c_%nd
+ phase(i)=phase(i)+phaset(i)
+enddo
+
+rho=rhot*rho
+endif
+
+ 
+
+
+at=a2t**(-1)*at
+if(presentsome)at=at*rhot**(-1)
+ast=at
+
+if(presentsome) then
+if(dos) then
+call c_canonise_as(ast,ast,rhot,phase)
+ 
+ phase(c_%nd+1)=phase(c_%nd+1)+phaset(c_%nd+1)
+ rho=rhot*rho
+else
+  ast=1
+endif
+endif
+if(present(a_cs)) a_cs=a0t*a1t*a2t*ast
+ 
+if(present(a0)) then
+ a0=a0t
+endif
+if(present(a1)) then
+ a1=a1t
+endif
+if(present(a2)) then
+ a2=a2t
+endif
+if(present(as)) then
+ as=ast
+endif
+ if(phas) then
+ do i=1,c_%nd+1
+   phase(i)=phase(i)*c_phasor()
+ enddo
+endif
+if(present(phase_advance)) then
+  do i=1,size(phase_advance)
+    phase_advance(i)=phase(i)
+  enddo
+endif
+if(present(rotation)) then
+  do i=1,size(phase_advance)
+    rotation=rho
+  enddo
+endif
+
+call kill(rhot)
+call kill(phaset)
+call kill(phase)
+ call kill(rho)
+
+call kill(at,id)
+call kill(a0t,a1t,a2t,ast)
+
+end subroutine c_factor_new
 
   END MODULE  c_tpsa

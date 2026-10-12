@@ -476,10 +476,13 @@ end subroutine zero_E_GENERAL_s
        CALL KILL(PZ)
     ELSE
        if(ctime) then
+       CALL ALLOC(PZ)
+
           PZ=SQRT(1.0_dp+2.0_dp*X(5)/b+x(5)**2)
           X(1)=X(1)+A(3)*X(2)/pz
           X(3)=X(3)+A(3)*X(4)/pz
           X(6)=X(6)+((X(2)*X(2)+X(4)*X(4))/2.0_dp/pz**2+1.0_dp)*(1.0_dp/b+x(5))*A(3)/pz
+       CALL kill(PZ)  ! bug 2026
        else
           X(1)=X(1)+A(3)*X(2)/(1.0_dp+X(5))
           X(3)=X(3)+A(3)*X(4)/(1.0_dp+X(5))

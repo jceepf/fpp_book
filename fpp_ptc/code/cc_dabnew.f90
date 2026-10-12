@@ -9,7 +9,7 @@ module c_dabnew
   private
 !  public
  
-  public c_ldamax, c_lstmax,c_leamax,c_liamax,c_dacctt2datest,dalc_lsta
+  public c_ldamax, c_lstmax,c_leamax,c_liamax,c_dacctt2datest,dalc_lsta,c_lnv
  
   private daalc_lno1,daall,damult,dasqrt,dacmut,dacma,DALINt,dacctt,dacctt1,dacctt2tpsa,dacctt2da
   private dainvt,dadert,dacfut,dainvt1
@@ -19,7 +19,7 @@ module c_dabnew
   public c_dacsu,c_dasuc,c_dacmu,c_dadal1,c_dapri,c_dapri77,c_darea,c_darea77,c_daeps
   public c_dacdi,c_dadic,c_count_da,c_mtree,c_dafun,c_DAABS,c_dadiv,c_take,c_datrunc,c_dader,c_datra
   public c_daran,c_dacfu,c_matinv,c_dapek0,c_dapok0,c_dacct,c_dainv,c_etcom,c_danot
-  public c_print_eps,c_lda_used,c_dapint,c_real_imag
+  public c_print_eps,c_lda_used,c_real_imag,c_dapin
   integer,private,parameter:: lsw=1
   integer :: c_lda_max_used=0
   ! integer,private,parameter::nmax=400,lsw=1
@@ -5365,7 +5365,7 @@ endif
     return
   end subroutine dainvt
   !
-  subroutine dapin(ma,ia,mb,ib,jx)
+  subroutine c_dapin(ma,ia,mb,ib,jx)
     implicit none
     !     *****************************
     !
@@ -5420,7 +5420,7 @@ endif
        enddo
     endif
     return
-  end subroutine dapin
+  end subroutine c_dapin
 
   subroutine c_dapint(ma,ia,mb,ib,jind)
     implicit none
@@ -5435,7 +5435,8 @@ endif
     integer,dimension(c_lnv)::jj,mn,mi,me
     integer,dimension(:)::ma,mb,jind
     !
-
+    complex(dp) x0
+   x0=1
  
 
     if((.not.c_stable_da)) then
@@ -5468,7 +5469,7 @@ endif
           jj(k) = 0
        enddo
        jj(i) = 1
-       call c_dapok(me(i),jj,(1.0_dp,0.0_dp))
+       call c_dapok(me(i),jj,x0)
     enddo
     !
     do i=1,ia
